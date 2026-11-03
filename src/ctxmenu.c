@@ -801,47 +801,19 @@ static void anunciarAssistido(int intencao) {
 }
 static void espelharAssistido(int atual, const CatItem *ci, int intencao) {
   cat_historico_definir_id(ci->imdb, ci->tipo, intencao);
-  // MARCAR COMO ASSISTIDO APAGA A POSICAO DE RETOMADA.
-  //
-  // cat_historico_definir_id so escreve numa tabela lateral de
-  // historico, e a fileira "Continuar assistindo" nao le dela: ela
-  // le progresso/restanteMin/temporada/episodio do proprio item. Sem
-  // isto o card continuava ali com a barra cheia depois de o titulo
-  // ter sido marcado como visto — o "removo do watch e o card nao
-  // sai" do relato.
-  //
-  // E o MESMO par que "Tirar de Continuar assistindo" faz logo
-  // abaixo, e pelo mesmo motivo: quem terminou nao tem o que
-  // retomar. So na direcao "assistido"; desmarcar nao inventa uma
-  // posicao que ninguem gravou.
   if (intencao) {
-    char chave[192];
-    prog_chave(chave, sizeof chave, ci->imdb, ci->temporada, ci->episodio);
-    prog_remover(chave);
-    // As mesmas tres fontes de "Tirar de Continuar assistindo": quem
-    // marcou como visto tambem nao quer o card de retomada de volta
-    // no proximo ciclo.
-    // Em fio (fioTirarRemoto): o DELETE do Trakt e uma chamada de rede por
-    // pausa (ate 20 s cada) e o syncprog e RPC; nenhum pode parar o desenho.
-    { TirarRemoto *tr = (TirarRemoto *)malloc(sizeof *tr);
-      if (tr) {
-        snprintf(tr->imdb, sizeof tr->imdb, "%s", ci->imdb);
-        snprintf(tr->chave, sizeof tr->chave, "%s", chave);
-        tr->ocultar = 0;   // marcar como visto NAO esconde a serie no Trakt
-        tirarRemotoEmFio(tr);
-      } }
-    simkl_playback_remover(ci->imdb);
-    // O CARIMBO DE "TIRAR DE CONTINUAR" (#244). Sem ele a proxima passada
-    // readmitia o item pelo /sync/playback que o servidor ainda devolvia (ou
-    // por uma pausa que o DELETE nao alcancou), so sem a barra.
-    prog_marcar_removido(ci->imdb);
-    // E O CARD SAI DA FILEIRA NA HORA (#244): zerar a barra deixava os cards da
-    // obra ali, "marca todos mas nao remove nenhum". Mesma remocao do "Tirar".
-    // Depois de zerar: tirar desloca a janela e `atual` deixaria de valer.
-    cat_zerar_progresso(atual);
-    { char obra[sizeof ci->imdb];   // `ci` aponta para o bloco que a poda desloca
-      snprintf(obra, sizeof obra, "%s", ci->imdb);
-      cat_tirar_continuar(obra); }
+    CatItem copy = *ci;
+    // Android markAsCompleted persists a 100% progress upsert and watched
+    // history. It is not a deletion or a title-level dismissal.
+    if (prog_concluir_local(copy.imdb, copy.temporada, copy.episodio)) {
+      char key[48]; ProgRegistro r;
+      prog_chave(key, sizeof key, copy.imdb, copy.temporada, copy.episodio);
+      if (prog_por_chave(key, &r) && r.durSeg > 0)
+        cat_aplicar_progresso(atual, r.posSeg, r.durSeg, r.temporada, r.episodio);
+      cat_tirar_continuar(copy.imdb);
+      sync_sujar_progresso();
+      desc_refazer_continuar();
+    }
   }
 }
 
@@ -1057,9 +1029,18 @@ static void aplicar(void) {
       // COPIA ANTES: `ci` aponta para dentro do bloco do catalogo, e
       // desc_tirar_continuar desloca esse bloco (o item seguinte ocupa o
       // lugar). Depois dela `ci->imdb` ja e OUTRO titulo.
+      // Upstream next-up dismissal is local and content-ID scoped. It never
+      // deletes progress/history or hides the show in a tracking provider.
+      if (!strcmp(ci->tipo, "series") && ci->episodio > 0 && ci->progresso == 0) {
+        char id[sizeof ci->imdb]; snprintf(id, sizeof id, "%s", ci->imdb);
+        prog_ocultar_continuar(id);
+        cat_tirar_continuar(id);
+        aberto = 0; pagina = 0;
+        break;
+      }
       TirarRemoto *tr = (TirarRemoto *)calloc(1, sizeof *tr);
       char imdb[sizeof ci->imdb];
-      int temp = ci->temporada, ep = ci->episodio;
+
       char tit[sizeof ci->titulo];
       snprintf(imdb, sizeof imdb, "%s", ci->imdb);
       snprintf(tit, sizeof tit, "%s", ci->titulo);
@@ -1071,9 +1052,12 @@ static void aplicar(void) {
       // curto da 1.4) seguia com a contagem velha: o card era coberto pelo
       // vizinho e o ultimo aparecia repetido ate a proxima republicacao
       // (medido em tests/cwremover.sh; ver tirarDaJanela em catalogo.c).
+      if (!prog_excluir_titulo(imdb)) { free(tr); break; }
       cat_zerar_progresso(atual);
-      desc_tirar_continuar(imdb, temp, ep);
-      prog_ocultar_continuar(imdb);   // em disco; volta com episodio novo (progresso.c)
+      // Intent is already durable; avoid queuing the same title twice.
+      prog_marcar_removido(imdb);
+      cat_tirar_continuar(imdb);
+      // Unfinished playback is deleted, not added to next-up dismissals.
       // AS TRES FONTES, e nao so a local — issue #22.
       //
       // A fileira de retomada e a fusao do registro local, do /sync/playback
@@ -1089,8 +1073,8 @@ static void aplicar(void) {
       // paused_at velho, e a remocao vence (prog_removido_vence).
       if (tr) {
         snprintf(tr->imdb, sizeof tr->imdb, "%s", imdb);
-        prog_chave(tr->chave, sizeof tr->chave, imdb, temp, ep);
-        tr->ocultar = 1;   // so o "Tirar de Continuar assistindo" explicito esconde
+        prog_chave(tr->chave, sizeof tr->chave, imdb, 0, 0);
+        tr->ocultar = 0;   // progress removal is not provider-level show hiding
         tirarRemotoEmFio(tr);   // sem fio: desiste (log), nunca no quadro
       }
       // O Simkl tambem guarda o pausado (issue #110). Ja sai em fio proprio;

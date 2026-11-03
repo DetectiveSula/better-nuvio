@@ -15,9 +15,16 @@ static char *arquivo;
 static int   perfil = 1;
 static long long agora = 1757000000000LL;
 
-char *dados_ler(const char *n) { (void)n; return arquivo ? strdup(arquivo) : NULL; }
-int   dados_gravar(const char *n, const char *c) { (void)n; free(arquivo); arquivo = strdup(c); return 1; }
-int   dados_apagar(const char *n) { (void)n; free(arquivo); arquivo = NULL; return 1; }
+static char *deleteFile, *dismissFile;
+static int failDeleteWrite;
+static char **fileFor(const char *n) {
+  if (!strcmp(n, "progresso-deletes.txt")) return &deleteFile;
+  if (!strcmp(n, "cwoculto.txt")) return &dismissFile;
+  return &arquivo;
+}
+char *dados_ler(const char *n) { char *s = *fileFor(n); return s ? strdup(s) : NULL; }
+int dados_gravar(const char *n, const char *c) { if (failDeleteWrite && !strcmp(n, "progresso-deletes.txt")) return 0; char **f = fileFor(n); free(*f); *f = strdup(c); return !!*f; }
+int dados_apagar(const char *n) { char **f = fileFor(n); free(*f); *f = NULL; return 1; }
 const char *dados_cliente_id(void) { return "cliente-teste-0001"; }
 int   perfis_ativo(void) { return perfil; }
 uint64_t perfis_sessao_geracao(void) { return 0; }
@@ -36,7 +43,7 @@ char *sessao_rpc(const char *funcao, const char *corpo, int *status) {
   chamadas++;
   if (duranteRpc) duranteRpc();
   if (status) *status = proximoStatus;
-  return strdup(proximaResposta);
+  return proximaResposta ? strdup(proximaResposta) : NULL;
 }
 char *nuvem_rpc_com(const char *fn, const char *corpo, const char *jwt, int *st) {
   (void)jwt;
@@ -66,7 +73,9 @@ void cat_aplicar_progresso(int i, double pos, double dur, int t, int e) {
 }
 
 static void zerar(void) {
+  failDeleteWrite = 0;
   free(arquivo); arquivo = NULL;
+  free(deleteFile); deleteFile = NULL; free(dismissFile); dismissFile = NULL;
   prog_invalidar();
   syncprog_esquecer();
   chamadas = 0; proximoStatus = 200; proximaResposta = "[]";
@@ -94,7 +103,7 @@ static void pushNoFormatoDoWeb(void) {
   assert(prog_gravar_local("tt5550000", 0, 0, 10, 30, -1));          // dur < 60s: nao vai
   assert(prog_pendentes(r, 8) == 3);
 
-  assert(syncprog_empurrar() == 2);
+  assert(syncprog_empurrar() == 3);
   assert(chamadas == 1 && !strcmp(ultimaFuncao, "sync_push_watch_progress"));
   assert(tem("\"p_profile_id\":1"));
   assert(tem("\"p_origin_client_id\":\"cliente-teste-0001\""));
@@ -113,9 +122,9 @@ static void pushNoFormatoDoWeb(void) {
   assert(tem("\"progress_key\":\"tt7654321\""));
   // O antigo formato NAO aparece.
   assert(!tem("tt1234567:4:9"));
-  assert(!tem("tt5550000"));
+  assert(tem("tt5550000"));
   // 2xx: as duas enviadas deixam de ser pendentes; a curta continua.
-  assert(prog_pendentes(r, 8) == 1 && !strcmp(r[0].chave, "tt5550000"));
+  assert(prog_pendentes(r, 8) == 0);
   // Sem pendentes que valham, nao ha pedido.
   chamadas = 0;
   assert(syncprog_empurrar() == 0 && chamadas == 0);
@@ -288,6 +297,141 @@ static void pullDoPerfilAnteriorNaoSeMistura(void) {
   puts("ok  pull do perfil anterior e descartado depois da troca de perfil");
 }
 
+static void deleteSurvivesRestartAndSync(void) {
+  zerar(); perfil = 1; agora++;
+  assert(prog_gravar_local("tt1234567", 1, 1, 20, 600, 1));
+  assert(prog_gravar_local("tt1234567", 1, 2, 30, 600, 1));
+  perfil = 2;
+  assert(prog_gravar_local("tt1234567", 1, 1, 40, 600, 1));
+  perfil = 1;
+  char *preDeleteDisk = strdup(arquivo);
+  assert(prog_excluir_titulo("tt1234567:1:2"));
+  free(arquivo); arquivo = preDeleteDisk; // crash after journal, before progress file replacement
+  ProgDelete ds[8]; assert(prog_deletes(ds, 8, 1) == 3);
+  prog_invalidar(); // process restart, same persisted files
+  assert(prog_deletes(ds, 8, 1) == 3);
+  assert(!porChave("tt1234567_s1e1").chave[0]);
+  proximaResposta = "[{\"content_id\":\"tt1234567\",\"season\":1,\"episode\":1,\"position\":20000,\"duration\":600000,\"last_watched\":1999999999999}]";
+  assert(syncprog_puxar() == 1 && syncprog_aplicar(NULL) == 0);
+  proximoStatus = 500;
+  assert(syncprog_empurrar() == -1 && prog_deletes(ds, 8, 1) == 3);
+  proximoStatus = 200;
+  assert(syncprog_empurrar() == 0 && prog_deletes(ds, 8, 1) == 0);
+  prog_invalidar(); assert(!porChave("tt1234567_s1e1").chave[0]);
+  assert(!strcmp(ultimaFuncao, "sync_delete_watch_progress"));
+  assert(tem("p_origin_client_id"));
+  perfil = 2; assert(porChave("tt1234567_s1e1").posSeg == 40);
+  perfil = 1;
+  puts("ok  title deletion covers all episodes, persists, blocks echoes, retries, isolates profiles");
+}
+static void intentionalPlaybackCancelsOnlyItsDelete(void) {
+  zerar(); perfil = 1; agora++;
+  assert(prog_gravar_local("tt1234567", 1, 1, 20, 600, 1));
+  assert(prog_excluir_titulo("tt1234567"));
+  ProgDelete old[4]; int n = prog_deletes(old, 4, 1); assert(n == 2);
+  agora++;
+  assert(prog_gravar_local("tt1234567", 1, 1, 50, 600, 1));
+  for (int i = 0; i < n; i++) if (!strcmp(old[i].chave, "tt1234567_s1e1")) assert(!prog_delete_atual(&old[i]));
+  assert(syncprog_empurrar() == 1);
+  assert(!strcmp(ultimaFuncao, "sync_push_watch_progress") && tem("50000"));
+  puts("ok  intentional playback cancels its delete, remaining deletes precede push");
+}
+static void failedCancellationCannotDeleteNewPlayback(void) {
+  zerar(); perfil = 1; agora++;
+  assert(prog_gravar_local("tt1234567", 1, 1, 20, 600, 1));
+  assert(prog_excluir_titulo("tt1234567"));
+  failDeleteWrite = 1;
+  assert(prog_gravar_local("tt1234567", 1, 1, 20, 600, 1)); // same wall clock, same position
+  prog_invalidar();
+  ProgDelete ds[4]; int n = prog_deletes(ds, 4, 1);
+  assert(n == 1 && !strcmp(ds[0].chave, "tt1234567")); // episode upsert cancelled its old delete durably
+  failDeleteWrite = 0;
+  assert(syncprog_empurrar() == 1 && !strcmp(ultimaFuncao, "sync_push_watch_progress"));
+  prog_invalidar(); assert(prog_deletes(ds, 4, 1) == 0);
+  puts("ok  local mutation generation protects playback across failed delete-journal cancellation and restart");
+}
+static void newPlaybackDuringPull(void) {
+  agora++;
+  assert(prog_gravar_local("tt1234567", 0, 0, 80, 600, 1));
+  // Also exercise the race where the new upsert was acknowledged before apply.
+  const char *keys[] = {"tt1234567"}; prog_marcar_empurrados(keys, 1);
+}
+static void snapshotsAreAuthoritativeButSafe(void) {
+  zerar(); perfil = 1; agora++;
+  assert(prog_gravar_local("tt1234567", 0, 0, 20, 600, 1));
+  const char *keys[] = {"tt1234567"}; prog_marcar_empurrados(keys, 1);
+  proximaResposta = "{}"; assert(syncprog_puxar() == -1);
+  assert(porChave(keys[0]).chave[0]);
+  proximaResposta = "["; assert(syncprog_puxar() == -1);
+  proximaResposta = "[{\"content_id\":\"ttOTHER\" \"position\":20000,\"duration\":600000}]";
+  assert(syncprog_puxar() == -1); // malformed object must never prune other titles
+  proximaResposta = "[{\"content_id\":\"bad\"}]";
+  assert(syncprog_puxar() == 0 && syncprog_aplicar(NULL) == 0);
+  assert(porChave(keys[0]).chave[0]); // invalid rows cannot make an authoritative empty snapshot
+  proximaResposta = "[]"; duranteRpc = newPlaybackDuringPull;
+  assert(syncprog_puxar() == 0 && syncprog_aplicar(NULL) == 0);
+  assert(porChave(keys[0]).posSeg == 80);
+  duranteRpc = NULL;
+  assert(syncprog_puxar() == 0 && syncprog_aplicar(NULL) == 1);
+  assert(!porChave(keys[0]).chave[0]);
+  assert(prog_gravar_local("tt1234567", 0, 0, 40, 600, 1));
+  assert(syncprog_puxar() == 0 && syncprog_aplicar(NULL) == 0);
+  assert(porChave(keys[0]).pendente);
+  puts("ok  valid empty snapshots delete missing synced rows; malformed and concurrent snapshots cannot");
+}
+static void dismissalIsNotATimestampLease(void) {
+  zerar(); perfil = 1; agora++;
+  prog_ocultar_continuar("tt1234567:1:2");
+  prog_invalidar();
+  assert(prog_oculto_vence("tt1234567:2:1", agora + 100000));
+  ProgRegistro r = {0}; strcpy(r.contentId, "tt1234567");
+  r.temporada = 1; r.episodio = 2; r.posSeg = 30; r.durSeg = 600; r.lastWatchedMs = agora + 10000;
+  assert(prog_aplicar_remoto(&r));
+  assert(prog_oculto_vence("tt1234567", agora + 100000));
+  perfil = 2; assert(!prog_oculto_vence("tt1234567", 0)); perfil = 1;
+  agora += 20000;
+  assert(prog_gravar_local("tt1234567", 1, 2, 40, 600, 1));
+  assert(!prog_oculto_vence("tt1234567", 0));
+  for (int i = 0; i < 80; i++) { char id[24]; snprintf(id, sizeof id, "ttDISMISS%d", i); prog_ocultar_continuar(id); }
+  prog_invalidar(); assert(prog_oculto_vence("ttDISMISS0", 0) && prog_oculto_vence("ttDISMISS79", 0));
+  puts("ok  next-up dismissal persists across sync and seed changes; local save clears it; no 64-item eviction");
+}
+static void acknowledgedDeleteInvalidatesInflightPull(void) {
+  zerar(); perfil = 1; agora++;
+  assert(prog_gravar_local("tt1234567", 1, 1, 20, 600, 1));
+  assert(prog_excluir_titulo("tt1234567"));
+  proximaResposta = "[{\"content_id\":\"tt1234567\",\"season\":1,\"episode\":1,\"position\":20000,\"duration\":600000}]";
+  assert(syncprog_puxar() == 1);
+  assert(syncprog_reenviar_deletes() == 2); // ACK races the main-thread mailbox consumption
+  assert(syncprog_aplicar(NULL) == 0 && !porChave("tt1234567_s1e1").chave[0]);
+  puts("ok  a delete ACK cannot release stale progress already in the pull mailbox");
+}
+static void emptySuccessBodiesAreAcknowledged(void) {
+  zerar(); perfil = 1; agora++;
+  assert(prog_gravar_local("tt1234567", 0, 0, 20, 600, 1));
+  proximoStatus = 204; proximaResposta = NULL;
+  assert(syncprog_empurrar() == 1 && !porChave("tt1234567").pendente);
+  assert(prog_excluir_titulo("tt1234567"));
+  assert(syncprog_reenviar_deletes() == 1);
+  ProgDelete ds[2]; assert(prog_deletes(ds, 2, 1) == 0);
+  puts("ok  successful empty 204 responses acknowledge both upserts and deletes");
+}
+static void playbackTimeBeatsServerWriteTime(void) {
+  zerar(); perfil = 1;
+  proximaResposta = "[{\"content_id\":\"tt1234567\",\"position\":20000,\"duration\":600000,\"last_watched\":1757000150000,\"updated_at\":1999999999999}]";
+  assert(syncprog_puxar() == 1 && syncprog_aplicar(NULL) == 1);
+  assert(porChave("tt1234567").lastWatchedMs == 1757000150000LL);
+  assert(prog_concluir_local("ttUNKNOWN", 0, 0));
+  prog_invalidar();
+  assert(porChave("ttUNKNOWN").posSeg == .001 && porChave("ttUNKNOWN").durSeg == .001);
+  assert(syncprog_empurrar() == 1 && tem("\"position\":1") && tem("\"duration\":1"));
+  const char *longId = "provider:abcdefghijklmnopqrstuvwxyz";
+  assert(prog_gravar_local(longId, 2, 3, 10, 600, 1));
+  prog_invalidar();
+  assert(!strcmp(porChave("provider:abcdefghijklmnopqrstuvwxyz_s2e3").contentId, longId));
+  puts("ok  playback timestamp, unknown-duration completion and provider ID persistence match Android");
+}
+
 int main(void) {
   prog_definir_relogio(relogio);
   pushNoFormatoDoWeb();
@@ -298,6 +442,14 @@ int main(void) {
   confirmacaoPreservaEscritaNovaEPerfil();
   pullRecusaNumerosForaDaFaixa();
   pullDoPerfilAnteriorNaoSeMistura();
+  deleteSurvivesRestartAndSync();
+  intentionalPlaybackCancelsOnlyItsDelete();
+  failedCancellationCannotDeleteNewPlayback();
+  snapshotsAreAuthoritativeButSafe();
+  dismissalIsNotATimestampLease();
+  playbackTimeBeatsServerWriteTime();
+  emptySuccessBodiesAreAcknowledged();
+  acknowledgedDeleteInvalidatesInflightPull();
   puts("syncprog: tudo ok");
   return 0;
 }

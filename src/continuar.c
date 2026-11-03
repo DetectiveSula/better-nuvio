@@ -16,70 +16,10 @@
 #include <string.h>
 #include <time.h>
 
-// A lista de episodios do card terminado. O catalogo so recebe episodios
-// quando o titulo e ABERTO (app.c), entao o card do Continuar — uma copia sem
-// lista — ficava para sempre no episodio que acabou. So o card TERMINADO pede
-// (costuma ser um so), e no maximo uma vez a cada 30 s por titulo: sem meta a
-// resposta volta vazia, e pedir a cada quadro so disputaria o fio com o
-// detalhe.
-//
-// UM RELOGIO POR TITULO. Era um so ("ultimo"): com DOIS cards terminados na
-// fileira eles se revezavam no "ultimo", o limite de 30 s nunca valia e os
-// dois pediam de novo a cada resposta — 47 pedidos em ~7 min no registro
-// 25007 (webOS 1.7.4, tt39304754 e tt33044444 alternando).
-#define CW_PEDIDOS 8
-static void pedirEpisodios(int idx, const char *imdb) {
-  static struct { char imdb[64]; time_t quando; } ped[CW_PEDIDOS];
-  time_t agora = time(NULL);
-  int i, vaga = 0;
-  desc_episodios_pendente();
-  if (desc_episodios_carregando(idx)) return;
-  for (i = 0; i < CW_PEDIDOS; i++) {
-    if (!strcmp(ped[i].imdb, imdb)) {
-      if (agora - ped[i].quando < 30) return;
-      vaga = i;
-      break;
-    }
-    if (ped[i].quando < ped[vaga].quando) vaga = i;   // o mais antigo cede a vaga
-  }
-  snprintf(ped[vaga].imdb, sizeof ped[vaga].imdb, "%s", imdb);
-  ped[vaga].quando = agora;
-  printf("[cw] %s terminado sem lista de episodios: pedindo para achar o proximo\n", imdb);
-  desc_episodios(idx, 0);
-}
-
+// Cards carry the actual playable episode. Completed seeds are resolved by
+// discovery before publication, never relabelled only while drawing.
 void continuar_desenhar(const CatItem *ci, GfxRect r, float raio) {
-  CatItem copia;
-  ProxSugestao prox;
-  int idx;
   if (!ci) return;
-  // Episodio ja terminado (ajuste Percentual assistido): o card passa a
-  // anunciar o PROXIMO (prox_seguinte, proximo.h). A decisao mora aqui, e nao
-  // na home, porque so muda o que este card ESCREVE — nenhuma fileira nova,
-  // nenhum poster a mais para decodificar.
-  //
-  // A copia COM episodios, quando ha (cat_indice_titulo): a do card costuma
-  // nao ter lista, e a do detalhe aberto antes tem.
-  idx = cat_indice_titulo(ci->imdb, cat_indice_por_imdb(ci->imdb));
-  if (idx >= 0 && !strcmp(ci->tipo, "series") && ci->temporada > 0 &&
-      ci->episodio > 0 && ci->progresso >= ajustes_cw_concluido()) {
-    if (cat_n_episodios(idx) <= 0) pedirEpisodios(idx, ci->imdb);
-    else if (prox_seguinte(ci, cat_episodio(idx, 0), cat_n_episodios(idx),
-                           ajustes_cw_concluido(),
-                           (long long)time(NULL) * 1000LL, &prox)) {
-      copia = *ci;
-      copia.temporada = prox.temporada;
-      copia.episodio  = prox.episodio;
-      snprintf(copia.nomeEpisodio, sizeof copia.nomeEpisodio, "%s", prox.nome);
-      // O selo de "restam N min" e da duracao do episodio ANTERIOR e a barra e
-      // do progresso dele; nenhum dos dois descreve um episodio que nao comecou.
-      copia.restanteMin = 0;
-      copia.progresso = 0;
-      ci = &copia;
-    }
-  }
-
-  {
   float esc = r.w / NV_DESTAQUE_W;
   float pad = NV_CW_PAD * esc, largura = r.w - pad * 2;
   // Veu so na base (gfx.h, gfx_veu_base): o nome e o episodio ficam embaixo;
@@ -171,6 +111,5 @@ void continuar_desenhar(const CatItem *ci, GfxRect r, float raio) {
     if (preenchido < h) preenchido = h;
     GfxRect barra = {r.x + pad, r.y + r.h - NV_CW_BAR_BOTTOM*esc - h, preenchido, h};
     gfx_cor(barra, .5f, .96f, .965f, .98f, .98f);
-  }
   }
 }

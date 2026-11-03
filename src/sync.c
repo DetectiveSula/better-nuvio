@@ -943,23 +943,19 @@ static int puxarVistos(int perfil, char **destino) {
              perfil, pagina, CONTALIB_VISTO_PAGINA);
     c = puxarBlob("sync_pull_watched_items", corpo, pagina > 1 ? &pag : &acum);
     if (c < 0) {
-      if (pagina == 1) return -1;
-      printf("[sync] vistos: pagina %d falhou; ficando com %d linhas\n", pagina, total);
-      break;
+      free(acum); free(pag); return -1;
     }
+    if (!js_array_valido(pagina > 1 ? pag : acum)) { free(acum); free(pag); return -1; }
     if (pagina > 1 && pag) {
       if (!colarArray(&acum, pag)) {
-        printf("[sync] vistos: pagina %d nao colou; ficando com %d linhas\n", pagina, total);
-        free(pag); pag = NULL;
-        break;
+        printf("[sync] vistos: pagina %d invalida; snapshot descartado (%d linhas)\n", pagina, total);
+        free(acum); free(pag); return -1;
       }
       free(pag); pag = NULL;
     }
     total += c;
     if (c < CONTALIB_VISTO_PAGINA) break;
-    if (pagina == CONTALIB_VISTO_PAGINAS)
-      printf("[sync] vistos: %d linhas baixadas e a conta tem mais; o resto nao "
-             "foi pedido\n", total);
+    if (pagina == CONTALIB_VISTO_PAGINAS) { free(acum); return -1; }
   }
   free(pag);
   if (destino) { free(*destino); *destino = acum; }
@@ -1010,7 +1006,7 @@ static int guardarOuCopia(const char *sup, int perfil, int n, char **blob) {
   }
   // Collections can be a collections_json object rather than a root array.
   // Preserve that successful response for offline use, including count zero.
-  if ((n > 0 || (n == 0 && !strcmp(sup, CC_COLECOES))) &&
+  if ((n > 0 || (n == 0 && (!strcmp(sup, CC_COLECOES) || (!strcmp(sup, CC_VISTOS) && js_array_valido(*blob))))) &&
       *blob && ultimoSt >= 200 && ultimoSt < 300 &&
       (strcmp(sup, CC_COLECOES) || col_resposta_valida(*blob)))
     contacache_gravar_geracao(sup, perfil, usuarioDoCiclo, *blob,
@@ -1296,6 +1292,16 @@ typedef struct {
 } ProgressoSync;
 
 static int progressoPuxar(int perfil, NvPerfilSessao sessao) {
+  if (!nv_perfil_sessao_travar(sessao)) return -1;
+  if (perfil != perfis_ativo()) { nv_perfil_sessao_destravar(); return -1; }
+  int source = ajustes_cw_fonte();
+  int providerOwnsProgress = ((source == AJ_CWF_AMBAS || source == AJ_CWF_TRAKT) && trakt_ativo()) ||
+      (source == AJ_CWF_SIMKL && simkl_ativo());
+  if (providerOwnsProgress) {
+    syncprog_esquecer(); // active provider owns progress projection, as in Android
+    nv_perfil_sessao_destravar(); return 0;
+  }
+  nv_perfil_sessao_destravar();
   int n = syncprog_puxar_sessao(perfil, sessao);
   if (n >= 0 && nv_perfil_sessao_travar(sessao)) {
     if (perfilDoCicloAtual()) PRONTO_PUBLICAR(progressoCedo, 1);
@@ -1440,6 +1446,7 @@ static void *rodar(void *u) {
   // nascem pendentes sem ninguem ter marcado nada.
   // "Enviar histórico para a conta Nuvio" desligado neste perfil: o progresso
   // nao sobe (o pull continua, a conta pode ter coisa de outra TV).
+  syncprog_reenviar_deletes(); // explicit removals retry even when history uploads are disabled
   if (!ajustes_hist_conta()) sujoProgresso = 0;
   else if (syncprog_empurrar_sessao(perfilDoCiclo, sessaoDoCiclo) >= 0) sujoProgresso = 0;
   // O JORNAL DA CONTA (vistos e Salvos marcados nesta TV): DEPOIS do pull,
@@ -1828,13 +1835,13 @@ void sync_passo(unsigned agoraMs) {
   // ela nao existia: era a mesma queixa do issue por outro angulo.
   if (temVistosBlob && vistosBlob) {
     unsigned rev = contalib_vistos_revisao();
-    if (contalib_ler_vistos(vistosBlob) > 0 && !trakt_ativo())
+    if (contalib_ler_vistos(vistosBlob) >= 0 && !trakt_ativo())
       contalib_aplicar_vistos();
     free(vistosBlob); vistosBlob = NULL; temVistosBlob = 0;
     // O "a seguir" da conta (issue #199) sai destes vistos. Vistos novos e
     // sem Trakt/Simkl no ar: a fileira e refeita, senao so o ciclo seguinte
     // (10 min) os veria.
-    if (rev != contalib_vistos_revisao() && !trakt_ativo() && !simkl_ativo())
+    if (rev != contalib_vistos_revisao() && (ajustes_cw_fonte() == AJ_CWF_CONTA || (!trakt_ativo() && !simkl_ativo())))
       desc_refazer_continuar();
   }
   // O JORNAL DA CONTA POR CIMA do que veio: o que a pessoa marcou/desmarcou

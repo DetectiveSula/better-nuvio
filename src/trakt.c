@@ -1,4 +1,5 @@
 #include "trakt.h"
+#include <math.h>
 #include "perfisessao.h"
 #include "vistoep.h"
 #include "ajustes.h"
@@ -631,8 +632,32 @@ static char *cinemetaDaSerie(const char *tipo, const char *serie) {
   return c;
 }
 
+// Distinguish a conclusive metadata response from a transport failure. This
+// mirrors Android's conclusive next-up reconciliation without caching failure
+// as "series complete". Entries are scoped to the profile session.
+static pthread_mutex_t cwMetaTrava = PTHREAD_MUTEX_INITIALIZER;
+static struct { char id[64]; uint64_t sessao; int resolved; } cwMeta[64];
+static unsigned cwMetaNext;
+static void cwMetaEstado(const char *id, uint64_t sessao, int resolved) {
+  pthread_mutex_lock(&cwMetaTrava);
+  unsigned i;
+  for (i = 0; i < 64; i++) if (cwMeta[i].sessao == sessao && !strcmp(cwMeta[i].id, id)) break;
+  if (i == 64) i = cwMetaNext++ % 64;
+  snprintf(cwMeta[i].id, sizeof cwMeta[i].id, "%s", id);
+  cwMeta[i].sessao = sessao; cwMeta[i].resolved = resolved;
+  pthread_mutex_unlock(&cwMetaTrava);
+}
+int trakt_cw_meta_resolvido(const char *id) {
+  int found = 0; uint64_t sessao = nv_perfil_sessao_ler();
+  pthread_mutex_lock(&cwMetaTrava);
+  for (unsigned i = 0; i < 64; i++)
+    if (cwMeta[i].sessao == sessao && !strcmp(cwMeta[i].id, id)) { found = cwMeta[i].resolved; break; }
+  pthread_mutex_unlock(&cwMetaTrava); return found;
+}
+
 static int enfeitar(CatItem *d, const char *tipo, uint64_t sessao) {
   if (!nv_perfil_sessao_atual(sessao)) return 0;
+  cwMetaEstado(d->imdb, sessao, 0);
   char url[300], *corpo;
   char serie[24];
   const char *dp;
@@ -701,6 +726,7 @@ static int enfeitar(CatItem *d, const char *tipo, uint64_t sessao) {
     if (proximo && !confirmado) return 0;
     return d->poster[0] != 0;
   }
+  cwMetaEstado(d->imdb, sessao, 1);
   // O Trakt identifica o episodio por TVDB, enquanto addons de anime podem
   // expor outra numeracao de temporada. A ficha ja foi obtida pelo caminho
   // normal; casar o ID aqui nao acrescenta rede e deixa o card pedir a fonte
@@ -1799,10 +1825,11 @@ int trakt_continuar(CatItem *saida, int max) {
       int serie = ep && ep < f;
       char imdb[24] = "";
       memset(d, 0, sizeof *d);
-      d->progresso = (int)js_num(p, f, "progress", 0.0);
-      if (d->progresso < ajustes_cw_minimo() || d->progresso >= ajustes_cw_concluido()) {
+      double pct = js_num(p, f, "progress", 0.0);
+      if (!isfinite(pct) || pct <= 0 || pct >= 90) {
         p = js_prox(f); continue;
       }
+      d->progresso = pct < 1 ? 1 : (int)pct;
       // QUANDO foi pausado. E o unico dado desta resposta que permite comparar
       // um item do Trakt com um do progresso da conta Nuvio: sem ele a fileira
       // "Continuar assistindo" tinha de chutar a ordem entre as duas fontes.

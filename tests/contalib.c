@@ -297,8 +297,13 @@ int main(void) {
   confere("o filme foi marcado", histTem("tt0111161"), 1);
   confere("a serie sem episodio tambem", histTem("tt0944947"), 1);
   confere("os episodios NAO marcaram a serie inteira", histTem("tt0903747"), 0);
-  confere("vistos vazio tambem e recusado", contalib_ler_vistos("[]"), -1);
-  confere("e os guardados sobrevivem", contalib_n_vistos(), 4);
+  confere("complete empty history is authoritative, as in Android", contalib_ler_vistos("[]"), 0);
+  confere("removed watched-history seeds do not survive sync", contalib_n_vistos(), 0);
+  confere("restore history fixture", contalib_ler_vistos(VISTOS), 4);
+  confere("malformed history is not authoritative", contalib_ler_vistos("["), -1);
+  confere("invalid history rows preserve the last good snapshot", contalib_ler_vistos("[{}]"), -1);
+  confere("nonfinite watched-history coordinate is rejected", contalib_ler_vistos("[{\"content_id\":\"ttBAD\",\"season\":1e999}]"), -1);
+  confere("last good history remains after malformed pull", contalib_n_vistos(), 4);
 
   printf("\nsair da conta apaga tudo:\n");
   contalib_esquecer();

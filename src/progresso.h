@@ -44,12 +44,14 @@ typedef struct {
   // sincronizado: 1 tocando, 0 por seek, -1 desconhecido (linha antiga ou vinda
   // do servidor) — vale como 1, como antes da #205. Descreve ESTA posSeg.
   int  tocou;
+  long long mutation; // local-only operation generation; never sent to Nuvio
 } ProgRegistro;
 
-// A confirmed local checkpoint remains resumable even early in a long movie.
+// Android Home accepts positive playback, even early in a long movie.
 static inline int prog_inicio_continuar(const ProgRegistro *r, int pctMinimo) {
-  return r->posSeg * 100.0 >= r->durSeg * pctMinimo ||
-         (pctMinimo == 1 && r->tocou == 1 && r->posSeg >= 30.0);
+  (void)pctMinimo;
+  // Android Home admits any positive real playback below completion.
+  return r->posSeg > 0 && r->durSeg > 0;
 }
 
 // Chave no formato do web (toProgressKey): "%s_s%de%d" quando temporada >= 0 e
@@ -65,8 +67,8 @@ void prog_content_id(char *dst, unsigned n, const char *imdb, int *temporada, in
 int  prog_ler(ProgRegistro *saida, int max);
 
 // O item mais recente AINDA NAO TERMINADO de um perfil qualquer (ativo ou nao),
-// pelos mesmos limites de "Continuar assistindo": duracao >= 60 s, entre 1% e
-// `pctConcluido` (ajustes_cw_concluido), e fora do que a pessoa tirou da fileira
+// pelos limites do Android Home: progresso positivo abaixo de 90%,
+// e fora do que a pessoa tirou da fileira
 // (prog_marcar_removido). Le so o disco/cache local. 1 se achou.
 int  prog_continuar_de_perfil(int perfil, int pctConcluido, ProgRegistro *saida);
 // Idem, com o piso do Continuar (ajustes_cw_minimo, #326); o de cima e este com piso 1.
@@ -99,7 +101,7 @@ int  prog_aplicar_remoto(const ProgRegistro *r);
 int  prog_pendentes(ProgRegistro *saida, int max);
 
 // Depois de um push com sucesso: somente os registros enviados que ainda
-// tem o mesmo instante, posicao e duracao deixam de ser pendentes. O perfil
+// tem o mesmo instante, posicao, duracao e geracao local deixam de ser pendentes. O perfil
 // vem da copia enviada, pois pode ter mudado durante a viagem.
 void prog_confirmar_empurrados(const ProgRegistro *enviados, int n);
 
@@ -108,6 +110,19 @@ void prog_confirmar_empurrados(const ProgRegistro *enviados, int n);
 void prog_marcar_empurrados(const char *const *chaves, int n);
 
 void prog_remover(const char *chave);
+// Explicit mark-completed, including Android's 1 ms unknown-duration marker.
+int prog_concluir_local(const char *id, int temporada, int episodio);
+
+// Android parity: durable progress deletes, separate from next-up dismissal.
+// Tokens identify the exact mutation acknowledged by an in-flight request.
+typedef struct { int perfil; char chave[48]; long long token; } ProgDelete;
+int prog_excluir_titulo(const char *id);
+int prog_deletes(ProgDelete *out, int max, int perfil);
+int prog_delete_atual(const ProgDelete *d);
+void prog_delete_confirmar(const ProgDelete *d);
+// Only a complete, validated snapshot may remove absent, unchanged local rows.
+int prog_reconciliar_snapshot(const ProgRegistro *antes, int nAntes,
+                             const ProgRegistro *remotos, int nRemotos);
 
 // "TIRADO DE CONTINUAR ASSISTINDO EM <instante>". prog_remover so APAGA a linha
 // local, e o Trakt/Simkl/conta so esquecem o item quando o DELETE deles chega:
@@ -125,16 +140,12 @@ void prog_marcar_removido(const char *imdb);
 // a remocao. 0 quando nunca foi removido.
 int  prog_removido_vence(const char *imdb, long long instanteMs);
 
-// "OCULTO DE CONTINUAR ASSISTINDO", em disco (#203): vale para o item "A seguir",
-// que nao tem ponto de retomada para apagar. Mesma regra de instante de
-// prog_removido_vence, mas SOBREVIVE ao reinicio. Volta quando ha episodio NOVO.
+// Persistent, per-profile title dismissal for NEXT UP only, matching Android.
+// Sync timestamps and seed changes never release it. A local save/completion
+// clears it explicitly. Legacy timestamp arguments remain ABI-compatible.
 void prog_ocultar_continuar(const char *imdb);
-// 1 quando `imdb` (obra, perfil ativo) continua oculto para um item de instante
-// `instanteMs`. Nao altera nada.
-int  prog_oculto_vence(const char *imdb, long long instanteMs);
-// Se a obra estava oculta e `instanteMs` a desfaz (episodio novo), apaga o
-// registro e devolve 1: quem chama desfaz tambem o oculto do Trakt.
-int  prog_oculto_soltar(const char *imdb, long long instanteMs);
+int prog_oculto_vence(const char *imdb, long long instanteMs);
+int prog_oculto_soltar(const char *imdb, long long instanteMs);
 
 // Apaga o arquivo inteiro, todos os perfis. Chamar no logout, junto de
 // sync_esquecer_usuario.
@@ -143,6 +154,7 @@ void prog_esquecer_tudo(void);
 // Descarta o cache; a proxima leitura relê o disco. Chamar quando dados_dir()
 // ou o perfil ativo mudam.
 void prog_invalidar(void);
+unsigned long long prog_versao_local(void);
 
 // Relogio, em ms desde a epoca. Substituivel para teste.
 long long prog_agora_ms(void);

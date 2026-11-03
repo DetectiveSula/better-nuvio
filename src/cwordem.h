@@ -9,22 +9,14 @@
 // ajustes_cw_ordem(): as tres escolhas davam a mesma fileira. "Separar
 // futuros" prometia uma fileira de proximos episodios que nunca aparecia.
 //
-// A REGRA E A DO WEB (NuvioWeb 0.3.38, js/ui/screens/home/homeScreen.js):
-//   sortContinueWatchingItemsForDisplay (linha 1771) e
-//   partitionContinueWatchingRows (linha 1817).
-// La um item e "futuro" quando e NEXT UP (isNextUp) e o episodio ainda nao foi
-// ao ar (hasAired === false, que resolveNextUpReleaseState tira da data de
-// estreia: `released <= Date.now()`; sem data, conta como exibido).
-//
-//   default          -> most recently watched first, across both groups (#610).
-//   streaming_style  -> pausados, sugestoes exibidas e futuros, nessa ordem;
-//                       recencia dentro de cada grupo.
-//   split_upcoming   -> a mesma lista, mas os futuros saem da fileira e viram
-//                       uma fileira propria logo abaixo ("Proximos", a
-//                       `upcoming_section` do web, titulo upcoming_section_title).
-//
-// Repare que streaming_style e split_upcoming dao a MESMA ordem: o web monta
-// [...main, ...upcoming] nos dois. A diferenca e so onde os futuros aparecem.
+// Reference: supplied Nuvio Android HomeViewModelContinueWatching.kt,
+// sortContinueWatchingItems and splitUpcomingItems. Input is already sorted by
+// lastWatched (resume) or sortTimestamp (next-up, including release alerts).
+// default: preserve that order across both groups.
+// streaming_style: released items in that order, then upcoming by release date.
+// split_upcoming: main row preserves recency; upcoming gets its own row sorted
+// by release date. Unknown release dates count as aired, as in Android.
+// The native 40-card memory budget remains separate from ordering policy.
 //
 // O QUE O NATIVO CHAMA DE "A SEGUIR" e o item de progresso 0 que o Trakt (pelo
 // historico) ou o Simkl (next_to_watch) mandou como proximo episodio —
@@ -58,27 +50,13 @@ typedef struct {
 // Sem data conta como exibido, como o `hasAired !== false` do web.
 int cwo_futuro(const CwoItem *it, long long agoraMs);
 
-// Reordena `perm` (indices em `v`, que chegam na ordem por instante) segundo o
-// modo. Pausados primeiro; dentro de cada grupo a recencia recebida se mantem.
-// Nos modos streaming/separar os futuros ficam no fim. Devolve quantos itens
-// ficaram na parte principal — o resto, de perm[principal] em diante, sao os
-// futuros. No modo padrao o retorno e `n`.
+// Reorder already-recency-sorted input. Released progress and next-up retain
+// their shared order; future next-up follows by release date in nondefault
+// modes. Return the number of cards in the main (non-upcoming) partition.
 int cwo_ordenar(const CwoItem *v, int n, int modo, long long agoraMs, int *perm);
 
-// O CORTE DA FILEIRA com futuros. `principal` exibidos e `nFut` futuros, na
-// ordem de cwo_ordenar, cabem em `max` lugares: devolve em *nPrincipal quantos
-// exibidos ficam (os primeiros) e em *nFuturos quantos futuros (os de estreia
-// mais proxima).
-//
-// POR QUE HA RESERVA (Brothers, C9, 24/09): o corte era um slice simples da
-// lista [exibidos..., futuros...], e a fileira do dono tem 22 candidatos para
-// 12 lugares — os futuros, sempre no fim, eram SEMPRE os cortados. "Separar
-// futuros" e "Estilo streaming" nao mudavam nada: o episodio que ainda nao foi
-// ao ar sumia da tela em vez de ir para o fim ou para "Proximos episodios". O
-// web nao tem esse problema porque o slice dele e de 300 (CW_MAX_VISIBLE_ITEMS);
-// aqui a fileira e de 40 (CONT_MAX), entao os futuros ganham ate um terco dela (minimo 1).
-// Lugar que os futuros nao usam fica com os exibidos, e vice-versa.
-// montarContinuar reserva os pausados ANTES de chamar com os lugares restantes.
+// Keep the prefix of the ordered main/upcoming partitions within max cards.
+// No quota may displace a more highly ranked card with an upcoming episode.
 void cwo_corte(int principal, int nFut, int max, int *nPrincipal, int *nFuturos);
 
 // --- Datas de estreia (escritas por trakt.c, lidas por descoberta.c) --------

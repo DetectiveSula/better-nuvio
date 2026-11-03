@@ -103,7 +103,8 @@ typedef struct {
 // (`if (!remoteItems.length && localItems.length) return localItems;`).
 int contalib_ler_biblioteca(const char *json);
 
-// Idem para `sync_pull_watched_items`, com a mesma recusa de lista vazia.
+// Watched history uses complete validated snapshots, including an empty array.
+// Failed, malformed or oversized snapshots preserve the previous history.
 int contalib_ler_vistos(const char *json);
 
 int contalib_n(void);

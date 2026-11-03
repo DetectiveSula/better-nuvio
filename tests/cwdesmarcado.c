@@ -1,3 +1,4 @@
+// Android parity: local unmark gestures do not invent a rewind of a provider next-up ID.
 // O "A SEGUIR" DO CONTINUAR ASSISTINDO RESPEITA O QUE A PESSOA DESMARCOU
 // (Silo, tt14688458, TCL, 08/10/2026). O remoto (Trakt / Simkl / conta Nuvio)
 // diz "ultimo visto T2E10", mas T2E7..T2E10 foram desmarcados NESTA TV: o
@@ -39,6 +40,7 @@ int ajustes_idioma(void) { return 0; }
 const char *i18n(const char *s)         { return s; }
 const char *idioma_mes_data(int mes, const char *nomePt) { (void)mes; return nomePt; }
 const char *dados_dir(void)             { return ""; }
+char *dados_caminho(char *out, unsigned tam, const char *n) { snprintf(out, tam, "/tmp/nuvio-unmark-parity-%s", n); return out; }
 const char *sessao_usuario(void)        { return ""; }
 int         perfis_ativo(void)          { return 1; }
 char *dados_ler(const char *nome)                 { (void)nome; return NULL; }
@@ -130,6 +132,7 @@ int   arte_reserva_registrar(const char *url, const char *imdb, int poster) {
   (void)url; (void)imdb; (void)poster; return 1; }
 
 static int modoTeste = CWO_PADRAO, naoExibidosTeste = 1;
+int ajustes_cw_dias(void) { return 0; } // fixtures use synthetic historical timestamps
 int ajustes_cw_ordem(void)                { return modoTeste; }
 static int concluidoTeste = 90;         // Percentual assistido; 90 de fabrica
 int ajustes_cw_minimo(void) { return 1; }
@@ -233,9 +236,9 @@ int main(void) {
   limpar(); desmarcar(7, 10);
   tkId = SILO ":3:1"; tkMs = relogioNao - DIA;      // visto ANTES do gesto
   c = primeiro();
-  confere("trakt: remoto T3E1, T2E7..E10 desmarcados -> T2E7", eh(c, 2, 7));
-  confere("trakt: o id do card acompanha (tt:2:7)", c && !strcmp(c->imdb, SILO ":2:7"));
-  confere("trakt: o nome do episodio do remoto nao fica no card", c && !c->nomeEpisodio[0]);
+  confere("Android: provider next-up stays T3E1 after local unmark", eh(c, 3, 1));
+  confere("Android: playable ID stays the provider episode", c && !strcmp(c->imdb, SILO ":3:1"));
+  confere("Android: episode metadata stays attached to its identity", c && strstr(c->nomeEpisodio, SILO ":3:1"));
   proximoTeste = 0;
   confere("trakt: o ajustado ainda e 'a seguir' (Proximo no Continuar desligado o tira)",
           primeiro() == NULL);
@@ -243,11 +246,11 @@ int main(void) {
 
   limpar(); desmarcar(7, 10);
   tkId = SILO ":2:11"; tkMs = relogioNao - DIA;
-  confere("trakt: remoto T2E11 -> T2E7", eh(primeiro(), 2, 7));
+  confere("Android: no native T2E11 -> T2E7 rewind", eh(primeiro(), 2, 11));
 
   limpar(); desmarcar(9, 10);
   tkId = SILO ":3:1"; tkMs = relogioNao - DIA;
-  confere("trakt: so E9 e E10 desmarcados -> T2E9", eh(primeiro(), 2, 9));
+  confere("Android: no native rewind for a smaller unmarked range", eh(primeiro(), 3, 1));
 
   limpar();
   tkId = SILO ":3:1"; tkMs = relogioNao - DIA;
@@ -261,7 +264,7 @@ int main(void) {
   confere("trakt: visto remoto genuinamente mais novo (1 h) -> nao ajusta", eh(primeiro(), 3, 1));
   limpar(); desmarcar(7, 10);
   tkId = SILO ":3:1"; tkMs = relogioNao + 60LL * 1000;     // dentro da folga de 2 min
-  confere("trakt: visto 1 min depois (folga de 2 min) -> ainda ajusta", eh(primeiro(), 2, 7));
+  confere("Android: no custom two-minute rewind tolerance", eh(primeiro(), 3, 1));
 
   limpar(); desmarcar(7, 10);
   tkId = SILO ":2:10"; tkProg = 40; tkMs = relogioNao - DIA;
@@ -273,7 +276,7 @@ int main(void) {
   fonteTeste = 3; simklAtivoTeste = 1; traktAtivoTeste = 0;
   limpar(); desmarcar(7, 10);
   skId = SILO ":3:1"; skMs = relogioNao - DIA;
-  confere("simkl: remoto T3E1, T2E7..E10 desmarcados -> T2E7", eh(primeiro(), 2, 7));
+  confere("Android: Simkl episode remains provider-owned after local unmark", eh(primeiro(), 3, 1));
   limpar();
   skId = SILO ":3:1"; skMs = relogioNao - DIA;
   confere("simkl: SEM desmarcacao -> T3E1 como veio", eh(primeiro(), 3, 1));
@@ -285,7 +288,7 @@ int main(void) {
   fonteTeste = 1; simklAtivoTeste = 0; traktAtivoTeste = 0;;
   limpar(); desmarcar(7, 10);
   ctId = SILO; ctT = 2; ctE = 11; ctMs = relogioNao - DIA;
-  confere("conta: semente T2E11, T2E7..E10 desmarcados -> T2E7", eh(primeiro(), 2, 7));
+  confere("Android: account next-up follows its selected watched-history seed", eh(primeiro(), 2, 11));
   limpar();
   ctId = SILO; ctT = 2; ctE = 11; ctMs = relogioNao - DIA;
   confere("conta: SEM desmarcacao -> T2E11 como veio", eh(primeiro(), 2, 11));

@@ -725,6 +725,7 @@ typedef enum {
   // Hero logo and information size (0 Normal, 1 Grande, 2 Muito grande). LOCAL, append-only.
   AJ_HERO_TAMANHO,
   AJ_HERO_PASTA_DETALHES, // Device-local folder hero details, append-only; on by default.
+  AJ_CW_DIAS, // Android Trakt days cap: 0 All, otherwise 7..365; per-profile.
   AJ_N
 } OpcaoId;
 _Static_assert(DEBRID_RD == 0 && DEBRID_TB == 1 && DEBRID_PM == 2 && DEBRID_AD == 3,
@@ -1047,7 +1048,7 @@ static const char *V_CW[]        = { "Card", "Largo", "P\xc3\xb4ster" };
 // tests/simkl_cw.sh confere rotulo por indice. O rotulo era "Ambas"
 // (ambas o que? #312); agora "Todas as fontes": o Simkl so entra com vinculo
 // feito, e a ajuda da linha diz a regra inteira. O valor gravado nao mudou.
-static const char *V_CW_FONTE[]  = { "Todas as fontes", "Conta Nuvio", "Trakt", "Simkl" };
+static const char *V_CW_FONTE[]  = { "Automático", "Conta Nuvio", "Trakt", "Simkl" };
 // `continueWatchingSortMode`, normalizado em normalizeContinueWatchingSortMode.
 static const char *V_CW_ORDEM[]  = { "Padrão", "Estilo streaming", "Separar futuros" };
 // Itens por fileira da Home (#163). O INDICE e o que fica gravado; o numero de
@@ -1863,6 +1864,7 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Suavizar degradês", V_DEGRADES, 3),
   ESC("Tamanho do destaque", V_HERO_TAMANHO, 3),       // local: heroSizeLocal
   ESC("Mostrar detalhes da pasta no destaque", V_LIGA, 2),
+  NUM("Dias no Continuar do Trakt (0 = todos)", 0, 365, 1, " dias"),
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -2196,6 +2198,7 @@ static const char *CHAVE[] = {
   "suavizarDegradesLocal",
   "heroSizeLocal",
   "heroFolderDetailsLocal",
+  "traktContinueWatchingDaysCapLocal",
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -2962,7 +2965,7 @@ int ajustes_fonte_precarregar(void) {
   return 0;
 #endif
 }
-int ajustes_cw_proximo(void) { return lig(AJ_CW_PROXIMO); }
+int ajustes_cw_proximo(void) { return 1; }
 int ajustes_busca_nuvio(void) { int v = valor[AJ_BUSCA_NUVIO]; return v < 0 || v > 2 ? 0 : v; }
 int ajustes_busca_origem(void) { return lig(AJ_BUSCA_ORIGEM); }
 int ajustes_fonte_escopo(void)      { int v = valor[AJ_FONTE_ESCOPO]; return v < 0 || v > 2 ? 0 : v; }
@@ -3827,15 +3830,9 @@ float ajustes_espaco_fileiras(void) { return ajustes_espaco_fator(valor[AJ_ESPAC
 float ajustes_espaco_titulos(void)  { return ajustes_espaco_fator(valor[AJ_ESPACO_TITULOS]); }
 // O piso do Continuar assistindo, em %. Fora da faixa do NUM (arquivo torto) volta para
 // dentro dela; nunca passa do Percentual assistido, que fecharia a faixa.
-int ajustes_cw_minimo(void) {
-  int v = valor[AJ_CW_MINIMO], c = ajustes_cw_concluido();
-  v = v < 1 ? 1 : v > 20 ? 20 : v;
-  return v >= c ? c - 1 : v;
-}
-int ajustes_cw_concluido(void) {
-  int v = valor[AJ_CW_CONCLUIDO];
-  return v < 70 ? 70 : v > 98 ? 98 : v;   // a faixa do NUM, se o arquivo vier torto
-}
+int ajustes_cw_dias(void) { int n = valor[AJ_CW_DIAS]; return n == 0 ? 0 : n < 7 ? 7 : n > 365 ? 365 : n; }
+int ajustes_cw_minimo(void) { return 1; }
+int ajustes_cw_concluido(void) { return 90; }
 
 int ajustes_desfocar_nao_assistidos(void) { return lig(AJ_DET_BLUR_NAO_VISTOS); }
 int ajustes_botao_trailer(void)       { return lig(AJ_DET_TRAILER); }
@@ -4110,6 +4107,7 @@ static const char *const *literaisDe(int op) {
 }
 
 static int limita(int op, int v) {
+  if (op == AJ_CW_DIAS && v > 0 && v < 7) return 7;
   const Opcao *o = &OPCOES[op];
   if (o->tipo == OP_ESCOLHA) return (v >= 0 && v < nValores(op)) ? v : valor[op];
   if (o->tipo == OP_NUMERO)  return v < o->min ? o->min : (v > o->max ? o->max : v);
@@ -5993,6 +5991,7 @@ static int somenteDesteAparelho(int op) {
     case AJ_FIL_LIMITE:     /* fileiras da home: por aparelho (fileirasui-p<N>.txt) */
     case AJ_FIL_ORDEM:
     case AJ_CW_FONTE:
+    case AJ_CW_DIAS:
     case AJ_CW_PROXIMO:
     case AJ_BORDA_FOCO:
     case AJ_FONTE_UI:
@@ -7539,6 +7538,8 @@ static int maisContar(int sec, char *resumo, size_t n) {
 // Item desenhado agora? Opcao de grupo fechado nao e — nem desenhada, nem
 // alcancada pelo cima/baixo.
 static int visivel(int i) {
+  if (i >= 0 && i < AJ_N_TELA && TELA[i].tipo == IT_OPC &&
+      (TELA[i].op == AJ_CW_CONCLUIDO || TELA[i].op == AJ_CW_MINIMO || TELA[i].op == AJ_CW_PROXIMO)) return 0;
   if (i >= 0 && i < AJ_N_TELA && TELA[i].tipo == IT_OPC && TELA[i].op == AJ_FALHA_ADDON_LIMITE) return 0;
   if (i >= 0 && i < AJ_N_TELA && TELA[i].tipo == IT_OPC &&
       TELA[i].op == AJ_ICONE_APP && !apoiador_ativo()) return 0;
@@ -7869,7 +7870,7 @@ static const char *ajudaOpcaoBase(int op) {
     // --- Continuar assistindo
     case AJ_CW_LIGADO: return "A fileira de retomada, com o que você deixou pela metade e o próximo episódio das séries que acompanha.";
     case AJ_CW_OK: return "O que o OK faz no card da retomada: toca de onde parou, ou abre a página do título. Segurar OK abre o menu nos dois casos.";
-    case AJ_CW_FONTE: return "De onde vem a fileira de retomada. \"Todas as fontes\" usa a conta Nuvio e completa com o Trakt e, se estiver vinculado, com o Simkl.";
+    case AJ_CW_FONTE: return "De onde vem a fileira de retomada. \"Automático\" usa Trakt quando conectado e a conta Nuvio nos demais casos, como no Nuvio Android.";
     case AJ_CW_ESTILO: return "A forma do card da retomada: quadrado com a arte, deitado largo, ou o cartaz em pé.";
     case AJ_CW_THUMB: return "Usa a imagem do próprio episódio no card, em vez da arte da série.";
     case AJ_CW_BLUR_PROX: case AJ_DET_BLUR_NAO_VISTOS: return "Oculta detalhes da miniatura para evitar spoilers de episódios ainda não assistidos.";
@@ -8932,6 +8933,7 @@ static int passoAdiante(int op, int dir) {
     int v = valor[op] - o->min;
     return limita(op, o->min + (dir > 0 ? v / o->passo + 1 : (v + o->passo - 1) / o->passo - 1) * o->passo);
   }
+  if (op == AJ_CW_DIAS && dir < 0 && valor[op] == 7) return 0;
   if (o->tipo == OP_NUMERO) return limita(op, valor[op] + dir * o->passo);
   { int n = nValores(op), v = op == AJ_SALVOS_DEST ? ajustes_fonte_biblioteca() : valor[op], k;
     // Ao girar, pula o que esta TV nao suporta (o 512 numa TV de 160 so enganaria).
@@ -9658,7 +9660,7 @@ static int definirValorDireto(int op, int novo) {
   if (op == AJ_ICONE_APP) iconeapp_aplicar_plataforma();
   if (op == AJ_CW_FONTE || op == AJ_SALVOS_DEST || op == AJ_SOCIAL) desc_repetir();
   // A fonte decide so esta fileira: refaz-la, alem do ciclo completo (#244).
-  if (op == AJ_CW_FONTE || op == AJ_CW_PROXIMO) desc_refazer_continuar();
+  if (op == AJ_CW_FONTE || op == AJ_CW_PROXIMO || op == AJ_CW_DIAS) desc_refazer_continuar();
   if (op == AJ_CW_ORDEM || op == AJ_CW_NAO_EXIBIDOS || op == AJ_CW_CONCLUIDO || op == AJ_CW_MINIMO || op == AJ_CW_RETIDO_TAMBEM)
     desc_refazer_continuar();
   if (op == AJ_TEX_MB) tex_definir_orcamento_mb(ajustes_tex_mb());
@@ -10777,7 +10779,7 @@ static AjPreview familiaPreviaOpcao(int op) {
       return AJPV_HOME;
     case AJ_CW_LIGADO: case AJ_CW_OK: case AJ_CW_FONTE:
     case AJ_CW_ESTILO: case AJ_CW_THUMB: case AJ_CW_BLUR_PROX:
-    case AJ_CW_FURTHEST: case AJ_CW_NAO_EXIBIDOS: case AJ_CW_ORDEM: case AJ_CW_RETIDO_TAMBEM:
+    case AJ_CW_FURTHEST: case AJ_CW_NAO_EXIBIDOS: case AJ_CW_ORDEM: case AJ_CW_RETIDO_TAMBEM: case AJ_CW_DIAS:
       return AJPV_CONTINUAR;
     case AJ_EP_TAMANHO:
     case AJ_DET_BLUR_NAO_VISTOS: case AJ_DET_TRAILER: case AJ_DET_META_EXT:

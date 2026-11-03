@@ -1,4 +1,5 @@
 #include "js.h"
+#include <ctype.h>
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
@@ -367,4 +368,56 @@ int js_texto_raiz_em(const char *ini, const char *fim, const char *chave,
     else if (*p == '}' || *p == ']') { prof--; if (prof <= 0) break; }
   }
   return 0;
+}
+
+// The shared lightweight field reader is intentionally permissive. Snapshot
+// deletion requires a *complete JSON document*, not a successfully read prefix.
+static void jsonEspaco(const char **p) { while (**p == ' ' || **p == '\t' || **p == '\n' || **p == '\r') (*p)++; }
+static int jsonValor(const char **p, int depth);
+static int jsonTexto(const char **p) {
+  if (*(*p)++ != '"') return 0;
+  while (**p && **p != '"') {
+    unsigned char c = (unsigned char)*(*p)++;
+    if (c < 32) return 0;
+    if (c == '\\') {
+      c = (unsigned char)*(*p)++;
+      if (!c) return 0;
+      if (c == 'u') {
+        for (int i = 0; i < 4; i++) { if (!isxdigit((unsigned char)**p)) return 0; (*p)++; }
+      } else if (!strchr("\"\\/bfnrt", c)) return 0;
+    }
+  }
+  if (**p != '"') return 0;
+  (*p)++; return 1;
+}
+static int jsonValor(const char **p, int depth) {
+  if (depth > 64) return 0;
+  jsonEspaco(p);
+  if (**p == '"') return jsonTexto(p);
+  if (**p == '[' || **p == '{') {
+    int obj = **p == '{'; char end = obj ? '}' : ']'; (*p)++; jsonEspaco(p);
+    if (**p == end) { (*p)++; return 1; }
+    for (;;) {
+      if (obj) { if (**p != '"' || !jsonTexto(p)) return 0; jsonEspaco(p); if (**p != ':') return 0; (*p)++; }
+      if (!jsonValor(p, depth + 1)) return 0;
+      jsonEspaco(p);
+      if (**p == end) { (*p)++; return 1; }
+      if (**p != ',') return 0;
+      (*p)++; jsonEspaco(p);
+    }
+  }
+  const char *words[] = {"true", "false", "null"};
+  for (int i = 0; i < 3; i++) { size_t n = strlen(words[i]); if (!strncmp(*p, words[i], n)) { *p += n; return 1; } }
+  const char *n = *p;
+  if (**p == '-') (*p)++;
+  if (**p == '0') (*p)++;
+  else { if (**p < '1' || **p > '9') return 0; while (isdigit((unsigned char)**p)) (*p)++; }
+  if (**p == '.') { (*p)++; if (!isdigit((unsigned char)**p)) return 0; while (isdigit((unsigned char)**p)) (*p)++; }
+  if (**p == 'e' || **p == 'E') { (*p)++; if (**p == '+' || **p == '-') (*p)++; if (!isdigit((unsigned char)**p)) return 0; while (isdigit((unsigned char)**p)) (*p)++; }
+  return *p > n;
+}
+int js_array_valido(const char *s) {
+  if (!s) return 0;
+  jsonEspaco(&s); if (*s != '[' || !jsonValor(&s, 0)) return 0;
+  jsonEspaco(&s); return !*s;
 }

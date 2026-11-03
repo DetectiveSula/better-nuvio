@@ -29,6 +29,9 @@ Uint32 SDL_GetTicks(void) { return 0; }
 #include <assert.h>
 #include <stdio.h>
 #include <unistd.h>
+#define NV_TEST_SESSAO_PROPRIA
+#define NV_TEST_ADDONS_PROPRIOS
+#define NV_TEST_SOCIAL_PROPRIO
 #include "jellyfin_stub.inc"
 
 // --- DUBLES: so fazem descoberta.c linkar (o conjunto de tests/cateps.c) -----
@@ -37,6 +40,7 @@ int ajustes_idioma(void) { return 0; }
 const char *i18n(const char *s)         { return s; }
 const char *idioma_mes_data(int mes, const char *nomePt) { (void)mes; return nomePt; }
 const char *dados_dir(void)             { return ""; }
+char *dados_caminho(char *out, unsigned tam, const char *n) { snprintf(out, tam, "/tmp/nuvio-parity-%s", n); return out; }
 const char *sessao_usuario(void)        { return ""; }
 int         perfis_ativo(void)          { return 1; }
 // A conta nao esta ligada nesta fixture: sessao fixa 0 (tests/stub_perfisessao.h).
@@ -152,6 +156,8 @@ int   arte_reserva_registrar(const char *url, const char *imdb, int poster) {
   (void)url; (void)imdb; (void)poster; return 1; }
 
 static int modoTeste = CWO_PADRAO, naoExibidosTeste = 1;
+static int daysTeste;
+int ajustes_cw_dias(void) { return daysTeste; } // 0 All for synthetic historical fixtures
 int ajustes_cw_ordem(void)                { return modoTeste; }
 static int concluidoTeste = 90;         // Percentual assistido; 90 de fabrica
 int   ajustes_cw_concluido(void)           { return concluidoTeste; }
@@ -280,8 +286,10 @@ int contalib_sementes_a_seguir(ContaSemente *s, int m, int a) {
   }
   return i;
 }
-static int consultadas;
+static int consultadas, metaFailTeste;
+int trakt_cw_meta_resolvido(const char *id) { (void)id; return !metaFailTeste; }
 int trakt_enfeitar_lote(CatItem *s, int n) {
+  if (metaFailTeste) return 0;
 #ifdef CWLOCAL_ENFEITAR
   return cwlocal_enfeitar_lote(s, n);
 #else
@@ -304,7 +312,8 @@ int trakt_enfeitar_lote(CatItem *s, int n) {
 #endif
 }
 
-static long long relogioProg(void) { return 1000000; }
+static long long progClock = 1000000;
+static long long relogioProg(void) { return progClock; }
 
 static void conferir(const char *rotulo, const char *const *esperado, int n) {
   CatItem lote[CONT_MAX];
@@ -320,302 +329,65 @@ static void conferir(const char *rotulo, const char *const *esperado, int n) {
 int main(void) {
   prog_definir_relogio(relogioProg);
   agoraMs = (long long)time(NULL) * 1000LL;
-
-  { static const char *const e[] = { "ttA:1:3", "tt1", "ttB:2:1", "ttC:1:8", "tt2" };
-    modoTeste = CWO_PADRAO;
-    conferir("padrao", e, 5);
-    assert(!cwo_e_futuro("ttA:1:3") && !cwo_e_futuro("ttB:2:1"));
-    puts("ok  padrao: pelo instante, nenhum futuro publicado"); }
-
-  { static const char *const e[] = { "tt1", "tt2", "ttC:1:8", "ttA:1:3", "ttB:2:1" };
-    modoTeste = CWO_STREAMING;
-    conferir("streaming", e, 5);
-    puts("ok  streaming: pausados primeiro, futuros no fim por recencia");
-    modoTeste = CWO_SEPARAR;
-    conferir("separar", e, 5);
-    assert(cwo_e_futuro("ttA:1:3") && cwo_e_futuro("ttB:2:1"));
-    assert(!cwo_e_futuro("ttC:1:8") && !cwo_e_futuro("tt1") && !cwo_e_futuro("tt2"));
-    puts("ok  separar: mesma ordem, futuros publicados para a home"); }
-
-  // Fileira curta: os futuros e que ficam de fora do corte.
-  { CatItem lote[CONT_MAX];
-    int nc = montarContinuar(lote, 4);
-    assert(nc == 4 && !strcmp(lote[3].imdb, "ttA:1:3"));
-    assert(cwo_e_futuro("ttA:1:3") && !cwo_e_futuro("ttB:2:1"));
-    puts("ok  fileira curta: o futuro fica com o lugar reservado, o outro sai"); }
-
-  { static const char *const e[] = { "tt1", "tt2", "ttC:1:8" };
-    naoExibidosTeste = 0;
-    conferir("nao exibidos desligado", e, 3);
-    assert(!cwo_e_futuro("ttA:1:3") && !cwo_e_futuro("ttB:2:1"));
-    modoTeste = CWO_PADRAO;
-    { static const char *const recent[] = { "tt1", "ttC:1:8", "tt2" };
-      conferir("nao exibidos desligado (padrao)", recent, 3); }
-    puts("ok  nao exibidos desligado: futuros saem em qualquer modo"); }
-
-  // --- BROTHERS: fileira cheia, o futuro e o mais recente ---------------------
-  { int k;
-    tabela = BROTHERS;
-    nTabela = (int)(sizeof BROTHERS / sizeof *BROTHERS);
-    for (k = 0; k < 12; k++) {
-      ProgRegistro r;
-      memset(&r, 0, sizeof r);
-      if (k == 0) {             // Brothers S1E4 na conta, MAIS VELHO que o S1E6 do Trakt
-        snprintf(r.contentId, sizeof r.contentId, "tt6773088");
-        r.temporada = 1; r.episodio = 4;
-      } else snprintf(r.contentId, sizeof r.contentId, "tt70000%02d", k);
-      r.posSeg = 1200; r.durSeg = 3000;       // 40%
-      r.lastWatchedMs = 800000 - k * 100;
-      assert(prog_aplicar_remoto(&r));
-    }
-    naoExibidosTeste = 1;
-
-    // Sugestao mais recente sem prova nao elimina S1E4 pausado.
-    { CatItem lote[CONT_MAX];
-      int nc;
-      modoTeste = CWO_PADRAO;
-      nc = montarContinuar(lote, CONT_MAX);
-      assert(nc == 21 && !strcmp(lote[0].imdb, "tt6773088:1:4"));
-      assert(!cwo_e_futuro("tt6773088:1:6"));
-      puts("ok  brothers padrao: S1E4 pausado fica; com teto 40 cabem os 9 remotos"); }
-
-    // Separar futuros tambem preserva os 12 pausados.
-    { CatItem lote[CONT_MAX];
-      int nc;
-      modoTeste = CWO_SEPARAR;
-      nc = montarContinuar(lote, CONT_MAX);
-      assert(nc == 21);
-      assert(!strcmp(lote[0].imdb, "tt6773088:1:4") && lote[0].progresso == 40);
-      assert(!cwo_e_futuro("tt6773088:1:6"));
-      assert(!cwo_e_futuro("tt32260680:1:2") && !cwo_e_futuro("tt31937954:1:3"));
-      puts("ok  brothers separar: S1E4 preservado, S1E6 ainda fora (mesma obra)");
-      modoTeste = CWO_STREAMING;
-      nc = montarContinuar(lote, CONT_MAX);
-      assert(nc == 21 && !strcmp(lote[0].imdb, "tt6773088:1:4"));
-      puts("ok  brothers streaming: S1E4 preservado"); }
-
-    // showUnairedNextUp desligado: o pausado de Brothers continua.
-    { CatItem lote[CONT_MAX];
-      int nc;
-      naoExibidosTeste = 0;
-      modoTeste = CWO_SEPARAR;
-      nc = montarContinuar(lote, CONT_MAX);
-      assert(nc == 21);
-      assert(!strcmp(lote[0].imdb, "tt6773088:1:4"));
-      assert(!cwo_e_futuro("tt6773088:1:6"));
-      puts("ok  brothers nao exibidos desligado: S1E6 fora (mesma obra)"); }
-
-    // Sugestao sem data tambem nao vence progresso sem prova.
-    { CatItem lote[CONT_MAX];
-      int nc;
-      naoExibidosTeste = 1;
-      modoTeste = CWO_SEPARAR;
-      semDataPrimeiro = 1;
-      nc = montarContinuar(lote, CONT_MAX);
-      semDataPrimeiro = 0;
-      assert(nc == 21 && !strcmp(lote[0].imdb, "tt6773088:1:4"));
-      assert(!cwo_e_futuro("tt6773088:1:6"));
-      puts("ok  brothers sem data: pausado preservado"); }
-    naoExibidosTeste = 1; }
-
-  // Mesma obra: sugestao so vence com conclusao confirmada posterior.
-  { CatItem pausa = {0}, proxima = {0};
-    snprintf(pausa.imdb, sizeof pausa.imdb, "ttProof:1:3");
-    pausa.temporada = 1; pausa.episodio = 3; pausa.progresso = 62; pausa.retomadoMs = 100;
-    proxima = pausa; proxima.progresso = 0; proxima.retomadoMs = 300;
-    snprintf(proxima.imdb, sizeof proxima.imdb, "ttProof:1:4"); proxima.episodio = 4;
-    assert(!candidatoVence(&proxima, &pausa));
-    concluidoIdTeste = pausa.imdb; concluidoMsTeste = 90;
-    assert(!candidatoVence(&proxima, &pausa));
-    concluidoMsTeste = 200; assert(candidatoVence(&proxima, &pausa));
-    pausa.retomadoMs = 250; assert(!candidatoVence(&proxima, &pausa));
-    concluidoIdTeste = NULL;
-    puts("ok mesma obra: conclusao anterior/ausente nao vence; posterior vence");
-  }
-
-  // #151: TRAKT SEM RESPOSTA NAO ESVAZIA A FILEIRA. Com a fonte so no Trakt a
-  // lista nova sai vazia; o que estava publicado fica. Com o Trakt de volta e
-  // de verdade vazio, a fileira esvazia (o guarda e so para "nao sei").
-  { CatItem lote[CONT_MAX], velho[3];
-    int nc, k;
-    memset(velho, 0, sizeof velho);
-    for (k = 0; k < 3; k++) {
-      snprintf(velho[k].imdb, sizeof velho[k].imdb, "ttV%d", k);
-      snprintf(velho[k].tipo, sizeof velho[k].tipo, "movie");
-    }
-    cat_trocar_continuar(velho, 3);
-    fonteTeste = 2;
-    traktFalhouTeste = 1;
-    nc = montarContinuar(lote, CONT_MAX);
-    assert(nc == 3 && !strcmp(lote[0].imdb, "ttV0") && !strcmp(lote[2].imdb, "ttV2"));
-    puts("ok  trakt sem resposta: a fileira publicada fica (#151)");
-    traktFalhouTeste = 0;
-    nTabela = 0;
-    nc = montarContinuar(lote, CONT_MAX);
-    assert(nc == 0);
-    puts("ok  trakt respondeu vazio: a fileira esvazia");
-    fonteTeste = 0; }
-
-  // PAUSADO VELHO DO TRAKT x EPISODIO MAIS NOVO VISTO AQUI. ttP: o Trakt ainda
-  // tem o S1E3 pausado (40%), mas esta TV terminou o S1E5 depois: o item vira
-  // a semente S1E5 terminada (o card passa ao proximo), e o S1E3 nao volta.
-  // ttQ: o Trakt esta ADIANTE (S2E1) do S1E9 visto aqui: fica como veio.
-  { static const Falso NOVO[] = {
-      { "ttP:1:3", 0, 40, 700000, 0 },
-      { "ttQ:2:1", 0, 30, 690000, 0 },
-    };
-    CatItem lote[CONT_MAX];
-    ProgRegistro r;
-    int nc;
-    memset(&r, 0, sizeof r);
-    snprintf(r.contentId, sizeof r.contentId, "ttP");
-    r.temporada = 1; r.episodio = 5; r.posSeg = 3000; r.durSeg = 3000;
-    r.lastWatchedMs = 950000;
-    assert(prog_aplicar_remoto(&r));
-    snprintf(r.contentId, sizeof r.contentId, "ttQ");
-    r.temporada = 1; r.episodio = 9; r.lastWatchedMs = 940000;
-    assert(prog_aplicar_remoto(&r));
-    tabela = NOVO;
-    nTabela = 2;
-    fonteTeste = 2;
-    modoTeste = CWO_PADRAO;
-    nc = montarContinuar(lote, CONT_MAX);
-    assert(nc == 2);
-    assert(!strcmp(lote[1].imdb, "ttP:1:5") && lote[1].temporada == 1 &&
-           lote[1].episodio == 5 && lote[1].progresso == 100);
-    assert(!strcmp(lote[0].imdb, "ttQ:2:1") && lote[0].progresso == 30);
-    puts("ok  trakt velho: S1E3 nao volta por cima do S1E5 visto aqui; o adiante fica");
-    fonteTeste = 0; nTabela = 0; }
-
-  // PERCENTUAL ASSISTIDO: 92% conta como assistido com o padrao (90) e como em
-  // andamento com 95.
-  { CatItem lote[CONT_MAX];
-    ProgRegistro r;
-    int nc, k, achou;
-    memset(&r, 0, sizeof r);
-    snprintf(r.contentId, sizeof r.contentId, "ttR");
-    r.temporada = 1; r.episodio = 1; r.posSeg = 2760; r.durSeg = 3000;  // 92%
-    r.lastWatchedMs = 960000;
-    assert(prog_aplicar_remoto(&r));
-    fonteTeste = 1;
-    nc = montarContinuar(lote, CONT_MAX);
-    for (k = 0, achou = 0; k < nc; k++) if (!strncmp(lote[k].imdb, "ttR", 3)) achou = 1;
-    assert(!achou);
-    concluidoTeste = 95;
-    nc = montarContinuar(lote, CONT_MAX);
-    assert(nc > 0 && !strcmp(lote[0].imdb, "ttR:1:1") && lote[0].progresso == 92);
-    puts("ok  percentual assistido: 92% sai com 90 e fica com 95");
-    concluidoTeste = 90; fonteTeste = 0; }
-
-  // #199: SO A CONTA, SEM TRAKT NEM SIMKL. As 12 pausadas da conta (Brothers
-  // S1E4 e tt7000001..11) continuam no disco; os vistos da conta semeiam o "a
-  // seguir". Com 12 pausados, nenhuma sugestao pode tomar o lugar deles.
-  { CatItem lote[CONT_MAX];
-    int nc, k;
-    fonteTeste = 1;               // AJ_CWF_CONTA
-    traktAtivoTeste = 0;
-    contaSementesTeste = 1;
-    modoTeste = CWO_PADRAO;
-    naoExibidosTeste = 1;
-    consultadas = 0;
-    nc = montarContinuar(lote, CONT_MAX);
-    assert(nc == 14);
-    for (k = 0; k < 12; k++) assert(lote[k].progresso == 40);
-    // A semente da serie ja pausada nem vai ao Cinemeta; a que acabou vai e sai.
-    assert(consultadas == 3);
-    for (k = 0; k < nc; k++)
-      assert(strncmp(lote[k].imdb, "ttX", 3) && strcmp(lote[k].imdb, "tt7000001:1:9"));
-    assert(cwo_conta_a_seguir("ttT:4:10") && cwo_conta_a_seguir("ttM:1:4"));
-    assert(!cwo_e_futuro("ttT:4:10"));
-    puts("ok  #199 conta: a seguir dos vistos entra, pausado e serie acabada ficam fora");
-
-    // Ordenacao "Separar futuros": nenhuma reserva expulsa pausados.
-    modoTeste = CWO_SEPARAR;
-    nc = montarContinuar(lote, CONT_MAX);
-    assert(nc == 14 && cwo_e_futuro("ttT:4:10"));
-    for (k = 0; k < 12; k++) assert(lote[k].progresso == 40);
-    puts("ok  #199 conta separar: 12 pausados preservados, sementes no fim");
-
-    // "Mostrar nao exibidos" desligado: o futuro sai, o que ja foi ao ar fica.
-    naoExibidosTeste = 0;
-    modoTeste = CWO_PADRAO;
-    nc = montarContinuar(lote, CONT_MAX);
-    assert(nc == 13 && lote[0].progresso == 40);
-    for (k = 0; k < nc; k++) assert(strncmp(lote[k].imdb, "ttT", 3));
-    puts("ok  #199 conta nao exibidos desligado: so o nao lancado sai");
-    naoExibidosTeste = 1;
-
-    // Fonte AMBAS com o Trakt no ar: o "a seguir" e dele, a conta nao semeia.
-    traktAtivoTeste = 1;
-    fonteTeste = 0;
-    consultadas = 0;
-    nc = montarContinuar(lote, CONT_MAX);
-    assert(consultadas == 0 && !cwo_conta_a_seguir("ttT:4:10"));
-    for (k = 0; k < nc; k++) assert(strncmp(lote[k].imdb, "ttT", 3) && strncmp(lote[k].imdb, "ttM", 3));
-    puts("ok  #199 AMBAS com Trakt no ar: os vistos da conta nao semeiam");
-
-    // FONTE = CONTA com o Trakt no ar: a conta e quem da o "a seguir".
-    fonteTeste = 1;
-    contaBaseMs = agoraMs - 3600LL * 1000;
-    consultadas = 0;
-    nc = montarContinuar(lote, CONT_MAX);
-    assert(cwo_conta_a_seguir("ttT:4:10") && cwo_conta_a_seguir("ttM:1:4"));
-    puts("ok  conta + Trakt vinculado: a conta semeia o a seguir");
-
-    // (a) vistos nao puxados / velhos: nenhuma semente.
-    contaSementesTeste = -1;
-    consultadas = 0;
-    nc = montarContinuar(lote, CONT_MAX);
-    assert(consultadas == 0 && !cwo_conta_a_seguir("ttT:4:10") && !cwo_conta_a_seguir("ttM:1:4"));
-    contaSementesTeste = 1;
-    puts("ok  conta sem vistos puxados: nao semeia");
-
-    // (b) outra fonte (Trakt/Simkl/local) ja viu o episodio: nao volta.
-    vistoEmOutraTeste = "ttM:1:4";
-    nc = montarContinuar(lote, CONT_MAX);
-    assert(!cwo_conta_a_seguir("ttM:1:4") && cwo_conta_a_seguir("ttT:4:10"));
-    for (k = 0; k < nc; k++) assert(strcmp(lote[k].imdb, "ttM:1:4"));
-    vistoEmOutraTeste = NULL;
-    puts("ok  conta + Trakt: episodio visto em outra fonte nao volta");
-
-    // (c) serie parada ha 61 dias: nao ressuscita quando ha outra fonte...
-    contaAntigaId = "ttM";
-    nc = montarContinuar(lote, CONT_MAX);
-    assert(!cwo_conta_a_seguir("ttM:1:4") && cwo_conta_a_seguir("ttT:4:10"));
-    // ...mas sozinha (sem Trakt/Simkl) a conta mantem o comportamento da #199.
-    traktAtivoTeste = 0;
-    nc = montarContinuar(lote, CONT_MAX);
-    assert(cwo_conta_a_seguir("ttM:1:4"));
-    contaAntigaId = NULL;
-    traktAtivoTeste = 1;
-    puts("ok  conta + Trakt: serie parada ha 61 dias nao ressuscita");
-    // Com lugares livres, sementes da conta entram apos os pausados.
-    prog_remover("tt7000010"); prog_remover("tt7000011");
-    nc = montarContinuar(lote, CONT_MAX);
-    assert(nc == 12 && !strcmp(lote[10].imdb, "ttT:4:10") &&
-           !strcmp(lote[11].imdb, "ttM:1:4"));
-    for (k = 0; k < 10; k++) assert(lote[k].progresso == 40);
-    puts("ok conta: sugestoes preenchem somente os dois lugares livres");
-    contaBaseMs = 0;
-    contaSementesTeste = 0;
-    fonteTeste = 0; }
-
-  // #205: teto nativo 40 — lista de 30 itens de progresso entrega 30 cards.
-  { static Falso CHEIA[30];
-    CatItem lote[CONT_MAX];
-    int k, nc;
-    for (k = 0; k < 30; k++) {
-      snprintf(CHEIA[k].id, sizeof CHEIA[k].id, "tt90%02d", k);
-      CHEIA[k].seguir = 0; CHEIA[k].prog = 40;
-      CHEIA[k].quando = 900000 - k * 100; CHEIA[k].estreiaDias = 0;
-    }
-    tabela = CHEIA; nTabela = 30;
-    fonteTeste = 2; modoTeste = CWO_PADRAO;
-    nc = montarContinuar(lote, CONT_MAX);
-    assert(nc == 30);
-    assert(!strcmp(lote[0].imdb, "tt9000") && !strcmp(lote[29].imdb, "tt9029"));
-    puts("ok  teto 40: 30 itens de progresso entregam 30 cards (#205)");
-    nTabela = 0; tabela = FALSO; fonteTeste = 0; }
-  puts("cwordem_desc: tudo ok");
+  daysTeste = 0;
+  { const char *e[] = {"ttC:1:8", "ttA:1:3", "tt1", "ttB:2:1", "tt2"};
+    modoTeste = CWO_PADRAO; conferir("Android default: recency across all card types", e, 5); }
+  { const char *e[] = {"ttC:1:8", "tt1", "tt2", "ttB:2:1", "ttA:1:3"};
+    modoTeste = CWO_STREAMING; conferir("Android streaming: released recency, then soonest premiere", e, 5);
+    modoTeste = CWO_SEPARAR; conferir("Android split: same main recency and upcoming premiere order", e, 5); }
+  // Account source does not union unrelated Trakt or Simkl rows.
+  prog_esquecer_tudo(); fonteTeste = AJ_CWF_CONTA; modoTeste = CWO_PADRAO;
+  assert(prog_gravar_local("ttLOCAL", 0, 0, 1, 600, 1));
+  static CatItem lote[CONT_MAX];
+  int n = montarContinuar(lote, CONT_MAX);
+  assert(n == 1 && !strcmp(lote[0].imdb, "ttLOCAL") && lote[0].progresso == 1);
+  // Android home admits positive playback below 2%, but never a completed card.
+  assert(prog_concluir_local("ttLOCAL", 0, 0));
+  assert(montarContinuar(lote, CONT_MAX) == 0);
+  // Local completion seeds the actual next episode before account history echoes.
+  assert(prog_gravar_local("ttSHOW", 1, 1, 20, 600, 1));
+  progClock++;
+  assert(prog_gravar_local("ttSHOW", 1, 2, 600, 600, 1));
+  // A remote completed progress row is not a substitute for account watched
+  // history. Only pending local completion gets an optimistic seed.
+  ProgRegistro remote = {0}; strcpy(remote.contentId, "ttREMOTE");
+  remote.temporada = 1; remote.episodio = 2;
+  remote.posSeg = remote.durSeg = 600; remote.lastWatchedMs = 2000000;
+  assert(prog_aplicar_remoto(&remote));
+  n = montarContinuar(lote, CONT_MAX);
+  assert(n == 1 && !strcmp(lote[0].imdb, "ttSHOW:1:3") && lote[0].progresso == 0);
+  cat_trocar_continuar(lote, n);
+  metaFailTeste = 1;
+  assert(montarContinuar(lote, CONT_MAX) == 1 && !strcmp(lote[0].imdb, "ttSHOW:1:3"));
+  metaFailTeste = 0;
+  prog_ocultar_continuar("ttSHOW");
+  assert(montarContinuar(lote, CONT_MAX) == 0);
+  assert(prog_concluir_local("ttSHOW", 1, 2)); // explicit action clears next-up dismissal
+  assert(!prog_oculto_vence("ttSHOW", 0));
+  // Provider age cap is applied to Trakt only; account has no generic expiry.
+  prog_esquecer_tudo(); fonteTeste = AJ_CWF_TRAKT; daysTeste = 60;
+  assert(montarContinuar(lote, CONT_MAX) == 1 && !strcmp(lote[0].imdb, "ttC:1:8")); // old anchor, but recent release alert survives the cap
+  daysTeste = 0;
+  assert(montarContinuar(lote, CONT_MAX) == 5);
+  fonteTeste = AJ_CWF_CONTA; daysTeste = 60;
+  assert(prog_gravar_local("ttOLD", 0, 0, 40, 600, 1));
+  assert(montarContinuar(lote, CONT_MAX) == 1);
+  // Publication revalidates completion against the latest local state.
+  static CatItem stale[2]; memset(stale, 0, sizeof stale);
+  strcpy(stale[0].imdb, "ttOLD"); strcpy(stale[0].tipo, "movie"); stale[0].progresso = 10;
+  strcpy(stale[1].imdb, "ttNEXT:1:2"); strcpy(stale[1].tipo, "series");
+  stale[1].temporada = 1; stale[1].episodio = 2; stale[1].retomadoMs = progClock;
+  assert(prog_gravar_local("ttNEXT", 1, 1, 600, 600, 1));
+  cat_trocar_continuar(stale, 2);
+  assert(prog_concluir_local("ttOLD", 0, 0));
+  cat_trocar_continuar(stale, 2); // an older worker finishes after completion
+  assert(cat_copiar_fileira("continue_watching", lote, CONT_MAX, NULL) == 1);
+  assert(!strcmp(lote[0].imdb, "ttNEXT:1:2") && lote[0].progresso == 0);
+  // Immediate completion removes its resume card without losing another show's next-up.
+  prog_esquecer_tudo(); cat_trocar_continuar(stale, 2);
+  cat_aplicar_progresso(cat_indice_por_imdb("ttOLD"), 600, 600, 0, 0);
+  assert(cat_copiar_fileira("continue_watching", lote, CONT_MAX, NULL) == 1);
+  assert(!strcmp(lote[0].imdb, "ttNEXT:1:2"));
+  puts("PASS Android CW parity: source selection, ordering, completion, next-up identity, dismissal, age scope, publication race");
   return 0;
 }

@@ -17,24 +17,27 @@ int cwo_ordenar(const CwoItem *v, int n, int modo, long long agoraMs, int *perm)
     for (i = 0; i < n; i++) perm[i] = i;
     return n;
   }
-  for (i = 0; i < n; i++) if (!v[i].aSeguir) perm[w++] = i;
-  for (i = 0; i < n; i++)
-    if (v[i].aSeguir && (modo == CWO_PADRAO || !cwo_futuro(&v[i], agoraMs))) perm[w++] = i;
+  // Android: released progress and next-up share recency order. Future
+  // episodes follow in ascending release date, including SPLIT_UPCOMING.
+  for (i = 0; i < n; i++) if (!cwo_futuro(&v[i], agoraMs)) perm[w++] = i;
   principal = w;
-  if (modo != CWO_PADRAO)
-    for (i = 0; i < n; i++) if (cwo_futuro(&v[i], agoraMs)) perm[w++] = i;
+  for (i = 0; i < n; i++) if (cwo_futuro(&v[i], agoraMs)) {
+    int j = w;
+    while (j > principal && v[perm[j - 1]].estreiaMs > v[i].estreiaMs) {
+      perm[j] = perm[j - 1]; j--;
+    }
+    perm[j] = i; w++;
+  }
   return principal;
 }
 
 void cwo_corte(int principal, int nFut, int max, int *nPrincipal, int *nFuturos) {
-  int reserva, mp, mf;
+  int mp, mf;
   if (principal < 0) principal = 0;
   if (nFut < 0) nFut = 0;
   if (max < 0) max = 0;
-  reserva = max / 3 > 0 ? max / 3 : 1;
-  if (reserva > nFut) reserva = nFut;
-  if (reserva > max) reserva = max;
-  mp = principal < max - reserva ? principal : max - reserva;
+  // Prefix of upstream ordering; no invented quota for future episodes.
+  mp = principal < max ? principal : max;
   mf = nFut < max - mp ? nFut : max - mp;
   if (nPrincipal) *nPrincipal = mp;
   if (nFuturos) *nFuturos = mf;

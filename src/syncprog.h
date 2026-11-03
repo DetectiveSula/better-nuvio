@@ -46,6 +46,7 @@ int syncprog_remocao_capturar(SyncProgRemocao *);
 int syncprog_remover_pedido(const SyncProgRemocao *, const char *chave);
 int syncprog_remover_sessao(const char *chave, int perfil, uint64_t sessao, const char *usuario);
 int  syncprog_remover(const char *chave);
+int syncprog_reenviar_deletes(void);
 void syncprog_esquecer(void);
 
 #endif

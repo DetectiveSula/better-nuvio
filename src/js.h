@@ -102,4 +102,7 @@ int js_texto_raiz(const char *corpo, const char *chave, char *dst, size_t tam);
 int js_texto_raiz_em(const char *ini, const char *fim, const char *chave,
                      char *dst, size_t tam);
 
+// Strict complete-array validation for authoritative snapshot reconciliation.
+int js_array_valido(const char *json);
+
 #endif
