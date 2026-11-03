@@ -158,10 +158,11 @@ int simkl_ler_playback(const char *json, CatItem *dst, long long *ids, int max) 
       snprintf(d->imdb, sizeof d->imdb, "%s", imdb);
       snprintf(d->tipo, sizeof d->tipo, "movie");
     }
-    // `progress` e porcentagem em float (0-100, "45.5"). Os limites de 1% a
-    // 90% sao aplicados em montarContinuar, igual para as tres fontes.
-    if (valorRaiz(p, f, "progress", &vi, &vf)) d->progresso = (int)atof(vi);
-    if (d->progresso < ajustes_cw_minimo() || d->progresso >= ajustes_cw_concluido()) continue;
+    // Android WatchProgress.SIMKL_COMPLETED_THRESHOLD = .80. Preserve
+    // positive sub-percent playback in the integer native card representation.
+    double pct = valorRaiz(p, f, "progress", &vi, &vf) ? atof(vi) : 0;
+    if (!isfinite(pct) || pct <= 0 || pct >= 80) continue;
+    d->progresso = pct < 1 ? 1 : (int)pct;
     if (js_texto_raiz_em(p, f, "paused_at", quando, sizeof quando))
       d->retomadoMs = js_ms_iso(quando);
     if (ids) {

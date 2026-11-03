@@ -31,6 +31,9 @@ static int mesmoTitulo(const char *a, const char *b);
 static ProgRegistro *lerProgresso(int *k);
 static int aplicarProgressoEm(CatItem *v, int m, const ProgRegistro *regs, int k);
 static int removidoVence(const CatItem *c, const void *u);
+static int cwInvalido(const CatItem *c, const void *u);
+static int podarContinuar(int (*teste)(const CatItem *, const void *), const void *u);
+static int aSeguirAdiante(const CatItem *, int, int, long long);
 
 // --- QUEM PODE TROCAR O VETOR ------------------------------------------------
 // Dois publicadores podem se encontrar: o fio da descoberta (cat_definir_tudo)
@@ -1478,6 +1481,7 @@ void cat_apontar_episodio(int indice, int temporada, int episodio) {
 
 static void aplicarUm(int indice, double posSeg, double durSeg, int temporada, int episodio) {
   itens[indice].progresso = (int)(100.0 * posSeg / durSeg);
+  if (posSeg > 0 && itens[indice].progresso == 0) itens[indice].progresso = 1;
   itens[indice].restanteMin = (int)((durSeg - posSeg) / 60.0 + 0.5);
   apontarEpisodio(indice, temporada, episodio);
 }
@@ -1499,7 +1503,7 @@ static int mesmaCopia(int a, int b) { return mesmaCopiaEm(itens, a, b); }
 
 void cat_aplicar_progresso(int indice, double posSeg, double durSeg, int temporada, int episodio) {
   int j;
-  if (durSeg <= 1.0) return;
+  if (durSeg <= 0.0) return;
   CAT_TESTE_ANTES_TRAVA();
   catTravar();
   indice = normalizarIndice(indice);
@@ -1507,9 +1511,11 @@ void cat_aplicar_progresso(int indice, double posSeg, double durSeg, int tempora
   aplicarUm(indice, posSeg, durSeg, temporada, episodio);
   for (j = 0; j < n; j++)
     if (mesmaCopia(indice, j)) {
+      if (aSeguirAdiante(&itens[j], temporada, episodio, itens[indice].retomadoMs)) continue;
       aplicarUm(j, posSeg, durSeg, temporada, episodio);
       itens[j].retomadoMs = itens[indice].retomadoMs;
     }
+  podarContinuar(cwInvalido, NULL);
   mudou();
   pthread_mutex_unlock(&pubTrava);
 }
@@ -1542,6 +1548,7 @@ static void apontarEm(CatItem *v, int i, int temporada, int episodio) {
 }
 static void aplicarUmEm(CatItem *v, int i, double posSeg, double durSeg, int temporada, int episodio) {
   v[i].progresso = (int)(100.0 * posSeg / durSeg);
+  if (posSeg > 0 && v[i].progresso == 0) v[i].progresso = 1;
   v[i].restanteMin = (int)((durSeg - posSeg) / 60.0 + 0.5);
   apontarEm(v, i, temporada, episodio);
 }
@@ -1770,6 +1777,17 @@ static int mesmaObraQue(const CatItem *c, const void *u) {
 static int removidoVence(const CatItem *c, const void *u) {
   (void)u;
   return c->imdb[0] && prog_removido_vence(c->imdb, c->retomadoMs);
+}
+
+static int cwInvalido(const CatItem *c, const void *u) {
+  if (removidoVence(c, u)) return 1;
+  if (c->progresso >= 90) return 1;
+  if (!strcmp(c->tipo, "series") && c->episodio > 0 && c->progresso == 0)
+    return prog_oculto_vence(c->imdb, c->retomadoMs);
+  char key[48]; ProgRegistro r;
+  prog_chave(key, sizeof key, c->imdb, c->temporada, c->episodio);
+  return prog_por_chave(key, &r) && r.durSeg > 0 && r.posSeg / r.durSeg >= .90 &&
+         (r.pendente || r.lastWatchedMs >= c->retomadoMs);
 }
 
 // "TIRAR DE CONTINUAR ASSISTINDO", NA HORA E POR IDENTIDADE.
@@ -2585,7 +2603,7 @@ void cat_definir_tudo(const CatItem *lista, int qtd,
     // manifestos): uma remocao feita nesse meio passaria. Ver a mesma poda em
     // cat_trocar_continuar. As faixas de episodio que ela desloca ja foram
     // zeradas acima.
-    podarContinuar(removidoVence, NULL);
+    podarContinuar(cwInvalido, NULL);
     revisaoSobe(); mudou();
     pthread_mutex_unlock(&pubTrava);
     tTrava = cat_relogio_ms() - tTrava;
@@ -2680,7 +2698,7 @@ void cat_trocar_continuar(const CatItem *lista, int qtd) {
   // mas um fio que montou ANTES da remocao e publica DEPOIS dela passaria o
   // item velho; sob a mesma trava de cat_tirar_continuar, ou a remocao ja
   // marcou (e a poda pega aqui) ou ela vem depois (e tira por imdb).
-  { int podados = podarContinuar(removidoVence, NULL);
+  { int podados = podarContinuar(cwInvalido, NULL);
     qtd -= podados; }
   revisaoSobe(); mudou();
   pthread_mutex_unlock(&pubTrava);

@@ -1,4 +1,6 @@
 #include "contalib.h"
+#include <math.h>
+#include <limits.h>
 #define NV_DUBLE_SESSAO
 #define NV_DUBLE_CONTAPEND
 #include "perfisessao.h"
@@ -296,10 +298,10 @@ int contalib_ler_vistos(const char *json) {
   const char *p;
   int total, k = 0;
 
+  if (!js_array_valido(json)) return -1;
   total = contarLinhas(json);
-  if (total < 1) return nVistos > 0 ? -1 : 0;
-  if (total > CONTALIB_VISTO_MAX) total = CONTALIB_VISTO_MAX;
-  novo = (ContaVisto *)calloc((size_t)total, sizeof *novo);
+  if (total > CONTALIB_VISTO_MAX) return -1; // never replace complete history with a truncated prefix
+  novo = (ContaVisto *)calloc((size_t)(total ? total : 1), sizeof *novo);
   if (!novo) return -1;
 
   for (p = js_raiz_array(json); p && k < total; p = js_prox(js_fim(p))) {
@@ -307,15 +309,24 @@ int contalib_ler_vistos(const char *json) {
     ContaVisto *d = &novo[k];
     char t[24];
     memset(d, 0, sizeof *d);   // mesma razao da leitura de biblioteca
-    if (!js_texto(p, f, "content_id", d->id, sizeof d->id)) continue;
+    if (!js_texto(p, f, "content_id", d->id, sizeof d->id) || !d->id[0]) continue;
     snprintf(d->tipo, sizeof d->tipo, "%s",
              tipoBase(js_texto(p, f, "content_type", t, sizeof t) ? t : NULL));
-    d->temporada = (int)js_num(p, f, "season", 0.0);
-    d->episodio  = (int)js_num(p, f, "episode", 0.0);
+    double coords[2]; const char *names[] = {"season", "episode"}; int valid = 1;
+    for (int ci = 0; ci < 2; ci++) {
+      char raw[8];
+      int absent = !js_tem(p, f, names[ci]) ||
+        (js_bruto(p, f, names[ci], raw, sizeof raw) && !strcmp(raw, "null"));
+      coords[ci] = absent ? 0 : js_num(p, f, names[ci], NAN);
+      if (!isfinite(coords[ci]) || coords[ci] < 0 || coords[ci] > INT_MAX ||
+          (int)coords[ci] != coords[ci]) valid = 0;
+    }
+    if (!valid) continue;
+    d->temporada = (int)coords[0]; d->episodio = (int)coords[1];
     d->vistoMs   = instante(p, f, "watched_at");
     k++;
   }
-  if (k < 1) { free(novo); return nVistos > 0 ? -1 : 0; }
+  if (k != total) { free(novo); return -1; }
   pthread_mutex_lock(&vistosTrava);
   if (k != nVistos || !vistos || memcmp(novo, vistos, sizeof *novo * (size_t)k))
     vistosRev++;

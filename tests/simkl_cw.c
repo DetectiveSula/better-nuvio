@@ -296,6 +296,14 @@ static void leitores(void) {
     assert(simkl_ler_assistindo("{\"shows\":[{\"next_to_watch\":\"S00E06\",\"show\":{\"ids\":{\"imdb\":\"tt12409194\"}}}]}", v, 12) == 1);
     assert(v[0].temporada == 0 && v[0].episodio == 6 && !strcmp(v[0].imdb, "tt12409194:0:6"));
   }
+  {
+    const char *bounds =
+      "[{\"progress\":0.5,\"movie\":{\"ids\":{\"imdb\":\"ttEARLY\"}}},"
+      "{\"progress\":79.9,\"movie\":{\"ids\":{\"imdb\":\"ttPAUSED\"}}},"
+      "{\"progress\":80,\"movie\":{\"ids\":{\"imdb\":\"ttDONE\"}}}]";
+    assert(simkl_ler_playback(bounds, v, ids, 12) == 2);
+    assert(v[0].progresso == 1 && v[1].progresso == 79);
+  }
   OK("#556: Simkl preserva S00 explicito, sem inventar mapeamento TVDB ausente");
 
 

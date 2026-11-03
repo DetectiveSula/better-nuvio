@@ -427,13 +427,14 @@ static int assistidoAmostra;
 static unsigned trailerSessao;
 // Ultima posicao gravada DURANTE a sessao (gravarProgressoParcial); -1 = nenhuma.
 static double parcialPos = -1.0;
+static int progressoConcluidoSessao;
 static int parcialPausa;
 static float parcialRelogio, parcialConta;
 static void identidadeFonteAberta(void);
 static void zerarAssistido(void) {
   eofDesde = -1.0;
   assistidoSeg = 0; assistidoAmostra = 0; trailerSessao = trailer_geracao();
-  parcialPos = -1.0; parcialPausa = 0;
+  parcialPos = -1.0; parcialPausa = 0; progressoConcluidoSessao = 0;
   parcialRelogio = parcialConta = 0;
   snprintf(fonteSessao, sizeof fonteSessao, "%s", comVideo ? video_url_atual() : "");
   identidadeFonteAberta();
@@ -2678,7 +2679,8 @@ static void fecharSessao(int manter, int trocaFonte) {
   int duracaoContradita = cred > 1.0 && cred - duracaoSeg > intro_creditos_janela(duracaoSeg);
   int fimLegacy = player_regra_visto(base, assistidoSeg, posSeg, concluiuAgora(cred), &chegou);
   // A known later ending disproves completion by the reported percentage.
-  int assistiu = !duracaoContradita && scrobble_concluiu(posSeg, duracaoSeg, fimLegacy);
+  int assistiu = !duracaoContradita && scrobble_concluiu(posSeg, duracaoSeg, video_terminou());
+  (void)fimLegacy; // credits alone do not complete progress in Nuvio Android
   // FILME EM PARTES: so a ULTIMA parte conclui, pela regra do proprio
   // arquivo (a minutagem do catalogo e a do filme inteiro). O ponto da parte
   // fica guardado para o Retomar; concluido, sai.
@@ -2691,7 +2693,7 @@ static void fecharSessao(int manter, int trocaFonte) {
       if (video_creditos() <= 1.0)
         duracaoContradita = cred > 1.0 && cred - vd > intro_creditos_janela(vd);
       assistiu = ult && !duracaoContradita &&
-                 (player_regra_concluiu(posSeg, duracaoSeg, cred) || scrobble_concluiu(posSeg, duracaoSeg, 0));
+                 scrobble_concluiu(posSeg, duracaoSeg, video_terminou());
       durG = vd; posG = vp;
       chegou = chegou && assistiu;
       printf("[partes] closing on part %d of %d at %.0f s: movie position %.0f of %.0f s%s\n",
@@ -2699,6 +2701,7 @@ static void fecharSessao(int manter, int trocaFonte) {
       fflush(stdout);
     } }
   // Replacing a source preserves resume position, never completes the title.
+  if (progressoConcluidoSessao) assistiu = chegou = 1;
   if (trocaFonte) assistiu = chegou = 0;
   // O ARQUIVO DO TORBOX ABERTO PELA LISTA (partes.h), filme ou episodio: o
   // ponto dele para o Retomar voltar no mesmo arquivo; concluido, sai.
@@ -2944,6 +2947,7 @@ static void gravarProgressoParcial(int conta, const char *porque) {
       assistidoSeg < PLR_PROVA_MIN_S ||
       (!partesAtiva() && player_duracao_suspeita((double)duracaoSeg, duracaoCatalogo())))
     return;
+  if (progressoConcluidoSessao) return;
   if (parcialPos >= 0.0 && fabs(posSeg - parcialPos) < (conta ? 0.5 : PLR_PARCIAL_LIMIAR_S)) return;
   ia = cat_indice_por_imdb_tipo(ci->imdb, ci->tipo);
   if (ia < 0) {
@@ -2958,7 +2962,19 @@ static void gravarProgressoParcial(int conta, const char *porque) {
   if (cred > 1.0 && cred - duracaoSeg > intro_creditos_janela(duracaoSeg)) chegou = 0;
   { double vp = posSeg, vd = duracaoSeg;
     if (partesVirt(&vp, &vd, NULL)) chegou = 0;   // o visto e so da saida da ultima parte
-    if (!cat_salvar_progresso_ep(ia, vp, vd, epT, epE, chegou)) return; }
+    if (!cat_salvar_progresso_ep(ia, vp, vd, epT, epE, chegou)) return;
+    if (vd > 0 && vp / vd >= .90) {
+      progressoConcluidoSessao = 1;
+      prog_concluir_local(ci->imdb, epT, epE);
+      if (epE > 0 && epT >= 0) {
+        VistoPar par = {(short)epT, (short)epE};
+        visto_episodios(ci->imdb, "series", &par, 1, 1, visto_destinos() & VISTO_CONTA);
+        vistoep_definir(ci->imdb, epT, epE, 1);
+      } else visto_titulo(ci->imdb, ci->tipo, NULL, 0, 1, visto_destinos() & VISTO_CONTA);
+      sync_sujar_progresso();
+      desc_refazer_continuar();
+    }
+  }
   dados_sincronizar_logo();
   if (conta) {
     sync_sujar_progresso();

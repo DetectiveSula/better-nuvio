@@ -28,7 +28,7 @@ static CatItem *porId(CatItem *v, int n, const char *id) {
   assert(0 && "local progress disappeared"); return NULL;
 }
 static void verificar(CatItem *v, int n) {
-  assert(n == 5);
+  assert(n == 7);
   CatItem *c = porId(v, n, "tt101:1:3");
   assert(!strcmp(c->titulo, "IMDb serie salva") && !strcmp(c->origem, "fixture.provider"));
   assert(c->progresso == 40 && c->temporada == 1 && c->episodio == 3 && c->retomadoMs == 1000000);
@@ -37,9 +37,12 @@ static void verificar(CatItem *v, int n) {
   c = porId(v, n, "kitsu:41370:1:5"); assert(!strcmp(c->titulo, "Kitsu salvo") && c->poster[0]);
   assert(!strcmp(c->origem, "fixture.provider"));
   c = porId(v, n, "provider:42"); assert(!strcmp(c->titulo, "Provider salvo") && c->progresso == 40);
+  assert(porId(v, n, "ttStarted")->progresso == 1);
+  assert(porId(v, n, "ttShort")->progresso == 33);
   c = porId(v, n, "provider:99"); assert(!strcmp(c->titulo, "Filme") && !c->poster[0]);
 }
 int main(void) {
+  fonteTeste = AJ_CWF_CONTA; // source selection is explicit in Android parity
   static CatItem cache[6], lote[12];
   const char *ids[] = {"tt101:1:1", "tmdb:t101:2:1", "kitsu:41370:1:1", "provider:42", "tt101", "kitsu:41370:1:2"};
   const char *titulos[] = {"IMDb serie salva", "TMDB salvo", "Kitsu sem arte", "Provider salvo", "IMDb filme homonimo", "Kitsu salvo"};
@@ -74,7 +77,7 @@ int main(void) {
   falhaMeta = 1; n = continuarLocal(lote, 12); verificar(lote, n); assert(enriquecidos == 0);
   // Removing a collection's catalog row must not remove local CW: snapshot
   // publication still carries its metadata, and an empty catalog keeps progress.
-  cat_definir(NULL, 0); n = continuarLocal(lote, 12); assert(n == 5);
+  cat_definir(NULL, 0); n = continuarLocal(lote, 12); assert(n == 7);
   assert(!strcmp(porId(lote, n, "tmdb:t101:2:3")->titulo, "Programa de TV"));
   assert(!porId(lote, n, "provider:99")->poster[0]);
   // Cached fallback text must not prevent real metadata after reconnection.
@@ -90,7 +93,7 @@ int main(void) {
   // the account progress must still fill the row, not an empty one.
   fonteTeste = AJ_CWF_TRAKT; traktAtivoTeste = 0; traktFalhouTeste = 1;
   n = montarContinuar(lote, 12);
-  assert(n == 5 && porId(lote, n, "tt101:1:3")->progresso == 40);
+  assert(n == 7 && porId(lote, n, "tt101:1:3")->progresso == 40);
   prog_esquecer_tudo();
-  puts("cwlocal: IMDb/TMDB/Kitsu/provider cache, offline/uncached progress, base+type identity and original thresholds ok");
+  puts("cwlocal: IMDb/TMDB/Kitsu/provider cache, offline/uncached progress, base+type identity and Android positive-playback eligibility ok");
 }

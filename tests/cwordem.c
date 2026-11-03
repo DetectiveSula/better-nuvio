@@ -36,7 +36,7 @@ int main(void) {
     for (i = 0; i < 6; i++) assert(perm[i] == esperado[i]); }
   puts("ok  default: last-watched order across paused and next-up items");
 
-  { static const int esperado[6] = { 0, 5, 2, 4, 1, 3 };
+  { static const int esperado[6] = { 0, 2, 4, 5, 3, 1 };
     p = cwo_ordenar(v, 6, CWO_STREAMING, AGORA, perm);
     assert(p == 4);
     for (i = 0; i < 6; i++) assert(perm[i] == esperado[i]);
@@ -85,14 +85,14 @@ int main(void) {
   puts("ok  39 futuros publicados cabem na fileira");
   // O corte com reserva (Brothers, C9 24/09: 21 exibidos + 1 futuro, 12 lugares).
   { int mp, mf;
-    cwo_corte(21, 1, 12, &mp, &mf); assert(mp == 11 && mf == 1);
-    cwo_corte(21, 9, 12, &mp, &mf); assert(mp == 8 && mf == 4);    // ate um terco
+    cwo_corte(21, 1, 12, &mp, &mf); assert(mp == 12 && mf == 0);
+    cwo_corte(21, 9, 12, &mp, &mf); assert(mp == 12 && mf == 0);    // ate um terco
     cwo_corte(3, 9, 12, &mp, &mf);  assert(mp == 3 && mf == 9);    // sobra vai p/ futuros
     cwo_corte(5, 0, 12, &mp, &mf);  assert(mp == 5 && mf == 0);
     cwo_corte(20, 0, 12, &mp, &mf); assert(mp == 12 && mf == 0);
     cwo_corte(3, 2, 4, &mp, &mf);   assert(mp == 3 && mf == 1);    // minimo 1
     cwo_corte(0, 0, 0, &mp, &mf);   assert(mp == 0 && mf == 0); }
-  puts("ok  corte: futuros ganham ate um terco da fileira cheia");
+  puts("ok  corte: prefix of upstream ordering, no future quota");
   // O rotulo do futuro: Brothers T1E6, `released` 2026-10-21T08:00Z medido na
   // C9 (1792569600000), com "agora" em 24/09/2026.
   { char b[32];

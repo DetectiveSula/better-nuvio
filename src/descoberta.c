@@ -30,6 +30,8 @@
 #include "proximo.h"
 #include "perfis.h"
 #include "perfisessao.h"
+extern int ajustes_cw_dias(void) NV_PERFIL_OPCIONAL;
+extern int trakt_cw_meta_resolvido(const char *) NV_PERFIL_OPCIONAL;
 #include "artereserva.h"
 #include "artefontes.h"
 #include "idbase.h"
@@ -3019,9 +3021,15 @@ static int continuarLocal(CatItem *saida, int max) {
     CatItem *d;
     double p;
     int j, repetido = 0;
-    if (r->durSeg < 60.0) continue;
+    if (r->durSeg <= 0) continue;
     p = r->posSeg / r->durSeg;
-    if (!prog_inicio_continuar(r, ajustes_cw_minimo()) || p * 100.0 >= ajustes_cw_concluido()) continue;
+    if (r->posSeg <= 0 || p >= 0.90) continue;
+    int superseded = 0;
+    for (int ri = 0; ri < k && r->episodio > 0; ri++)
+      if (!strcmp(regs[ri].contentId, r->contentId) && regs[ri].durSeg > 1 &&
+          regs[ri].posSeg / regs[ri].durSeg >= .90 && regs[ri].lastWatchedMs > r->lastWatchedMs)
+        superseded = 1;
+    if (superseded) continue;
     // Uma serie com varios episodios gravados entra UMA vez, no mais recente.
     for (j = 0; j < n; j++) {
       size_t L = idbase_len(saida[j].imdb);   // "kitsu:41370" inteiro, nao "kitsu"
@@ -3131,7 +3139,7 @@ static int continuarLocal(CatItem *saida, int max) {
 // home_registrar_retorno. Abaixo de 1% nao se comecou, do Percentual assistido
 // (90% de fabrica) em diante acabou — e "continuar" nao e nem uma coisa nem a
 // outra.
-static int emAndamento(int pct) { return pct >= ajustes_cw_minimo() && pct < ajustes_cw_concluido(); }
+static int emAndamento(int pct) { return pct > 0 && pct < 90; }
 
 // QUANDO este item foi visto por ultimo, em ms. 0 = nao se sabe.
 //
@@ -3325,6 +3333,7 @@ static int filtrarRemoto(CatItem *v, int n, int (*aSeguir)(const char *),
                    r->temporada >= 0 ? r->temporada : 1, r->episodio);
           v[i].temporada = r->temporada;
           v[i].episodio = r->episodio;
+          if (pct >= 90) { (*fora)++; continue; }
           v[i].progresso = pct;
           v[i].retomadoMs = r->lastWatchedMs;
           v[i].restanteMin = (int)((r->durSeg - r->posSeg) / 60.0 + 0.5);
@@ -3335,8 +3344,7 @@ static int filtrarRemoto(CatItem *v, int n, int (*aSeguir)(const char *),
     }
     if (!ajustes_cw_proximo() && !emAndamento(v[i].progresso)) { (*fora)++; continue; }
     // "A seguir" que passa da desmarcacao da pessoa recua (ajustarASeguir).
-    if (v[i].progresso == 0 && v[i].temporada >= 0 && v[i].episodio > 0 &&
-        aSeguir(v[i].imdb)) ajustarASeguir(&v[i]);
+    // No custom rewind: retain the selected provider's episode identity.
     if (w != i) v[w] = v[i];
     w++;
   }
@@ -3376,14 +3384,26 @@ static int contaASeguir(CatItem *lista, int n, int max, int comOutraFonte) {
   CatItem *lote;
   int nSem, nLote = 0, i, j, confirmados, entraram = 0;
   int fVelho = 0, fVisto = 0, fPausado = 0;
+  (void)comOutraFonte;
   if (!ajustes_cw_proximo()) { descCwoDefinir(cwo_conta_definir, NULL, 0); return n; }
   nSem = contalib_sementes_a_seguir(sem, PROX_MAX_BUSCAS,
                                     ajustes_cw_do_episodio_mais_alto());
-  if (nSem < 0) {
-    printf("[desc] continuar assistindo: a seguir da conta: vistos da conta nao puxados "
-           "ou velhos; nenhuma semente\n");
-    descCwoDefinir(cwo_conta_definir, NULL, 0);
-    return n;
+  if (nSem < 0) nSem = 0;
+  { int nr = prog_ler(contRegs, PROG_MAX);
+    for (int ri = 0; ri < nr; ri++) {
+      const ProgRegistro *r = &contRegs[ri];
+      if (!r->pendente || r->temporada <= 0 || r->episodio <= 0 || r->durSeg <= 0 || r->posSeg / r->durSeg < 0.90) continue;
+      int found = -1;
+      for (int j = 0; j < nSem; j++) if (!strcmp(sem[j].id, r->contentId)) { found = j; break; }
+      if (found >= 0) {
+        int higher = r->temporada > sem[found].temporada ||
+          (r->temporada == sem[found].temporada && r->episodio + 1 > sem[found].episodio);
+        if (ajustes_cw_do_episodio_mais_alto() ? !higher : r->lastWatchedMs <= sem[found].vistoMs) continue;
+      } else { if (nSem >= PROX_MAX_BUSCAS) continue; found = nSem++; }
+      snprintf(sem[found].id, sizeof sem[found].id, "%s", r->contentId);
+      sem[found].temporada = r->temporada; sem[found].episodio = r->episodio + 1;
+      sem[found].vistoMs = r->lastWatchedMs;
+    }
   }
   if (nSem < 1) { descCwoDefinir(cwo_conta_definir, NULL, 0); return n; }
   lote = (CatItem *)malloc(sizeof(CatItem) * PROX_MAX_BUSCAS);
@@ -3393,24 +3413,14 @@ static int contaASeguir(CatItem *lista, int n, int max, int comOutraFonte) {
     int ja = 0;
     memset(d, 0, sizeof *d);
     // A semente da conta tambem recua para o primeiro desmarcado.
-    recuarPelaDesmarcacao(sem[i].id, &sem[i].temporada, &sem[i].episodio, sem[i].vistoMs);
+    // Android resolves next-up from the selected watched-history seed.
     snprintf(d->imdb, sizeof d->imdb, "%s:%d:%d", sem[i].id, sem[i].temporada,
              sem[i].episodio);
     for (j = 0; j < n && !ja; j++) ja = mesmaObra(&lista[j], d);
     if (ja) { fPausado++; continue; }
-    // Visto em QUALQUER fonte (conta, Trakt, Simkl, esta TV): nao e "a seguir".
-    if (vistoep_estado(sem[i].id, sem[i].temporada, sem[i].episodio) == 1) {
-      fVisto++;
-      continue;
-    }
     // Com Trakt/Simkl vinculado, serie sem toque ha mais de 60 dias nao volta
     // so porque a conta a conhece (mesmo corte que o web aplica ao a seguir do
     // Trakt). Sozinha, a conta mantem o comportamento da #199: sem corte.
-    if (comOutraFonte && sem[i].vistoMs > 0 &&
-        (long long)time(NULL) * 1000LL - sem[i].vistoMs > CONTA_JANELA_MS) {
-      fVelho++;
-      continue;
-    }
     snprintf(d->tipo, sizeof d->tipo, "series");
     d->temporada = sem[i].temporada;
     d->episodio = sem[i].episodio;
@@ -3444,6 +3454,26 @@ static int contaASeguir(CatItem *lista, int n, int max, int comOutraFonte) {
     }
     lista[alvo] = lote[i];
     entraram++;
+  }
+  // Preserve only an existing *same-episode* suggestion whose metadata is
+  // temporarily unavailable. A successful response with no next episode drops
+  // it. Late enrichment never invents a card removed or completed meanwhile.
+  if (trakt_cw_meta_resolvido && confirmados < nLote) {
+    CatItem *previous = malloc(sizeof *previous * CONT_MAX);
+    if (previous) {
+      int np = cat_copiar_fileira("continue_watching", previous, CONT_MAX, NULL);
+      for (int si = 0; si < nLote && n < max; si++) {
+        if (trakt_cw_meta_resolvido(idsTxt[si])) continue;
+        for (int pi = 0; pi < np; pi++) {
+          if (previous[pi].progresso != 0 || strcmp(previous[pi].imdb, idsTxt[si])) continue;
+          int duplicate = 0;
+          for (int li = 0; li < n; li++) if (mesmaObra(&lista[li], &previous[pi])) duplicate = 1;
+          if (!duplicate) lista[n++] = previous[pi];
+          break;
+        }
+      }
+      free(previous);
+    }
   }
   { int a, b;
     for (a = 1; a < n; a++) {
@@ -3492,11 +3522,15 @@ static int montarContinuar(CatItem *saida, int max) {
   // primeira visita parte dele; ajustes-p<N>.txt antigo nao tem cwFonteLocal).
   // Na C9 do dono o perfil 2 ficava com a fileira vazia e o progresso da conta
   // aceito no disco. Sem vinculo nao ha Trakt a escolher: vale "Todas".
-  int fonte = ajustes_cw_fonte() == AJ_CWF_TRAKT && !trakt_ativo() ? AJ_CWF_AMBAS
-                                                                    : ajustes_cw_fonte();
-  int querConta = fonte == AJ_CWF_AMBAS || fonte == AJ_CWF_CONTA;
-  int querTrakt = fonte == AJ_CWF_AMBAS || fonte == AJ_CWF_TRAKT;
-  int querSimkl = (fonte == AJ_CWF_AMBAS || fonte == AJ_CWF_SIMKL) && simkl_ativo();
+  int fonte = ajustes_cw_fonte();
+  // Upstream's default is Trakt, falling back to Nuvio when unauthenticated.
+  // Existing "all" values migrate to automatic provider selection.
+  if (fonte == AJ_CWF_AMBAS) fonte = trakt_ativo() ? AJ_CWF_TRAKT : AJ_CWF_CONTA;
+  if (fonte == AJ_CWF_TRAKT && !trakt_ativo()) fonte = AJ_CWF_CONTA;
+  if (fonte == AJ_CWF_SIMKL && !simkl_ativo()) fonte = AJ_CWF_CONTA;
+  int querConta = fonte == AJ_CWF_CONTA;
+  int querTrakt = fonte == AJ_CWF_TRAKT;
+  int querSimkl = fonte == AJ_CWF_SIMKL;
 
   if (max > CONT_MAX) max = CONT_MAX;
   __atomic_add_fetch(&cwGer, 1u, __ATOMIC_RELAXED);
@@ -3508,10 +3542,27 @@ static int montarContinuar(CatItem *saida, int max) {
   // devolve o que qualquer cliente pausou uma vez — inclusive titulos em 0% e
   // titulos praticamente terminados, que e o "nunca assisti isso" do relato.
   nT = filtrarRemoto(doTrakt, nT, trakt_e_a_seguir, &fora);
+  { int w = 0, days = ajustes_cw_dias ? ajustes_cw_dias() : 60;
+    long long now = (long long)time(NULL) * 1000;
+    long long cutoff = now - (long long)days * 86400000;
+    for (int ti = 0; ti < nT; ti++) {
+      long long release = cwo_estreia(doTrakt[ti].imdb);
+      int alert = doTrakt[ti].progresso == 0 && release != CWO_SEM_DATA &&
+        release > doTrakt[ti].retomadoMs && release <= now && now - release < 60LL * 86400000;
+      // Android's older-seed reconciliation admits new release alerts even
+      // when their watched-history anchor is outside the Trakt days window.
+      if (!days || doTrakt[ti].retomadoMs >= cutoff || alert) doTrakt[w++] = doTrakt[ti];
+    }
+    nT = w;
+  }
   if (querSimkl) {
     doSimkl = (CatItem *)malloc(sizeof(CatItem) * CONT_MAX);
     if (doSimkl) {
       nS = simkl_continuar(doSimkl, CONT_MAX);
+      { int w = 0; for (int si = 0; si < nS; si++) {
+          if (doSimkl[si].progresso >= 80) { fora++; continue; }
+          doSimkl[w++] = doSimkl[si];
+        } nS = w; }
       nS = filtrarRemoto(doSimkl, nS, simkl_e_a_seguir, &fora);
     }
   }
@@ -3624,6 +3675,12 @@ static int montarContinuar(CatItem *saida, int max) {
     if (ocultos)
       printf("[desc] continuar assistindo: %d oculto(s) pela pessoa\n", ocultos); }
 
+  for (i = 0; i < nJ; i++) if (juntos[i].item->progresso == 0) {
+    long long released = cwo_estreia(juntos[i].item->imdb);
+    long long now = (long long)time(NULL) * 1000;
+    if (released != CWO_SEM_DATA && released > juntos[i].ms && released <= now &&
+        now - released < 60LL * 24 * 3600 * 1000) juntos[i].ms = released;
+  }
   // Insercao: estavel, nJ <= 36, e roda uma vez por ciclo de descoberta.
   for (i = 1; i < nJ; i++) {
     int k = i;
@@ -3632,8 +3689,8 @@ static int montarContinuar(CatItem *saida, int max) {
       int troca;
       int pa = emAndamento(juntos[k].item->progresso);
       int pb = emAndamento(juntos[k - 1].item->progresso);
-      if (ajustes_cw_ordem() != CWO_PADRAO && pa != pb) troca = pa;
-      else if (a != b) troca = a > b;
+      (void)pa; (void)pb;
+      if (a != b) troca = a > b;
       else        troca = juntos[k].ord < juntos[k - 1].ord;
       if (!troca) break;
       { Cand t = juntos[k - 1]; juntos[k - 1] = juntos[k]; juntos[k] = t; }
@@ -3864,7 +3921,6 @@ int desc_continuar_otimista(int indice) {
   if (!ci || !ci->imdb[0]) return 0;
   novo = *ci;
   if (novo.progresso < ajustes_cw_minimo() || novo.progresso >= ajustes_cw_concluido()) return 0;
-  if (ajustes_cw_fonte() == AJ_CWF_SIMKL && !simkl_ativo()) return 0;
   if (!strcmp(novo.tipo, "series") && novo.temporada >= 0 && novo.episodio > 0) {
     char base[64];
     idbase_copiar(ci->imdb, base, sizeof base);
@@ -3955,7 +4011,7 @@ int desc_tirar_continuar(const char *imdb, int temporada, int episodio) {
   // A chave e montada do mesmo jeito que progresso.c monta ao gravar — com
   // temporada e episodio quando ha —, senao a linha apagada seria outra.
   prog_chave(chave, sizeof chave, imdb, temporada, episodio);
-  prog_remover(chave);
+  if (!prog_excluir_titulo(imdb)) return 0;
   prog_marcar_removido(imdb);
   return cat_tirar_continuar(imdb);
 }

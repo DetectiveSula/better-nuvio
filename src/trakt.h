@@ -186,4 +186,7 @@ int trakt_ler_filmes_vistos(const char *corpo);
 int trakt_avaliar(const char *imdb, const char *tipo, int nota);
 // Pure payload builder: title or series IMDb:season:episode; zero removes.
 int trakt_nota_corpo(char *dst, size_t tam, const char *imdb, const char *tipo, int nota);
+// 1 when next-up metadata was resolved for this profile session; 0 on transient failure.
+int trakt_cw_meta_resolvido(const char *id);
+
 #endif

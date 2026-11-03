@@ -48,6 +48,7 @@ Uint32 SDL_GetTicks(void) { return 0; }
 // --- DUBLES: so fazem descoberta.c linkar (o conjunto de tests/cateps.c) -----
 int         ajustes_idioma_ingles(void) { return 0; }
 int ajustes_idioma(void) { return 0; }
+int ajustes_cw_dias(void) { return 0; } // fixtures use synthetic historical timestamps
 int   ajustes_cw_ordem(void)               { return 0; }   // Padrao (issue #127)
 int   ajustes_cw_concluido(void)           { return 90; }  // Percentual assistido de fabrica
 int   ajustes_cw_minimo(void)             { return 1; }

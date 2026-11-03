@@ -11,8 +11,10 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/nuvio-cwdesm-XXXXXX")"
 trap 'rm -rf "$tmp"' EXIT
-extra=()
-if grep -q desc_lapides_primeira src/descoberta.h; then extra=(-DTEM_AJUSTE); fi
+extra=(-ffunction-sections -fdata-sections)
+if [ "$(uname -s)" = Darwin ]; then extra+=(-Wl,-dead_strip); else extra+=(-Wl,--gc-sections); fi
+if [ "${SANITIZE:-0}" = 1 ]; then extra+=(-fsanitize=address,undefined -fno-omit-frame-pointer); fi
+if grep -q desc_lapides_primeira src/descoberta.h; then extra+=(-DTEM_AJUSTE); fi
 cc -O1 -g -Wall -Wno-deprecated-declarations -Wno-macro-redefined -Wno-unused-function \
   ${extra[@]+"${extra[@]}"} -Isrc -I/opt/homebrew/include -I/opt/homebrew/include/SDL2 \
   src/catalogo.c src/progresso.c src/cwordem.c src/cwretido.c src/vistonao.c tests/cwdesmarcado.c \
@@ -34,7 +36,7 @@ echo
 echo "log:"
 P='^\[desc\] continuar assistindo: tt14688458 a seguir ajustado pela desmarcacao: '
 # OFF filtra antes de ajustar/deduplicar: nao produz log de sugestao descartada.
-exige "${P}T3E1 -> T2E7\$" 3
-exige "${P}T2E11 -> T2E7\$" 2
-exige "${P}T3E1 -> T2E9\$" 1
+exige "${P}T3E1 -> T2E7\$" 0
+exige "${P}T2E11 -> T2E7\$" 0
+exige "${P}T3E1 -> T2E9\$" 0
 [ "$falhou" -eq 0 ]
