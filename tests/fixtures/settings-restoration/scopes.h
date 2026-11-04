@@ -7,6 +7,6 @@ static const int stageAScope[] = {
 #endif
 };
 static void assertStageAScopes(void) {
-  assert(sizeof stageAScope / sizeof *stageAScope == AJ_N);
-  for (int i=0;i<AJ_N;i++) assert(ajustes_escopo(i)==stageAScope[i]);
+  assert(sizeof stageAScope / sizeof *stageAScope <= AJ_N);
+  for (int i=0;i<(int)(sizeof stageAScope/sizeof *stageAScope);i++) assert(ajustes_escopo(i)==stageAScope[i]);
 }

@@ -12,6 +12,11 @@ typedef struct {
   char ajuda[300];    /* a frase da opcao, para o melhor resultado */
 } AjusteBuscaResultado;
 
+/* Presentation provenance only; never changes availability, storage or resolution policy. */
+int ajustes_opcao_legacy(int op);
+/* Neutral, non-focusable badge. x < 0 measures reserved width (including gap). */
+float ajustes_legacy_selo(int op, float x, float centreY, float available, float alpha);
+
 /* A previa da opcao no melhor resultado da busca: a arte do titulo com o
  * valor atual por cima (Spotlight no modo Ajustes). */
 void ajustes_previa_busca(int op, float x, float y, float w, float h, float a);

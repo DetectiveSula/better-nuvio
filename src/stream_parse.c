@@ -1077,13 +1077,14 @@ int stream_extrair(const char *json, const char *provedor, Stream **saida) {
         (hint + 4 == fim || hint[4] == ',' || hint[4] == '}' || isspace((unsigned char)hint[4]));
     }
     s.fileIdx = -1;
+    s.cacheRequerResolver = objetoRaiz(p,fim,"clientResolve") != NULL;
     // Torrent puro: sem url, com infoHash (no topo ou dentro de clientResolve,
     // como o AIOStreams manda). A url nasce depois, no debrid.
     if (!s.url[0] || strncmp(s.url, "http", 4)) {
       const char *cr = objetoRaiz(p, fim, "clientResolve");
       s.url[0] = 0;
-      if (!js_texto(p, fim, "infoHash", s.infoHash, sizeof s.infoHash) && cr)
-        js_texto(cr, fim, "infoHash", s.infoHash, sizeof s.infoHash);
+      if (!js_texto_raiz_em(p, fim, "infoHash", s.infoHash, sizeof s.infoHash) && cr)
+        js_texto_raiz_em(cr, js_fim(cr), "infoHash", s.infoHash, sizeof s.infoHash);
       double indice = js_num(p, fim, "fileIdx", -1);
       if (isfinite(indice) && indice >= 0 && indice <= INT_MAX)
         s.fileIdx = (int)indice;
@@ -1092,8 +1093,8 @@ int stream_extrair(const char *json, const char *provedor, Stream **saida) {
       // Fonte com link: o hash, quando o addon manda, so serve para achar o
       // torrent na conta TorBox (partes.h). Nao vira infoHash.
       const char *cr = objetoRaiz(p, fim, "clientResolve");
-      if (!js_texto(p, fim, "infoHash", s.hashTorrent, sizeof s.hashTorrent) && cr)
-        js_texto(cr, fim, "infoHash", s.hashTorrent, sizeof s.hashTorrent);
+      if (!js_texto_raiz_em(p, fim, "infoHash", s.hashTorrent, sizeof s.hashTorrent) && cr)
+        js_texto_raiz_em(cr, js_fim(cr), "infoHash", s.hashTorrent, sizeof s.hashTorrent);
     }
     // Without a complete URL/hash there is nothing to play.
     if (s.infoHash[0] || !strncmp(s.url, "http", 4)) {

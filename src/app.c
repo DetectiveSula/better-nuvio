@@ -229,7 +229,7 @@ static int autoParcialPronto(void) {
   const FontePref *fp;
   int prazo, lembrada = -1, prefPendente = 0;
   static int ultN = -1, ultLembrada = -1;
-  static unsigned ultGeracao;
+  static unsigned ultGeracao, ultCacheRevisao;
   if (!addons_busca_parcial() || player_id_canal()[0]) return 0;
   if (stream_n() < 1 || stream_n() <= autoEsperaN) return 0;
   if (stream_n_candidatas() < 1) return 0;
@@ -242,9 +242,9 @@ static int autoParcialPronto(void) {
   // regras esperam; depois, a memoria do titulo como sempre.
   { char provNext[96];
     if (escolhaDoNext(base, provNext, sizeof provNext)) {
-      static unsigned ultGerNext; static int ultNNext = -1, ultNext = -1;
-      if (stream_n() != ultNNext || stream_lista_geracao() != ultGerNext) {
-        ultNNext = stream_n(); ultGerNext = stream_lista_geracao();
+      static unsigned ultGerNext, ultCacheNext; static int ultNNext = -1, ultNext = -1;
+      if (stream_n() != ultNNext || stream_lista_geracao() != ultGerNext || stream_lista_revisao()!=ultCacheNext) {
+        ultNNext = stream_n(); ultGerNext = stream_lista_geracao();ultCacheNext=stream_lista_revisao();
         ultNext = fontepref_binge_tocando(base);
       }
       if (ultNext >= 0) {
@@ -268,8 +268,8 @@ static int autoParcialPronto(void) {
   fp = !base[0] ? NULL : ajustes_fonte_manual() ? fontepref_do_titulo(base) : fontepref_memoria(base);
   if (fp) {
     // fontepref_escolher escreve no log: uma vez por tamanho de lista.
-    if (stream_n() != ultN || stream_lista_geracao() != ultGeracao) {
-      ultN = stream_n(); ultGeracao = stream_lista_geracao();
+    if (stream_n() != ultN || stream_lista_geracao() != ultGeracao || stream_lista_revisao()!=ultCacheRevisao) {
+      ultN = stream_n(); ultGeracao = stream_lista_geracao();ultCacheRevisao=stream_lista_revisao();
       ultLembrada = fontepref_escolher(base);
     }
     lembrada = ultLembrada;
@@ -357,8 +357,8 @@ static void preparoContexto(FontePreparoContexto *c) {
   snprintf(c->conta, sizeof c->conta, "%s", sessao_usuario());
   c->regras = fonteregra_versao();
   for (int s = 0; s < DEBRID_N; s++)
-    if (debrid_servico_disponivel(s)) c->disponiveis |= 1u << s;
-  int a[] = { ajustes_fonte_preparar(), ajustes_fonte_precarregar(), ajustes_fonte_manual(), ajustes_fonte_primeira(),
+    if (ajustes_resolver_ativo() && s==ajustes_resolver_provedor() && debrid_servico_disponivel(s)) c->disponiveis |= 1u << s;
+  int a[] = { ajustes_torbox_adicionar_cache(), ajustes_resolver_ativo(), ajustes_resolver_preferencia(), ajustes_resolver_limite(), ajustes_fonte_preparar(), ajustes_fonte_precarregar(), ajustes_fonte_manual(), ajustes_fonte_primeira(),
     ajustes_fonte_escopo(), ajustes_fonte_regex_modo(), ajustes_fonte_usar_outros(),
     ajustes_fonte_ordem_uso(), ajustes_fonte_prioridade(), ajustes_fonte_hdr(),
     ajustes_dolby_vision(), ajustes_dv_mkv(), ajustes_dolby_atmos(),
@@ -841,7 +841,7 @@ static int iniciarPoliticaFonte(int preferida, int manual) {
   fontefalha_sessao_liberar(fonteFalha); fonteFalha = NULL;
   fontefalha_config(&cfg);
   for (int servico = 0; servico < DEBRID_N; servico++)
-    if (debrid_servico_disponivel(servico)) disponiveis |= 1u << servico;
+    if (ajustes_resolver_ativo() && servico==ajustes_resolver_provedor() && debrid_servico_disponivel(servico)) disponiveis |= 1u << servico;
   fonteFalha = fontefalha_sessao_nova(&cfg, disponiveis, preferida);
   fonteFalhaLista = stream_lista_geracao(); fonteFalhaPos = -1.0;
   fonteFalhaEsperando = 0; fonteFalhaManual = manual ? preferida : -1;
@@ -2155,7 +2155,7 @@ static void preparoLimparCache(int cancelar) {
   memset(&preparo, 0, sizeof preparo);
 }
 static int preparoAtivo(void) {
-  return ajustes_fonte_preparar() || ajustes_fonte_precarregar();
+  return ajustes_resolver_limite()>0 || ajustes_fonte_preparar() || ajustes_fonte_precarregar();
 }
 static void preparoInvalidar(void) {
   atomic_fetch_add_explicit(&preparoGeracao, 1, memory_order_acq_rel);
@@ -7520,6 +7520,7 @@ void app_desenhar(Uint32 agora) {
 #endif
     ilha_desenhar(agora);
   }
+  stream_resolver_confirmacao_desenhar();
   // AS DICAS DO CONTROLE por ultimo, por cima de tudo: a dica abre o
   // componente DE VERDADE pelo caminho normal (spainel, Spotlight, Central
   // e o menu do cartaz ja foram desenhados acima) e esta camada so soma o

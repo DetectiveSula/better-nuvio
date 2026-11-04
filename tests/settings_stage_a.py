@@ -40,11 +40,14 @@ int main(void) {
  assert(ajSceneForOption(AJ_TMDB_EPS)==AJS_TITULO);
  assert(ajSceneForOption(AJ_XTREAM_CONEXOES)==AJS_TVAOVIVO);
 '''
+routing=json.loads((ROOT/'tests/fixtures/settings-restoration/stage-b-routing.json').read_text())
+assert set(routing)=={'AJ_FALHA_PROVEDORES','AJ_FALHA_PROVEDOR_ORDEM','AJ_DISCORD'}
+assert all(x['to']=='Integrations' for x in routing.values())
 categories=['Account','Switch Profile','Appearance','Layout','Content & Discovery','Playback','Integrations','Tracking','Notifications','Advanced','About']
 for r in records:
     unit += '#if ' + r['gate'] + '\n'
     unit += 'assert(counts[%s]==1); assert(ajSceneForOption(%s)==%s); assert(ajArtBlockForOption(%s)==%d);\n' % (r['id'], r['id'], r['scene'], r['id'], r['block'])
-    unit += 'assert(category[%s]==%d); assert(advanced[%s]==%d);\n' % (r['id'], categories.index(r['category']), r['id'], r['advanced'])
+    unit += 'assert(category[%s]==%d); assert(advanced[%s]==%d);\n' % (r['id'], categories.index(routing.get(r['id'],{}).get('to',r['category'])), r['id'], r['advanced'])
     unit += '#endif\n'
 unit += 'return 0;}\n'
 import tempfile
@@ -63,6 +66,8 @@ def decode(literal):
     return ast.literal_eval(literal)
 pairs={decode(a):decode(b) for a,b in re.findall(r'\{\s*('+string+')\s*,\s*('+string+')\s*\}', (ROOT/'src/idioma_tab.h').read_text())}
 extras={decode(a) for a,b in re.findall(r'\{\s*('+string+')\s*,\s*('+string+')\s*\}', (ROOT/'src/idioma.c').read_text())}
+stage_c_english=set(json.loads((ROOT/'tests/fixtures/settings-restoration/stage-c-english.json').read_text()))
+stage_c_english.update(json.loads((ROOT/'tests/fixtures/settings-restoration/stage-d-optin-english.json').read_text()))
 technical={'Dolby Vision','Dolby Atmos','TMDB','MDBList','IMDb','Letterboxd','MyAnimeList',
 'Discord','Xtream','M3U','Stalker','IMDb + TMDB','HLS (.m3u8)','TS (.ts)','Chips',
 'SpatialPosters','RPDB','YouTube','English','Inter','LG Display','Droid Sans','Montserrat',
@@ -72,12 +77,12 @@ labels=source[source.index('static const Opcao OPCOES'):]
 labels=labels[:labels.index('\n};')]
 for literal in re.findall(r'(?:ESC|NUM|LER|ACAO)\(('+string+')',labels):
     value=decode(literal)
-    assert value in pairs or value in extras or value in technical, 'Untranslated settings label: '+value
+    assert value in pairs or value in extras or value in stage_c_english or value in technical, 'Untranslated settings label: '+value
 help_source=source[source.index('static const char *ajudaOpcaoBase('):]
 help_source=help_source[:help_source.index('\n}\n')+3]
 for literal in re.findall(r'return\s+('+string+')',help_source):
     value=decode(literal)
-    assert not value or value in pairs or value in extras, 'Untranslated settings help: '+value
+    assert not value or value in pairs or value in extras or value in stage_c_english, 'Untranslated settings help: '+value
 print('PASS: source category order, all 388 presentation entries/gates/scenes/art blocks across 6 builds; English labels/help')
 
 # Every static choice must be translated or an explicit technical name/numeric unit.
@@ -85,6 +90,6 @@ for name, body in re.findall(r'static const char \*(V_\w+)\[\]\s*=\s*\{(.*?)\};'
     body=re.sub(r'/\*.*?\*/|//[^\n]*','',body,flags=re.S)
     for literal in re.findall(string,body):
         value=decode(literal)
-        assert (not value or value in pairs or value in extras or value in technical or
+        assert (not value or value in pairs or value in extras or value in stage_c_english or value in technical or
                 re.fullmatch(r'[\d .%×x/,+:–−\-]*\w{0,3}', value)), (name,value)
 print('PASS: all static settings choice text translated, with explicit technical-name exceptions')

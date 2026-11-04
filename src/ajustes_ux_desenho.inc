@@ -218,6 +218,20 @@ static void ajAcento8(int *r, int *g, int *b) {
 static TxtLinha ajTxt(TxtEstilo e, const char *s) { return txt_linha(e, s, AJ_TX); }
 static TxtLinha ajTxtC(TxtEstilo e, const char *s, float maxW) { return txt_linha_corta(e, s, AJ_TX, maxW); }
 static TxtLinha ajTxtT(TxtEstilo e, const char *s) { int t = ajTinta(); return txt_linha(e, s, t, t, t, 255); }
+// One shared badge renderer for settings, changed values and Spotlight results.
+// It registers no pointer/focus target and reserves space before clipping the title.
+float ajustes_legacy_selo(int op, float x, float centreY, float available, float alpha) {
+  if (!ajustes_opcao_legacy(op)) return 0;
+  TxtLinha text = ajTxt(TXT_V2_18, "Legacy");
+  float width = text.w + 28.0f;
+  if (x < 0) return width;
+  if (available < width) return 0;
+  GfxRect pill = {x + 12, centreY - 14, width - 12, 28};
+  gfx_cor(pill, 7.0f / 28, 0.52f, 0.54f, 0.57f, 0.18f * alpha);
+  txt_desenhar_alpha(text, pill.x + 8, centreY - text.h * 0.5f, 0.72f * alpha);
+  return width;
+}
+
 // Caixa alta espacada (kicker): i18n antes, maiusculas (latim + acentos) e tracking.
 static float ajCapsRGB(TxtEstilo e, const char *s, float track, float x, float y, float al, int cr, int cg, int cb) {
   char up[200];
@@ -414,6 +428,9 @@ static GfxRect aj2ListaR(void) {
   return (GfxRect){ x, AJ2_CORPO, NV_VTELA_W - AJ2_MARGEM - x, NV_VTELA_H - AJ2_CORPO - AJ2_MARGEM };
 }
 static float ajTopoLista(void) { return aj2ListaR().y + AJ_A3_CAB; }
+// Use the actual panel, with breathing room above its fixed footer.
+static float ajBaseLista(void) { GfxRect r = aj2ListaR(); return r.y + r.h - AJ_A3_RODAPE - 12.0f; }
+static int ajLinhaCabeNaBase(float y, float h) { return y + h <= ajBaseLista() + 0.5f; }
 // O "inspetor" da A3 e a coluna da arte (sem ilha).
 static GfxRect aj2InspR(void) {
   if (ajRetrato()) {
@@ -457,6 +474,7 @@ static const char *ajRotSeg(int op, int i) {
 // Escolha que cabe na linha: ate tres valores curtos viram o segmentado.
 static float aj2SegLargura(int op, int n);
 static int ajSegmentada(int op) {
+  if(op==AJ_RESOLVE_PROVIDER)return 0; // dynamic configured-provider list
   int n;
   if (op < 0 || ajIptvMenu(op) || ajTipo(op) != AJL_ESC || op == AJ_LEG_LINGUA || op == AJ_LEG_LINGUA2 || op == AJ_AUD_LINGUA || op == AJ_AUD_LINGUA2 || op == AJ_FUNDO ||
       op == AJ_INTERFACE_MODO /* o seletor com alvos proprios permite sair de TV usando so o toque */ ||
@@ -1216,7 +1234,7 @@ static void ajDesenharLinha(int item, float y, float f, float a) {
   float cauda = 0;
   // O valor usa o que o rotulo deixa (A3: a linha e larga; cortar o valor com
   // espaco sobrando era o "Back to home (minimize..." da captura em Montserrat).
-  float rotFim = ln.x + 22.0f + recuo + (float)txt_largura(emFoco ? TXT_V3_LN_B : TXT_V3_LN, rotuloOpcao(op)) + 28.0f;
+  float rotFim = ln.x + 22.0f + recuo + (float)txt_largura(emFoco ? TXT_V3_LN_B : TXT_V3_LN, rotuloOpcao(op)) + ajustes_legacy_selo(op, -1, 0, 0, 0) + 28.0f;
 #define AJ_VMAX(xx) ((xx) - rotFim < 160.0f ? 160.0f : (xx) - rotFim)
   if (a <= 0.004f) return;
   // O texto da lista some quando o editor entra por cima (a lista fica so
@@ -1319,7 +1337,7 @@ static void ajDesenharLinha(int item, float y, float f, float a) {
     gfx_cor((GfxRect){ cx, yc - 1.0f, 14.0f, 2.0f }, 0, 1, 1, 1, 0.30f * aTx);
   }
   { float tx = ln.x + 22.0f + recuo, maxW = ln.w - 44.0f - recuo - cauda - 16.0f, tyc = yc;
-    TxtLinha r = ajTxtC(emFoco ? TXT_V3_LN_B : TXT_V3_LN, rotuloOpcao(op), maxW);
+    TxtLinha r = ajTxtC(emFoco ? TXT_V3_LN_B : TXT_V3_LN, rotuloOpcao(op), fmaxf(24, maxW - ajustes_legacy_selo(op, -1, 0, 0, 0)));
     float rx;
     if (sub) tyc = y + 12.0f + 16.0f;
     if (sub) {
@@ -1333,6 +1351,7 @@ static void ajDesenharLinha(int item, float y, float f, float a) {
     }
     txt_desenhar_alpha(r, tx, tyc - r.h * 0.5f, (emFoco ? 1.0f : 0.88f) * aT);
     rx = tx + r.w;
+    rx += ajustes_legacy_selo(op, rx, tyc, tx + maxW - rx, aT);
     { int fm = marcaDaOpcao(op);
       if (fm >= 0) {
         float mw = marca_formato_largura((FormatoMarca)fm, 30.0f);

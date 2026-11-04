@@ -435,7 +435,7 @@ static void ajDesenharFolha(void) {
   for (i = secIni[sec] + 1; i < secFim(sec); i++) {
     float h = ajAlturaItem(i);
     if (h <= 0.0f) continue;
-    if (y + h >= topo - 4 && y <= base + 4) {
+    if (y + h >= topo - 4 && ajLinhaCabeNaBase(y, h)) {
       if (TELA[i].tipo == IT_ROT) {
         ajDesenharGrupo(i, y, ajMascara(y + 20.0f + 15.6f, topo, base) * aPag);
       } else if (TELA[i].tipo == IT_MAIS) {
@@ -884,7 +884,9 @@ static float aj2CabecalhoEditor(GfxRect m) {
   else snprintf(k, sizeof k, "%s", i18n(uxCaminho(uxOp)));
   ajCaps(TXT_V2_KICK, k, 2.52f, x, y + (21.8f - 19.0f * 1.21f) * 0.5f, 0.45f);
   y += 21.8f + 4.0f;
-  { TxtLinha t = ajTxtC(TXT_V2_TIT, rotuloOpcao(uxOp), m.w - 104);
+  { float badge = ajustes_legacy_selo(uxOp, -1, 0, 0, 0);
+    TxtLinha t = ajTxtC(TXT_V2_TIT, rotuloOpcao(uxOp), m.w - 104 - badge);
+    ajustes_legacy_selo(uxOp, x + t.w, y + 62.9f * 0.5f, m.w - 104 - t.w, 1);
     txt_desenhar(t, x, y + (62.9f - t.h) * 0.5f); y += 62.9f + 8.0f; }
   if (ajPadraoVisual(uxOp) >= 0) uxValorTexto(uxOp, ajPadraoVisual(uxOp), padrao, sizeof padrao);
   if (ajPadraoVisual(uxOp) >= 0) snprintf(linha, sizeof linha, i18n("%s · Padrão: %s"), i18n(uxEscopoValor(uxOp, uxPendente)), padrao);
@@ -907,6 +909,7 @@ static void ajPontEdValor(int i, int b) {
   (void)b;
   if (!ajPontEdVale() || i < 0 || i >= nValores(uxOp) || (!uxRodape && uxPendente == i)) return;
   if (uxOp == AJ_TEX_MB && texAcima(i)) return;
+  if (uxOp == AJ_RESOLVE_PROVIDER && !resolver_politica_opcao(i)) return;
   if (uxOp == AJ_SALVOS_DEST && !ajustes_fonte_oferecida(i, trakt_ativo(), simkl_ativo())) return;
   uxRodape = 0; uxPendente = i;
 }
@@ -1125,6 +1128,7 @@ static void aj2EditorEscolha(GfxRect m) {
 #endif
     // Servico desligado nao e oferta, e so linha de ponteiro: como o valor nao
     // aparece na lista do editor, clicar nele nao pode dar passo algum.
+    if (uxOp == AJ_RESOLVE_PROVIDER && !resolver_politica_opcao(i)) { y += passo; continue; }
     if (uxOp == AJ_SALVOS_DEST && !ajustes_fonte_oferecida(i, trakt_ativo(), simkl_ativo())) { y += 100; continue; }
     char t[160];
     int foco = !uxRodape && i == uxPendente;
@@ -1274,10 +1278,11 @@ static void aj2DesenharDiferencas(void) {
     txt_desenhar_alpha(lp, xd - lp.w, yc - lp.h * 0.5f, 0.4f * a);
     gfx_cor((GfxRect){ xd - lp.w, yc, lp.w, 2 }, 0, 0.953f, 0.949f, 0.937f, 0.25f * a);
     xd -= lp.w;
-    lr = ajTxtC(foco ? TXT_V2_LN_B : TXT_V2_LN, rotuloOpcao(op), xd - x - 44);
+    lr = ajTxtC(foco ? TXT_V2_LN_B : TXT_V2_LN, rotuloOpcao(op), fmaxf(24, xd - x - 44 - ajustes_legacy_selo(op, -1, 0, 0, 0)));
     snprintf(det, sizeof det, "%s · %s", i18n(uxCaminho(op)), i18n(uxEscopo(op)));
     ls = ajTxtC(TXT_V2_18, det, xd - x - 44);
     txt_desenhar_alpha(lr, x + 22, y + 12 + (32.0f - lr.h) * 0.5f, (foco ? 1.0f : 0.88f) * a);
+    ajustes_legacy_selo(op, x + 22 + lr.w, y + 28, xd - x - 44 - lr.w, a);
     txt_desenhar_alpha(ls, x + 22, y + 12 + 32.0f + 4 + (22.0f - ls.h) * 0.5f, 0.5f * a);
     y += 78;
   }

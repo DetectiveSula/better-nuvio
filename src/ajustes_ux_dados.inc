@@ -17,6 +17,8 @@ static int uxValorPadrao(int op) {
 
 /* Fileiras tem uma fonte propria. valor[] e apenas seu espelho na tela. */
 static int uxValorAtual(int op) {
+  if(op==AJ_RESOLVE_LINKS)return ajustes_resolver_ativo()?0:1;
+  if(op==AJ_RESOLVE_PREPARE)return valor[AJ_RESOLVE_LIMIT]>0?0:1;
   if (op < 0 || op >= AJ_N) return 0;
   if (ajFonte(op)) return ajFonteAtual(op);
   if (op == AJ_XTREAM_CONEXOES) return xtream_conexoes_modo();
@@ -432,6 +434,7 @@ int ajustes_buscar(const char *consulta, AjusteBuscaResultado *resultados, int c
     uxNormalizar(i18n(rotuloOpcao(op)), titulo, sizeof titulo);
     uxNormalizar(rotuloOpcao(op), tituloPt, sizeof tituloPt);
     uxNormalizar(uxSinonimos(op), aliases, sizeof aliases);
+    if (ajustes_opcao_legacy(op)) uxIndiceAcrescentar(indice, sizeof indice, "Legacy");
     uxIndiceAcrescentar(indice, sizeof indice, titulo);
     uxIndiceAcrescentar(indice, sizeof indice, tituloPt);
     uxIndiceAcrescentar(indice, sizeof indice, aliases);

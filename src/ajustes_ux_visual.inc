@@ -1,5 +1,7 @@
 // Glifos complementares: SVG Lucide embarcado, rasterizado no pacote para OpenGL.
 static const char *ajVisualIcone(int op) {
+  if(op==AJ_TB_CACHED_ADD)return "aj_link";
+  if(op>=AJ_RESOLVE_LINKS&&op<=AJ_RESOLVE_LIMIT)return "aj_link";
   if (ajLegendaPrincipal(op) || op == AJ_LEG1_RESTAURAR || ajLegendaSecundaria(op)) return "aj_captions";
   switch (op) {
     case AJ_COLECAO_EXIBICAO: return "aj_layout-dashboard";

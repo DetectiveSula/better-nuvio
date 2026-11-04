@@ -181,8 +181,6 @@ static const Item TELA[] = {
       OPC(AJ_BUSCA_ORIGEM),
     ROT("Playback failure"),
       OPC(AJ_FILTROS_FONTES),
-      OPC(AJ_FALHA_PROVEDORES),
-      OPC(AJ_FALHA_PROVEDOR_ORDEM),
       OPC(AJ_FALHA_ADDONS),
       OPC(AJ_FALHA_ADDON_ORDEM),
       OPC(AJ_FALHA_ADDON_LIMITE),
@@ -405,6 +403,14 @@ static const Item TELA[] = {
 #endif
 #endif
   SEC("Integrations", "Metadata, ratings, artwork and connected services", "aj_link"),
+    ROT("Connected Services"),
+      OPC(AJ_RESOLVE_LINKS),
+      OPC(AJ_RESOLVE_PROVIDER),
+#if !defined(__EMSCRIPTEN__)
+      OPC(AJ_TB_CACHED_ADD),
+#endif
+      OPC(AJ_RESOLVE_PREPARE),
+      OPC(AJ_RESOLVE_LIMIT),
     ROT("Debrid"),
       OPC(AJ_PROVEDORES_ESCOPO),
       OPC(AJ_DEBRID_RD),
@@ -415,6 +421,11 @@ static const Item TELA[] = {
       OPC(AJ_DEBRID_RD_TESTAR),
       OPC(AJ_DEBRID_TB_TESTAR),
       OPC(AJ_DEBRID_PM_TESTAR),
+    ROT("Provider fallback"),
+      OPC(AJ_FALHA_PROVEDORES),
+      OPC(AJ_FALHA_PROVEDOR_ORDEM),
+    ROT("Social"),
+      OPC(AJ_DISCORD),
     ROT("Ratings"),
       OPC(AJ_NT_IMDB),
       OPC(AJ_NT_TOMATES),
@@ -472,7 +483,6 @@ static const Item TELA[] = {
       OPC(AJ_CW_PROXIMO),
       OPC(AJ_HIST_CONTA),
       OPC(AJ_SOCIAL),
-      OPC(AJ_DISCORD),
     MAIS(),
     ROT("Continue Watching"),
       OPC(AJ_CW_FURTHEST),

@@ -2,7 +2,10 @@
 enum { AJS_REPRODUCAO, AJS_IDIOMAS, AJS_FONTES, AJS_TVAOVIVO, AJS_HOME, AJS_APARENCIA, AJS_TITULO, AJS_CARTAZES, AJS_CONTAS, AJS_DESEMPENHO, AJS_SOBRE, AJS_N, AJS_TRAILERS = AJS_N };
 static const int ajCategoryScene[] = { AJS_CONTAS, AJS_CONTAS, AJS_APARENCIA, AJS_HOME, AJS_FONTES, AJS_REPRODUCAO, AJS_TITULO, AJS_CONTAS, AJS_CONTAS, AJS_DESEMPENHO, AJS_SOBRE };
 static int ajSceneForCategory(int category) { return category >= 0 && category < (int)(sizeof ajCategoryScene / sizeof *ajCategoryScene) ? ajCategoryScene[category] : AJS_CONTAS; }
-static int ajSceneForOption(int op) { switch (op) {
+static int ajSceneForOption(int op) {
+if(op==AJ_TB_CACHED_ADD)return AJS_FONTES;
+if(op>=AJ_RESOLVE_LINKS&&op<=AJ_RESOLVE_LIMIT)return AJS_FONTES;
+switch (op) {
 case AJ_QUALIDADE: return AJS_REPRODUCAO;
 case AJ_FONTE_HDR: return AJS_REPRODUCAO;
 case AJ_DV: return AJS_REPRODUCAO;
@@ -434,7 +437,10 @@ case AJ_LOG_REDE: return AJS_SOBRE;
 case AJ_BAIXAR_REGISTRO: return AJS_SOBRE;
 #endif
 default: return AJS_CONTAS; } }
-static int ajArtBlockForOption(int op) { switch (op) {
+static int ajArtBlockForOption(int op) {
+if(op==AJ_TB_CACHED_ADD)return 0;
+if(op>=AJ_RESOLVE_LINKS&&op<=AJ_RESOLVE_LIMIT)return 0;
+switch (op) {
 case AJ_QUALIDADE: return 0;
 case AJ_FONTE_HDR: return 0;
 case AJ_DV: return 0;

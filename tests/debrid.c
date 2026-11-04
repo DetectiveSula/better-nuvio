@@ -28,6 +28,11 @@ time_t debrid_test_time(time_t *dst) {
   return contaAgora;
 }
 
+// This legacy backend fixture never opts into cached automatic account creation.
+int ajustes_torbox_adicionar_cache(void){return 0;}
+int debrid_tb_adicao_claim(const char*k,const char*h,int*i){(void)k;(void)h;(void)i;assert(0);return -1;}
+int debrid_tb_adicao_salvar(const char*k,const char*h,int i){(void)k;(void)h;(void)i;assert(0);return 0;}
+
 #define K_RD "CHAVE-RD-SEGREDO-1"
 #define K_TB "CHAVE-TB-SEGREDO-2"
 #define K_PM "CHAVE-PM-SEGREDO-3"
@@ -38,6 +43,8 @@ time_t debrid_test_time(time_t *dst) {
 
 // ---------------------------------------------------------------- rede falsa
 
+static int probeMode,probeStatus=200;
+static const char *probeResponse;
 static int   pmEmCache = 1, tbEmCache = 1;     // o que a consulta de cache diz
 static char  corpoSelectRD[100];               // files=<id> do Real-Debrid
 static char  ctCriarTB[120];                   // Content-Type do createtorrent
@@ -182,6 +189,10 @@ char *rede_postar_st(const char *url, int s, const char *const *cab,
   for (k = 0; cab && cab[k]; k++)
     if (!strncmp(cab[k], "Content-Type:", 13)) snprintf(ct, sizeof ct, "%s", cab[k]);
 
+  if(probeMode && strstr(url,"torbox.app") && strstr(url,"checkcached")) {
+    bateuTB[0]++;assert(strstr(ct,"application/json"));assert(strstr(corpo,"hashes"));
+    *st=probeStatus;return probeResponse?strdup(probeResponse):NULL;
+  }
   // --- AllDebrid
   if (strstr(url, "api.alldebrid.com")) {
     assert(strstr(ct, "x-www-form-urlencoded"));
@@ -228,6 +239,7 @@ char *rede_postar_st(const char *url, int s, const char *const *cab,
     assert(strstr(ct, "x-www-form-urlencoded"));
     if (strstr(url, "cache/check")) {
       bateuPM[0]++; *st = 200;
+      if(probeMode){*st=probeStatus;return probeResponse?strdup(probeResponse):NULL;}
       snprintf(corpoCacheCheckPM, sizeof corpoCacheCheckPM, "%s", corpo);
       return dup2s(pmEmCache
         ? "{\"status\":\"success\",\"response\":[true],\"transcoded\":[false],"
@@ -271,6 +283,7 @@ char *rede_baixar_st(const char *url, int s, const char *const *cab, int *st) {
   if (strstr(url, "api.torbox.app")) {
     if (strstr(url, "torrents/checkcached")) {
       bateuTB[0]++;
+      if(probeMode){*st=probeStatus;return probeResponse?strdup(probeResponse):NULL;}
       // hash SEMPRE em minusculas: o teste manda "DEADBEEF" e a API compara texto
       assert(strstr(url, "hash=deadbeef") && strstr(url, "format=list"));
       return dup2s(tbEmCache
@@ -1118,6 +1131,25 @@ static void airlock(void) {
   OK("Airlock do TorBox: torrent/usenet, sem chave, recusa de plano e success:false");
 }
 
+static void readOnlyAvailability(void) {
+  const char *hash="deadbeef00000000000000000000000000000000";
+  debrid_esquecer();debrid_definir_chave_local("torbox",K_TB);debrid_definir_chave_local("premiumize",K_PM);
+  memset(bateuTB,0,sizeof bateuTB);memset(bateuPM,0,sizeof bateuPM);probeMode=1;probeStatus=200;
+  probeResponse="{\"success\":true,\"data\":[{\"hash\":\"DEADBEEF00000000000000000000000000000000\"}]}";
+  assert(debrid_cache_consultar(DEBRID_TB,hash)==1);
+  probeResponse="{\"success\":true,\"data\":[]}";assert(debrid_cache_consultar(DEBRID_TB,hash)==0);
+  const char *bad[]={NULL,"{}","{\"success\":false,\"data\":[]}","{\"success\":true,\"data\":null}","{\"success\":true,\"data\":[{\"hash\":\"different\"}]}"};
+  for(unsigned i=0;i<sizeof bad/sizeof *bad;i++){probeResponse=bad[i];assert(debrid_cache_consultar(DEBRID_TB,hash)==-2);}
+  probeResponse="{\"success\":true,\"data\":[]}";probeStatus=503;assert(debrid_cache_consultar(DEBRID_TB,hash)==-2);probeStatus=200;
+  probeResponse="{\"status\":\"success\",\"response\":[true]}";assert(debrid_cache_consultar(DEBRID_PM,hash)==1);
+  probeResponse="{\"status\":\"success\",\"response\":[false]}";assert(debrid_cache_consultar(DEBRID_PM,hash)==0);
+  probeResponse="{\"status\":\"success\",\"response\":[\"true\"]}";assert(debrid_cache_consultar(DEBRID_PM,hash)==-2);
+  probeResponse="{\"status\":\"error\",\"response\":[false]}";assert(debrid_cache_consultar(DEBRID_PM,hash)==-2);
+  assert(debrid_cache_consultar(DEBRID_RD,hash)==-1&&debrid_cache_consultar(DEBRID_AD,hash)==-1);
+  assert(debrid_cache_consultar(DEBRID_TB,"invalid")==-1);
+  assert(!bateuTB[1]&&!bateuTB[2]&&!bateuTB[3]&&!bateuPM[1]);probeMode=0;debrid_definir_chave_local("torbox","");debrid_definir_chave_local("premiumize","");debrid_esquecer();
+  OK("Stage C read-only cache probes: confirmed/absent/unknown, HTTP errors, strict hashes/booleans, no torrent or transfer creation");
+}
 int main(void) {
   unsigned scope = debrid_tb_geracao();
   debrid_abrir_sessao(100);
@@ -1151,6 +1183,7 @@ int main(void) {
   assert(velho >= 0 && f >= 0);
   assert(dup2(f, 1) >= 0);
 
+  readOnlyAvailability();
   semChaves();
   especiais();
   realDebrid();

@@ -121,6 +121,12 @@ typedef struct Stream {
   // Uma resposta nativa pronta e mais recente que a negativa antiga do addon.
   // So atualiza a exibicao; nao limpa foraCache nem muda as tentativas.
   int  cacheNativo;
+  // Transient, provider/profile/credential-scoped read-only evidence, never serialized.
+  int cacheRequerResolver; // addon clientResolve object: opaque URL is not a ready media URL
+  int cacheConsulta, cacheConsultaServico;
+  unsigned cacheConsultaGeracao;
+  uint64_t cacheConsultaSessao;
+  Uint32 cacheConsultaQuando;
   // A SONDA VIU A URL RESPONDER PAGINA (HTML/JSON/texto) e nao video (2.0.2,
   // naovideo.h): linha de aviso do addon. A folha a mostra apagada ("Nao e
   // video") e o automatico a pula. Marcada na verificacao, nunca no parser.
@@ -491,3 +497,13 @@ int  stream_folha_escolheu(int *escolhido);
 int stream_canal_primeira_viva_sessao(int tentativas, uint64_t sessao);
 int stream_verificar_proxima_vod_sessao(int atualIdx, int tentativas, int *conferidas, uint64_t sessao);
 #endif
+
+// Informed one-shot manual override, rendered above the shared island surfaces.
+void stream_resolver_confirmacao_desenhar(void);
+
+// Read-only refresh; worker API (never call the blocking function on the UI thread).
+void stream_cache_verificar(void);
+int stream_cache_estado(const Stream *source); // 0 Unknown, 1 Cached, 2 Uncached, 3 Error
+const char *stream_cache_rotulo(const Stream *source);
+
+unsigned stream_lista_revisao(void); // classification/metadata changes without replacing the list

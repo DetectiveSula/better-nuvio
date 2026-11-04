@@ -58,6 +58,10 @@ void debrid_contexto_sair(void);
 // realdebrid/real-debrid, torbox e premiumize (com ou sem hifen). Uma chave
 // por servico; chamar de novo para outro servico NAO apaga a anterior.
 void debrid_definir_chave(const char *servico, const char *chave);
+int debrid_cache_consultar(int provider, const char *hash); // read-only: 1 cached, 0 absent, -1 unknown/unsupported, -2 API/parse error
+void debrid_cache_consultar_lote(int provider,const char hashes[][48],int count,int *states);
+unsigned debrid_cache_geracao(void); // transient cache evidence invalidation, no secrets
+int debrid_resolver_existente(int provider,const char *hash,int file,char *url,unsigned size,int *outside);
 int  debrid_ativo(void);          // ha chave de um servico que sabemos resolver
 // "https://host" da API de cada servico com chave que pode resolver (aquecer.c).
 int  debrid_origens(const char **origens, int max);
@@ -186,3 +190,5 @@ int   debrid_tb_adicionar(const char *hash);
 int   debrid_tb_airlock(int usenet, int item, int ligar, char *detalhe, unsigned n);
 
 #endif
+
+int debrid_torbox_resolver_compativel(const char *hash,int file,char *url,unsigned size,int *outside);

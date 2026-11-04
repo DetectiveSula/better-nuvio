@@ -354,3 +354,7 @@
   0, /* hero logo and information size: Normal */
   0, /* folder hero details: On (V_LIGA 0) */
   60, /* Android Trakt Continue Watching days cap; 0 = All */
+  // Stage C appended defaults (original binding prefix ends above).
+  1, 0, 1, 0, /* Stage C: resolve Off, automatic provider, prepare Off/0 */
+  // Stage D cached-addition opt-in (after all Stage C defaults).
+  1, /* Allow cached TorBox additions: Off */

@@ -200,6 +200,10 @@ int ajustes_fonte_prazo_ms(void);
 int ajustes_fonte_tocar_conferindo(void);
 int ajustes_fonte_aquecer(void);
 int ajustes_fonte_conferir_varias(void);
+int ajustes_resolver_ativo(void);
+int ajustes_resolver_provedor(void);
+int ajustes_resolver_limite(void);
+int ajustes_resolver_preferencia(void);
 int ajustes_fonte_preparar(void);
 int ajustes_fonte_precarregar(void);
 // Memoria da fonte (fontepref.h, fontepref_configurar): Preferir o mesmo grupo
@@ -872,3 +876,5 @@ int ajustes_shot_valor(const char *chave, int v);   // capturas: opcao pela chav
 int ajustes_cw_dias(void);
 
 #endif
+
+int ajustes_torbox_adicionar_cache(void); // explicit opt-in, effective only with the TorBox resolver

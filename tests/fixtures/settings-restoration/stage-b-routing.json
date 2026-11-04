@@ -1,0 +1,17 @@
+{
+  "AJ_FALHA_PROVEDORES": {
+    "from": "Content & Discovery",
+    "to": "Integrations",
+    "reason": "Cross-provider retry policy belongs beside the debrid connections; addon retries remain in Content & Discovery."
+  },
+  "AJ_FALHA_PROVEDOR_ORDEM": {
+    "from": "Content & Discovery",
+    "to": "Integrations",
+    "reason": "Per-provider retry order and limits belong beside connected debrid services."
+  },
+  "AJ_DISCORD": {
+    "from": "Tracking",
+    "to": "Integrations",
+    "reason": "Discord Rich Presence is a connected social service; tracking providers and progress remain in Tracking."
+  }
+}

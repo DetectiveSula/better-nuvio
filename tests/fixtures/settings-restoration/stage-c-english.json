@@ -1,0 +1,13 @@
+[
+  "Resolve playable links",
+  "Resolve with",
+  "Prepare links",
+  "Links to prepare",
+  "Automatic",
+  "TorBox",
+  "Premiumize",
+  "Resolve cached playable links automatically. Off by default. Configure TorBox or Premiumize first. Real-Debrid and AllDebrid remain available through an explicit manual override.",
+  "Choose a configured resolver. An unavailable saved preference falls back to the first eligible provider without changing the saved value.",
+  "Prepare cached links in advance. Turning this on sets the limit to 2; turning it off sets the limit to 0. No uncached downloads are started.",
+  "Prepare at most 1 to 5 links. Zero disables preparation. The original limit is separate from Native source preselection and video preloading."
+]

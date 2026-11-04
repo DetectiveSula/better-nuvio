@@ -32,6 +32,7 @@ def contract():
         source[start:source.index('\n};', start)]))
     assert len(ids) == len(keys), 'Enum and storage key arrays diverged'
     defaults = (ROOT / 'src/ajustes_ux_padrao.inc').read_text()
+    defaults = defaults.split('// Stage C appended defaults (original binding prefix ends above).')[0]
     defaults = re.sub(r'/\*.*?\*/|//[^\n]*', '', defaults, flags=re.S)
     defaults = re.sub(r'\s+', '', defaults)
     return {

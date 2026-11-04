@@ -1,0 +1,12 @@
+{
+  "src/debrid.c": {
+    "before": "9a0306d44df553f59517f87d299ebf9a19200f783f0604a90bd278aa3a2a071d",
+    "after": "8772bcde9819f811d3563c7f5a50973f08ee5edc071531647399e5cb3069e89c",
+    "reason": "Stage D read-only cache classification, existing-item resolution and autoplay URL handoff; old settings ABI remains frozen"
+  },
+  "src/streams.c": {
+    "before": "3df126441b728f48dbd1942abf9ebf13f1e2dc1f86dff84e57c6b979ff77c85e",
+    "after": "327244747da48f8bb2b53be79adbad5f94ca831ca845264fb6816337a24338cf",
+    "reason": "Stage D read-only cache classification, existing-item resolution and autoplay URL handoff; old settings ABI remains frozen"
+  }
+}

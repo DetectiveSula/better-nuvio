@@ -2030,11 +2030,13 @@ static void desenhaLinha(int i, float x, float y, float a) {
     o = txt_linha(TXT_ILHA_APOIO, "OK abre", SP_TINTA, 255);
     if (f > 0.02f && !spTelefone()) { txt_desenhar_alpha(o, r.x + r.w - 28.0f - o.w, r.y + (r.h - o.h) * 0.5f, .5f * f * a); dw = o.w + 40.0f; }
     tw = r.x + r.w - tx - 26.0f - dw;
-    t = txt_linha_corta(TXT_AJ_INSP, l->t1, SP_TINTA, 255, tw);
+    float badge = ajustes_legacy_selo(l->ref, -1, 0, 0, 0);
+    t = txt_linha_corta(TXT_AJ_INSP, l->t1, SP_TINTA, 255, fmaxf(24, tw - badge));
     m = txt_linha_corta(TXT_ILHA_META, l->t2, SP_TINTA, 255, tw);
     bloco = t.h + 6.0f + m.h + 10.0f + 50.0f;
     ty = r.y + (r.h - bloco) * 0.5f;
     txt_desenhar_alpha(t, tx, ty, a);
+    ajustes_legacy_selo(l->ref, tx + t.w, ty + t.h * 0.5f, tw - t.w, a);
     txt_desenhar_alpha(m, tx, ty + t.h + 6.0f, .62f * a);
     if (l->base[0]) txt_bloco(TXT_AJ_ESTADO, l->base, SP_TINTA, tx, ty + t.h + 6.0f + m.h + 10.0f,
                               tw < 560.0f ? tw : 560.0f, 25.0f, .45f * a, 2);
@@ -2093,11 +2095,13 @@ static void desenhaLinha(int i, float x, float y, float a) {
       }
       return;
     }
-    { TxtLinha t = txt_linha_corta(TXT_ILHA_ITEM, l->t1, SP_TINTA, 255, r.x + r.w - tx - 16.0f);
+    { float badge = l->tipo == L_AJUSTE ? ajustes_legacy_selo(l->ref, -1, 0, 0, 0) : 0;
+      TxtLinha t = txt_linha_corta(TXT_ILHA_ITEM, l->t1, SP_TINTA, 255, fmaxf(24, r.x + r.w - tx - 16.0f - badge));
       TxtLinha m = txt_linha_corta(TXT_ILHA_APOIO, l->t2, SP_TINTA, 255, r.x + r.w - tx - 16.0f);
       float bloco = t.h + (l->t2[0] ? 3.0f + m.h : 0);
       float ty = r.y + (r.h - bloco) * 0.5f;
       txt_desenhar_alpha(t, tx, ty, a1 * a);
+      if (badge) ajustes_legacy_selo(l->ref, tx + t.w, ty + t.h * 0.5f, r.x + r.w - tx - 16.0f - t.w, a1 * a);
       if (l->t2[0]) txt_desenhar_alpha(m, tx, ty + t.h + 3.0f, a2 * a); }
   }
 }

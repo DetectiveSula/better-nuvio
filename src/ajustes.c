@@ -41,6 +41,7 @@
 #include "herocat_regras.h"
 #include "listas.h"
 #include "idioma.h"
+#include "resolver_policy.h"
 // Settings are English without changing the stored app or metadata language.
 #define i18n(s) idioma_ingles(s)
 #include "idiomacod.h"
@@ -214,11 +215,12 @@ static int focoEscuro(void) { return tintaFoco() < 128; }   // superficie do foc
 // Avancados, 96) e o rodape proprio (dicas e o aviso "Ajuste salvo", 72) que o
 // aviso nao cubra mais a ultima linha.
 static float ajTopoLista(void);
+static float ajBaseLista(void);
 #define AJ_TOPO        ajTopoLista()
 // 2.0.2: o cabecalho da pagina da categoria (o cartao da grade crescido), acima
 // da arte e da lista; o titulo saiu de dentro da ilha da lista.
 #define AJ_CAB_PAGINA  (ajRetrato() && !telefoneui_ativo() ? 224.0f : 136.0f)
-#define AJ_BASE        (NV_VTELA_H - ajPaginaMargem() - AJ_A3_RODAPE)
+#define AJ_BASE        ajBaseLista()
 #define AJ_A3_CAB       28.0f
 #define AJ_A3_RODAPE    72.0f
 // Raio da linha em fracao do menor lado (o SDF do shader e normalizado):
@@ -728,6 +730,8 @@ typedef enum {
   AJ_HERO_TAMANHO,
   AJ_HERO_PASTA_DETALHES, // Device-local folder hero details, append-only; on by default.
   AJ_CW_DIAS, // Android Trakt days cap: 0 All, otherwise 7..365; per-profile.
+  AJ_RESOLVE_LINKS, AJ_RESOLVE_PROVIDER, AJ_RESOLVE_PREPARE, AJ_RESOLVE_LIMIT,
+  AJ_TB_CACHED_ADD, // append-only, explicit cached-account-item opt-in
   AJ_N
 } OpcaoId;
 _Static_assert(DEBRID_RD == 0 && DEBRID_TB == 1 && DEBRID_PM == 2 && DEBRID_AD == 3,
@@ -738,6 +742,7 @@ _Static_assert(DEBRID_RD == 0 && DEBRID_TB == 1 && DEBRID_PM == 2 && DEBRID_AD =
 static const char *V_PROVEDORES_ESCOPO[] = { "Compartilhada neste aparelho", "Separada para este perfil" };
 static const char *V_HDR_UI[] = { "Automático", "Desligado" };
 static const char *V_LEG_MOSTRAR[] = { "Só meus idiomas", "Todas" };
+static const char *V_RESOLVE_PROVIDER[] = { "Automatic", "TorBox", "Premiumize" };
 static const char *V_SELOS_PACOTE[] = { "Do Nuvio", "Pacote 1", "Pacote 2", "Pacote 3" };
 
 // Selo de assistido: a ordem e a do disco (0 = Ligado do V_LIGA antigo vira Icone,
@@ -1867,6 +1872,11 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Tamanho do destaque", V_HERO_TAMANHO, 3),       // local: heroSizeLocal
   ESC("Mostrar detalhes da pasta no destaque", V_LIGA, 2),
   NUM("Dias no Continuar do Trakt (0 = todos)", 0, 365, 1, " dias"),
+  ESC("Resolve playable links", V_LIGA, 2),
+  ESC("Resolve with", V_RESOLVE_PROVIDER, 3),
+  ESC("Prepare links", V_LIGA, 2),
+  NUM("Links to prepare", 0, 5, 1, ""),
+  ESC("Allow cached TorBox additions", V_LIGA, 2),
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -2201,6 +2211,9 @@ static const char *CHAVE[] = {
   "heroSizeLocal",
   "heroFolderDetailsLocal",
   "traktContinueWatchingDaysCapLocal",
+  "resolvePlayableLinksLocal", "preferredResolverProviderLocal",
+  "-preparePlayableLinks", "playableLinkPreparationLimitLocal",
+  "torboxCachedAddLocal",
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -2267,6 +2280,7 @@ typedef struct {
 #define MAIS()        { IT_MAIS, -1, "Mais opções", NULL, "aj_sliders-horizontal" }
 
 #include "ajustes_scenes.inc"
+#include "ajustes_legacy.inc"
 #include "ajustes_ux_tela.inc"
 
 // Derivados de TELA uma vez, no arranque (montarTela). Sao so indices: nada
@@ -2821,6 +2835,8 @@ static void desenhaFolhaHeroCat(void);
 
 static char seekrChave[96];
 static int lig(int op) {
+  if(op==AJ_RESOLVE_LINKS)return ajustes_resolver_ativo();
+  if(op==AJ_RESOLVE_PREPARE)return ajustes_resolver_limite()>0;
   if (op == AJ_FALHA_PROVEDORES || op == AJ_FALHA_ADDONS) return ajFalhaValor(op) == 0;
   return valor[op] == 0 && (op != AJ_SEEKR_LIGADO || seekrChave[0]);
 }
@@ -2951,6 +2967,17 @@ int ajustes_fonte_prazo_ms(void) {
 int ajustes_fonte_tocar_conferindo(void) { return lig(AJ_FONTE_TOCAR_CONFERINDO); }
 int ajustes_fonte_aquecer(void) { return lig(AJ_FONTE_AQUECER); }
 int ajustes_fonte_conferir_varias(void) { return lig(AJ_FONTE_CONFERIR_VARIAS); }
+int ajustes_resolver_ativo(void) { return valor[AJ_RESOLVE_LINKS]==0 && resolver_politica_mascara()!=0; }
+int ajustes_resolver_provedor(void) { return resolver_politica_provedor(valor[AJ_RESOLVE_PROVIDER]); }
+int ajustes_resolver_limite(void) { return ajustes_resolver_ativo()?resolver_politica_limite(valor[AJ_RESOLVE_LIMIT]):0; }
+int ajustes_torbox_adicionar_cache(void) {
+#ifdef __EMSCRIPTEN__
+  return 0;
+#else
+  return !edPerfil && valor[AJ_TB_CACHED_ADD]==0 && !ajustes_fonte_manual() && ajustes_resolver_ativo() && ajustes_resolver_provedor()==DEBRID_TB;
+#endif
+}
+int ajustes_resolver_preferencia(void) { return valor[AJ_RESOLVE_PROVIDER]; }
 int ajustes_fonte_preparar(void) { return lig(AJ_FONTE_PREPARAR); }
 int ajustes_fonte_grupo(void) { return ajustes_fonte_prioridade() != 3 && lig(AJ_FONTE_GRUPO); }
 int ajustes_fonte_grupo_sessoes(void) { return lig(AJ_FONTE_GRUPO_SESSOES); }
@@ -3154,6 +3181,14 @@ float ajustes_tamanho_ajustes(void) {
 // The phone always uses List. Keep the stored TV preference unchanged.
 static int ajLayoutSelecionavel(void) { return !telefoneui_ativo(); }
 static int ajOpcaoDisponivel(int op) {
+  if(op==AJ_TB_CACHED_ADD) {
+#ifdef __EMSCRIPTEN__
+    return 0; // browser storage cannot guarantee a durable write-before-send receipt
+#else
+    return !edPerfil;
+#endif
+  }
+  if(edPerfil && op>=AJ_RESOLVE_LINKS && op<=AJ_RESOLVE_LIMIT)return 0;
   // These controls use active-profile stores rather than the edited value array.
   if (edPerfil && (ajFalhaBackend(op) || op == AJ_PROVEDORES_ESCOPO || op == AJ_FILTROS_FONTES ||
                    op == AJ_FALHA_PROVEDOR_ORDEM || op == AJ_FALHA_ADDON_ORDEM ||
@@ -5972,6 +6007,7 @@ int ajustes_aplicar_blob(const char *json) {
 // exigiria adivinhar a feature e o `type`, e um blob com forma errada e pior
 // que uma chave a menos.
 static int somenteDesteAparelho(int op) {
+  if(op>=AJ_RESOLVE_LINKS && op<=AJ_RESOLVE_LIMIT)return 1;
   if (ajLegendaPrincipal(op) || ajLegendaSecundaria(op)) return 1;
   if (op >= AJ_FALHA_PROVEDORES && op < AJ_N) return 1;
   if (op == AJ_ICONE_APP || op == AJ_LOGO_APP || op == AJ_ABERTURA) return 1;
@@ -7399,6 +7435,10 @@ static const char *textoLeitura(int op) {
 // ela continua no lugar, apagada e sem setas: a dependencia fica visivel em vez
 // de a linha sumir.
 static int inativa(int op) {
+  if(op==AJ_TB_CACHED_ADD)return !ajustes_resolver_ativo()||ajustes_resolver_provedor()!=DEBRID_TB;
+  if(op==AJ_RESOLVE_LINKS)return !resolver_politica_mascara();
+  if(op>=AJ_RESOLVE_PROVIDER&&op<=AJ_RESOLVE_LIMIT)
+    return !ajustes_resolver_ativo()||(op==AJ_RESOLVE_LIMIT&&!valor[AJ_RESOLVE_LIMIT]);
   if (ajustes_fonte_prioridade() == 3 &&
       (op == AJ_FONTE_AUTO || op == AJ_FONTE_GRUPO || op == AJ_FONTE_GRUPO_SESSOES || op == AJ_LINK_REUSAR || op == AJ_LINK_PRAZO)) return 1;
   switch (op) {
@@ -7627,6 +7667,11 @@ static void focarOpcao(int op) {
 // separado de proposito: as duas perguntas sao diferentes e juntas viram um
 // paragrafo que ninguem le do sofa.
 static const char *ajudaOpcaoBase(int op) {
+  if(op==AJ_TB_CACHED_ADD)return "Off keeps read-only mode. On can add verified cached torrents to your TorBox account and may start a download if provider cache changes. Requires autoplay and a fresh provider cache check. Failed or timed-out additions require manual confirmation.";
+  if(op==AJ_RESOLVE_LINKS)return "Resolve cached playable links automatically. Off by default. Configure TorBox or Premiumize first. Real-Debrid and AllDebrid remain available through an explicit manual override.";
+  if(op==AJ_RESOLVE_PROVIDER)return "Choose a configured resolver. An unavailable saved preference falls back to the first eligible provider without changing the saved value.";
+  if(op==AJ_RESOLVE_PREPARE)return "Prepare cached links in advance. Turning this on sets the limit to 2; turning it off sets the limit to 0. No uncached downloads are started.";
+  if(op==AJ_RESOLVE_LIMIT)return "Prepare at most 1 to 5 links. Zero disables preparation. The original limit is separate from Native source preselection and video preloading.";
   if (ajLegendaPrincipal(op) || op == AJ_LEG1_RESTAURAR)
     return "Tamanho, fonte, cores, fundo e posição das legendas.";
   if (op >= AJ_LEG2_FONTE && op <= AJ_LEG2_RESTAURAR)
@@ -9587,6 +9632,21 @@ static int ajFonteAplicar(int op, int novo) {
   return 1;
 }
 static int definirValorDireto(int op, int novo) {
+  if(op==AJ_TB_CACHED_ADD) {
+    if(!ajOpcaoDisponivel(op)||inativa(op))return 0;
+    int old=valor[op];valor[op]=limita(op,novo);
+    if(!gravar()){valor[op]=old;return 0;}return 1;
+  }
+  if(op>=AJ_RESOLVE_LINKS && op<=AJ_RESOLVE_LIMIT) {
+    if(!ajOpcaoDisponivel(op)||inativa(op))return 0;
+    if(op==AJ_RESOLVE_PROVIDER&&!resolver_politica_opcao(novo))return 0;
+    if(op==AJ_RESOLVE_PREPARE) {
+      int old=valor[AJ_RESOLVE_LIMIT];valor[AJ_RESOLVE_LIMIT]=novo==0?2:0;
+      if(!gravar()){valor[AJ_RESOLVE_LIMIT]=old;return 0;}return 1;
+    }
+    int old=valor[op];valor[op]=op==AJ_RESOLVE_LIMIT?resolver_politica_limite(novo):limita(op,novo);
+    if(!gravar()){valor[op]=old;return 0;}return 1;
+  }
   int antes, memoriaAntes = memoriaEscolhida, bibliotecaAntes = bibliotecaFonteEscolhida;
   if (op < 0 || op >= AJ_N || !ajOpcaoDisponivel(op) ||
       (OPCOES[op].tipo != OP_ESCOLHA && OPCOES[op].tipo != OP_NUMERO)) return 0;
@@ -10273,6 +10333,9 @@ static int nValores(int op) {
 // Texto do valor de uma linha. Buffer estatico porque so uma linha e desenhada
 // por vez dentro de desenhaLinha.
 static const char *textoValor(int op) {
+  if(op==AJ_RESOLVE_LINKS)return ajustes_resolver_ativo()?"On":"Off";
+  if(op==AJ_RESOLVE_PREPARE)return valor[AJ_RESOLVE_LIMIT]>0?"On":"Off";
+  if(op==AJ_RESOLVE_PROVIDER){int p=ajustes_resolver_provedor();return p<0?"No eligible provider":debrid_servico_nome(p);}
   if (ajFonte(op)) return ajFonteNome(op, ajFonteAtual(op));
   if (op == AJ_FONTE_AUTO && ajustes_fonte_prioridade() == 3) return i18n("Primeira da lista");
   if(op==AJ_GUIA_CATEGORIAS)return i18n("Abrir");

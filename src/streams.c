@@ -1,4 +1,11 @@
 #include "streams.h"
+#include "resolver_policy.h"
+static int streamResolverCache(const char *hash,int file,char *url,unsigned size,int *outside) {
+  return resolver_politica_resolver(-1,hash,file,url,size,outside);
+}
+static int streamResolverServicoCache(int provider,const char *hash,int file,char *url,unsigned size,int *outside) {
+  return resolver_politica_resolver(provider,hash,file,url,size,outside);
+}
 #include "mediaurl.h"
 #include "plrui.h"
 #include "ondever.h"
@@ -122,15 +129,20 @@ static Stream *lista;
 static int n = 0;
 // Workers publish source mutations; UI caches consume this revision.
 static _Atomic unsigned folhaRevisao;
+unsigned stream_lista_revisao(void) { return atomic_load(&folhaRevisao); }
 static void folhaDados(void);
 static float linhaTopo(int row);
+static int streamForaCache(const Stream *s);
+static int streamUrlPronta(const Stream *s);
 static int cacheConfirmado(const Stream *s) {
-  return s->emCache && !s->cacheNegado && (!s->foraCache || s->cacheNativo) && !s->urlP2P && !s->naoVideo;
+  return stream_cache_estado(s)==1 && !s->urlP2P && !s->naoVideo;
 }
 static void cacheConfirmar(Stream *s) {
   s->emCache = 1;
   s->cacheNegado = 0;
   s->cacheNativo = 1;
+  s->foraCache = 0; // an actual playable result supersedes the addon hint
+  s->cacheConsultaServico=0;
   atomic_fetch_add(&folhaRevisao, 1);
 }
 // ORDEM DE EXIBICAO (#221). `lista` so cresce no fim (stream_lista_acrescentar)
@@ -161,6 +173,7 @@ static void cancelarConferenciasSemTrava(void);
 static int atual = -1, recarregar;
 static _Atomic int canalFolha;
 static _Atomic int pedidoVod = 1;
+#include "streams_cache.inc"
 static int filtrosVod(void) { return pedidoVod && !canalFolha; }
 void stream_filtro_tipo(const char *tipo) {
   pedidoVod = nv_tipo_vod(tipo && tipo[0] ? tipo : "movie");
@@ -440,12 +453,13 @@ int stream_filtro_bloqueou(void) {
 // na folha manual (#284: 75% Android / 60% Samsung / 41% LG falham quando o
 // automatico os escolhe, contra 6/14/9% das fontes com resolucao).
 // Por que a fonte sai do automatico (0 = fica), na ordem em que o teste corre.
-enum { MOT_FICA, MOT_EXCLUIDA, MOT_FILTRO, MOT_FORA_CACHE, MOT_INFORMATIVA, MOT_DECODER, MOT_MORTA, MOT_N };
+enum { MOT_FICA, MOT_EXCLUIDA, MOT_FILTRO, MOT_FORA_CACHE, MOT_CACHE_INDEFINIDO, MOT_INFORMATIVA, MOT_DECODER, MOT_MORTA, MOT_N };
 static int motivoForaDoAuto(int i, const FonteFiltroConfig *filtro) {
   if (automaticaExcluida(i)) return MOT_EXCLUIDA;
   if (i < 0 || i >= n) return MOT_FICA;
   if (!canalFolha && (filtro ? !fontefiltro_permite(filtro, &lista[i].filtro) : !stream_filtro_permite(&lista[i]))) return MOT_FILTRO;
-  if (!lista[i].filtro.naoVod && lista[i].foraCache) return MOT_FORA_CACHE;
+  if (!lista[i].filtro.naoVod && streamForaCache(&lista[i]) && stream_cache_estado(&lista[i])!=1 && stream_cache_estado(&lista[i])!=2) return MOT_CACHE_INDEFINIDO;
+  if (!lista[i].filtro.naoVod && streamForaCache(&lista[i])) return MOT_FORA_CACHE;
   if (ehInformativa(&lista[i])) return MOT_INFORMATIVA;
   if (excedeDecoder(&lista[i])) return MOT_DECODER;
   if (fontesmortas_idade(&lista[i]) >= 0) return MOT_MORTA;
@@ -1304,7 +1318,7 @@ static long multasDeAlvo(const Stream *s, const char *alvo) {
   if (!cabeNoTeto(s)) m += 1000000;
   // Fora de cache conhecido tambem sai do automatico (foraDoAuto, #402).
   // O peso continua util para quem inspeciona a pontuacao de uma fonte.
-  if (s->foraCache) m += 500000;
+  if (streamForaCache(s)) m += 500000;
   // P2P do servidor de streaming: o fim da fila. O automatico nem chega a
   // toca-lo (nao ha debrid que o resolva), mas a ORDEM da folha tambem conta:
   // link direto primeiro, torrent sem garantia de peers por ultimo.
@@ -1541,7 +1555,7 @@ static int enderecoDeAviso(const char *u) {
 }
 
 int stream_fonte_disponivel(const Stream *s) {
-  return s && (s->url[0] || s->infoHash[0]) && fonteOferecida(s) && !ehInformativa(s) && !s->foraCache &&
+  return s && (s->url[0] || s->infoHash[0]) && fonteOferecida(s) && !ehInformativa(s) && !streamForaCache(s) &&
     !enderecoDeAviso(s->url);
 }
 int stream_filme_consultar(const AddonsConsulta *consulta, const char *id,
@@ -1714,7 +1728,7 @@ void (*stream_cdn_lembrar)(const char *orig, const char *final, const char *cabe
 
 static int verificarUma(int i, Conferencia *c) {
   char fim[NV_MEDIA_URL_MAX], url[NV_MEDIA_URL_MAX], cab[512], mime[96], addon[sizeof lista->provedor];
-  int fileIdx, ok = 0;
+  int fileIdx, ok = 0, cached = 0, alreadyResolved=0;
   long corpo = -1;
   char infoHash[48];
   mime[0] = 0;
@@ -1727,43 +1741,29 @@ static int verificarUma(int i, Conferencia *c) {
     pthread_mutex_unlock(&verTrava);
     return 0;
   }
-  if (!fontefiltro_permite(&c->filtro, &lista[i].filtro) || (!lista[i].filtro.naoVod && lista[i].foraCache) || excedeDecoder(&lista[i]) || fontesmortas_idade(&lista[i]) >= 0) {
+  if (!fontefiltro_permite(&c->filtro, &lista[i].filtro) || (!lista[i].filtro.naoVod && streamForaCache(&lista[i])) || excedeDecoder(&lista[i]) || fontesmortas_idade(&lista[i]) >= 0) {
     pthread_mutex_unlock(&verTrava); return 0;
   }
   snprintf(url, sizeof url, "%s", lista[i].url);
   snprintf(cab, sizeof cab, "%s", lista[i].cabecalhos);
-  snprintf(infoHash, sizeof infoHash, "%s", lista[i].infoHash);
+  snprintf(infoHash, sizeof infoHash, "%s", cacheHashDa(&lista[i]));
   snprintf(addon, sizeof addon, "%s", lista[i].provedor);
-  fileIdx = lista[i].fileIdx;
+  fileIdx = lista[i].fileIdx; cached = cacheConfirmado(&lista[i]);alreadyResolved=lista[i].debridServico>0;
   pthread_mutex_unlock(&verTrava);
 
+  if(infoHash[0] && url[0] && cached && alreadyResolved)return 1;
   // A limited account must never be probed beside its visible stream.
   // Playback performs the account check after closing the previous HTTP request.
   if (xtream_url_limitada(url)) return 1;
-  if (!url[0] && infoHash[0]) {
-    // Link recem-saido do unrestrict: nao precisa da segunda viagem abaixo.
-    int fora = 0;
-    if (debrid_resolver_cache(infoHash, fileIdx, url, sizeof url, &fora)) {
+  if (infoHash[0]) {
+    // Cache annotation is read-only; playback now also needs an actual URL.
+    int fora=0;
+    if(streamResolverCache(infoHash,fileIdx,url,sizeof url,&fora)) {
       pthread_mutex_lock(&verTrava);
-      if (nv_perfil_sessao_atual(c->sessao) && listaGeracao == c->geracao && i < n) {
-        snprintf(lista[i].url, sizeof lista[i].url, "%s", url);
-        cacheConfirmar(&lista[i]); // o resolvedor cache-only ja confirmou, sem nova consulta
-        ok = 1;
-      } else c->abortou = 1;
+      if(nv_perfil_sessao_atual(c->sessao)&&listaGeracao==c->geracao&&i<n) {
+        snprintf(lista[i].url,sizeof lista[i].url,"%s",url);lista[i].debridServico=ajustes_resolver_provedor()+1;cacheConfirmar(&lista[i]);ok=1;
+      } else c->abortou=1;
       pthread_mutex_unlock(&verTrava);
-    } else {
-      pthread_mutex_lock(&verTrava);
-      if (nv_perfil_sessao_atual(c->sessao) && listaGeracao == c->geracao && i < n && fora) {
-        lista[i].foraCache = 1;
-        atomic_fetch_add(&folhaRevisao, 1);
-        lista[i].cacheNativo = 0;
-        // #205: se for a carta em foco na folha, ela muda de lugar no proximo
-        // montar(). Avisar o fio da UI, que prende o foco pelo indice (o
-        // mesmo focoFixo de stream_lista_acrescentar).
-        atomic_store(&foraCacheFoco, i);
-      }
-      pthread_mutex_unlock(&verTrava);
-      printf("[fonte] %d torrent nao resolveu no debrid\n", i);
     }
   } else if (!url[0]) {
     ok = 0;
@@ -1961,6 +1961,22 @@ unsigned stream_lista_geracao(void) {
   return g;
 }
 
+// Single-use manual exception, bound to the source list and active profile.
+static int manualConfirm=-1, manualChoice, manualPermit=-1;
+static unsigned manualConfirmGen, manualPermitGen;
+static uint64_t manualConfirmSession, manualPermitSession;
+static Uint32 manualPermitUntil;
+static void manualDecidir(int allow,int unused) {
+  (void)unused;
+  pthread_mutex_lock(&verTrava);
+  if(allow && aberta && manualConfirm>=0 && manualConfirm<n && manualConfirmGen==listaGeracao && nv_perfil_sessao_atual(manualConfirmSession)) {
+    manualPermit=manualConfirm;manualPermitGen=listaGeracao;manualPermitSession=manualConfirmSession;
+    manualPermitUntil=SDL_GetTicks()+15000;
+    escolha=manualConfirm;escolhaGeracao=listaGeracao;aberta=0;
+  }
+  manualConfirm=-1;
+  pthread_mutex_unlock(&verTrava);
+}
 int stream_resolver_escolhida(int i, unsigned geracao, char *url, unsigned nu,
                               char *servico, unsigned ns, int *pct) {
   char infoHash[48], fontes[sizeof lista->fontes];
@@ -1993,6 +2009,12 @@ int stream_resolver_escolhida(int i, unsigned geracao, char *url, unsigned nu,
   pthread_mutex_unlock(&verTrava);
   if (!infoHash[0]) return 0;
 
+  pthread_mutex_lock(&verTrava);
+  int permission=manualPermit==i && manualPermitGen==geracao &&
+    nv_perfil_sessao_atual(manualPermitSession) && (Sint32)(manualPermitUntil-SDL_GetTicks())>=0;
+  manualPermit=-1;
+  pthread_mutex_unlock(&verTrava);
+  if(!permission)return 0; // never silently fall back to a mutating manual resolver
   r = debrid_resolver_escolhido(infoHash, fileIdx, url, nu, servico, ns, pct);
   // SEM DEBRID QUE RESOLVA (sem chave, ou a conta recusou): o servidor P2P
   // experimental, se a pessoa ligou. "Baixando" (2) NAO cai aqui: o debrid ja
@@ -2048,7 +2070,7 @@ int stream_resolver_escolhida(int i, unsigned geracao, char *url, unsigned nu,
 static void faixaPontos(const Stream *s, char *dst, size_t tam) {
   static const char *const hdrNome[] = { "SDR", "HDR", "HDR10", "HDR10+", "DV" };
   snprintf(dst, tam, "%dp %s%s%s%s%s", s->altura, hdrNome[nivelHdr(s)], s->mp4 ? " mp4" : "",
-           s->foraCache ? " uncached" : " cache-unconfirmed", ehPlugin(s) ? " plugin" : " addon",
+           stream_cache_estado(s)==1 ? " cached" : stream_cache_estado(s)==2 ? " uncached" : stream_cache_estado(s)==3 ? " cache-error" : " cache-unconfirmed", ehPlugin(s) ? " plugin" : " addon",
            !cabeNaAltura(s) ? " over-cap" : foraDaFaixaTamanho(s) == 1 ? " over-size"
            : foraDaFaixaTamanho(s) == 2 ? " under-size" : "");
 }
@@ -2111,7 +2133,7 @@ static void logarEscolha(int escolhida, int pref, int modoPrimeira) {
 // addon nao a marcou como fora do cache e nao e torrent. Chamada com verTrava.
 static int prontaNoDebrid(int i, void *u) {
   (void)u;
-  return i >= 0 && i < n && lista[i].url[0] && !lista[i].foraCache && !soP2P(&lista[i]);
+  return i >= 0 && i < n && streamUrlPronta(&lista[i]) && !soP2P(&lista[i]);
 }
 
 // A ordem/qualidade continua sendo a das regras de fontes. A politica nova
@@ -2130,6 +2152,13 @@ void stream_falha_identidade(const Stream *s, char *dst, unsigned tam) {
     snprintf(dst, tam, "%s:%d", hash, s->fileIdx);
   } else snprintf(dst, tam, "%s\n%s", s->url, s->cabecalhos);
 }
+// Opaque hash-associated addon URLs can add provider items on GET. Only a
+// resolved Native URL is ready for automatic playback without a local lookup.
+static int streamUrlPronta(const Stream *s) {
+  return s->url[0] && !streamForaCache(s) &&
+    (!cacheHashDa(s)[0] || s->debridServico>0 || s->urlP2P);
+}
+static int streamPrecisaResolver(const Stream *s) { return cacheHashDa(s)[0] && !streamUrlPronta(s); }
 static int falhaCandidatas(unsigned geracao, int escolhida, int primeira, FonteFalhaCandidata **saida,
                            Stream **fontes, int *quantidade) {
   int total, nf = 0, pref = -1, livres = 0;
@@ -2166,7 +2195,7 @@ static int falhaCandidatas(unsigned geracao, int escolhida, int primeira, FonteF
     // O addon pode estar dizendo "fora de cache no TB"; isso nao responde
     // pelo RD/PM/AD. Hash nativo passa apenas pelo resolvedor cache-only da
     // rota escolhida. URL direta fora de cache continua fora do automatico.
-    excl[q] = (unsigned char)(s->urlP2P || (s->foraCache && !s->infoHash[0]) || ehInformativa(s) || excedeDecoder(s) ||
+    excl[q] = (unsigned char)(s->urlP2P || (streamForaCache(s) && !cacheHashDa(s)[0]) || ehInformativa(s) || excedeDecoder(s) ||
                  (!s->infoHash[0] && (automaticaExcluida(i) || fontesmortas_idade(s) >= 0)));
     grp[q] = (signed char)grupoDe(i);
     // Escolha explicita continua podendo tocar fora das regras do automatico.
@@ -2193,7 +2222,7 @@ static int falhaCandidatas(unsigned geracao, int escolhida, int primeira, FonteF
       nf = 0; goto fim;
     }
     stream_falha_identidade(s, id, (unsigned)tam);
-    c[q].indice = i; c[q].nativa = s->infoHash[0] != 0;
+    c[q].indice = i; c[q].nativa = streamPrecisaResolver(s);
     c[q].filtro = s->filtro;
     c[q].ordemAddon = s->addonOrdem;
     snprintf(c[q].addon, sizeof c[q].addon, "%s", s->addonChave);
@@ -2230,6 +2259,7 @@ int stream_falha_tem_proxima(const FonteFalhaSessao *sessao, unsigned geracao) {
 int stream_falha_verificar(FonteFalhaSessao *sessao, unsigned geracao, int escolhida,
                            int (*cancelado)(void *), void *ctx,
                            int *indice, int *servico, char *url, unsigned tam) {
+  stream_cache_verificar();
   FonteFalhaCandidata *c = NULL;
   Stream *fontes = NULL;
   int nc = 0, resultado = FONTEFALHA_FIM;
@@ -2251,11 +2281,11 @@ int stream_falha_verificar(FonteFalhaSessao *sessao, unsigned geracao, int escol
     if (!fontefalha_tentar(sessao, &c[r.candidata], r.servico)) { resultado = FONTEFALHA_FIM; break; }
     if (falhaCancelada(geracao, cancelado, ctx)) { resultado = FONTEFALHA_FIM; break; }
     if (r.servico >= 0) {
-      ok = debrid_resolver_servico_cache(r.servico, s->infoHash, s->fileIdx,
+      ok = streamResolverServicoCache(r.servico, cacheHashDa(s), s->fileIdx,
                                          resolvida, sizeof resolvida, &fora);
       if (!debrid_servico_disponivel(r.servico)) fontefalha_provedor_recusado(sessao, r.servico);
-    } else if (s->infoHash[0]) {
-      ok = debrid_resolver_cache(s->infoHash, s->fileIdx, resolvida, sizeof resolvida, &fora);
+    } else if (streamPrecisaResolver(s)) {
+      ok = streamResolverCache(cacheHashDa(s), s->fileIdx, resolvida, sizeof resolvida, &fora);
     } else if (s->url[0] && resolverUrl(s->url, s->cabecalhos, 10, fim, sizeof fim,
                                       mime, sizeof mime, &corpo) &&
                !naovideo_mime(mime, fim, corpo) && !enderecoDeAviso(fim) &&
@@ -2268,7 +2298,7 @@ int stream_falha_verificar(FonteFalhaSessao *sessao, unsigned geracao, int escol
     if (strlen(resolvida) >= tam || !fontefalha_url_registrar(sessao, resolvida)) continue;
     snprintf(url, tam, "%s", resolvida);
     if (indice) *indice = r.indice;
-    if (servico) *servico = r.servico;
+    if (servico) *servico = r.servico>=0?r.servico:streamPrecisaResolver(s)?ajustes_resolver_provedor():s->debridServico-1;
     resultado = FONTEFALHA_PROXIMA;
     break;
   }
@@ -2306,11 +2336,11 @@ int stream_vod_renovar(const AddonsConsulta *consulta, const char *id, const cha
   ok = achou >= 0 && !falhaCancelada(geracao, cancelado, ctx);
   if (ok) {
     *saida = fontes[achou];
-    if (saida->infoHash[0]) {
+    if (cacheHashDa(saida)[0]) {
       int fora = 0, servico = antiga.debridServico - 1;
-      ok = servico >= 0 ? debrid_resolver_servico_cache(servico, saida->infoHash, saida->fileIdx,
+      ok = servico >= 0 ? streamResolverServicoCache(servico, cacheHashDa(saida), saida->fileIdx,
                                                      saida->url, sizeof saida->url, &fora)
-                        : debrid_resolver_cache(saida->infoHash, saida->fileIdx,
+                        : streamResolverCache(cacheHashDa(saida), saida->fileIdx,
                                                saida->url, sizeof saida->url, &fora);
       saida->debridServico = antiga.debridServico;
     }
@@ -2337,14 +2367,14 @@ int stream_falha_renovar(int indice, unsigned geracao, int servico,
   url[0] = 0;
   pthread_mutex_lock(&verTrava);
   ok = geracao == listaGeracao && indice >= 0 && indice < n &&
-       lista[indice].infoHash[0] && !lista[indice].urlP2P;
+       cacheHashDa(&lista[indice])[0] && !lista[indice].urlP2P;
   if (ok) s = lista[indice];
   pthread_mutex_unlock(&verTrava);
   if (!ok || falhaCancelada(geracao, cancelado, ctx)) return 0;
   ok = servico >= 0
-       ? debrid_resolver_servico_cache(servico, s.infoHash, s.fileIdx,
+       ? streamResolverServicoCache(servico, cacheHashDa(&s), s.fileIdx,
                                        resolvida, sizeof resolvida, &fora)
-       : debrid_resolver_cache(s.infoHash, s.fileIdx, resolvida, sizeof resolvida, &fora);
+       : streamResolverCache(cacheHashDa(&s), s.fileIdx, resolvida, sizeof resolvida, &fora);
   if (!ok || !resolvida[0] || strlen(resolvida) >= tam ||
       falhaCancelada(geracao, cancelado, ctx)) return 0;
   snprintf(url, tam, "%s", resolvida);
@@ -2371,7 +2401,7 @@ static uint64_t preparoMarca(uint64_t h, const void *dados, size_t n) {
 uint64_t stream_preparo_config_atual(void) {
   FonteFalhaConfig cfg = {0}; DebridContexto contexto = {0};
   fontefalha_config(&cfg); debrid_contexto_capturar(&contexto);
-  int a[] = { ajustes_fonte_preparar(), ajustes_fonte_precarregar(), ajustes_fonte_manual(),
+  int a[] = { ajustes_torbox_adicionar_cache(), ajustes_resolver_ativo(), ajustes_resolver_preferencia(), ajustes_resolver_limite(), ajustes_fonte_preparar(), ajustes_fonte_precarregar(), ajustes_fonte_manual(),
     ajustes_fonte_primeira(), ajustes_fonte_escopo(), ajustes_fonte_regex_modo(),
     ajustes_fonte_usar_outros(), ajustes_fonte_ordem_uso(), ajustes_fonte_prioridade(),
     ajustes_fonte_hdr(), ajustes_dolby_vision(), ajustes_dv_mkv(), ajustes_dolby_atmos(),
@@ -2473,8 +2503,8 @@ StreamPreparo *stream_preparo_criar_alvo(const Stream *fontes, int total, int pr
   debrid_contexto_capturar(&p->debrid); fontefalha_config(&cfg);
   p->filtro = cfg.filtro;
   p->falhaAtiva = cfg.provedores || cfg.addons;
-  p->teto = p->falhaAtiva ? 0 : fonteauto_tentativas(ajustes_fonte_primeira() ? FONTEAUTO_PRIMEIRA : FONTEAUTO_MELHOR, 8);
-  for (int i = 0; i < DEBRID_N; i++) if (debrid_servico_disponivel(i)) disponiveis |= 1u << i;
+  p->teto = ajustes_resolver_limite()>0 ? ajustes_resolver_limite() : p->falhaAtiva ? 0 : fonteauto_tentativas(ajustes_fonte_primeira() ? FONTEAUTO_PRIMEIRA : FONTEAUTO_MELHOR, 8);
+  for (int i = 0; i < DEBRID_N; i++) if (ajustes_resolver_ativo() && i==ajustes_resolver_provedor() && debrid_servico_disponivel(i)) disponiveis |= 1u << i;
   p->politica = fontefalha_sessao_nova(&cfg, disponiveis, preferidaNext);
   p->candidatas = calloc((size_t)total, sizeof *p->candidatas);
   ordem = malloc((size_t)total * sizeof *ordem); fila = malloc((size_t)total * sizeof *fila);
@@ -2491,7 +2521,7 @@ StreamPreparo *stream_preparo_criar_alvo(const Stream *fontes, int total, int pr
     int i = ordem[q]; const Stream *s = &fontes[i];
     pts[q] = pontosDoAlvo(s, alvo ? alvo : ""); acima[q] = acimaDoTetoAuto(s);
     excl[q] = !fontefiltro_permite(&p->filtro, &s->filtro) ||
-              s->urlP2P || (s->foraCache && !s->infoHash[0]) || ehInformativa(s) || excedeDecoder(s) ||
+              s->urlP2P || (streamForaCache(s) && !cacheHashDa(s)[0]) || ehInformativa(s) || excedeDecoder(s) ||
               (!s->infoHash[0] && fontesmortas_idade(s) >= 0);
     grupo[q] = grupoDaFonte(&escopo, s); rank[q] = fonteregra_ordem_rank(s->provedor);
     if (i == preferidaNext && fonteregra_no_escopo(&escopo, ehPlugin(s))) pref = q;
@@ -2522,7 +2552,7 @@ StreamPreparo *stream_preparo_criar_alvo(const Stream *fontes, int total, int pr
     FonteFalhaCandidata *c = &p->candidatas[p->nc];
     c->identidade = strdup(identidade);
     if (!c->identidade) goto erro;
-    c->indice = i; c->nativa = s->infoHash[0] != 0; c->ordemAddon = s->addonOrdem;
+    c->indice = i; c->nativa = streamPrecisaResolver(s); c->ordemAddon = s->addonOrdem;
     c->filtro = s->filtro;
     snprintf(c->addon, sizeof c->addon, "%s", s->addonChave); p->nc++;
   }
@@ -2537,13 +2567,13 @@ StreamPreparo *stream_preparo_criar(const Stream *fontes, int total, int preferi
 }
 int stream_preparo_resolver(StreamPreparo *p, int (*cancelado)(void *), void *ctx,
                             Stream *fonte, int *indice, FonteFalhaSessao **politica) {
-  int resultado = 0;
+  int resultado = 0, prepared = 0, limit = ajustes_resolver_limite();
   if (indice) *indice = -1;
   if (politica) *politica = NULL;
   if (!p || !fonte || !p->politica) return 0;
   debrid_contexto_entrar(&p->debrid);
   for (;;) {
-    if (!nv_perfil_sessao_atual(p->sessaoPerfil) || (cancelado && cancelado(ctx))) { resultado = -1; break; }
+    if (!stream_preparo_contexto_atual(p) || !nv_perfil_sessao_atual(p->sessaoPerfil) || (cancelado && cancelado(ctx))) { resultado = -1; break; }
     if (p->teto && fontefalha_tentativas(p->politica) >= p->teto) break;
     FonteFalhaRota r;
     if (fontefalha_proxima(p->politica, p->candidatas, p->nc, 1, &r) != FONTEFALHA_PROXIMA) break;
@@ -2551,27 +2581,28 @@ int stream_preparo_resolver(StreamPreparo *p, int (*cancelado)(void *), void *ct
     char url[NV_MEDIA_URL_MAX] = "", fim[NV_MEDIA_URL_MAX], mime[96] = "";
     long corpo = -1; int fora = 0, ok = 0;
     if (!fontefalha_tentar(p->politica, &p->candidatas[r.candidata], r.servico)) break;
-    if (!nv_perfil_sessao_atual(p->sessaoPerfil) || (cancelado && cancelado(ctx))) { resultado = -1; break; }
+    if (!stream_preparo_contexto_atual(p) || !nv_perfil_sessao_atual(p->sessaoPerfil) || (cancelado && cancelado(ctx))) { resultado = -1; break; }
+    if (streamPrecisaResolver(s) && !limit) continue;
     if (r.servico >= 0) {
-      ok = debrid_resolver_servico_cache(r.servico, s->infoHash, s->fileIdx, url, sizeof url, &fora);
+      ok = streamResolverServicoCache(r.servico, cacheHashDa(s), s->fileIdx, url, sizeof url, &fora);
       if (!debrid_servico_disponivel(r.servico)) fontefalha_provedor_recusado(p->politica, r.servico);
-    } else if (s->infoHash[0]) ok = debrid_resolver_cache(s->infoHash, s->fileIdx, url, sizeof url, &fora);
+    } else if (streamPrecisaResolver(s)) ok = streamResolverCache(cacheHashDa(s), s->fileIdx, url, sizeof url, &fora);
     else if (s->url[0] && resolverUrl(s->url, s->cabecalhos, 10, fim, sizeof fim, mime, sizeof mime, &corpo) &&
              !naovideo_mime(mime, fim, corpo) && !enderecoDeAviso(fim) && !playlistVazia(fim, s->cabecalhos)) {
       snprintf(url, sizeof url, "%s", fim); ok = 1;
     }
-    if (!nv_perfil_sessao_atual(p->sessaoPerfil) || (cancelado && cancelado(ctx))) { resultado = -1; break; }
+    if (!stream_preparo_contexto_atual(p) || !nv_perfil_sessao_atual(p->sessaoPerfil) || (cancelado && cancelado(ctx))) { resultado = -1; break; }
     if (!ok || !url[0] || !fontefalha_url_registrar(p->politica, url)) continue;
-    *fonte = *s; snprintf(fonte->url, sizeof fonte->url, "%s", url);
-    fonte->debridServico = r.servico + 1; fonte->urlP2P = 0;
-    if (s->infoHash[0]) cacheConfirmar(fonte);
-    p->fontes[r.indice] = *fonte;
-    if (indice) *indice = r.indice;
-    if (politica && p->falhaAtiva) { *politica = p->politica; p->politica = NULL; }
-    resultado = 1; break;
+    Stream ready=*s;snprintf(ready.url,sizeof ready.url,"%s",url);
+    ready.debridServico=(r.servico>=0?r.servico:streamPrecisaResolver(s)?ajustes_resolver_provedor():s->debridServico-1)+1;ready.urlP2P=0;
+    if(cacheHashDa(s)[0])cacheConfirmar(&ready);
+    p->fontes[r.indice]=ready;
+    if(!resultado){*fonte=ready;if(indice)*indice=r.indice;resultado=1;}
+    if(++prepared >= (limit?limit:1))break;
   }
   debrid_contexto_sair();
-  if (resultado == 0 && politica && p->falhaAtiva) { *politica = p->politica; p->politica = NULL; }
+  if(resultado<0){memset(fonte,0,sizeof *fonte);if(indice)*indice=-1;}
+  if (resultado >= 0 && politica && p->falhaAtiva) { *politica = p->politica; p->politica = NULL; }
   return resultado;
 }
 
@@ -2585,11 +2616,12 @@ int stream_preparo_renovar(StreamPreparo *p, int indice, int (*cancelado)(void *
   int ok = 0, fora = 0;
   long corpo = -1;
   debrid_contexto_entrar(&p->debrid);
-  if (s->infoHash[0]) {
+  if (cacheHashDa(s)[0] && !ajustes_resolver_limite()){debrid_contexto_sair();return 0;}
+  if (cacheHashDa(s)[0]) {
     int servico = s->debridServico - 1;
     ok = servico >= 0
-       ? debrid_resolver_servico_cache(servico, s->infoHash, s->fileIdx, url, sizeof url, &fora)
-       : debrid_resolver_cache(s->infoHash, s->fileIdx, url, sizeof url, &fora);
+       ? streamResolverServicoCache(servico, s->infoHash, s->fileIdx, url, sizeof url, &fora)
+       : streamResolverCache(cacheHashDa(s), s->fileIdx, url, sizeof url, &fora);
   } else if (s->url[0] && resolverUrl(s->url, s->cabecalhos, 10, fim, sizeof fim, mime, sizeof mime, &corpo) &&
              !naovideo_mime(mime, fim, corpo) && !enderecoDeAviso(fim) && !playlistVazia(fim, s->cabecalhos)) {
     snprintf(url, sizeof url, "%s", fim); ok = 1;
@@ -2597,7 +2629,7 @@ int stream_preparo_renovar(StreamPreparo *p, int indice, int (*cancelado)(void *
   debrid_contexto_sair();
   if (!ok || !url[0] || !nv_perfil_sessao_atual(p->sessaoPerfil) || (cancelado && cancelado(ctx))) return 0;
   *fonte = *s; snprintf(fonte->url, sizeof fonte->url, "%s", url);
-  if (s->infoHash[0]) cacheConfirmar(fonte);
+  if (cacheHashDa(s)[0]) cacheConfirmar(fonte);
   p->fontes[indice] = *fonte;
   return 1;
 }
@@ -2626,7 +2658,7 @@ int stream_falha_aplicar_sessao(int indice, unsigned geracao, int servico,
     memmove(lista[indice].url, url, strlen(url) + 1);
     lista[indice].debridServico = servico + 1;
     lista[indice].urlP2P = 0;
-    if (lista[indice].infoHash[0]) cacheConfirmar(&lista[indice]);
+    if (cacheHashDa(&lista[indice])[0]) cacheConfirmar(&lista[indice]);
     ok = 1;
   }
   pthread_mutex_unlock(&verTrava);
@@ -2639,6 +2671,7 @@ int stream_falha_aplicar(int indice, unsigned geracao, int servico, const char *
 }
 
 int stream_primeira_boa_sessao(int tentativas, uint64_t sessao) {
+  if(nv_perfil_sessao_atual(sessao))stream_cache_verificar();
   int fila[VER_MAX], nf, q, tocadas = 0, escolhida, total, pref, livres = 0, kk;
   int motivos[MOT_N] = {0};
   int modo = ajustes_fonte_primeira() ? FONTEAUTO_PRIMEIRA : FONTEAUTO_MELHOR;
@@ -2705,8 +2738,8 @@ int stream_primeira_boa_sessao(int tentativas, uint64_t sessao) {
   if (nf < 1) {
     // Nenhuma candidata: dizer por que (so contagens, sem URL) para o log da TV.
     if (livres == 0 && total > 0)
-      printf("[fonte] auto-play: 0 de %d candidata(s); fora do automatico: excluida=%d filtro=%d fora-de-cache=%d informativa=%d decoder=%d morta=%d\n",
-             total, motivos[MOT_EXCLUIDA], motivos[MOT_FILTRO], motivos[MOT_FORA_CACHE], motivos[MOT_INFORMATIVA],
+      printf("[fonte] auto-play: 0 de %d candidata(s); fora do automatico: excluida=%d filtro=%d fora-de-cache=%d cache-indefinido=%d informativa=%d decoder=%d morta=%d\n",
+             total, motivos[MOT_EXCLUIDA], motivos[MOT_FILTRO], motivos[MOT_FORA_CACHE], motivos[MOT_CACHE_INDEFINIDO], motivos[MOT_INFORMATIVA],
              motivos[MOT_DECODER], motivos[MOT_MORTA]);
     // Havia fonte, mas as regras de Ajustes nao deixam nenhuma (#202).
     if (livres > 0) {
@@ -2724,7 +2757,7 @@ int stream_primeira_boa_sessao(int tentativas, uint64_t sessao) {
   c.rodada = fa_rodada_atual();
   if (ajustes_fonte_tocar_conferindo()) {
     pthread_mutex_lock(&verTrava);
-    if (nv_perfil_sessao_atual(c.sessao) && listaGeracao == c.geracao && fila[0] < n && lista[fila[0]].url[0] &&
+    if (nv_perfil_sessao_atual(c.sessao) && listaGeracao == c.geracao && fila[0] < n && streamUrlPronta(&lista[fila[0]]) &&
         !soP2P(&lista[fila[0]]))
       c.antecipada = fila[0];
     pthread_mutex_unlock(&verTrava);
@@ -2827,7 +2860,7 @@ int stream_primeira_boa_sessao(int tentativas, uint64_t sessao) {
 // desempates dentro da mesma resolucao.
 static int boaParaJa(const Stream *s) {
   int teto = alturaMax();
-  if (!cabeNoTeto(s) || s->foraCache || soP2P(s)) return 0;
+  if (!cabeNoTeto(s) || streamForaCache(s) || soP2P(s)) return 0;
   return s->altura >= (teto ? teto : 2160);
 }
 
@@ -2838,6 +2871,7 @@ int stream_primeira_boa(int tentativas) {
 }
 
 int stream_auto_pode_decidir(int preferida, int prefPendente, int prazoPassou, int instantaneo) {
+  if(cachePendente()) {cacheAgendar();return 0;}
   FonteautoParcial p;
   long *pts; unsigned char *acima, *excl, *boa; int *ad;
   signed char *grp;
@@ -3221,6 +3255,7 @@ int stream_proxima_vod(int atualIdx) {
   return i;
 }
 int stream_verificar_proxima_vod_sessao(int atualIdx, int tentativas, int *conferidas, uint64_t sessao) {
+  if(nv_perfil_sessao_atual(sessao))stream_cache_verificar();
   Conferencia c = { .antecipada = -1, .sessao = sessao };
   fontefalha_filtro(&c.filtro);
   if (conferidas) *conferidas = 0;
@@ -3549,7 +3584,7 @@ static int nFiltrados(void) {
 // na frente quando existe; senao, a de maior pontuacao. Pedido do dono, 16/09.
 // Uma vez por quadro, nunca por linha: stream_automatico percorre a lista.
 static int automaticaDaFolha(void) {
-  return !ordemDoAddon() && preferida >= 0 && !lista[preferida].foraCache && !automaticaExcluida(preferida) &&
+  return !ordemDoAddon() && preferida >= 0 && !streamForaCache(&lista[preferida]) && !automaticaExcluida(preferida) &&
          (canalFolha || (!excedeDecoder(&lista[preferida]) && stream_filtro_permite(&lista[preferida]))) ? preferida : automaticoDaFolhaModo();
 }
 
@@ -3785,7 +3820,7 @@ static const TextoAddon *textoAddonDa(int i) {
 // da TV. Negativa posterior, P2P e resposta que nao e video nunca sao prontas.
 static void legendaProvedor(const Stream *s, char *buf, size_t tam) {
   char origem[160];
-  const char *estado = cacheConfirmado(s) ? "Em cache" : s->cacheNegado && !s->foraCache ? "Fora do cache" : NULL;
+  const char *estado = stream_cache_rotulo(s);
   if (!s->url[0] && s->infoHash[0] && s->temSemeadores)
     snprintf(origem, sizeof origem, "%d seeds · %s", s->semeadores, s->provedor);
   else snprintf(origem, sizeof origem, "%s", s->provedor);
@@ -4221,7 +4256,7 @@ static int temMarca(int i, int automatica) {
   (void)automatica;
   // StreamFit (F03): a measured-heavy source carries its reason on the mark line.
   return i >= 0 && (i == atual || i == preferida || (i == melhorFolha && nFiltrados() > 1) ||
-                    fitPesada(i) || lista[i].foraCache || (!canalFolha && stream_vod_falhou_ha(i) >= 0));
+                    fitPesada(i) || streamForaCache(&lista[i]) || (!canalFolha && stream_vod_falhou_ha(i) >= 0));
 }
 // Altura de uma linha: base, marca, e o nome do arquivo que abre por mola na
 // linha em foco. Usa nOrdem como o indice que a linha vai receber.
@@ -4307,7 +4342,7 @@ static void montarBase(int automatica) {
     if (saved >= 0) porLinha(saved, &y, automatica);
     for (int fora = 0; fora < (ordemDoAddon() ? 1 : 2); fora++) for (k = 0; k < n; k++) {
       i = ORD(k);
-      if (i == saved || !passaFiltro(i) || (!ordemDoAddon() && !!lista[i].foraCache != fora)) continue;
+      if (i == saved || !passaFiltro(i) || (!ordemDoAddon() && !!streamForaCache(&lista[i]) != fora)) continue;
       (void)grupoRes(&lista[i]);
       porLinha(i, &y, automatica);
     }
@@ -4328,7 +4363,7 @@ static void montarBase(int automatica) {
     m = saved;
     porLinha(m, &y, automatica);
     y += FOLHA_SEC_GAP - FOLHA_LINHA_GAP;
-  } else if (melhorFolha >= 0 && melhorFolha < n && !lista[melhorFolha].foraCache && passaFiltro(melhorFolha) && nFiltrados() > 1 &&
+  } else if (melhorFolha >= 0 && melhorFolha < n && !streamForaCache(&lista[melhorFolha]) && passaFiltro(melhorFolha) && nFiltrados() > 1 &&
       (melhorFolha >= fitN || fitClasses[melhorFolha] != SF_PESADA)) {
     m = melhorFolha;
     porLinha(m, &y, automatica);
@@ -4341,7 +4376,7 @@ static void montarBase(int automatica) {
     // addon (#221) e o empate de tamanho fica com a ordem do addon.
     for (k = 0; k < n; k++) {
       i = ORD(k);
-      if (i != m && !lista[i].foraCache && passaFiltro(i) && grupoRes(&lista[i]) == g) grupoTmp[nt++] = i;
+      if (i != m && !streamForaCache(&lista[i]) && passaFiltro(i) && grupoRes(&lista[i]) == g) grupoTmp[nt++] = i;
     }
     // Insercao estavel: em tamanho igual vale a ordem do addon.
     for (k = 1; k < nt; k++) {
@@ -4357,7 +4392,7 @@ static void montarBase(int automatica) {
     // secao do grupo as abriga, na ordem do addon.
     for (k = 0; k < n; k++) {
       i = ORD(k);
-      if (i != m && lista[i].foraCache && passaFiltro(i) && grupoRes(&lista[i]) == g) grupoTmp[nt++] = i;
+      if (i != m && streamForaCache(&lista[i]) && passaFiltro(i) && grupoRes(&lista[i]) == g) grupoTmp[nt++] = i;
     }
     if (!nt) continue;
     if (nOrdem) y += FOLHA_SEC_GAP;
@@ -4918,7 +4953,14 @@ int stream_partes_escolheu(int *fonte, PartesLista *l, int *k) {
 // O toque curto (ou o OK de sempre) numa linha da lista: a mesma acao de antes.
 static void okNaLinha(void) {
   int i = filtrado(foco);
-  if (i >= 0) { escolha=i; escolhaGeracao=listaGeracao; aberta=0; }
+  if (i >= 0) {
+    pthread_mutex_lock(&verTrava);manualPermit=-1;pthread_mutex_unlock(&verTrava);
+    if(cacheHashDa(&lista[i])[0]||streamForaCache(&lista[i])) {
+      manualConfirm=i;manualConfirmGen=listaGeracao;manualConfirmSession=nv_perfil_sessao_ler();manualChoice=0;
+      return;
+    }
+    escolha=i; escolhaGeracao=listaGeracao; aberta=0;
+  }
   else if (i <= -2) {
     OndeVer o;
     if (ondever_item(alvoPedido,-i-2,&o) && ondever_abrir(o.nome)!=ONDE_INFO) aberta=0;
@@ -4926,6 +4968,17 @@ static void okNaLinha(void) {
 }
 
 void stream_folha_evento(const SDL_Event *e) {
+  if(manualConfirm>=0) {
+    if(e->type==SDL_WINDOWEVENT){manualDecidir(0,0);return;}
+    if(e->type==SDL_KEYDOWN && !e->key.repeat) {
+      SDL_Keycode key=e->key.keysym.sym;
+      if(key==SDLK_ESCAPE||key==SDLK_AC_BACK||key==SDLK_BACKSPACE)manualDecidir(0,0);
+      else if(key==SDLK_LEFT)manualChoice=0;
+      else if(key==SDLK_RIGHT)manualChoice=1;
+      else if(key==SDLK_RETURN||key==SDLK_KP_ENTER)manualDecidir(manualChoice,0);
+    }
+    return;
+  }
   if (e->type == SDL_WINDOWEVENT && (e->window.event == SDL_WINDOWEVENT_FOCUS_LOST ||
       e->window.event == SDL_WINDOWEVENT_HIDDEN)) recarregarFonteConfirmacao = 0;
   if (aberta && recarregarFonteConfirmacao && e->type == SDL_KEYUP) {
@@ -5029,6 +5082,7 @@ void stream_folha_evento(const SDL_Event *e) {
   }
 }
 void stream_folha_atualizar(float dt, Uint32 agora) {
+  cacheAgendar();
   int nf;
   medirCabecalho();
   if (aberta || anim > 0.001f) folhaGeometria();
@@ -5094,6 +5148,7 @@ void stream_folha_atualizar(float dt, Uint32 agora) {
   // `upd`). Abrir (stream_folha_abrir), as teclas e o desenho montam de novo
   // por conta propria; o foco pedido com a folha fechada era sobrescrito ao
   // abrir, entao sai daqui tambem.
+  if(atomic_exchange(&cacheUiMudou,0) && aberta && grupo==1) {focoFixo=filtrado(foco);focoFixoY=foco>=0&&foco<nOrdem?linhaTopo(foco):0;}
   if (!aberta && anim < .005f) { focoFixo = -1; folhaRelogio = 0; return; }
   folhaGeometria();
   // #205: a carta em foco que um fio de conferencia acabou de achar fora do
@@ -5699,6 +5754,29 @@ void stream_folha_desenhar(Uint32 agora) {
   stream_folha_desenharCorpo_(agora);
   ESCALA_FIM();
 }
+// Above both Native sheet renderers and their island surfaces.
+void stream_resolver_confirmacao_desenhar(void) {
+  ESCALA_INI();
+  if(manualConfirm>=0) {
+    if(!aberta || manualConfirmGen!=listaGeracao || !nv_perfil_sessao_atual(manualConfirmSession))manualDecidir(0,0);
+    else {
+      ponteiro_camada();
+      gfx_cor((GfxRect){0,0,NV_TELA_W,NV_TELA_H},0,0,0,0,.65f);
+      GfxRect box={NV_TELA_W/2-520,NV_TELA_H/2-210,1040,420};
+      gfx_cor(box,24.0f/box.h,.08f,.09f,.11f,1);
+      txt_bloco(TXT_AJ_INSP,"Manual resolver override",238,238,238,box.x+40,box.y+36,960,44,1,1);
+      txt_bloco(TXT_ILHA_ITEM,"This action can use configured services in Legacy order, add provider items or start downloads and consume quota, even when automatic resolution is Off. Choose Allow only if you want this manual exception. Back cancels.",220,220,220,box.x+40,box.y+100,960,36,1,5);
+      for(int b=0;b<2;b++) {
+        GfxRect r={box.x+40+b*470,box.y+320,430,64};
+        gfx_cor(r,.22f,.22f,.25f,.30f,manualChoice==b?1:.45f);
+        TxtLinha t=txt_linha(TXT_ILHA_ITEM,b?"Allow manual operation":"Cancel",238,238,238,255);
+        txt_desenhar_alpha(t,r.x+20,r.y+(64-t.h)*.5f,1);
+        ponteiro_alvo(r.x,r.y,r.w,r.h,NULL,manualDecidir,b,0);
+      }
+    }
+  }
+  ESCALA_FIM();
+}
 static Uint32 folhaAgora;
 // O corpo dentro da ilha (plrilha.h): `a` ja traz a entrada e a saida da
 // forma, e a ilha segue chamando o ultimo corpo enquanto encolhe.
@@ -6066,7 +6144,7 @@ static void corpoFolha(float x, float w, float anim, Uint32 agora, int ilha) {
         snprintf(dica, sizeof dica, i18n("falhou há %d min"), (int)(stream_vod_falhou_ha(i) / 60));
         mx += caixaAlta(dica,135,130,125,mx,cy,anim)+18;
       }
-      if(s->foraCache && !cacheConfirmado(s)) mx += caixaAlta("Fora do cache",185,179,171,mx,cy,anim)+18;
+      if(streamForaCache(s) && !cacheConfirmado(s)) mx += caixaAlta(stream_cache_rotulo(s),185,179,171,mx,cy,anim)+18;
       if(fitPesada(i)){
         gfx_cor((GfxRect){mx,cy+5,7,7},.5f,.80f,.70f,.52f,anim);
         caixaAlta("Acima da conexão",204,178,132,mx+16,cy,anim);

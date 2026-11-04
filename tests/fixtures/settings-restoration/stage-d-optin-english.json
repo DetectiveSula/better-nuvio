@@ -1,0 +1,4 @@
+[
+  "Allow cached TorBox additions",
+  "Off keeps read-only mode. On can add verified cached torrents to your TorBox account and may start a download if provider cache changes. Requires autoplay and a fresh provider cache check. Failed or timed-out additions require manual confirmation."
+]

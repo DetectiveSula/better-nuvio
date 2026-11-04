@@ -1,4 +1,8 @@
 #include "debrid.h"
+#include "debrid_add_ledger.h"
+#include "ajustes.h"
+#define NV_DUBLE_SESSAO
+#include "perfisessao.h"
 #include "rede.h"
 #include "js.h"
 #include <stdio.h>
@@ -788,7 +792,7 @@ static int resolverRD(const char *infoHash, int fileIdx, char *url, unsigned n,
 
 // `soCache` 1 = add_only_if_cached (o automatico); 0 = a pessoa escolheu o
 // torrent fora de cache e o TorBox deve BAIXAR — e o "P2P" do TorBox.
-static char *tbCriarCom(const char *chaveTB, const char *magnet, int soCache, int *st) {
+static char *tbCriarComOpcoes(const char *chaveTB,const char *magnet,int soCache,int noZip,int *st) {
   char url[300], auth[260], corpo[1200];
   const char *cab[3];
   snprintf(url, sizeof url, TB "/torrents/createtorrent");
@@ -796,15 +800,18 @@ static char *tbCriarCom(const char *chaveTB, const char *magnet, int soCache, in
   cab[0] = auth;
   cab[1] = "Content-Type: multipart/form-data; boundary=" BND;
   cab[2] = NULL;
-  // add_only_if_cached=true e o que garante a regra desta casa: o servico
-  // RECUSA o que nao esta em cache em vez de comecar a baixar. A consulta de
-  // cache acima ja filtrou, mas entre uma chamada e outra o item pode sair do
-  // cache, e sem isto a TV ficaria esperando um download comecar.
+  // Cached-only requests instruct TorBox to reject uncached content. Never
+  // downgrade this flag on failure. The opt-in UI discloses provider cache
+  // races and possible downloads rather than promising a server-side guarantee.
   snprintf(corpo, sizeof corpo,
            "--" BND "\r\nContent-Disposition: form-data; name=\"magnet\"\r\n\r\n%s\r\n"
            "--" BND "\r\nContent-Disposition: form-data; name=\"add_only_if_cached\"\r\n\r\n%s\r\n"
-           "--" BND "--\r\n", magnet, soCache ? "true" : "false");
+           "%s--" BND "--\r\n", magnet, soCache ? "true" : "false",
+           noZip ? "--" BND "\r\nContent-Disposition: form-data; name=\"allow_zip\"\r\n\r\nfalse\r\n" : "");
   return rede_postar_st(url, 15, cab, corpo, st);
+}
+static char *tbCriarCom(const char *key,const char *magnet,int soCache,int *st) {
+  return tbCriarComOpcoes(key,magnet,soCache,0,st); // preserve Legacy/manual defaults
 }
 static char *tb_criar(const char *magnet, int soCache, int *st) {
   if (!contextoVale()) { if (st) *st = 0; return NULL; }
@@ -1518,6 +1525,8 @@ char *debrid_tb_mylist(int usenet, int id, int pagina, int fresco, int *st) {
 
 // O requestdl leva o token NA QUERY (ver resolverTB): esta URL nunca vai para
 // log. O que volta em `url` e o link do CDN (*.tb-cdn.st), que toca direto.
+static int cacheJsonValido(const char *response);
+static int cacheRawRaiz(const char *json,const char *name,char *out,size_t size);
 int debrid_tb_link(int usenet, int id, int arquivo, char *url, unsigned n) {
   char u[1200], k[200];
   const char *cab[1];
@@ -1530,7 +1539,10 @@ int debrid_tb_link(int usenet, int id, int arquivo, char *url, unsigned n) {
   else
     snprintf(u, sizeof u, TB "/torrents/requestdl?token=%s&torrent_id=%d&file_id=%d&redirect=false", k, id, arquivo);
   r = rede_baixar_st(u, 15, cab, &st);
-  ok = ok2xx(r, st) && js_texto_raiz(r, "data", url, n) && !strncmp(url, "http", 4);
+  char success[16];
+  ok = ok2xx(r, st) && cacheJsonValido(r) && cacheRawRaiz(r,"success",success,sizeof success) &&
+       !strcmp(success,"true") && js_texto_raiz(r, "data", url, n) &&
+       (!strncmp(url,"https://",8)||!strncmp(url,"http://",7));
   if (!ok) {
     // O texto do proprio TorBox (sem chave nem URL): "error"/"detail" dizem se
     // foi o item que sumiu, o plano, ou o servidor (dono, 16/10, log 19).
@@ -1594,4 +1606,226 @@ int debrid_tb_airlock(int usenet, int item, int ligar, char *detalhe, unsigned n
   fflush(stdout);
   free(r);
   return ok;
+}
+
+// Stage D: availability is independent of playable-link activation/account creation.
+unsigned debrid_cache_geracao(void) { return atomic_load(&geracao); }
+static int cacheHash(const char *hash,char normalized[41]) {
+  if(!hash)return 0;
+  while(isspace((unsigned char)*hash))hash++;
+  unsigned n=0;while(isxdigit((unsigned char)*hash)&&n<40)normalized[n++]=(char)tolower((unsigned char)*hash++);
+  normalized[n]=0;while(isspace((unsigned char)*hash))hash++;
+  return n==40&&!*hash;
+}
+static int cacheJsonValido(const char *response) {
+  if(!response)return 0;
+  size_t size=strlen(response);char *wrapped=malloc(size+3);if(!wrapped)return 0;
+  snprintf(wrapped,size+3,"[%s]",response);int valid=js_array_valido(wrapped);free(wrapped);return valid;
+}
+static int cacheRawRaiz(const char *json,const char *name,char *out,size_t size) {
+  if(!json)return 0;while(isspace((unsigned char)*json))json++;
+  if(*json!='{')return 0;
+  const char *p=json+1;
+  while(*p) {
+    while(isspace((unsigned char)*p)||*p==',')p++;
+    if(*p!='"')return 0;
+    const char *key=p;char label[128];if(!js_cadeia(p,label,sizeof label))return 0;
+    p++;while(*p && *p!='"'){if(*p=='\\'&&p[1])p++;p++;}if(!*p)return 0;p++;
+    while(isspace((unsigned char)*p))p++;if(*p++!=':')return 0;
+    while(isspace((unsigned char)*p))p++;
+    const char *end=p;
+    if(*p=='{'||*p=='[')end=js_fim(p);
+    else if(*p=='"'){end++;while(*end && *end!='"'){if(*end=='\\'&&end[1])end++;end++;}if(*end)end++;}
+    else while(*end && *end!=',' && *end!='}')end++;
+    if(!strcmp(label,name))return js_bruto(key,end,name,out,size);
+    p=end;
+  }
+  return 0;
+}
+static int cacheIdRaiz(const char *json,const char *name) {
+  char raw[32],*end;if(!cacheRawRaiz(json,name,raw,sizeof raw))return -1;
+  long id=strtol(raw,&end,10);while(isspace((unsigned char)*end))end++;
+  return !*end && id>=0 && id<=2147483647L?(int)id:-1;
+}
+static int cacheTBResposta(const char *response,const char *hash) {
+  char success[16];
+  if(!cacheJsonValido(response)||!cacheRawRaiz(response,"success",success,sizeof success)||strcmp(success,"true"))return -2;
+  char *raw=malloc(strlen(response)+1);if(!raw)return -2;
+  int result=-2;
+  if(!cacheRawRaiz(response,"data",raw,strlen(response)+1))goto done;
+  if(raw[0]=='[') {
+    result=0;
+    for(const char *p=js_raiz_array(raw);p;p=js_prox(js_fim(p))) {
+      char found[48],normalized[41];
+      if(*p!='{'||!js_texto_raiz_em(p,js_fim(p),"hash",found,sizeof found)||!cacheHash(found,normalized)){result=-2;break;}
+      if(!strcmp(normalized,hash))result=1;
+    }
+  } else if(raw[0]=='{') {
+    // Official TorBox map response: data[hash] = {name,size,...}.
+    result=0;const char *p=raw+1;
+    while(isspace((unsigned char)*p))p++;
+    while(*p && *p!='}') {
+      char key[48],normalized[41];
+      if(!js_cadeia(p,key,sizeof key)||!cacheHash(key,normalized)){result=-2;break;}
+      const char *colon=strchr(p+1,':');if(!colon){result=-2;break;}
+      p=colon+1;while(isspace((unsigned char)*p))p++;
+      if(*p!='{'){result=-2;break;}
+      if(!strcmp(normalized,hash))result=1;
+      p=js_fim(p);while(isspace((unsigned char)*p))p++;
+      if(*p==',')p++;while(isspace((unsigned char)*p))p++;
+    }
+  }
+done:free(raw);return result;
+}
+static void cacheTBLote(const char hashes[][48],int count,int *states) {
+  char body[1800]="{\"hashes\":[",normalized[32][41];int valid=0,status=0;
+  for(int i=0;i<count;i++) {
+    states[i]=-1;normalized[i][0]=0;
+    if(!cacheHash(hashes[i],normalized[i])){normalized[i][0]=0;continue;}
+    size_t used=strlen(body);snprintf(body+used,sizeof body-used,"%s\"%s\"",valid++?",":"",normalized[i]);
+  }
+  if(!valid)return;strcat(body,"]}");
+  // Official read-only cache endpoint and object response; POST does not add a torrent.
+  char auth[260];snprintf(auth,sizeof auth,"Authorization: Bearer %s",chaveDoFio(STB));
+  const char *headers[]={auth,"Content-Type: application/json",NULL};
+  char *response=contextoVale()?rede_postar_st(TB "/torrents/checkcached?format=object",15,headers,body,&status):NULL;
+  for(int i=0;i<count;i++)if(normalized[i][0])states[i]=ok2xx(response,status)?cacheTBResposta(response,normalized[i]):-2;
+  free(response);
+}
+int debrid_cache_consultar(int provider,const char *hash) {
+  char h[41];if(!cacheHash(hash,h))return -1;
+  DebridContexto context;int opened=contextoAbrir(&context),result=-1,status=0;
+  char *response=NULL;
+  if(!debrid_servico_disponivel(provider))goto done;
+  if(provider==STB) {
+    char hashes[1][48];snprintf(hashes[0],sizeof hashes[0],"%s",h);cacheTBLote(hashes,1,&result);
+  } else if(provider==SPM) {
+    char magnet[160],encoded[300],body[340],raw[80],state[32];
+    snprintf(magnet,sizeof magnet,"magnet:?xt=urn:btih:%s",h);urlenc(encoded,sizeof encoded,magnet);
+    snprintf(body,sizeof body,"items%%5B%%5D=%s",encoded);
+    response=post_form(PM,"cache/check",SPM,body,&status);result=-2;
+    if(ok2xx(response,status)&&cacheJsonValido(response)&&js_texto_raiz(response,"status",state,sizeof state)&&!strcmp(state,"success")&&cacheRawRaiz(response,"response",raw,sizeof raw)) {
+      char compact[80];unsigned n=0;
+      for(const char *p=raw;*p && n+1<sizeof compact;p++)if(!isspace((unsigned char)*p))compact[n++]=*p;
+      compact[n]=0;if(!strcmp(compact,"[true]"))result=1;else if(!strcmp(compact,"[false]"))result=0;
+    }
+  }
+done:
+  free(response);if(!contextoVale())result=-1;if(opened)debrid_contexto_sair();return result;
+}
+
+void debrid_cache_consultar_lote(int provider,const char hashes[][48],int count,int *states) {
+  if(!states||count<0||count>32)return;
+  for(int i=0;i<count;i++)states[i]=-1;
+  DebridContexto context;int opened=contextoAbrir(&context);
+  if(debrid_servico_disponivel(provider)) {
+    if(provider==STB)cacheTBLote(hashes,count,states);
+    else for(int i=0;i<count;i++)states[i]=debrid_cache_consultar(provider,hashes[i]);
+  }
+  if(!contextoVale())for(int i=0;i<count;i++)states[i]=-1;
+  if(opened)debrid_contexto_sair();
+}
+
+// Both modes share Native file selection and download-link handling.
+static int cacheTBItemLink(const char *item,const char *hash,int file,char *url,unsigned size,int trustedId) {
+  char found[48],normalized[41],finished[16],present[16],state[48]="";
+  if(!cacheJsonValido(item))return 0;
+  if(js_texto_raiz(item,"hash",found,sizeof found)) {if(!cacheHash(found,normalized)||strcmp(normalized,hash))return 0;}
+  else if(!trustedId)return 0;
+  int id=cacheIdRaiz(item,"id");
+  int ready=(cacheRawRaiz(item,"download_finished",finished,sizeof finished)&&!strcmp(finished,"true")) ||
+            (cacheRawRaiz(item,"download_present",present,sizeof present)&&!strcmp(present,"true"));
+  js_texto_raiz(item,"download_state",state,sizeof state);
+  if(!strcmp(state,"downloading")||!strcmp(state,"queued")||!strcmp(state,"paused"))ready=0;
+  const char *files=js_array(item,NULL,"files"),*selected=files?escolherArquivo(files,file,"name","size"):NULL;
+  int fid=selected?cacheIdRaiz(selected,"id"):-1;
+  return id>0 && fid>=0 && ready && contextoVale() && debrid_tb_link(0,id,fid,url,size);
+}
+static int resolverExistente(int provider,const char *hash,int file,char *url,unsigned size,int *absent) {
+  if(absent)*absent=0;if(url&&size)url[0]=0;
+  char h[41];if(!url||!size||!cacheHash(hash,h))return 0;
+  DebridContexto context;int opened=contextoAbrir(&context),ok=0,allValid=1,foundAny=0;
+  if(provider==STB && debrid_servico_disponivel(STB)) {
+    for(int page=0;page<8 && contextoVale();page++) {
+      char route[160];int status=0,count=0,valid=1,found=0;
+      snprintf(route,sizeof route,"torrents/mylist?offset=%d&limit=100&bypass_cache=true",page*100);
+      char *response=get_auth(TB,route,STB,&status),success[16];
+      if(!ok2xx(response,status)||!cacheJsonValido(response)||!cacheRawRaiz(response,"success",success,sizeof success)||strcmp(success,"true")){free(response);break;}
+      char *data=malloc(strlen(response)+1);
+      if(!data||!cacheRawRaiz(response,"data",data,strlen(response)+1)||*data!='['){free(data);free(response);break;}
+      for(const char *p=js_raiz_array(data);p;p=js_prox(js_fim(p))) {
+        char itemHash[48],normalized[41];count++;
+        if(*p!='{'||!js_texto_raiz_em(p,js_fim(p),"hash",itemHash,sizeof itemHash)||!cacheHash(itemHash,normalized)){valid=0;continue;}
+        if(strcmp(normalized,h))continue;found=1;
+        size_t len=(size_t)(js_fim(p)-p);char *item=malloc(len+1);if(!item){valid=0;break;}
+        memcpy(item,p,len);item[len]=0;ok=cacheTBItemLink(item,h,file,url,size,0);free(item);if(ok)break;
+      }
+      free(data);free(response);
+      if(found)foundAny=1;if(!valid)allValid=0;
+      if(ok)break;
+      if(count<100){if(absent)*absent=allValid&&!foundAny;break;}
+    }
+  } else if(provider==SPM && debrid_servico_disponivel(SPM))ok=resolverPM(h,file,url,size)==1;
+  if(!contextoVale()){ok=0;if(absent)*absent=0;}if(!ok)url[0]=0;
+  if(opened)debrid_contexto_sair();return ok;
+}
+int debrid_resolver_existente(int provider,const char *hash,int file,char *url,unsigned size,int *outside) {
+  if(outside)*outside=0;return resolverExistente(provider,hash,file,url,size,NULL);
+}
+static pthread_mutex_t tbAdicaoTrava=PTHREAD_MUTEX_INITIALIZER;
+static int tbOptInAtual(uint64_t profile) { return nv_perfil_sessao_atual(profile) && contextoVale() && ajustes_torbox_adicionar_cache() && debrid_servico_disponivel(STB); }
+static int cacheTBPorId(int id,const char *hash,int file,char *url,unsigned size,uint64_t profile) {
+  for(int attempt=0;attempt<3 && tbOptInAtual(profile);attempt++) {
+    if(attempt)sleep(1);
+    if(!tbOptInAtual(profile))break;
+    char route[160],success[16];int status=0;
+    snprintf(route,sizeof route,"torrents/mylist?id=%d&bypass_cache=true",id);
+    char *response=get_auth(TB,route,STB,&status);
+    if(ok2xx(response,status)&&cacheJsonValido(response)&&cacheRawRaiz(response,"success",success,sizeof success)&&!strcmp(success,"true")) {
+      char *item=malloc(strlen(response)+1);
+      if(item && cacheRawRaiz(response,"data",item,strlen(response)+1) && *item=='{' && cacheIdRaiz(item,"id")==id &&
+         cacheTBItemLink(item,hash,file,url,size,1)) {free(item);free(response);return 1;}
+      free(item);
+    }
+    free(response);
+  }
+  return 0;
+}
+int debrid_torbox_resolver_compativel(const char *hash,int file,char *url,unsigned size,int *outside) {
+  if(outside)*outside=0;if(url&&size)url[0]=0;
+  char h[41];if(!url||!size||!cacheHash(hash,h))return 0;
+  DebridContexto context;int opened=contextoAbrir(&context),ok=0,absent=0,id=0;
+  uint64_t profile=nv_perfil_sessao_ler();
+  pthread_mutex_lock(&tbAdicaoTrava);
+  if(!tbOptInAtual(profile))goto done;
+  ok=resolverExistente(STB,h,file,url,size,&absent);if(ok||!absent||!tbOptInAtual(profile))goto done;
+  // Fresh provider evidence immediately before the only mutating operation.
+  int cache=debrid_cache_consultar(STB,h);
+  if(cache!=1){if(outside && cache==0)*outside=1;goto done;}
+  if(!tbOptInAtual(profile))goto done;
+  int claim=debrid_tb_adicao_claim(chaveDoFio(STB),h,&id);
+  if(claim<0){printf("[resolver] Cannot persist cached-addition receipt; no TorBox item added.\n");goto done;}
+  if(claim==1) {
+    if(!tbOptInAtual(profile))goto done;
+    char magnet[160],success[16],*response;int status=0;
+    snprintf(magnet,sizeof magnet,"magnet:?xt=urn:btih:%s",h);
+    response=contextoVale()?tbCriarComOpcoes(chaveDoFio(STB),magnet,1,1,&status):NULL; // cached-only, no ZIP
+    if(ok2xx(response,status)&&cacheJsonValido(response)&&cacheRawRaiz(response,"success",success,sizeof success)&&!strcmp(success,"true")) {
+      char *data=malloc(strlen(response)+1);
+      if(data && cacheRawRaiz(response,"data",data,strlen(response)+1) && *data=='{') {
+        id=cacheIdRaiz(data,"torrent_id");if(id<=0)id=cacheIdRaiz(data,"id");
+      }
+      free(data);
+    }
+    if(status==409 && outside)*outside=1;
+    free(response);
+    // Persist the acknowledged ID even if consent/context changed during HTTP.
+    if(id>0)debrid_tb_adicao_salvar(chaveDoFio(STB),h,id);
+  }
+  // Pending/ambiguous attempts are deliberately not POSTed again, including after restart.
+  if(id>0 && tbOptInAtual(profile))ok=cacheTBPorId(id,h,file,url,size,profile);
+  else if(claim==0 && id<=0)printf("[resolver] Unconfirmed cached TorBox addition; automatic retry blocked.\n");
+done:
+  if(!tbOptInAtual(profile))ok=0;if(!ok)url[0]=0;
+  pthread_mutex_unlock(&tbAdicaoTrava);if(opened)debrid_contexto_sair();return ok;
 }
