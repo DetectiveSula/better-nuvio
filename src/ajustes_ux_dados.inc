@@ -119,7 +119,7 @@ static void uxValorTexto(int op, int v, char *buf, size_t tam) {
   } else if (op == AJ_FIL_LIMITE && fil_limite_ilimitado(v)) {
     texto = i18n("Ilimitado");
   } else if (o->tipo == OP_NUMERO) {
-    snprintf(buf, tam, "%d%s", v, o->sufixo ? o->sufixo : "");
+    snprintf(buf, tam, "%d%s", v, o->sufixo ? i18n(o->sufixo) : "");
     return;
   } else if (op == AJ_LEG_LINGUA || op == AJ_LEG_LINGUA2 || op == AJ_AUD_LINGUA || op == AJ_AUD_LINGUA2) {
     const char *cod = ling_opcao_codigo(v >= 0 && v < ling_opcao_n() ? v : 0);

@@ -45,7 +45,35 @@ typedef struct {
 static const char *guiaTxt(const GuiaEnt *g) {
   if (g->alvo == AJ_P2P_LIGADO && p2pmotor_disponivel())
     return "Toca torrents sem link. Sem servidor na rede, o próprio aparelho baixa e compartilha enquanto toca, com teto de disco, e apaga tudo ao fechar o player. O automático nunca escolhe P2P.";
+  if (!strcmp(g->id, "c-ajustes"))
+    return "Choose a category in the left sidebar and a setting on the right. Extra controls stay under More options. Right or OK enters a category; Left or Back returns. Each switch shows On or Off and explains any required setting.";
   return g->txt;
+}
+
+// Derive settings breadcrumbs from the live catalogue so reordering cannot leave stale guide paths.
+static const char *guiaOnde(const GuiaEnt *g) {
+  static char path[1024];
+  if (g->alvo >= 0) {
+    snprintf(path, sizeof path, "Settings › %s › %s › %s", i18n(uxCaminho(g->alvo)),
+      i18n(uxBloco(g->alvo)), i18n(rotuloOpcao(g->alvo)));
+    return path;
+  }
+  // Non-settings locations retain their meaning; translate each breadcrumb segment.
+  const char *p = g->onde;
+  size_t used = 0;
+  path[0] = 0;
+  while (*p && used + 1 < sizeof path) {
+    const char *next = strstr(p, " › "), *alternative = strstr(p, " | ");
+    if (alternative && (!next || alternative < next)) next = alternative;
+    char segment[400];
+    snprintf(segment, sizeof segment, "%.*s", (int)(next ? next - p : (ptrdiff_t)strlen(p)), p);
+    used += (size_t)snprintf(path + used, sizeof path - used, "%s", i18n(segment));
+    if (!next || used + 6 >= sizeof path) break;
+    int delimiter = next == alternative ? 3 : (int)strlen(" › ");
+    used += (size_t)snprintf(path + used, sizeof path - used, "%.*s", delimiter, next);
+    p = next + delimiter;
+  }
+  return path;
 }
 
 // A frase de cada capitulo no inspetor, com o foco no indice.
@@ -839,7 +867,7 @@ static float guiaTelefoneConteudo(const GuiaVista *v, float x, float y, float w,
   y += txt_bloco_corta(TXT_AJ_SUB, guiaTxt(g), 243, 242, 239, x, y, w, 28.5f, .66f * a, 0) + 24;
   { TxtLinha c = ajTxtC(TXT_AJ_CAPS13, "Onde fica", w);
     txt_desenhar_alpha(c, x, y, .45f * a); y += 28; }
-  y += txt_bloco_corta(TXT_AJ_18, g->onde, 243, 242, 239, x, y, w, 29, .8f * a, 0) + 24;
+  y += txt_bloco_corta(TXT_AJ_18, guiaOnde(g), 243, 242, 239, x, y, w, 29, .8f * a, 0) + 24;
   for (int i = 0; i < nb; i++) {
     const char *rot = b[i] == GB_EXEMPLO ? "Ver exemplo" : b[i] == GB_AJUSTES ? "Abrir em Ajustes" : guiaRotTela(g->tela);
     const char *ic = b[i] == GB_EXEMPLO ? "aj_play" : b[i] == GB_AJUSTES ? "aj_settings-2" : guiaIcTela(g->tela);
@@ -904,7 +932,7 @@ static void guiaDesenharInspetor(const GuiaVista *v, float a) {
     y += 17;
     ajCaps(TXT_AJ_CAPS13, "Onde fica", 1.82f, x, y, 0.45f * a);
     y += 16 + 8;
-    y += guiaTrilha(g->onde, x, y, w, a) - 8;
+    y += guiaTrilha(guiaOnde(g), x, y, w, a) - 8;
     if (v->daNov && !strcmp(g->id, "c-guia")) {
       y += 18;
       y += ajEf("aj_corner-up-left", i18n("Voltar fecha o guia e devolve ao cartão das Novidades da 1.8.0. Depois, o guia fica em Ajustes › Sobre e ajuda › Guia de uso."), x, y, w, a);
@@ -1227,7 +1255,7 @@ const char *ajustes_guia_titulo(int e) { return e >= 0 && e < GUIA_NENT ? GUIA_E
 const char *ajustes_guia_texto(int e) { return e >= 0 && e < GUIA_NENT ? guiaTxt(&GUIA_ENT[e]) : ""; }
 const char *ajustes_guia_icone(int e) { return e >= 0 && e < GUIA_NENT ? GUIA_ENT[e].icone : ""; }
 const char *ajustes_guia_capitulo(int e) { return e >= 0 && e < GUIA_NENT ? GUIA_CAPS[GUIA_ENT[e].cap].titulo : ""; }
-const char *ajustes_guia_onde(int e) { return e >= 0 && e < GUIA_NENT ? GUIA_ENT[e].onde : ""; }
+const char *ajustes_guia_onde(int e) { return e >= 0 && e < GUIA_NENT ? guiaOnde(&GUIA_ENT[e]) : ""; }
 int ajustes_guia_novo(int e) { return e >= 0 && e < GUIA_NENT && GUIA_ENT[e].novo; }
 // A imagem de uma entrada no tamanho pedido (o melhor resultado do Spotlight).
 void ajustes_guia_imagem(int e, float x, float y, float w, float h) {

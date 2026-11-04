@@ -803,7 +803,7 @@ static void desenhaVinculo(const char *servico, const char *codigo,
   ajIlha(m, 36, 1, 1);
   x = m.x + 56 + 356 + 56; y = m.y + 50;
   if (ajRetrato()) { x = m.x + 56; y += 396.0f; }
-  ajKicker("Fontes e addons", x, y, 1);
+  ajKicker(uxCaminho(focoOp), x, y, 1);
   y += 22 + 4;
   snprintf(t, sizeof t, i18n("Conectar %s"), servico);
   { TxtLinha l = ajTxtC(TXT_ILHA_TITULO, t, m.x + m.w - 56 - x); txt_desenhar(l, x, y); y += 48; }
@@ -1013,7 +1013,8 @@ static void aj2EditorNumero(GfxRect m) {
   uxValorTexto(uxOp, uxOriginal, salvo, sizeof salvo);
   if (ilimitado) uni[0] = 0;
   else if (uxOp == AJ_FIL_LIMITE) snprintf(uni, sizeof uni, "%s", i18n("fileiras"));
-  else snprintf(uni, sizeof uni, "%s", o->sufixo ? o->sufixo + (o->sufixo[0] == ' ') : "");
+  else { const char *unit = o->sufixo ? i18n(o->sufixo) : "";
+    snprintf(uni, sizeof uni, "%s", unit + (unit[0] == ' ')); }
   { GfxRect r = { lx, y, lw, 34 + 150 + 40 + 10 + 14 + 40 + 34 };
     float fr = ajMovFracao(uxOp, uxPendente), fp = ajPadraoVisual(uxOp) >= 0 ? ajFracao(uxOp, ajPadraoVisual(uxOp)) : -1;
     float tx = r.x + 40, tw = r.w - 80, ty = r.y + 34 + 150 + 40, cy = r.y + 34 + 75;
@@ -1371,6 +1372,7 @@ static void ajDesenharTela(void) {
   ajPontInline = 0;
 #endif
   ajFundoPagina();
+  if (!ajRetrato()) gfx_cor((GfxRect){0,0,NV_VTELA_W,NV_VTELA_H}, 0, 0.035f,0.045f,0.065f,1);
   // Pagina assentada sem vidro: o cabecalho e a lista sao opacos e vem logo,
   // entao o Frost pendente so e pintado fora deles (ajIlhaMaterial faz o mesmo
   // com uma ilha so; aqui sao duas antes da primeira).
@@ -1386,7 +1388,7 @@ static void ajDesenharTela(void) {
 #endif
   if (modal) gfx_opacidade_grupo = 0.16f;
   g0 = gfx_opacidade_grupo;
-  aj2DesenharMenu(&p);
+  if (!ajRetrato()) ajSidebarDraw(); else aj2DesenharMenu(&p);
   if (p.rA > 0.003f) aj2DesenharGrade(p.rA);
   if (p.rA < 0.997f && uxIndice >= 1) aj2DesenharPagina(1.0f - p.rA);
   // O inspetor antes da lista: na transicao a lista desliza por cima dele.
@@ -1510,9 +1512,11 @@ void ajustes_desenhar_addons(int foco) {
   ajToqueCamada();
   ajSubToqueChave = 1;
 #endif
+  int languageScope = idioma_ingles_entrar();
   AJ_ESCALA_INI();
   ajDesenharAddons(foco);
   AJ_ESCALA_FIM();
+  idioma_ingles_sair(languageScope);
 }
 // --- 2.0.3: AS SUBLISTAS (ADDONS, PLUGINS) NO MODELO NOVO DOS AJUSTES ---------------
 // Mesma pagina da categoria (cabecalho de ponta a ponta, a cena a esquerda, a
@@ -1640,7 +1644,7 @@ static void ajDesenharAddons(int foco) {
   ajFundoPagina();
   snprintf(val, sizeof val, i18n("%d de %d"), lig, n);
   snprintf(sub, sizeof sub, "%s", n ? i18n(live ? "TV ao vivo" : "Ligados nesta TV") : i18n("Nenhum addon nesta conta."));
-  ajSubCabecalho("aj_puzzle", "Fontes e addons", live ? "TV ao vivo" : "Addons", n ? val : "", sub);
+  ajSubCabecalho("aj_puzzle", "Content & Discovery", live ? "TV ao vivo" : "Addons", n ? val : "", sub);
   if (foco > (live ? n - 1 : n + 1)) foco = live ? n - 1 : n + 1;
   if (foco < 0) foco = 0;
   { static char apoio[128][96];
@@ -1650,9 +1654,9 @@ static void ajDesenharAddons(int foco) {
     } }
   L[n] = (AjSubLinha){ "Sincronizar addons", ajSyncAddonsApoio(), "aj_rotate-cw", -1, 0, 1 };
   L[n + 1] = (AjSubLinha){ "TV ao vivo", "Os addons selecionados ignoram os filtros de fontes.", "aj_tv-minimal-play", -1, 0, 1 };
-  { AjDica d[3] = { { "OK", !live && foco == n ? "Sincronizar addons" : "Mudar" }, { "↑ ↓", "Navegar" }, { "Voltar", "Fontes e addons" } };
+  { AjDica d[3] = { { "OK", !live && foco == n ? "Sincronizar addons" : "Mudar" }, { "↑ ↓", "Navegar" }, { "Voltar", "Content & Discovery" } };
     ajSubLista(L, live ? n : n + 2, foco, d, 3, NULL, addonsui_ponteiro); }
-  snprintf(k, sizeof k, "%s · %s", i18n("Fontes e addons"), i18n("Addons"));
+  snprintf(k, sizeof k, "%s · %s", i18n("Content & Discovery"), i18n("Addons"));
   if (live) ajSubInspetor(AJ_ADDONS, k, n ? addons_nome(foco) : "TV ao vivo", i18n("Os addons selecionados ignoram os filtros de fontes."));
   else if (foco == n + 1) ajSubInspetor(AJ_ADDONS, k, "TV ao vivo", i18n("Os addons selecionados ignoram os filtros de fontes."));
   else if (foco == n) ajSubInspetor(AJ_ADDONS, k, "Sincronizar addons", i18n(ajSyncAddonsApoio()));
@@ -1701,7 +1705,7 @@ static void desenhaFolhaPermitidos(void) {
     ? "Nenhum marcado = todos. Os marcados vêm primeiro; os outros só tocam se eles não tiverem fonte."
     : "Nenhum marcado = todos. Só os marcados tocam no automático; sem fonte neles, a lista abre."));
   { char k[160];
-    snprintf(k, sizeof k, "%s · %s", i18n("Fontes e addons"), i18n("Escolha da fonte"));
+    snprintf(k, sizeof k, "%s · %s", i18n(uxCaminho(focoOp)), i18n("Escolha da fonte"));
     topo = ajCabecalhoFolha(m, k, plugin ? "Plugins permitidos" : "Add-ons permitidos", sub, 0, 1); }
   base = m.y + m.h - 96.0f;
   alvo = frFoco * 84.0f - (base - topo - 80.0f) * 0.5f;
@@ -1860,7 +1864,7 @@ static void desenhaFolhaOrdem(void) {
   snprintf(sub, sizeof sub, "%s", frAberta == 7
     ? i18n("Esquerda e direita escolhem subir ou descer; OK move.")
     : i18n("Esquerda e direita escolhem subir ou descer; OK move. Quem está fora da ordem toca depois de todos."));
-  snprintf(k, sizeof k, "%s · %s", i18n("Fontes e addons"), i18n("Escolha da fonte"));
+  snprintf(k, sizeof k, "%s · %s", i18n(uxCaminho(focoOp)), i18n("Escolha da fonte"));
   topo = ajCabecalhoFolha(m, k, frAberta == 7 ? "Ordem das notas na linha do título" : "Ordem dos add-ons", sub, 0, 1);
   base = m.y + m.h - 96.0f;
   alvo = frFoco * 84.0f - (base - topo - 80.0f) * 0.5f;
@@ -1931,7 +1935,7 @@ static void desenhaFolhaFalha(void) {
   if(frAberta==8 && !nv_perfil_sessao_atual(faIptvSessao)) { frAberta=0;return; }
   int contas=frAberta==8;
   faMontar(); ponteiro_camada(); ajVeuModal(); ajCentraModal(&m); ajIlha(m, 36, 1, 1);
-  topo = ajCabecalhoFolha(m, contas?"TV ao vivo":"Fontes e addons", contas?"Contas de TV ao vivo":frAberta == 4 ? "Ordem e limites dos provedores" : "Ordem e limites dos add-ons",
+  topo = ajCabecalhoFolha(m, contas?"TV ao vivo":"Content & Discovery", contas?"Contas de TV ao vivo":frAberta == 4 ? "Ordem e limites dos provedores" : "Ordem e limites dos add-ons",
                          contas?"":i18n("Limites contam links distintos, incluindo o primeiro. Use as setas para ordenar e o número para ajustar."), 0, 1);
   base = m.y + m.h - 96.0f;
   alvo = faFoco * 84.0f - (base - topo - 80.0f) * 0.5f;
@@ -2008,7 +2012,7 @@ static void desenhaFolhaFiltros(void) {
   int foco = ffCategoria >= 0 ? ffValorFoco : ffFoco;
   FonteFiltroConfig cfg; fontefalha_filtro(&cfg);
   ponteiro_camada(); ajVeuModal(); ajCentraModal(&m); ajIlha(m, 36.0f, 1.0f, 1.0f);
-  topo = ajCabecalhoFolha(m, ffCategoria >= 0 ? "Filtros das fontes" : "Fontes e addons",
+  topo = ajCabecalhoFolha(m, ffCategoria >= 0 ? "Filtros das fontes" : "Content & Discovery",
                          ffCategoria >= 0 ? fontefiltro_rotulo(ffCategoria) : "Filtros das fontes",
                          i18n(ffCategoria >= 0
                            ? "Marcado = filtrado. OK ou toque marca/desmarca e salva na hora."
@@ -2089,9 +2093,11 @@ void ajustes_desenhar_plugins(const AjPluginsVista *v) {
   ajToqueCamada();
   ajSubToqueChave = 2 + v->nivel * 400 + v->repo;
 #endif
+  int languageScope = idioma_ingles_entrar();
   AJ_ESCALA_INI();
   ajDesenharPlugins(v);
   AJ_ESCALA_FIM();
+  idioma_ingles_sair(languageScope);
 }
 static void ajDesenharPlugins(const AjPluginsVista *v) {
   static AjSubLinha L[96];
@@ -2114,7 +2120,7 @@ static void ajDesenharPlugins(const AjPluginsVista *v) {
     int lig, tot = plugins_repo_scrapers(v->repo, &lig);
     snprintf(sub, sizeof sub, i18n("%d scrapers · %d ligados"), tot, lig);
   }
-  ajSubCabecalho("aj_plug", v->nivel == 1 ? "Plugins" : "Fontes e addons",
+  ajSubCabecalho("aj_plug", v->nivel == 1 ? "Plugins" : "Content & Discovery",
                  v->nivel == 1 ? (rp.nome[0] ? rp.nome : rp.url) : "Plugins", val, sub);
   n = !disp ? 1 : v->nivel == 0 ? 2 + nr : 1 + plugins_repo_scrapers(v->repo, NULL);
   if (n > 96) n = 96;
@@ -2147,16 +2153,16 @@ static void ajDesenharPlugins(const AjPluginsVista *v) {
       }
     }
   }
-  if (!disp) { AjDica d[1] = { { "Voltar", "Fontes e addons" } }; ajSubLista(L, n, foco, d, 1, v->aviso, pluginsui_ponteiro); }
+  if (!disp) { AjDica d[1] = { { "Voltar", "Content & Discovery" } }; ajSubLista(L, n, foco, d, 1, v->aviso, pluginsui_ponteiro); }
   else if (v->nivel == 0) {
-    AjDica d[3] = { { "OK", foco == 1 ? "Adicionar" : "Mudar" }, { "→", "Scrapers" }, { "Voltar", "Fontes e addons" } };
+    AjDica d[3] = { { "OK", foco == 1 ? "Adicionar" : "Mudar" }, { "→", "Scrapers" }, { "Voltar", "Content & Discovery" } };
     if (foco < 2) d[1] = d[2];
     ajSubLista(L, n, foco, d, foco >= 2 ? 3 : 2, v->aviso, pluginsui_ponteiro);
   } else {
     AjDica d[2] = { { "OK", foco == 0 ? "Remover" : "Mudar" }, { "Voltar", "Repositórios" } };
     ajSubLista(L, n, foco, d, 2, v->aviso, pluginsui_ponteiro);
   }
-  snprintf(k, sizeof k, "%s · %s", i18n("Fontes e addons"), i18n("Plugins"));
+  snprintf(k, sizeof k, "%s · %s", i18n("Content & Discovery"), i18n("Plugins"));
   { GfxRect ir = aj2InspR();
     float y;
     char host[160] = "";

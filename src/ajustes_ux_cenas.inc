@@ -77,7 +77,7 @@ static int ajcNoBloco(int op, const char *rot) {
   int i, r = -1;
   for (i = 0; i < AJ_N_TELA; i++) {
     if (TELA[i].tipo == IT_ROT || TELA[i].tipo == IT_SEC) r = i;
-    if (TELA[i].tipo == IT_OPC && TELA[i].op == op) return r >= 0 && TELA[r].tipo == IT_ROT && !strcmp(TELA[r].titulo, rot);
+    if (TELA[i].tipo == IT_OPC && TELA[i].op == op) return r >= 0 && TELA[r].tipo == IT_ROT && !strcmp(i18n(TELA[r].titulo), i18n(rot));
   }
   return 0;
 }
@@ -1212,8 +1212,8 @@ static void ajcCenaCategoria(int sec) {
 // A entrada: categoria (op < 0) ou opcao. Devolve a altura (w * 9/16).
 static float ajCenaGerada(int sec, int op, float x, float y, float w) {
   float h = ajc_comecar(x, y, w, 1.0f);
-  if (op >= 0) ajcCenaOpcao(sec >= 0 ? sec : uxSecaoDe(op), op);
-  else ajcCenaCategoria(sec);
+  if (op >= 0) ajcCenaOpcao(ajSceneForOption(op), op);
+  else ajcCenaCategoria(ajSceneForCategory(sec));
   ajc_fim();
   return h;
 }

@@ -10,6 +10,8 @@
 #include "ajustes.h"
 #include "teclado.h"
 #include "idioma.h"
+// These screens are settings submenus, independent of the saved app language.
+#define i18n(s) idioma_ingles(s)
 #include <stdio.h>
 #include <string.h>
 
@@ -124,10 +126,12 @@ void pluginsui_atualizar(float dt, Uint32 agora) {
 }
 
 void pluginsui_desenhar(Uint32 agora) {
+  int languageScope = idioma_ingles_entrar();
   AjPluginsVista v;
   v.nivel = nivel; v.foco = foco; v.repo = repo; v.armado = armado; v.aviso = aviso;
   ajustes_desenhar_plugins(&v);
   if (teclado_aberto()) teclado_desenhar(agora);
+  idioma_ingles_sair(languageScope);
 }
 
 #ifdef AJUSTES_TESTE

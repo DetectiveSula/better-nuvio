@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 // ---------------------------------------------------------------- tabela
 //
@@ -339,15 +340,13 @@ static void conferirOrdem(void) {
 #define I18N_CACHE 1024
 static struct { unsigned long long h; unsigned n; int idx; } cache[I18N_CACHE];
 
-const char *i18n(const char *s) {
+static const char *traduzirIdioma(const char *s, int lg) {
   int lo = 0, hi = TAB_N - 1;
   unsigned long long h = 1469598103934665603ull;
   unsigned n = 0, slot;
   const unsigned char *p;
-  int lg;
   idioma_registrar(s);
   if (!s || !*s) return s;
-  lg = ajustes_idioma();
   if (lg == IDIOMA_PT) return s;
   if (ordemOk < 0) conferirOrdem();
   if (!ordemOk) return s;
@@ -371,4 +370,52 @@ const char *i18n(const char *s) {
   // conteudo aqui exigiria a mesma heuristica de portugues que ja falhou tres
   // vezes na varredura estatica, e ela erra igual em "Detalhes" e "Cartazes".
   return s;
+}
+
+// Only the calling UI thread is affected; metadata workers retain their language.
+static pthread_key_t settingsEnglishKey;
+static pthread_once_t settingsEnglishOnce = PTHREAD_ONCE_INIT;
+static void settingsEnglishInit(void) { pthread_key_create(&settingsEnglishKey, NULL); }
+int idioma_ingles_entrar(void) {
+  int previous;
+  pthread_once(&settingsEnglishOnce, settingsEnglishInit);
+  previous = pthread_getspecific(settingsEnglishKey) != NULL;
+  pthread_setspecific(settingsEnglishKey, (void *)1);
+  return previous;
+}
+void idioma_ingles_sair(int previous) {
+  pthread_once(&settingsEnglishOnce, settingsEnglishInit);
+  pthread_setspecific(settingsEnglishKey, previous ? (void *)1 : NULL);
+}
+// Settings-only additions: keep multilingual table indices and stored language codes intact.
+const char *idioma_ingles(const char *s) {
+  static const struct { const char *source, *english; } extra[] = {
+    {"Chips: uma fileira de botões, como sempre. Menu suspenso: escolha Filmes ou Séries e depois o catálogo numa lista. Barra central: uma pílula de vidro no centro do alto da tela. Páginas: um catálogo por página; Esquerda e Direita trocam de página. Vale para este perfil.", "Chips: a row of buttons. Dropdown menu: choose Movies or Series, then a catalogue from a list. Centre bar: a glass pill at the top centre. Pages: one catalogue per page; Left and Right change pages. Applies to this profile."},
+    {"Endereço com {imdb}, {tmdb}, {type} (movie ou series) e {tipo_tmdb} (movie ou tv), por exemplo https://meu.servidor/{type}/{imdb}.jpg. Quem não tiver o dado que o modelo pede fica com o cartaz normal.", "A URL with {imdb}, {tmdb}, {type} (movie or series) and {tipo_tmdb} (movie or tv), for example https://my.server/{type}/{imdb}.jpg. Titles without the required data keep their normal poster."},
+    {"Só LG", "LG only"}, {" dias", " days"},
+    {"Fica perto da antena. Não desliga nada.", "It is near the antenna. It does not turn anything off."},
+    {"Observatório de Arecibo", "Arecibo Observatory"}, {"Você também ouviu isso?", "Did you hear that too?"},
+    {"De onde vem a fileira de retomada. \"Automático\" usa Trakt quando conectado e a conta Nuvio nos demais casos, como no Nuvio Android.", "Choose the source for Continue Watching. Automatic uses Trakt when connected and your Nuvio account otherwise, as in Nuvio Android."},
+    {"Dias no Continuar do Trakt (0 = todos)", "Days in Trakt Continue Watching (0 = all)"},
+    {"Pacote 1", "Pack 1"}, {"Pacote 2", "Pack 2"}, {"Pacote 3", "Pack 3"},
+    {"Menu suspenso", "Dropdown menu"}, {"Barra central", "Centre bar"},
+    {"Português", "Portuguese (Brazil)"}, {"Português (Portugal)", "Portuguese (Portugal)"},
+    {"Română", "Romanian"}, {"Українська", "Ukrainian"}, {"Русский", "Russian"},
+    {"Français", "French"}, {"Deutsch", "German"}, {"Español", "Spanish"},
+    {"Italiano", "Italian"}, {"Nederlands", "Dutch"}, {"Polski", "Polish"},
+    {"Türkçe", "Turkish"}, {"Svenska", "Swedish"}, {"Dansk", "Danish"},
+    {"Norsk", "Norwegian"}, {"Čeština", "Czech"}, {"Slovenčina", "Slovak"},
+    {"Slovenščina", "Slovenian"}, {"Magyar", "Hungarian"}, {"Lietuvių", "Lithuanian"},
+    {"Bosanski", "Bosnian"}, {"Srpski", "Serbian"}, {"Български", "Bulgarian"},
+    {"Ελληνικά", "Greek"}, {"Bahasa Indonesia", "Indonesian"}, {"Tiếng Việt", "Vietnamese"},
+    {"日本語", "Japanese"}, {"简体中文", "Chinese (Simplified)"}, {"繁體中文", "Chinese (Traditional)"},
+    {"العربية", "Arabic"}
+  };
+  if (s) for (unsigned i = 0; i < sizeof extra / sizeof *extra; i++)
+    if (!strcmp(s, extra[i].source)) return extra[i].english;
+  return traduzirIdioma(s, IDIOMA_EN);
+}
+const char *i18n(const char *s) {
+  pthread_once(&settingsEnglishOnce, settingsEnglishInit);
+  return pthread_getspecific(settingsEnglishKey) ? idioma_ingles(s) : traduzirIdioma(s, ajustes_idioma());
 }

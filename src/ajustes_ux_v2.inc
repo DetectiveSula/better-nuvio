@@ -197,13 +197,15 @@ static float aj2MenuAberta(int j) {
   return AJ2_MENU_LN - 2.0f + h + 14.0f;
 }
 static int aj2MenuFocado(void) { return focoIndice ? uxIndice : -1; }
-// Os tres grupos do indice: so a apresentacao. As categorias seguem a ordem de
-// TELA[] (ajustes_ux_tela.inc, 2.0.3: Assistir = 0-3, Telas = 4-7, o resto em
-// Conta e sistema); nada aqui mexe em valor[] nem em CHAVE[].
-static int aj2Grupo(int s) { return s < AJS_HOME ? 0 : s < AJS_CONTAS ? 1 : 2; }
+// Presentation groups follow the restored category order, never AJS_* scene IDs.
+// The portrait grid retains three columns; TV uses the vertical sidebar.
+static int aj2Grupo(int s) { return ajRetrato() ? (s < 4 ? 0 : s < 8 ? 1 : 2) : (s < 2 ? 0 : s < 4 ? 1 : s < 6 ? 2 : s < 8 ? 3 : 4); }
 static int aj2GrupoDe(int s) { return aj2Grupo(s); }
 static int aj2GrupoIni(int s) { return s == 0 || aj2Grupo(s) != aj2Grupo(s - 1); }
-static const char *aj2GrupoNome(int g) { return g == 0 ? "Assistir" : g == 1 ? "Telas" : "Conta e sistema"; }
+static const char *aj2GrupoNome(int g) {
+  if (ajRetrato()) return g == 0 ? "You & appearance" : g == 1 ? "Content & services" : "System";
+  return g == 0 ? "You" : g == 1 ? "Look" : g == 2 ? "Watch" : g == 3 ? "Services" : "System";
+}
 // O VALOR VIVO DE CADA CATEGORIA no indice (2.0.2), como o Ajustes de um
 // celular: o que a pessoa mais quer saber dela sem abrir ("Moderna",
 // "Automatica", "Portugues", "3 de 5"). So valores que a tela ja mostra nas
@@ -211,7 +213,15 @@ static const char *aj2GrupoNome(int g) { return g == 0 ? "Assistir" : g == 1 ? "
 static void aj2MenuValor(int sec, char *b, size_t n) {
   int op = -1;
   b[0] = 0;
-  switch (sec) {
+  // Distinct categories may share a preview scene; summaries follow their controls.
+  static const int summary[] = { AJ_SYNC, AJ_PERFIL_ATIVO, -1, AJ_HOME_LAYOUT,
+    AJ_ADDONS, -1, AJ_TMDB_LIGADO, AJ_CW_FONTE, AJ_ENQUETES, -1, AJ_VERSAO_I };
+  if (sec >= 0 && sec < (int)(sizeof summary / sizeof *summary) && summary[sec] >= 0) {
+    op = summary[sec];
+    snprintf(b, n, "%s", i18n(textoValor(op)));
+    return;
+  }
+  switch (ajSceneForCategory(sec)) {
     case AJS_HOME: op = AJ_HOME_LAYOUT; break;
     case AJS_TITULO: {   // as notas ligadas, pelos nomes
       int k, q = 0;
@@ -491,7 +501,7 @@ static void aj2DesenharMenu(const Aj2Pose *p) {
             TxtLinha v = ajTxtC(TXT_V2_24, vb, sobra);
             float vx = m.x + m.w - AJ2_MENU_PAD - 28.0f - v.w;
             txt_desenhar_alpha(v, vx, lc - v.h * 0.5f, (foco ? 0.8f : 0.5f) * mk * p->mRot);
-            if (j - 2 == AJS_APARENCIA && vx - 26.0f > rx + 28 + AJ2_MENU_ICO + AJ2_MENU_ICO_GAP + t.w + 8.0f)
+            if (ajSceneForCategory(j - 2) == AJS_APARENCIA && vx - 26.0f > rx + 28 + AJ2_MENU_ICO + AJ2_MENU_ICO_GAP + t.w + 8.0f)
               gfx_cor((GfxRect){ vx - 24.0f, lc - 8.0f, 16, 16 }, 0.5f, ar, ag, ab, mk * p->mRot);
           } } }
       txt_desenhar_alpha(t, rx + 28 + AJ2_MENU_ICO + AJ2_MENU_ICO_GAP, lc - t.h * 0.5f, al * mk * p->mRot);
@@ -670,7 +680,7 @@ static float aj2LTopo(void);
 static float aj2LBase(void);
 static float aj2LYRel(int sec, float *total);
 static GfxRect aj2GradeR(void) {
-  float x = aj2X0();
+  float x = aj2ArteX();
   return (GfxRect){ x, AJ2_TOPO, NV_VTELA_W - AJ2_MARGEM - x, NV_VTELA_H - AJ2_TOPO - AJ2_MARGEM };
 }
 static float aj2GradeColW(void) { return (aj2GradeR().w - 2 * AJ2_G_PAD - 2 * AJ2_G_VAO) / 3.0f; }
@@ -1179,7 +1189,7 @@ static float aj2GradeOrigemY(int idx) {
 // Esquerda) encolhe o cabecalho de volta para o cartao. Uma ilha (a do trilho
 // saiu), nenhum fosco novo.
 static GfxRect aj2PaginaR(void) {
-  float x = aj2X0();
+  float x = aj2ArteX();
   return (GfxRect){ x, AJ2_TOPO, NV_VTELA_W - AJ2_MARGEM - x, AJ_CAB_PAGINA - 22.0f };
 }
 #ifdef NV_TOUCH_UI
@@ -1208,8 +1218,8 @@ static void aj2DesenharPagina(float t) {
     nome = aj2MenuTitulo(uxIndice); ic = aj2MenuIcone(uxIndice); kick = aj2GrupoNome(aj2Grupo(sec));
     aj2MenuValor(sec, vb, sizeof vb);
     // No cabecalho so o valor principal (mockup: "4K", "Portugues").
-    if (sec == AJS_REPRODUCAO) snprintf(vb, sizeof vb, "%s", i18n(textoValor(AJ_QUALIDADE)));
-    else if (sec == AJS_IDIOMAS) snprintf(vb, sizeof vb, "%s", i18n(textoValor(AJ_IDIOMA)));
+    if (ajSceneForCategory(sec) == AJS_REPRODUCAO) snprintf(vb, sizeof vb, "%s", i18n(textoValor(AJ_QUALIDADE)));
+    else if (ajSceneForCategory(sec) == AJS_IDIOMAS) snprintf(vb, sizeof vb, "%s", i18n(textoValor(AJ_IDIOMA)));
     { int i, nOp = 0, nAv = 0;
       for (i = secIni[sec] + 1; i < secFim(sec); i++)
         if (TELA[i].tipo == IT_OPC && ajOpcaoDisponivel(TELA[i].op)) { nOp++; if (uxAvancada(TELA[i].op)) nAv++; }
@@ -1226,7 +1236,7 @@ static void aj2DesenharPagina(float t) {
     nome = aj2ChipRotulo(1); ic = "aj_rotate-ccw-clock"; kick = "Ajustes";
     snprintf(vb, sizeof vb, "%d", uxNDifs); q[0] = 0;
   }
-  if(iptvForm.tipo && sec==AJS_TVAOVIVO) {
+  if(iptvForm.tipo && ajSceneForOption(focoOp)==AJS_TVAOVIVO) {
     nome=iptvForm.nova?ajIptvAdicionarNome(iptvForm.tipo):iptvAlvo.nome;
     vb[0]=q[0]=0;
   }
@@ -1288,6 +1298,52 @@ static void aj2Atualizar(float dt) {
     if (red) aj2Insp = aj2Rampa(aj2Insp, alvo, dt, 120.0f), aj2VI = 0;
     else aj2Insp = aj2Mola(&aj2VI, aj2Insp, alvo, dt, alvo > aj2Insp ? 18.0f : 22.0f, alvo > aj2Insp ? 0.9f : 1.0f); }
 }
+
+// TV sidebar uses the same category focus and option editors as the native UI.
+static void ajSidebarPoint(int index, int unused) {
+  (void)unused;
+  if (uxEditor) return;
+  focoIndice = 1; uxTopo = -1; uxCabLayout = 0;
+  if (index >= 2) focarSecao(index - 2);
+  uxIndice = index;
+}
+// Keep readable rows at larger text scales and scroll the selected category into view.
+static float ajSidebarScroll;
+static float ajSidebarEnsureVisible(float row, float height) {
+  float total = (nSecoes + 2) * row, top = uxIndice * row;
+  float limit = fmaxf(0, total - height);
+  if (top < ajSidebarScroll) ajSidebarScroll = top;
+  if (top + row > ajSidebarScroll + height) ajSidebarScroll = top + row - height;
+  ajSidebarScroll = fmaxf(0, fminf(limit, ajSidebarScroll));
+  return ajSidebarScroll;
+}
+static void ajSidebarDraw(void) {
+  float x = aj2X0(), w = ajSidebarWidth(), y = AJ2_TOPO;
+  int i, count = nSecoes + 2;
+  float row = fmaxf(52, fminf(62, (NV_VTELA_H - AJ2_MARGEM - y - 65) / count));
+  TxtLinha title = ajTxtC(TXT_V2_26, "Settings", w - 36);
+  txt_desenhar_alpha(title, x + 18, y, 1);
+  y += 52;
+  float height = fmaxf(row, NV_VTELA_H - AJ2_MARGEM - y);
+  float scroll = ajSidebarEnsureVisible(row, height);
+  gfx_recorte(x, y, w, height);
+  for (i = 0; i < count; i++) {
+    GfxRect r = {x, y + i * row - scroll, w, row - 4};
+    if (r.y + r.h <= y || r.y >= y + height) continue;
+    int selected = uxIndice == i && uxTopo < 0;
+    const char *name = i == 0 ? "Search settings" : i == 1 ? "Changed settings" : TELA[secIni[i - 2]].titulo;
+    const char *icon = i == 0 ? "aj_search" : i == 1 ? "aj_rotate-ccw-clock" : TELA[secIni[i - 2]].icone;
+    TxtLinha text = ajTxtC(TXT_V2_26, name, w - 76);
+    if (selected) gfx_cor(r, 0.18f, 0.18f, 0.27f, 0.41f, focoIndice ? 0.95f : 0.6f);
+    ajIcone(icon, x + 16, r.y + (r.h - 26) * 0.5f, 26, selected ? 1 : 0.65f);
+    txt_desenhar_alpha(text, x + 60, r.y + (r.h - text.h) * 0.5f, selected ? 1 : 0.7f);
+    float hitY = fmaxf(y, r.y), hitBottom = fminf(y + height, r.y + r.h);
+    if (!ajModalAberto() && !uxEditor)
+      ponteiro_alvo(r.x, hitY, r.w, hitBottom - hitY, ajSidebarPoint, NULL, i, 0);
+  }
+  gfx_sem_recorte();
+}
+
 static Aj2Pose aj2PoseAgora(void) {
   Aj2Pose p;
   int red = ajustes_animacoes_reduzidas();
@@ -1309,6 +1365,11 @@ static Aj2Pose aj2PoseAgora(void) {
     p.lA *= livre; p.iA *= livre; p.mA *= livre; }
   p.eS = 0.92f + 0.08f * n2; p.eDx = 380.0f * (1.0f - n2); p.eA = aj2EdA;
   if (red) { p.mS = p.lS = p.eS = 1.0f; p.mDx = p.lDx = p.eDx = p.iDx = 0.0f; }
+  if (!ajRetrato()) {
+    p.rA = 0; p.mA = 0; p.mRot = 0;
+    p.lS = 1; p.lDx = 0; p.lA = 1; p.lTxt = 1;
+    p.iDx = 0; p.iA = uxEditor ? 0 : 1;
+  }
   return p;
 }
 

@@ -1,0 +1,24 @@
+{
+  "settings-comparison.xlsx": null,
+  "settings-comparison.csv": "official-settings-audit/settings-comparison.csv",
+  "PRIORITY-FINDINGS.md": "official-settings-audit/PRIORITY-FINDINGS.md",
+  "LEGACY-ADDITIONAL.md": "official-settings-audit/LEGACY-ADDITIONAL.md",
+  "index.html": "official-settings-audit/index.html",
+  "comparison.json": "official-settings-audit/comparison.json",
+  "OPTIONS.md": "official-settings-audit/OPTIONS.md",
+  "legacy-preservation.json": "official-settings-audit/legacy-preservation.json",
+  "native-options.json": "official-settings-audit/native-options.json",
+  "manifest.json": "official-settings-audit/manifest.json",
+  "_note": "Paths are relative to the external audit bundle, which is not included in this checkpoint. Machine-specific absolute locations are intentionally omitted. settings-comparison.xlsx was unavailable.",
+  "_sha256": {
+    "settings-comparison.csv": "338bdb78a7f149ea0dcde6313564edf9ff0ff869c27bf03df1ef0decf8b91341",
+    "PRIORITY-FINDINGS.md": "62b3b6fe59cf2aa71d98777ee3d45d4071443373b617ba20f4014a59cdeb7834",
+    "LEGACY-ADDITIONAL.md": "e18868e07870536345959d37ad424dd7bf9c4bcd7dab8b7c71a41f3f7ed2c621",
+    "index.html": "f8cdf319f2a9cf0d57ebeff0c65620d8b9bb3126627e51fd249c1cc1e6f36a36",
+    "comparison.json": "6196e67ff977adc423733c828dd729486a3836f49f32bfb1695dd96c6e3760c6",
+    "OPTIONS.md": "cc58026830da1b1052e5c666c790f86e5fc0e249ba54b4ecec5432265553066b",
+    "legacy-preservation.json": "fba765e76faa3b88ead21253e20c5199eb11cd7f097875edd7db15da37990b8e",
+    "native-options.json": "c1bf3e95027a5fcf5bb7ce9a26f721ae56db36d81cd9c997e8891b60202dd51a",
+    "manifest.json": "10169615290b344c8aee13ec053618e7560d779adbd08d841c5d91bc546c3e3f"
+  }
+}

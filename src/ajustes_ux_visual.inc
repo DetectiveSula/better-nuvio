@@ -189,6 +189,7 @@ static const char *ajVisualIcone(int op) {
     case AJ_REACAO_CREDITOS: return "aj_circle-play";
     case AJ_CW_CONCLUIDO: return "aj_circle-play";
     case AJ_CW_MINIMO: return "aj_circle-play";
+    case AJ_CW_DIAS: return "aj_calendar";
     case AJ_PULAR_ABERTURA: case AJ_PULAR_RESUMO: case AJ_PULAR_CREDITOS: case AJ_PROXIMO_AUTO: case AJ_PROXIMO_CONTAGEM: return "aj_circle-play";
     case AJ_SAIDA_PLAYER: case AJ_PLAYER_EXTERNO: case AJ_PLAYER_ANIME: return "aj_circle-play";
     case AJ_SEEKR_LIGADO: return "aj_film";
@@ -323,16 +324,9 @@ static const char *ajVisualIcone(int op) {
 // (catalogo da conta, ou a amostra embarcada antes dele) ocupa o quadro 16:9
 // inteiro, e por cima vem a mini-UI que a categoria controla, no material das
 // ilhas, num tamanho que se le. Coordenadas num quadro de 640x360.
-// A ordem dos `case` e a ordem dos SEC em ajustes_ux_tela.inc (AJS_*): a versao
-// anterior tinha Cartazes/Trailers/Titulo/Reproducao/Idiomas/Aparencia
-// trocados, e Reproducao mostrava os chips de idioma.
+// Preview identities are stable AJS_* scenes, independent of sidebar positions.
 #include "perfis.h"
-// 2.0.3: a ordem da tarefa (Assistir, Telas, Conta e sistema). AJS_TRAILERS nao
-// e mais categoria (Cartazes e trailers e uma so): fica depois de AJS_N como a
-// CENA das opcoes de trailer dentro de Cartazes e trailers.
-enum { AJS_REPRODUCAO = 0, AJS_IDIOMAS, AJS_FONTES, AJS_TVAOVIVO,
-       AJS_HOME, AJS_APARENCIA, AJS_TITULO, AJS_CARTAZES,
-       AJS_CONTAS, AJS_DESEMPENHO, AJS_SOBRE, AJS_N, AJS_TRAILERS = AJS_N };
+// AJS_TRAILERS is an option preview, never a navigation category.
 static float ajPreviaHome(float x, float y, float w);
 static float ajPreviaHomeArte(float x, float y, float w, int arte);
 static const char *ajTituloN(int n);
@@ -341,8 +335,8 @@ static void ajTextoMini(const char *s, float px, int forte, float x, float y, in
 static TxtEstilo ajEstiloPx(float px, int forte);
 static TxtEstilo ajEstiloPxS(float px, int forte) { return ajEstiloPx(px < 6.0f ? 6.0f : px, forte); }
 // A amostra de arte de cada categoria e de cada SUBMENU dela (o indice de
-// ajArte). Linha = categoria (AJS_*), coluna = o bloco (ROT) na ordem de
-// ajustes_ux_tela.inc; a coluna 0 e a imagem da categoria, e vale tambem para
+// ajArte). Linha = stable scene (AJS_*), column = original block identity from
+// ajustes_scenes.inc; a coluna 0 e a imagem da categoria, e vale tambem para
 // o primeiro bloco (entrar na categoria nao troca a imagem). Nenhum indice se
 // repete: sao as 40 amostras de deploy/app/art.
 // -1 = a categoria nao tem esse bloco.
@@ -370,13 +364,13 @@ static int ajCenaArteN(int sec) {
 // do primeiro bloco ficam com a imagem da categoria.
 static int ajCenaArteOp(int op) {
   static int cOp = -1, cN = 12;
-  int i, j, sec, g = -1, n;
+  int i, sec, g = -1, n;
   if (op < 0) return 12;
   if (op == cOp) return cN;
   for (i = 0; i < AJ_N_TELA; i++) if (TELA[i].tipo == IT_OPC && TELA[i].op == op) break;
   if (i >= AJ_N_TELA) return 12;
-  sec = secDoItem[i];
-  for (j = secIni[sec] + 1; j < i; j++) if (TELA[j].tipo == IT_ROT) g++;
+  sec = ajSceneForOption(op);
+  g = ajArtBlockForOption(op);
   if (g < 0) g = 0;
   if (g >= AJ_ARTE_BLOCOS) g = AJ_ARTE_BLOCOS - 1;
   n = sec >= 0 && sec < AJS_N ? AJ_ARTE_SEC[sec][g] : 12;
@@ -458,6 +452,7 @@ static float ajVisualCena(int sec, int op, float x, float y, float w) {
   // ajudam"): toda cena dos Ajustes e o desenho gerado. O desenho com as
   // artes de amostra abaixo ficou so como referencia do que cada cena mostra.
   if (sec >= 0 || op >= 0) return ajCenaGerada(sec, op, x, y, w);
+  sec = op >= 0 ? ajSceneForOption(op) : ajSceneForCategory(sec);
   float s = w / 640.0f, h = w * 9.0f / 16.0f, rr = 22.0f, ar, ag, ab;
   GfxRect q = { x, y, w, h };
   int i, j;

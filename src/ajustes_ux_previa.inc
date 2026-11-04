@@ -305,9 +305,9 @@ static float ajPreviaCartaz(int op, float x, float y, float w) {
     float ar, ag, ab;
     TxtLinha l;
     ajustes_acento(&ar, &ag, &ab);
-    snprintf(a, sizeof a, "%d%s", o->min, o->sufixo ? o->sufixo : "");
-    snprintf(b, sizeof b, "%d%s", valor[op], o->sufixo ? o->sufixo : "");
-    snprintf(c, sizeof c, "%d%s", o->max, o->sufixo ? o->sufixo : "");
+    snprintf(a, sizeof a, "%d%s", o->min, o->sufixo ? i18n(o->sufixo) : "");
+    snprintf(b, sizeof b, "%d%s", valor[op], o->sufixo ? i18n(o->sufixo) : "");
+    snprintf(c, sizeof c, "%d%s", o->max, o->sufixo ? i18n(o->sufixo) : "");
     l = ajTxt(TXT_ILHA_APOIO, a); txt_desenhar_alpha(l, x, y, 0.45f);
     l = ajTxt(TXT_ILHA_APOIO, c); txt_desenhar_alpha(l, x + w - l.w, y, 0.45f);
     l = txt_linha(TXT_AJ_16B, b, AJ_TX); txt_desenhar(l, x + (w - l.w) * 0.5f, y - 1);

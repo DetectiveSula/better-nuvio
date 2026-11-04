@@ -1,0 +1,3882 @@
+[
+  {
+    "id": "AJ_QUALIDADE",
+    "scene": "AJS_REPRODUCAO",
+    "block": 0,
+    "section": 0,
+    "group": "Imagem e som",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_HDR",
+    "scene": "AJS_REPRODUCAO",
+    "block": 0,
+    "section": 0,
+    "group": "Imagem e som",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_DV",
+    "scene": "AJS_REPRODUCAO",
+    "block": 0,
+    "section": 0,
+    "group": "Imagem e som",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_ATMOS",
+    "scene": "AJS_REPRODUCAO",
+    "block": 0,
+    "section": 0,
+    "group": "Imagem e som",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_AUDIO_OFFSET",
+    "scene": "AJS_REPRODUCAO",
+    "block": 0,
+    "section": 0,
+    "group": "Imagem e som",
+    "advanced": false,
+    "gate": "(defined(NV_TPK))",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_MANUAL",
+    "scene": "AJS_REPRODUCAO",
+    "block": 1,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_PRIORIDADE",
+    "scene": "AJS_REPRODUCAO",
+    "block": 1,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_IDIOMA_AUDIO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 1,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_PRAZO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 1,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_REPOR",
+    "scene": "AJS_REPRODUCAO",
+    "block": 1,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_TAM_MAX",
+    "scene": "AJS_REPRODUCAO",
+    "block": 1,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_GRUPO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 1,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_GRUPO_SESSOES",
+    "scene": "AJS_REPRODUCAO",
+    "block": 1,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LINK_REUSAR",
+    "scene": "AJS_REPRODUCAO",
+    "block": 1,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LINK_PRAZO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 1,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_PAUSA_OVERLAY",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_PAUSA_COMENTARIOS",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_PAUSA_NOTAS",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_PAUSA_ELENCO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_TELA_ABERTURA",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_ABERTURA_ADDON",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_ABERTURA_FUNDO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_ABERTURA_ESTILO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_ESTAT_TAMANHO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_ESTAT_LADO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_PLR_CLASSIF",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_PULAR_ABERTURA",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_PULAR_RESUMO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_PULAR_CREDITOS",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_PROXIMO_AUTO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_PROXIMO_CONTAGEM",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_REACAO_CREDITOS",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_CW_CONCLUIDO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_CW_MINIMO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_PLR_FORMATO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_PLR_FORMATO_POS",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_PLR_CODEC",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_SAIDA_PLAYER",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_PROPORCAO_PADRAO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_BRILHO_PLAYER",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_HDR_UI",
+    "scene": "AJS_REPRODUCAO",
+    "block": 2,
+    "section": 0,
+    "group": "Durante e depois",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_SEEKR_LIGADO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 3,
+    "section": 0,
+    "group": "Miniatura ao avançar",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_SEEKR_CHAVE",
+    "scene": "AJS_REPRODUCAO",
+    "block": 3,
+    "section": 0,
+    "group": "Miniatura ao avançar",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_SEEKR_TESTAR",
+    "scene": "AJS_REPRODUCAO",
+    "block": 3,
+    "section": 0,
+    "group": "Miniatura ao avançar",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_SEEKR_FITA",
+    "scene": "AJS_REPRODUCAO",
+    "block": 3,
+    "section": 0,
+    "group": "Miniatura ao avançar",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_REGEX",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_REGEX_PADRAO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_REGEX_MODELO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_ESCOPO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_ADDONS_PERM",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_PLUGINS_PERM",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_ORDEM",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_ORDEM_USO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_OUTROS",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_AUTO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_TOCAR_CONFERINDO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_AQUECER",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_CONFERIR_VARIAS",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_PREPARAR",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_PRECARREGAR",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "(defined(NV_ANDROID))",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_TAM_MIN",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_TEXTO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_FONTE_ORDEM_ADDON",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_SELOS_CORES",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_SELOS_PACOTE",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_SELOS_PACOTE_ADD",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_SELOS_PACOTE_REM",
+    "scene": "AJS_REPRODUCAO",
+    "block": 4,
+    "section": 0,
+    "group": "Escolha da fonte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_DTS_AC3",
+    "scene": "AJS_REPRODUCAO",
+    "block": 5,
+    "section": 0,
+    "group": "Som e vídeo desta TV",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_TUNNELING",
+    "scene": "AJS_REPRODUCAO",
+    "block": 5,
+    "section": 0,
+    "group": "Som e vídeo desta TV",
+    "advanced": true,
+    "gate": "(defined(NV_ANDROID))",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_DV_MKV",
+    "scene": "AJS_REPRODUCAO",
+    "block": 5,
+    "section": 0,
+    "group": "Som e vídeo desta TV",
+    "advanced": true,
+    "gate": "(!defined(NV_TPK) && !defined(NV_ANDROID))",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_DV7",
+    "scene": "AJS_REPRODUCAO",
+    "block": 5,
+    "section": 0,
+    "group": "Som e vídeo desta TV",
+    "advanced": true,
+    "gate": "(!defined(NV_TPK) && !defined(NV_ANDROID)) && (defined(NV_DV7_CONVERSION))",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_CACHE_SEEK",
+    "scene": "AJS_REPRODUCAO",
+    "block": 5,
+    "section": 0,
+    "group": "Som e vídeo desta TV",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_MANTER_VIDEO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 5,
+    "section": 0,
+    "group": "Som e vídeo desta TV",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_RETOMADA_MORNA",
+    "scene": "AJS_REPRODUCAO",
+    "block": 5,
+    "section": 0,
+    "group": "Som e vídeo desta TV",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_MANTER_PRAZO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 5,
+    "section": 0,
+    "group": "Som e vídeo desta TV",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_SEEKR_AJUSTE",
+    "scene": "AJS_REPRODUCAO",
+    "block": 5,
+    "section": 0,
+    "group": "Som e vídeo desta TV",
+    "advanced": true,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_BUFFER",
+    "scene": "AJS_REPRODUCAO",
+    "block": 5,
+    "section": 0,
+    "group": "Som e vídeo desta TV",
+    "advanced": true,
+    "gate": "(defined(NV_ANDROID) || (!defined(NV_TPK) && !defined(__EMSCRIPTEN__)))",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_PLAYER_EXTERNO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 5,
+    "section": 0,
+    "group": "Som e vídeo desta TV",
+    "advanced": true,
+    "gate": "(defined(NV_ANDROID))",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_PLAYER_ANIME",
+    "scene": "AJS_REPRODUCAO",
+    "block": 5,
+    "section": 0,
+    "group": "Som e vídeo desta TV",
+    "advanced": true,
+    "gate": "(defined(NV_ANDROID))",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_P2P_LIGADO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 6,
+    "section": 0,
+    "group": "P2P",
+    "advanced": true,
+    "gate": "(!defined(__EMSCRIPTEN__))",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_P2P_URL",
+    "scene": "AJS_REPRODUCAO",
+    "block": 6,
+    "section": 0,
+    "group": "P2P",
+    "advanced": true,
+    "gate": "(!defined(__EMSCRIPTEN__))",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_P2P_TESTAR",
+    "scene": "AJS_REPRODUCAO",
+    "block": 6,
+    "section": 0,
+    "group": "P2P",
+    "advanced": true,
+    "gate": "(!defined(__EMSCRIPTEN__))",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_P2P_LIMITE",
+    "scene": "AJS_REPRODUCAO",
+    "block": 6,
+    "section": 0,
+    "group": "P2P",
+    "advanced": true,
+    "gate": "(!defined(__EMSCRIPTEN__)) && (!defined(NV_ANDROID) || defined(NV_P2P_MOTOR))",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_P2P_DESTINO",
+    "scene": "AJS_REPRODUCAO",
+    "block": 6,
+    "section": 0,
+    "group": "P2P",
+    "advanced": true,
+    "gate": "(!defined(__EMSCRIPTEN__)) && (!defined(NV_ANDROID) || defined(NV_P2P_MOTOR))",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_IDIOMA",
+    "scene": "AJS_IDIOMAS",
+    "block": 0,
+    "section": 1,
+    "group": "Idiomas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_AUD_LINGUA",
+    "scene": "AJS_IDIOMAS",
+    "block": 0,
+    "section": 1,
+    "group": "Idiomas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_AUD_LINGUA2",
+    "scene": "AJS_IDIOMAS",
+    "block": 0,
+    "section": 1,
+    "group": "Idiomas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG_LINGUA",
+    "scene": "AJS_IDIOMAS",
+    "block": 0,
+    "section": 1,
+    "group": "Idiomas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG_FORCADA",
+    "scene": "AJS_IDIOMAS",
+    "block": 0,
+    "section": 1,
+    "group": "Idiomas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG_MOSTRAR",
+    "scene": "AJS_IDIOMAS",
+    "block": 0,
+    "section": 1,
+    "group": "Idiomas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG_SYNC_AUTO",
+    "scene": "AJS_IDIOMAS",
+    "block": 0,
+    "section": 1,
+    "group": "Idiomas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG_SYNC_AUDIO",
+    "scene": "AJS_IDIOMAS",
+    "block": 0,
+    "section": 1,
+    "group": "Idiomas",
+    "advanced": false,
+    "gate": "(defined(NV_ANDROID))",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG1_TAMANHO",
+    "scene": "AJS_IDIOMAS",
+    "block": 1,
+    "section": 1,
+    "group": "Legenda principal",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG1_FONTE",
+    "scene": "AJS_IDIOMAS",
+    "block": 1,
+    "section": 1,
+    "group": "Legenda principal",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG1_COR",
+    "scene": "AJS_IDIOMAS",
+    "block": 1,
+    "section": 1,
+    "group": "Legenda principal",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG1_OPACIDADE",
+    "scene": "AJS_IDIOMAS",
+    "block": 1,
+    "section": 1,
+    "group": "Legenda principal",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG1_FUNDO",
+    "scene": "AJS_IDIOMAS",
+    "block": 1,
+    "section": 1,
+    "group": "Legenda principal",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG1_POSICAO",
+    "scene": "AJS_IDIOMAS",
+    "block": 1,
+    "section": 1,
+    "group": "Legenda principal",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG1_BORDA",
+    "scene": "AJS_IDIOMAS",
+    "block": 1,
+    "section": 1,
+    "group": "Legenda principal",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG1_COR_BORDA",
+    "scene": "AJS_IDIOMAS",
+    "block": 1,
+    "section": 1,
+    "group": "Legenda principal",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG1_NEGRITO",
+    "scene": "AJS_IDIOMAS",
+    "block": 1,
+    "section": 1,
+    "group": "Legenda principal",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG1_ATRASO",
+    "scene": "AJS_IDIOMAS",
+    "block": 1,
+    "section": 1,
+    "group": "Legenda principal",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG1_RESTAURAR",
+    "scene": "AJS_IDIOMAS",
+    "block": 1,
+    "section": 1,
+    "group": "Legenda principal",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG_LINGUA2",
+    "scene": "AJS_IDIOMAS",
+    "block": 2,
+    "section": 1,
+    "group": "Segunda legenda",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG2_TAMANHO",
+    "scene": "AJS_IDIOMAS",
+    "block": 2,
+    "section": 1,
+    "group": "Segunda legenda",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG2_FONTE",
+    "scene": "AJS_IDIOMAS",
+    "block": 2,
+    "section": 1,
+    "group": "Segunda legenda",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG2_COR",
+    "scene": "AJS_IDIOMAS",
+    "block": 2,
+    "section": 1,
+    "group": "Segunda legenda",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG2_OPACIDADE",
+    "scene": "AJS_IDIOMAS",
+    "block": 2,
+    "section": 1,
+    "group": "Segunda legenda",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG2_FUNDO",
+    "scene": "AJS_IDIOMAS",
+    "block": 2,
+    "section": 1,
+    "group": "Segunda legenda",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG2_POSICAO",
+    "scene": "AJS_IDIOMAS",
+    "block": 2,
+    "section": 1,
+    "group": "Segunda legenda",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG2_BORDA",
+    "scene": "AJS_IDIOMAS",
+    "block": 2,
+    "section": 1,
+    "group": "Segunda legenda",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG2_COR_BORDA",
+    "scene": "AJS_IDIOMAS",
+    "block": 2,
+    "section": 1,
+    "group": "Segunda legenda",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG2_NEGRITO",
+    "scene": "AJS_IDIOMAS",
+    "block": 2,
+    "section": 1,
+    "group": "Segunda legenda",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG2_ATRASO",
+    "scene": "AJS_IDIOMAS",
+    "block": 2,
+    "section": 1,
+    "group": "Segunda legenda",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG2_RESTAURAR",
+    "scene": "AJS_IDIOMAS",
+    "block": 2,
+    "section": 1,
+    "group": "Segunda legenda",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG2_POS",
+    "scene": "AJS_IDIOMAS",
+    "block": 2,
+    "section": 1,
+    "group": "Segunda legenda",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_LEG_CONTORNO_COR",
+    "scene": "AJS_IDIOMAS",
+    "block": 2,
+    "section": 1,
+    "group": "Segunda legenda",
+    "advanced": false,
+    "gate": "1",
+    "category": "Playback"
+  },
+  {
+    "id": "AJ_TMDB_IDIOMA",
+    "scene": "AJS_IDIOMAS",
+    "block": 3,
+    "section": 1,
+    "group": "Idiomas",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_ADDONS",
+    "scene": "AJS_FONTES",
+    "block": 0,
+    "section": 2,
+    "group": "Addons",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_PLUGINS",
+    "scene": "AJS_FONTES",
+    "block": 0,
+    "section": 2,
+    "group": "Addons",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_ADDONS_PRINCIPAL",
+    "scene": "AJS_FONTES",
+    "block": 0,
+    "section": 2,
+    "group": "Addons",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_BUSCA_CINEMETA",
+    "scene": "AJS_FONTES",
+    "block": 0,
+    "section": 2,
+    "group": "Addons",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_BUSCA_NUVIO",
+    "scene": "AJS_FONTES",
+    "block": 0,
+    "section": 2,
+    "group": "Addons",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_BUSCA_ORIGEM",
+    "scene": "AJS_FONTES",
+    "block": 0,
+    "section": 2,
+    "group": "Addons",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_FILTROS_FONTES",
+    "scene": "AJS_FONTES",
+    "block": 1,
+    "section": 2,
+    "group": "Falha na reprodução",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_FALHA_PROVEDORES",
+    "scene": "AJS_FONTES",
+    "block": 1,
+    "section": 2,
+    "group": "Falha na reprodução",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_FALHA_PROVEDOR_ORDEM",
+    "scene": "AJS_FONTES",
+    "block": 1,
+    "section": 2,
+    "group": "Falha na reprodução",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_FALHA_ADDONS",
+    "scene": "AJS_FONTES",
+    "block": 1,
+    "section": 2,
+    "group": "Falha na reprodução",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_FALHA_ADDON_ORDEM",
+    "scene": "AJS_FONTES",
+    "block": 1,
+    "section": 2,
+    "group": "Falha na reprodução",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_FALHA_ADDON_LIMITE",
+    "scene": "AJS_FONTES",
+    "block": 1,
+    "section": 2,
+    "group": "Falha na reprodução",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_PROVEDORES_ESCOPO",
+    "scene": "AJS_FONTES",
+    "block": 2,
+    "section": 2,
+    "group": "Debrid",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_DEBRID_RD",
+    "scene": "AJS_FONTES",
+    "block": 2,
+    "section": 2,
+    "group": "Debrid",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_DEBRID_TB",
+    "scene": "AJS_FONTES",
+    "block": 2,
+    "section": 2,
+    "group": "Debrid",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_DEBRID_PM",
+    "scene": "AJS_FONTES",
+    "block": 2,
+    "section": 2,
+    "group": "Debrid",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_DEBRID_AD",
+    "scene": "AJS_FONTES",
+    "block": 2,
+    "section": 2,
+    "group": "Debrid",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_DEBRID_AD_TESTAR",
+    "scene": "AJS_FONTES",
+    "block": 2,
+    "section": 2,
+    "group": "Debrid",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_DEBRID_RD_TESTAR",
+    "scene": "AJS_FONTES",
+    "block": 2,
+    "section": 2,
+    "group": "Debrid",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_DEBRID_TB_TESTAR",
+    "scene": "AJS_FONTES",
+    "block": 2,
+    "section": 2,
+    "group": "Debrid",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_DEBRID_PM_TESTAR",
+    "scene": "AJS_FONTES",
+    "block": 2,
+    "section": 2,
+    "group": "Debrid",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_JF_LIGADO",
+    "scene": "AJS_FONTES",
+    "block": 3,
+    "section": 2,
+    "group": "Servidores pessoais",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_JF_SERVIDOR",
+    "scene": "AJS_FONTES",
+    "block": 3,
+    "section": 2,
+    "group": "Servidores pessoais",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_JF_ENTRAR",
+    "scene": "AJS_FONTES",
+    "block": 3,
+    "section": 2,
+    "group": "Servidores pessoais",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_JF_SAIR",
+    "scene": "AJS_FONTES",
+    "block": 3,
+    "section": 2,
+    "group": "Servidores pessoais",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_EM_SERVIDOR",
+    "scene": "AJS_FONTES",
+    "block": 3,
+    "section": 2,
+    "group": "Servidores pessoais",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_EM_ENTRAR",
+    "scene": "AJS_FONTES",
+    "block": 3,
+    "section": 2,
+    "group": "Servidores pessoais",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_EM_SAIR",
+    "scene": "AJS_FONTES",
+    "block": 3,
+    "section": 2,
+    "group": "Servidores pessoais",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_PX_ENTRAR",
+    "scene": "AJS_FONTES",
+    "block": 3,
+    "section": 2,
+    "group": "Servidores pessoais",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_PX_SERVIDOR",
+    "scene": "AJS_FONTES",
+    "block": 3,
+    "section": 2,
+    "group": "Servidores pessoais",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_PX_SAIR",
+    "scene": "AJS_FONTES",
+    "block": 3,
+    "section": 2,
+    "group": "Servidores pessoais",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_IPTV_ORDEM",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_IPTV_CONTA",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_IPTV_NOME",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_IPTV_ATIVA",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_IPTV_LISTA_STALKER",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_IPTV_ADD_STALKER",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_IPTV_LISTA_XTREAM",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_IPTV_ADD_XTREAM",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_IPTV_LISTA_M3U",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_IPTV_ADD_M3U",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_IPTV_REMOVER",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_IPTV_ACOES",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_IPTV_EXCLUIR",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_XTREAM_SERVIDOR",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_XTREAM_USUARIO",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_XTREAM_SENHA",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_XTREAM_CONTA",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_XTREAM_CONEXOES",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_XTREAM_LIMPAR",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_STALKER_PORTAL",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_STALKER_MAC",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_STALKER_LIMPAR",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_M3U_URL",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_M3U_EPG",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_M3U_LIMPAR",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_IPTV_SALVAR",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_IPTV_CANCELAR",
+    "scene": "AJS_TVAOVIVO",
+    "block": 0,
+    "section": 3,
+    "group": "Contas de TV ao vivo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_GUIA_ORDEM",
+    "scene": "AJS_TVAOVIVO",
+    "block": 1,
+    "section": 3,
+    "group": "Guia de TV",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_GUIA_FONTE",
+    "scene": "AJS_TVAOVIVO",
+    "block": 1,
+    "section": 3,
+    "group": "Guia de TV",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_GUIA_RECARREGAR",
+    "scene": "AJS_TVAOVIVO",
+    "block": 1,
+    "section": 3,
+    "group": "Guia de TV",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_EPG_PAIS",
+    "scene": "AJS_TVAOVIVO",
+    "block": 1,
+    "section": 3,
+    "group": "Guia de TV",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_EPG_MEMORIA",
+    "scene": "AJS_TVAOVIVO",
+    "block": 1,
+    "section": 3,
+    "group": "Guia de TV",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_GUIA_CATEGORIAS",
+    "scene": "AJS_TVAOVIVO",
+    "block": 1,
+    "section": 3,
+    "group": "Guia de TV",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_URL_LISTA",
+    "scene": "AJS_TVAOVIVO",
+    "block": 1,
+    "section": 3,
+    "group": "Guia de TV",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_URL_M3U_ADD",
+    "scene": "AJS_TVAOVIVO",
+    "block": 1,
+    "section": 3,
+    "group": "Guia de TV",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_URL_XMLTV_ADD",
+    "scene": "AJS_TVAOVIVO",
+    "block": 1,
+    "section": 3,
+    "group": "Guia de TV",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_URL_REM",
+    "scene": "AJS_TVAOVIVO",
+    "block": 1,
+    "section": 3,
+    "group": "Guia de TV",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_LIVETV_SUGERIR",
+    "scene": "AJS_TVAOVIVO",
+    "block": 1,
+    "section": 3,
+    "group": "Guia de TV",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_LIVETV_DIAG",
+    "scene": "AJS_TVAOVIVO",
+    "block": 2,
+    "section": 3,
+    "group": "Se o canal não abre",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_LIVETV_RES",
+    "scene": "AJS_TVAOVIVO",
+    "block": 2,
+    "section": 3,
+    "group": "Se o canal não abre",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_LIVETV_ESPERA",
+    "scene": "AJS_TVAOVIVO",
+    "block": 2,
+    "section": 3,
+    "group": "Se o canal não abre",
+    "advanced": false,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_LIVETV_FORMATO",
+    "scene": "AJS_TVAOVIVO",
+    "block": 3,
+    "section": 3,
+    "group": "Se o canal não abre",
+    "advanced": true,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_LIVETV_MODO",
+    "scene": "AJS_TVAOVIVO",
+    "block": 3,
+    "section": 3,
+    "group": "Se o canal não abre",
+    "advanced": true,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_LIVETV_PROXY",
+    "scene": "AJS_TVAOVIVO",
+    "block": 3,
+    "section": 3,
+    "group": "Se o canal não abre",
+    "advanced": true,
+    "gate": "1",
+    "category": "Content & Discovery"
+  },
+  {
+    "id": "AJ_HOME_LAYOUT",
+    "scene": "AJS_HOME",
+    "block": 0,
+    "section": 4,
+    "group": "Estilo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_LANDSCAPE",
+    "scene": "AJS_HOME",
+    "block": 0,
+    "section": 4,
+    "group": "Estilo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_HERO",
+    "scene": "AJS_HOME",
+    "block": 0,
+    "section": 4,
+    "group": "Estilo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_HERO_CHEIO",
+    "scene": "AJS_HOME",
+    "block": 0,
+    "section": 4,
+    "group": "Estilo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_FUNDO_DIN",
+    "scene": "AJS_HOME",
+    "block": 0,
+    "section": 4,
+    "group": "Estilo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_FUNDO_DIN_COR",
+    "scene": "AJS_HOME",
+    "block": 0,
+    "section": 4,
+    "group": "Estilo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_HERO_CATALOGOS",
+    "scene": "AJS_HOME",
+    "block": 0,
+    "section": 4,
+    "group": "Estilo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_HERO_GENERO",
+    "scene": "AJS_HOME",
+    "block": 0,
+    "section": 4,
+    "group": "Estilo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_HERO_SINOPSE",
+    "scene": "AJS_HOME",
+    "block": 0,
+    "section": 4,
+    "group": "Estilo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_HERO_NOTAS",
+    "scene": "AJS_HOME",
+    "block": 0,
+    "section": 4,
+    "group": "Estilo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_HERO_ANO",
+    "scene": "AJS_HOME",
+    "block": 0,
+    "section": 4,
+    "group": "Estilo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_HERO_DURACAO",
+    "scene": "AJS_HOME",
+    "block": 0,
+    "section": 4,
+    "group": "Estilo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_HERO_PASTA_DETALHES",
+    "scene": "AJS_HOME",
+    "block": 0,
+    "section": 4,
+    "group": "Estilo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_HERO_TAMANHO",
+    "scene": "AJS_HOME",
+    "block": 0,
+    "section": 4,
+    "group": "Estilo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_HERO_SINOPSE_TAM",
+    "scene": "AJS_HOME",
+    "block": 0,
+    "section": 4,
+    "group": "Estilo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_FIL_ORDEM",
+    "scene": "AJS_HOME",
+    "block": 1,
+    "section": 4,
+    "group": "Fileiras",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_FIL_LIMITE",
+    "scene": "AJS_HOME",
+    "block": 1,
+    "section": 4,
+    "group": "Fileiras",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_ITENS_FILEIRA",
+    "scene": "AJS_HOME",
+    "block": 1,
+    "section": 4,
+    "group": "Fileiras",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_ESPACO_FILEIRAS",
+    "scene": "AJS_HOME",
+    "block": 1,
+    "section": 4,
+    "group": "Fileiras",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_ESPACO_TITULOS",
+    "scene": "AJS_HOME",
+    "block": 1,
+    "section": 4,
+    "group": "Fileiras",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_OCULTAR_NLANC",
+    "scene": "AJS_HOME",
+    "block": 1,
+    "section": 4,
+    "group": "Fileiras",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_NOTAS_HOME",
+    "scene": "AJS_HOME",
+    "block": 1,
+    "section": 4,
+    "group": "Fileiras",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_SELO_VISTO",
+    "scene": "AJS_HOME",
+    "block": 1,
+    "section": 4,
+    "group": "Fileiras",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_ABAS_ESTILO",
+    "scene": "AJS_HOME",
+    "block": 1,
+    "section": 4,
+    "group": "Fileiras",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_OCULTAR_FILMES_VISTOS",
+    "scene": "AJS_HOME",
+    "block": 1,
+    "section": 4,
+    "group": "Fileiras",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_BIB_HOME",
+    "scene": "AJS_HOME",
+    "block": 1,
+    "section": 4,
+    "group": "Fileiras",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_AMIGOS_ESTILO",
+    "scene": "AJS_HOME",
+    "block": 1,
+    "section": 4,
+    "group": "Fileiras",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_CURADORIA_URL",
+    "scene": "AJS_HOME",
+    "block": 1,
+    "section": 4,
+    "group": "Fileiras",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_COLECAO_EXIBICAO",
+    "scene": "AJS_HOME",
+    "block": 2,
+    "section": 4,
+    "group": "Coleções",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_CW_LIGADO",
+    "scene": "AJS_HOME",
+    "block": 3,
+    "section": 4,
+    "group": "Continuar assistindo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_CW_OK",
+    "scene": "AJS_HOME",
+    "block": 3,
+    "section": 4,
+    "group": "Continuar assistindo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_CW_ESTILO",
+    "scene": "AJS_HOME",
+    "block": 3,
+    "section": 4,
+    "group": "Continuar assistindo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_CW_THUMB",
+    "scene": "AJS_HOME",
+    "block": 3,
+    "section": 4,
+    "group": "Continuar assistindo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_CW_BLUR_PROX",
+    "scene": "AJS_HOME",
+    "block": 3,
+    "section": 4,
+    "group": "Continuar assistindo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_CW_ORDEM",
+    "scene": "AJS_HOME",
+    "block": 3,
+    "section": 4,
+    "group": "Continuar assistindo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_CW_NAO_EXIBIDOS",
+    "scene": "AJS_HOME",
+    "block": 3,
+    "section": 4,
+    "group": "Continuar assistindo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Tracking"
+  },
+  {
+    "id": "AJ_CW_RETIDO_TAMBEM",
+    "scene": "AJS_HOME",
+    "block": 3,
+    "section": 4,
+    "group": "Continuar assistindo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Tracking"
+  },
+  {
+    "id": "AJ_CW_DIAS",
+    "scene": "AJS_HOME",
+    "block": 3,
+    "section": 4,
+    "group": "Continuar assistindo",
+    "advanced": false,
+    "gate": "1",
+    "category": "Tracking"
+  },
+  {
+    "id": "AJ_MENU_TOPO",
+    "scene": "AJS_HOME",
+    "block": 4,
+    "section": 4,
+    "group": "Barra lateral",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_RAIL_MODERNA",
+    "scene": "AJS_HOME",
+    "block": 4,
+    "section": 4,
+    "group": "Barra lateral",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_RAIL",
+    "scene": "AJS_HOME",
+    "block": 4,
+    "section": 4,
+    "group": "Barra lateral",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_MENU_EXPLORAR",
+    "scene": "AJS_HOME",
+    "block": 4,
+    "section": 4,
+    "group": "Barra lateral",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_MENU_GUIA",
+    "scene": "AJS_HOME",
+    "block": 4,
+    "section": 4,
+    "group": "Barra lateral",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_MENU_AGENDA",
+    "scene": "AJS_HOME",
+    "block": 4,
+    "section": 4,
+    "group": "Barra lateral",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_MENU_PERFIL",
+    "scene": "AJS_HOME",
+    "block": 4,
+    "section": 4,
+    "group": "Barra lateral",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_PS_FUNDO",
+    "scene": "AJS_HOME",
+    "block": 5,
+    "section": 4,
+    "group": "Escolha de perfil",
+    "advanced": false,
+    "gate": "1",
+    "category": "Switch Profile"
+  },
+  {
+    "id": "AJ_PS_CONTINUAR",
+    "scene": "AJS_HOME",
+    "block": 5,
+    "section": 4,
+    "group": "Escolha de perfil",
+    "advanced": false,
+    "gate": "1",
+    "category": "Switch Profile"
+  },
+  {
+    "id": "AJ_HERO_TRANSICAO",
+    "scene": "AJS_HOME",
+    "block": 6,
+    "section": 4,
+    "group": "Estilo",
+    "advanced": true,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_ROTULOS",
+    "scene": "AJS_HOME",
+    "block": 7,
+    "section": 4,
+    "group": "Fileiras",
+    "advanced": true,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_NOME_ADDON",
+    "scene": "AJS_HOME",
+    "block": 7,
+    "section": 4,
+    "group": "Fileiras",
+    "advanced": true,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_SUFIXO_TIPO",
+    "scene": "AJS_HOME",
+    "block": 7,
+    "section": 4,
+    "group": "Fileiras",
+    "advanced": true,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_CW_FURTHEST",
+    "scene": "AJS_HOME",
+    "block": 8,
+    "section": 4,
+    "group": "Continuar assistindo",
+    "advanced": true,
+    "gate": "1",
+    "category": "Tracking"
+  },
+  {
+    "id": "AJ_RAIL_BLUR",
+    "scene": "AJS_HOME",
+    "block": 9,
+    "section": 4,
+    "group": "Barra lateral",
+    "advanced": true,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_MIC_BUSCA",
+    "scene": "AJS_HOME",
+    "block": 9,
+    "section": 4,
+    "group": "Barra lateral",
+    "advanced": true,
+    "gate": "((defined(NV_TPK) || defined(__EMSCRIPTEN__)) && !defined(NV_TPK40))",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_INTERFACE_MODO",
+    "scene": "AJS_APARENCIA",
+    "block": 0,
+    "section": 5,
+    "group": "",
+    "advanced": false,
+    "gate": "(defined(NV_TOUCH_UI))",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_TECLADO_ANDROID",
+    "scene": "AJS_APARENCIA",
+    "block": 0,
+    "section": 5,
+    "group": "",
+    "advanced": false,
+    "gate": "(defined(NV_TECLADO_SIS))",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_TEMA",
+    "scene": "AJS_APARENCIA",
+    "block": 0,
+    "section": 5,
+    "group": "Cores e vidro",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_ARTE_TOM",
+    "scene": "AJS_APARENCIA",
+    "block": 0,
+    "section": 5,
+    "group": "Cores e vidro",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_FUNDO",
+    "scene": "AJS_APARENCIA",
+    "block": 0,
+    "section": 5,
+    "group": "Cores e vidro",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_COR_LOGO",
+    "scene": "AJS_APARENCIA",
+    "block": 0,
+    "section": 5,
+    "group": "Cores e vidro",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_VIDRO",
+    "scene": "AJS_APARENCIA",
+    "block": 0,
+    "section": 5,
+    "group": "Cores e vidro",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_VIDRO_CONTORNO",
+    "scene": "AJS_APARENCIA",
+    "block": 0,
+    "section": 5,
+    "group": "Cores e vidro",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_FOCO_ACENTO",
+    "scene": "AJS_APARENCIA",
+    "block": 0,
+    "section": 5,
+    "group": "Cores e vidro",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_SUAVIZAR_DEGRADES",
+    "scene": "AJS_APARENCIA",
+    "block": 0,
+    "section": 5,
+    "group": "Cores e vidro",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_TITULO_FIL",
+    "scene": "AJS_APARENCIA",
+    "block": 1,
+    "section": 5,
+    "group": "Fileiras",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_PALCO_FUNDO",
+    "scene": "AJS_APARENCIA",
+    "block": 1,
+    "section": 5,
+    "group": "Fileiras",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_LOGO_APP",
+    "scene": "AJS_APARENCIA",
+    "block": 2,
+    "section": 5,
+    "group": "Logo e abertura",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_ABERTURA",
+    "scene": "AJS_APARENCIA",
+    "block": 2,
+    "section": 5,
+    "group": "Logo e abertura",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_ICONE_APP",
+    "scene": "AJS_APARENCIA",
+    "block": 2,
+    "section": 5,
+    "group": "Logo e abertura",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_FONTE_UI",
+    "scene": "AJS_APARENCIA",
+    "block": 3,
+    "section": 5,
+    "group": "Texto e tamanho",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_TAMANHO_UI",
+    "scene": "AJS_APARENCIA",
+    "block": 3,
+    "section": 5,
+    "group": "Texto e tamanho",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_ESCALA_TEXTO",
+    "scene": "AJS_APARENCIA",
+    "block": 3,
+    "section": 5,
+    "group": "Texto e tamanho",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_DET_ESPACO",
+    "scene": "AJS_APARENCIA",
+    "block": 3,
+    "section": 5,
+    "group": "Texto e tamanho",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_TAMANHO_AJUSTES",
+    "scene": "AJS_APARENCIA",
+    "block": 3,
+    "section": 5,
+    "group": "Texto e tamanho",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_LAYOUT_AJUSTES",
+    "scene": "AJS_APARENCIA",
+    "block": 3,
+    "section": 5,
+    "group": "Texto e tamanho",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_ANIM",
+    "scene": "AJS_APARENCIA",
+    "block": 4,
+    "section": 5,
+    "group": "Movimento e relógio",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_RELOGIO",
+    "scene": "AJS_APARENCIA",
+    "block": 4,
+    "section": 5,
+    "group": "Movimento e relógio",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_RELOGIO_12H",
+    "scene": "AJS_APARENCIA",
+    "block": 4,
+    "section": 5,
+    "group": "Movimento e relógio",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_ESMAECER",
+    "scene": "AJS_APARENCIA",
+    "block": 5,
+    "section": 5,
+    "group": "Tela de descanso",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_DESCANSO_ESTILO",
+    "scene": "AJS_APARENCIA",
+    "block": 5,
+    "section": 5,
+    "group": "Tela de descanso",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_DESCANSO_FONTE",
+    "scene": "AJS_APARENCIA",
+    "block": 5,
+    "section": 5,
+    "group": "Tela de descanso",
+    "advanced": false,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_VIDRO_OPAC",
+    "scene": "AJS_APARENCIA",
+    "block": 6,
+    "section": 5,
+    "group": "Cores e vidro",
+    "advanced": true,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_VIDRO_FOSCO",
+    "scene": "AJS_APARENCIA",
+    "block": 6,
+    "section": 5,
+    "group": "Cores e vidro",
+    "advanced": true,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_VIDRO_QUALIDADE",
+    "scene": "AJS_APARENCIA",
+    "block": 6,
+    "section": 5,
+    "group": "Cores e vidro",
+    "advanced": true,
+    "gate": "1",
+    "category": "Appearance"
+  },
+  {
+    "id": "AJ_DET_VEU",
+    "scene": "AJS_TITULO",
+    "block": 0,
+    "section": 6,
+    "group": "O que aparece",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_DET_DATA_CHEIA",
+    "scene": "AJS_TITULO",
+    "block": 0,
+    "section": 6,
+    "group": "O que aparece",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_DET_BLUR_NAO_VISTOS",
+    "scene": "AJS_TITULO",
+    "block": 0,
+    "section": 6,
+    "group": "O que aparece",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_EP_TAMANHO",
+    "scene": "AJS_TITULO",
+    "block": 0,
+    "section": 6,
+    "group": "O que aparece",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_NT_IMDB",
+    "scene": "AJS_TITULO",
+    "block": 1,
+    "section": 6,
+    "group": "Notas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_NT_TOMATES",
+    "scene": "AJS_TITULO",
+    "block": 1,
+    "section": 6,
+    "group": "Notas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_NT_AUDIENCIA",
+    "scene": "AJS_TITULO",
+    "block": 1,
+    "section": 6,
+    "group": "Notas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_NT_META",
+    "scene": "AJS_TITULO",
+    "block": 1,
+    "section": 6,
+    "group": "Notas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_NT_METAUSER",
+    "scene": "AJS_TITULO",
+    "block": 1,
+    "section": 6,
+    "group": "Notas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_NT_TRAKT",
+    "scene": "AJS_TITULO",
+    "block": 1,
+    "section": 6,
+    "group": "Notas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_NT_TMDB",
+    "scene": "AJS_TITULO",
+    "block": 1,
+    "section": 6,
+    "group": "Notas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_NT_LETTER",
+    "scene": "AJS_TITULO",
+    "block": 1,
+    "section": 6,
+    "group": "Notas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_NT_MAL",
+    "scene": "AJS_TITULO",
+    "block": 1,
+    "section": 6,
+    "group": "Notas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_NT_EBERT",
+    "scene": "AJS_TITULO",
+    "block": 1,
+    "section": 6,
+    "group": "Notas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_NT_SCORE",
+    "scene": "AJS_TITULO",
+    "block": 1,
+    "section": 6,
+    "group": "Notas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_NT_ORDEM",
+    "scene": "AJS_TITULO",
+    "block": 1,
+    "section": 6,
+    "group": "Notas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_NT_EP",
+    "scene": "AJS_TITULO",
+    "block": 1,
+    "section": 6,
+    "group": "Notas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_MDB_CHAVE",
+    "scene": "AJS_TITULO",
+    "block": 1,
+    "section": 6,
+    "group": "Notas",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_TMDB_LIGADO",
+    "scene": "AJS_TITULO",
+    "block": 2,
+    "section": 6,
+    "group": "Dados do título",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_MDB_LIGADO",
+    "scene": "AJS_TITULO",
+    "block": 3,
+    "section": 6,
+    "group": "Notas",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_TMDB_ARTE",
+    "scene": "AJS_TITULO",
+    "block": 4,
+    "section": 6,
+    "group": "Dados do título",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_TMDB_BASICO",
+    "scene": "AJS_TITULO",
+    "block": 4,
+    "section": 6,
+    "group": "Dados do título",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_TMDB_FICHA",
+    "scene": "AJS_TITULO",
+    "block": 4,
+    "section": 6,
+    "group": "Dados do título",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_TMDB_DATAS",
+    "scene": "AJS_TITULO",
+    "block": 4,
+    "section": 6,
+    "group": "Dados do título",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_TMDB_ELENCO",
+    "scene": "AJS_TITULO",
+    "block": 4,
+    "section": 6,
+    "group": "Dados do título",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_TMDB_PROD",
+    "scene": "AJS_TITULO",
+    "block": 4,
+    "section": 6,
+    "group": "Dados do título",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_TMDB_REDES",
+    "scene": "AJS_TITULO",
+    "block": 4,
+    "section": 6,
+    "group": "Dados do título",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_TMDB_EPS",
+    "scene": "AJS_TITULO",
+    "block": 4,
+    "section": 6,
+    "group": "Dados do título",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_TMDB_TRAILERS",
+    "scene": "AJS_TITULO",
+    "block": 4,
+    "section": 6,
+    "group": "Dados do título",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_TMDB_MAIS",
+    "scene": "AJS_TITULO",
+    "block": 4,
+    "section": 6,
+    "group": "Dados do título",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_TMDB_COL",
+    "scene": "AJS_TITULO",
+    "block": 4,
+    "section": 6,
+    "group": "Dados do título",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_TMDB_CW",
+    "scene": "AJS_TITULO",
+    "block": 4,
+    "section": 6,
+    "group": "Dados do título",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_DET_META_EXT",
+    "scene": "AJS_TITULO",
+    "block": 4,
+    "section": 6,
+    "group": "Dados do título",
+    "advanced": true,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_DET_SO_CINEMETA",
+    "scene": "AJS_TITULO",
+    "block": 4,
+    "section": 6,
+    "group": "Dados do título",
+    "advanced": true,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_EXPANDIR",
+    "scene": "AJS_CARTAZES",
+    "block": 0,
+    "section": 7,
+    "group": "Cartaz em foco",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_EXPANDIR_ATRASO",
+    "scene": "AJS_CARTAZES",
+    "block": 0,
+    "section": 7,
+    "group": "Cartaz em foco",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_BORDA_FOCO",
+    "scene": "AJS_CARTAZES",
+    "block": 0,
+    "section": 7,
+    "group": "Cartaz em foco",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_MENU_CARTAZ",
+    "scene": "AJS_CARTAZES",
+    "block": 0,
+    "section": 7,
+    "group": "Cartaz em foco",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_LARGURA_DP",
+    "scene": "AJS_CARTAZES",
+    "block": 1,
+    "section": 7,
+    "group": "Forma",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_RAIO_DP",
+    "scene": "AJS_CARTAZES",
+    "block": 1,
+    "section": 7,
+    "group": "Forma",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_PROF",
+    "scene": "AJS_CARTAZES",
+    "block": 1,
+    "section": 7,
+    "group": "Forma",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_HERO_FUNDO",
+    "scene": "AJS_CARTAZES",
+    "block": 2,
+    "section": 7,
+    "group": "De onde vem a arte",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_HERO_ARTE_DIF",
+    "scene": "AJS_CARTAZES",
+    "block": 2,
+    "section": 7,
+    "group": "De onde vem a arte",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_POSTER_PROV",
+    "scene": "AJS_CARTAZES",
+    "block": 2,
+    "section": 7,
+    "group": "De onde vem a arte",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_FANART_CHAVE",
+    "scene": "AJS_CARTAZES",
+    "block": 2,
+    "section": 7,
+    "group": "De onde vem a arte",
+    "advanced": false,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_HERO_TRAILER",
+    "scene": "AJS_CARTAZES",
+    "block": 3,
+    "section": 7,
+    "group": "Trailers",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_FOCO_TRAILER",
+    "scene": "AJS_CARTAZES",
+    "block": 3,
+    "section": 7,
+    "group": "Trailers",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_DET_TRAILER_AUTO",
+    "scene": "AJS_CARTAZES",
+    "block": 3,
+    "section": 7,
+    "group": "Trailers",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_DET_TRAILER",
+    "scene": "AJS_CARTAZES",
+    "block": 3,
+    "section": 7,
+    "group": "Trailers",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_HERO_TRAILER_SOM",
+    "scene": "AJS_CARTAZES",
+    "block": 4,
+    "section": 7,
+    "group": "Som e imagem",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_TRAILER_FONTE",
+    "scene": "AJS_CARTAZES",
+    "block": 4,
+    "section": 7,
+    "group": "Som e imagem",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_TRAILER_AUDIO",
+    "scene": "AJS_CARTAZES",
+    "block": 4,
+    "section": 7,
+    "group": "Som e imagem",
+    "advanced": false,
+    "gate": "(defined(__EMSCRIPTEN__))",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_TRAILER_ZOOM_TPK",
+    "scene": "AJS_CARTAZES",
+    "block": 4,
+    "section": 7,
+    "group": "Som e imagem",
+    "advanced": false,
+    "gate": "(defined(NV_TPK))",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_LOGO_TRAILER",
+    "scene": "AJS_CARTAZES",
+    "block": 4,
+    "section": 7,
+    "group": "Som e imagem",
+    "advanced": false,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_GRAD_CLASSICO",
+    "scene": "AJS_CARTAZES",
+    "block": 5,
+    "section": 7,
+    "group": "Cartaz em foco",
+    "advanced": true,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_MURAL_TITULOS",
+    "scene": "AJS_CARTAZES",
+    "block": 5,
+    "section": 7,
+    "group": "Cartaz em foco",
+    "advanced": true,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_PROF_BRILHO",
+    "scene": "AJS_CARTAZES",
+    "block": 6,
+    "section": 7,
+    "group": "Forma",
+    "advanced": true,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_ADDON_POSTER",
+    "scene": "AJS_CARTAZES",
+    "block": 7,
+    "section": 7,
+    "group": "De onde vem a arte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_ADDON_FUNDO",
+    "scene": "AJS_CARTAZES",
+    "block": 7,
+    "section": 7,
+    "group": "De onde vem a arte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_ADDON_LOGO",
+    "scene": "AJS_CARTAZES",
+    "block": 7,
+    "section": 7,
+    "group": "De onde vem a arte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_COL_ARTE_CONTA",
+    "scene": "AJS_CARTAZES",
+    "block": 7,
+    "section": 7,
+    "group": "De onde vem a arte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_POSTER_INST",
+    "scene": "AJS_CARTAZES",
+    "block": 7,
+    "section": 7,
+    "group": "De onde vem a arte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_POSTER_TOKEN",
+    "scene": "AJS_CARTAZES",
+    "block": 7,
+    "section": 7,
+    "group": "De onde vem a arte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_POSTER_EXTRA",
+    "scene": "AJS_CARTAZES",
+    "block": 7,
+    "section": 7,
+    "group": "De onde vem a arte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_POSTER_CHAVE",
+    "scene": "AJS_CARTAZES",
+    "block": 7,
+    "section": 7,
+    "group": "De onde vem a arte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_POSTER_MODELO",
+    "scene": "AJS_CARTAZES",
+    "block": 7,
+    "section": 7,
+    "group": "De onde vem a arte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_POSTER_TESTAR",
+    "scene": "AJS_CARTAZES",
+    "block": 7,
+    "section": 7,
+    "group": "De onde vem a arte",
+    "advanced": true,
+    "gate": "1",
+    "category": "Integrations"
+  },
+  {
+    "id": "AJ_HERO_TRAILER_ESPERA",
+    "scene": "AJS_CARTAZES",
+    "block": 8,
+    "section": 7,
+    "group": "Trailers",
+    "advanced": true,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_TRAILER_QUAL",
+    "scene": "AJS_CARTAZES",
+    "block": 8,
+    "section": 7,
+    "group": "Trailers",
+    "advanced": true,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_TRAILER_ASPECTO",
+    "scene": "AJS_CARTAZES",
+    "block": 8,
+    "section": 7,
+    "group": "Trailers",
+    "advanced": true,
+    "gate": "1",
+    "category": "Layout"
+  },
+  {
+    "id": "AJ_PERFIL_ATIVO",
+    "scene": "AJS_CONTAS",
+    "block": 0,
+    "section": 8,
+    "group": "Perfil",
+    "advanced": false,
+    "gate": "1",
+    "category": "Switch Profile"
+  },
+  {
+    "id": "AJ_SYNC",
+    "scene": "AJS_CONTAS",
+    "block": 0,
+    "section": 8,
+    "group": "Perfil",
+    "advanced": false,
+    "gate": "1",
+    "category": "Account"
+  },
+  {
+    "id": "AJ_PERFIL_PESQ",
+    "scene": "AJS_CONTAS",
+    "block": 0,
+    "section": 8,
+    "group": "Perfil",
+    "advanced": false,
+    "gate": "1",
+    "category": "Switch Profile"
+  },
+  {
+    "id": "AJ_PERFIL_EDITAR",
+    "scene": "AJS_CONTAS",
+    "block": 0,
+    "section": 8,
+    "group": "Perfil",
+    "advanced": false,
+    "gate": "1",
+    "category": "Switch Profile"
+  },
+  {
+    "id": "AJ_PERFIL_INFANTIL",
+    "scene": "AJS_CONTAS",
+    "block": 0,
+    "section": 8,
+    "group": "Perfil",
+    "advanced": false,
+    "gate": "1",
+    "category": "Switch Profile"
+  },
+  {
+    "id": "AJ_SAIR",
+    "scene": "AJS_CONTAS",
+    "block": 0,
+    "section": 8,
+    "group": "Perfil",
+    "advanced": false,
+    "gate": "1",
+    "category": "Account"
+  },
+  {
+    "id": "AJ_TRAKT",
+    "scene": "AJS_CONTAS",
+    "block": 1,
+    "section": 8,
+    "group": "Trakt e Simkl",
+    "advanced": false,
+    "gate": "1",
+    "category": "Tracking"
+  },
+  {
+    "id": "AJ_SIMKL",
+    "scene": "AJS_CONTAS",
+    "block": 1,
+    "section": 8,
+    "group": "Trakt e Simkl",
+    "advanced": false,
+    "gate": "1",
+    "category": "Tracking"
+  },
+  {
+    "id": "AJ_SALVOS_DEST",
+    "scene": "AJS_CONTAS",
+    "block": 1,
+    "section": 8,
+    "group": "Trakt e Simkl",
+    "advanced": false,
+    "gate": "1",
+    "category": "Tracking"
+  },
+  {
+    "id": "AJ_CW_FONTE",
+    "scene": "AJS_CONTAS",
+    "block": 1,
+    "section": 8,
+    "group": "Trakt e Simkl",
+    "advanced": false,
+    "gate": "1",
+    "category": "Tracking"
+  },
+  {
+    "id": "AJ_CW_PROXIMO",
+    "scene": "AJS_CONTAS",
+    "block": 1,
+    "section": 8,
+    "group": "Trakt e Simkl",
+    "advanced": false,
+    "gate": "1",
+    "category": "Tracking"
+  },
+  {
+    "id": "AJ_HIST_CONTA",
+    "scene": "AJS_CONTAS",
+    "block": 1,
+    "section": 8,
+    "group": "Trakt e Simkl",
+    "advanced": false,
+    "gate": "1",
+    "category": "Tracking"
+  },
+  {
+    "id": "AJ_SOCIAL",
+    "scene": "AJS_CONTAS",
+    "block": 1,
+    "section": 8,
+    "group": "Trakt e Simkl",
+    "advanced": false,
+    "gate": "1",
+    "category": "Tracking"
+  },
+  {
+    "id": "AJ_DISCORD",
+    "scene": "AJS_CONTAS",
+    "block": 1,
+    "section": 8,
+    "group": "Trakt e Simkl",
+    "advanced": false,
+    "gate": "1",
+    "category": "Tracking"
+  },
+  {
+    "id": "AJ_ENQUETES",
+    "scene": "AJS_CONTAS",
+    "block": 2,
+    "section": 8,
+    "group": "Notificações",
+    "advanced": false,
+    "gate": "1",
+    "category": "Notifications"
+  },
+  {
+    "id": "AJ_RESOLUCAO",
+    "scene": "AJS_DESEMPENHO",
+    "block": 0,
+    "section": 9,
+    "group": "",
+    "advanced": false,
+    "gate": "1",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_GPU_EFEITOS",
+    "scene": "AJS_DESEMPENHO",
+    "block": 0,
+    "section": 9,
+    "group": "",
+    "advanced": false,
+    "gate": "1",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_AMPLIAR_UI",
+    "scene": "AJS_DESEMPENHO",
+    "block": 0,
+    "section": 9,
+    "group": "",
+    "advanced": false,
+    "gate": "1",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_AMPLIACAO_ALGO",
+    "scene": "AJS_DESEMPENHO",
+    "block": 0,
+    "section": 9,
+    "group": "",
+    "advanced": false,
+    "gate": "1",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_AMPLIACAO_NITIDEZ",
+    "scene": "AJS_DESEMPENHO",
+    "block": 0,
+    "section": 9,
+    "group": "",
+    "advanced": false,
+    "gate": "1",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_HDR_INTERFACE",
+    "scene": "AJS_DESEMPENHO",
+    "block": 0,
+    "section": 9,
+    "group": "",
+    "advanced": false,
+    "gate": "1",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_QUALIDADE_IMG",
+    "scene": "AJS_DESEMPENHO",
+    "block": 0,
+    "section": 9,
+    "group": "",
+    "advanced": false,
+    "gate": "1",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_NAV_RAPIDA",
+    "scene": "AJS_DESEMPENHO",
+    "block": 0,
+    "section": 9,
+    "group": "",
+    "advanced": false,
+    "gate": "1",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_MEDIDOR",
+    "scene": "AJS_DESEMPENHO",
+    "block": 0,
+    "section": 9,
+    "group": "",
+    "advanced": false,
+    "gate": "1",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_DIAGNOSTICO",
+    "scene": "AJS_DESEMPENHO",
+    "block": 0,
+    "section": 9,
+    "group": "",
+    "advanced": false,
+    "gate": "1",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_VELOCIDADE",
+    "scene": "AJS_DESEMPENHO",
+    "block": 0,
+    "section": 9,
+    "group": "",
+    "advanced": false,
+    "gate": "1",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_ESPACO",
+    "scene": "AJS_DESEMPENHO",
+    "block": 0,
+    "section": 9,
+    "group": "",
+    "advanced": false,
+    "gate": "1",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_LIMPAR_CACHE",
+    "scene": "AJS_DESEMPENHO",
+    "block": 0,
+    "section": 9,
+    "group": "",
+    "advanced": false,
+    "gate": "(defined(NV_ANDROID))",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_TEX_MB",
+    "scene": "AJS_DESEMPENHO",
+    "block": 0,
+    "section": 9,
+    "group": "Memória",
+    "advanced": true,
+    "gate": "1",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_GUIA",
+    "scene": "AJS_SOBRE",
+    "block": 0,
+    "section": 10,
+    "group": "",
+    "advanced": false,
+    "gate": "1",
+    "category": "About"
+  },
+  {
+    "id": "AJ_NOVIDADES20",
+    "scene": "AJS_SOBRE",
+    "block": 0,
+    "section": 10,
+    "group": "",
+    "advanced": false,
+    "gate": "1",
+    "category": "About"
+  },
+  {
+    "id": "AJ_DICASCONTROLE",
+    "scene": "AJS_SOBRE",
+    "block": 0,
+    "section": 10,
+    "group": "",
+    "advanced": false,
+    "gate": "1",
+    "category": "About"
+  },
+  {
+    "id": "AJ_APOIAR",
+    "scene": "AJS_SOBRE",
+    "block": 0,
+    "section": 10,
+    "group": "",
+    "advanced": false,
+    "gate": "1",
+    "category": "About"
+  },
+  {
+    "id": "AJ_AVISO_LEGAL",
+    "scene": "AJS_SOBRE",
+    "block": 0,
+    "section": 10,
+    "group": "",
+    "advanced": false,
+    "gate": "1",
+    "category": "About"
+  },
+  {
+    "id": "AJ_VERSAO_I",
+    "scene": "AJS_SOBRE",
+    "block": 0,
+    "section": 10,
+    "group": "App",
+    "advanced": false,
+    "gate": "1",
+    "category": "About"
+  },
+  {
+    "id": "AJ_ATUALIZAR",
+    "scene": "AJS_SOBRE",
+    "block": 0,
+    "section": 10,
+    "group": "App",
+    "advanced": false,
+    "gate": "1",
+    "category": "About"
+  },
+  {
+    "id": "AJ_VER_REGISTRO",
+    "scene": "AJS_SOBRE",
+    "block": 1,
+    "section": 10,
+    "group": "Registro",
+    "advanced": false,
+    "gate": "1",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_ENVIAR_LOG",
+    "scene": "AJS_SOBRE",
+    "block": 1,
+    "section": 10,
+    "group": "Registro",
+    "advanced": false,
+    "gate": "1",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_ENVIO_AUTO",
+    "scene": "AJS_SOBRE",
+    "block": 1,
+    "section": 10,
+    "group": "Registro",
+    "advanced": false,
+    "gate": "1",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_LOG_REDE",
+    "scene": "AJS_SOBRE",
+    "block": 1,
+    "section": 10,
+    "group": "Registro",
+    "advanced": false,
+    "gate": "1",
+    "category": "Advanced"
+  },
+  {
+    "id": "AJ_BAIXAR_REGISTRO",
+    "scene": "AJS_SOBRE",
+    "block": 1,
+    "section": 10,
+    "group": "Registro",
+    "advanced": false,
+    "gate": "(defined(NV_ANDROID))",
+    "category": "Advanced"
+  }
+]

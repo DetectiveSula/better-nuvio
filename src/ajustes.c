@@ -41,6 +41,8 @@
 #include "herocat_regras.h"
 #include "listas.h"
 #include "idioma.h"
+// Settings are English without changing the stored app or metadata language.
+#define i18n(s) idioma_ingles(s)
 #include "idiomacod.h"
 #include "idiomaauto.h"
 #include "linguas.h"
@@ -2264,6 +2266,7 @@ typedef struct {
 #define OPC(o)        { IT_OPC, o, NULL, NULL, NULL }
 #define MAIS()        { IT_MAIS, -1, "Mais opções", NULL, "aj_sliders-horizontal" }
 
+#include "ajustes_scenes.inc"
 #include "ajustes_ux_tela.inc"
 
 // Derivados de TELA uma vez, no arranque (montarTela). Sao so indices: nada
@@ -10303,7 +10306,7 @@ static const char *textoValor(int op) {
     return buf;
   }
   if (o->tipo == OP_NUMERO) {
-    snprintf(buf, sizeof buf, "%d%s", valor[op], o->sufixo ? o->sufixo : "");
+    snprintf(buf, sizeof buf, "%d%s", valor[op], o->sufixo ? i18n(o->sufixo) : "");
     return buf;
   }
   if (op == AJ_LEG_LINGUA || op == AJ_LEG_LINGUA2 || op == AJ_AUD_LINGUA || op == AJ_AUD_LINGUA2) {
@@ -10873,9 +10876,11 @@ void ajustes_desenhar(Uint32 agora) {
 #ifdef NV_TOUCH_UI
   ajToqueCamada();
 #endif
+  int languageScope = idioma_ingles_entrar();
   AJ_ESCALA_INI();
   ajDesenharTudo(agora);
   AJ_ESCALA_FIM();
+  idioma_ingles_sair(languageScope);
 }
 static void ajDesenharTudo(Uint32 agora) {
   // A TELA E DONA DO PROPRIO FUNDO (Glass UI): a arte do titulo com o veu, e

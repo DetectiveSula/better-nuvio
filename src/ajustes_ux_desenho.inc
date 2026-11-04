@@ -175,7 +175,10 @@ static void ajIlhaMiolo(GfxRect r, float raioPx, float miolo) {
 // Superficie de FOCO de linha: um degrau mais clara (vidro 12%, solido #2B2D34).
 static void ajFocoLinha(GfxRect r, float raioPx, float f, float a) {
   if (f <= 0.01f) return;
-  if (gfx_foco_placa(r, raioPx / r.h, f, a)) return;
+  if (gfx_foco_placa(r, raioPx / r.h, f, a)) {
+    if (!ajRetrato()) gfx_cor(r, raioPx / r.h, 0.20f, 0.40f, 0.72f, 0.12f * f * a);
+    return;
+  }
   if (ajVid()) {
     float ar, ag, ab;
     gfx_cor(r, raioPx / r.h, 1, 1, 1, 0.12f * f * a);
@@ -184,7 +187,7 @@ static void ajFocoLinha(GfxRect r, float raioPx, float f, float a) {
   }
   else {
     gfx_rect((GfxRect){ r.x - 10, r.y + 2, r.w + 20, r.h + 26 }, 0, GFX_SOMBRA, 1.0f, 0, 0, 0.5f, 0, 0, 0, 0.30f * f * a);
-    gfx_cor(r, raioPx / r.h, 0.169f, 0.176f, 0.204f, f * a);
+    gfx_cor(r, raioPx / r.h, 0.15f, 0.21f, 0.31f, f * a);
   }
 }
 // Neutro claro sobre a ilha: branco a `vidA` no vidro, o cinza opaco no solido.
@@ -395,7 +398,8 @@ static float aj2ListaWRef(void) {
 // embaixo (sem ilha); a LISTA compacta numa ilha a direita. A coluna da arte
 // comeca depois da ilha do menu recolhida; arte 44% do que sobra, 36 de vao.
 #define AJ2_CORPO (AJ2_TOPO + AJ_CAB_PAGINA / gfx_escala_txt())   // 2.0.2: abaixo do cabecalho da pagina
-static float aj2ArteX(void) { return aj2X0(); }
+static float ajSidebarWidth(void) { return fminf(430.0f, NV_VTELA_W * 0.29f); }
+static float aj2ArteX(void) { return aj2X0() + (ajRetrato() ? 0.0f : ajSidebarWidth() + 28.0f); }
 static float aj2ArteW(void) { return (NV_VTELA_W - AJ2_MARGEM - aj2ArteX()) * 0.44f; }
 static float aj2InspRetratoH(void) {
   float w = fminf(560.0f, NV_VTELA_W - AJ2_MARGEM - aj2ArteX());
@@ -406,7 +410,7 @@ static GfxRect aj2ListaR(void) {
     float x = aj2ArteX(), y = AJ2_CORPO + (aj2TemInsp() ? aj2InspRetratoH() + 24.0f : 0.0f);
     return (GfxRect){x, y, NV_VTELA_W - AJ2_MARGEM - x, NV_VTELA_H - y - AJ2_MARGEM};
   }
-  float x = !aj2TemInsp() ? aj2ArteX() : aj2ArteX() + aj2ArteW() + 36.0f / gfx_escala_txt();
+  float x = (!aj2TemInsp() || uxEditor) ? aj2ArteX() : aj2ArteX() + aj2ArteW() + 36.0f / gfx_escala_txt();
   return (GfxRect){ x, AJ2_CORPO, NV_VTELA_W - AJ2_MARGEM - x, NV_VTELA_H - AJ2_CORPO - AJ2_MARGEM };
 }
 static float ajTopoLista(void) { return aj2ListaR().y + AJ_A3_CAB; }

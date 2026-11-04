@@ -1,5 +1,7 @@
 #include "addonsui.h"
 #include "idioma.h"
+// These screens are settings submenus, independent of the saved app language.
+#define i18n(s) idioma_ingles(s)
 #include "descoberta.h"
 #include "addons.h"
 #include "gfx.h"
@@ -158,8 +160,10 @@ static const char *capacidades(int i) {
 // A TELA DE ADDONS NO GLASS UI (mockup de Ajustes, quadro "addons"): o mesmo
 // arranjo de ilhas de Ajustes, desenhado por ajustes.c (que tem as pecas).
 void addonsui_desenhar(Uint32 agora) {
+  int languageScope = idioma_ingles_entrar();
   (void)agora;
   ajustes_desenhar_addons(foco);
+  idioma_ingles_sair(languageScope);
 }
 
 #ifdef AJUSTES_TESTE

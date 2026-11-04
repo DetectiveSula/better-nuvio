@@ -28,7 +28,7 @@ cc ${flags[@]+"${flags[@]}"} "${ld[@]}" src/catalogo.c src/progresso.c src/cword
   -o "$out/nuvio-cwordem-desc-tests" -O1 -g \
   -Wall -Wno-deprecated-declarations -Wno-macro-redefined -Wno-unused-function
 "$out/nuvio-cwordem-desc-tests"
-cc ${flags[@]+"${flags[@]}"} src/catalogo.c src/progresso.c src/focus.c src/ajustes.c src/ajlog.c src/posterprov.c src/redeurl.c src/colecoes.c \
+cc ${flags[@]+"${flags[@]}"} src/catalogo.c src/progresso.c src/focus.c tests/cwordem_home_settings.c src/proximo.c src/ajlog.c src/posterprov.c src/redeurl.c src/colecoes.c \
   src/js.c src/metaprov.c src/catordem.c src/fileiras.c src/artehero.c src/cwordem.c src/cwretido.c src/fonteregra.c src/regexjs.c tests/cwordem_home.c tests/amigosfil_stub.c \
   -Isrc -DCURADORIA_TESTE -o "$out/nuvio-cwordem-home-tests" -O1 -g -ffunction-sections -fdata-sections \
   "${ld[@]}" -I/opt/homebrew/include -I/opt/homebrew/include/SDL2 \

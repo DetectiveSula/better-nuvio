@@ -102,6 +102,10 @@ static const char *card(const Fileira *f, int c) {
   return it ? it->imdb : "";
 }
 
+// Configure only the two settings this home-ordering fixture needs. Blob/account
+// loading and sync are exercised separately by cw_parity.sh; do not start them here.
+void test_cw_enabled(int enabled);
+void test_cw_order(int order);
 int main(void) {
   static CatItem it[5];
   static CatFileira fs[2];
@@ -110,7 +114,7 @@ int main(void) {
   const char *futTodos[3] = { "tt0", "tt1:1:2", "tt2:1:5" };
   int i;
   fil_definir_limite(FIL_LIMITE_MAX);
-  ajustes_aplicar_blob("{\"continueWatchingEnabled\":true}");
+  test_cw_enabled(1);
   for (i = 0; i < 5; i++) {
     snprintf(it[i].titulo, sizeof it[i].titulo, "T%d", i);
     snprintf(it[i].tipo, sizeof it[i].tipo, "%s", (i == 0 || i > 2) ? "movie" : "series");
@@ -138,7 +142,7 @@ int main(void) {
   assert(cw && cw->n == 3 && !naHome("upcoming_section"));
   puts("ok  padrao: futuro continua em Continuar assistindo");
 
-  ajustes_aplicar_blob("{\"continueWatchingSortMode\":\"streaming_style\"}");
+  test_cw_order(CWO_STREAMING);
   assert(ajustes_cw_ordem() == CWO_STREAMING);
   quadro();
   cw = naHome("continue_watching");
@@ -146,7 +150,7 @@ int main(void) {
   puts("ok  streaming: ainda uma fileira so");
 
   // SEPARAR: o futuro sai e ganha fileira logo abaixo.
-  ajustes_aplicar_blob("{\"continueWatchingSortMode\":\"split_upcoming\"}");
+  test_cw_order(CWO_SEPARAR);
   assert(ajustes_cw_ordem() == CWO_SEPARAR);
   quadro();
   cw = naHome("continue_watching");
@@ -175,9 +179,9 @@ int main(void) {
         case 1: cat_trocar_continuar(it, 3); quadro(); break;
         case 2: cat_republicar_fileiras(fs, 2); quadro(); break;
         case 3: cwo_publicar_futuros(fut1, 1); cat_trocar_continuar(it, 3); quadro(); break;
-        case 4: ajustes_aplicar_blob("{\"continueWatchingSortMode\":\"default\"}"); quadro();
+        case 4: test_cw_order(CWO_PADRAO); quadro();
                 assert(contar("upcoming_section") == 0);
-                ajustes_aplicar_blob("{\"continueWatchingSortMode\":\"split_upcoming\"}"); quadro(); break;
+                test_cw_order(CWO_SEPARAR); quadro(); break;
         case 5: cat_definir_tudo(it, 5, fs, 2); quadro(); break;
       }
       assert(contar("upcoming_section") == 1);
@@ -212,7 +216,7 @@ int main(void) {
   puts("ok  separar: so futuros -> so a fileira de futuros");
 
   // Continuar assistindo DESLIGADO leva a de futuros junto.
-  ajustes_aplicar_blob("{\"continueWatchingEnabled\":false}");
+  test_cw_enabled(0);
   quadro();
   assert(!naHome("continue_watching") && !naHome("upcoming_section"));
   puts("ok  retomada desligada: nenhuma das duas");
@@ -222,3 +226,15 @@ int main(void) {
 
 // Sem textura carregada nesta fixture de navegacao: usa proporcao padrao.
 float tex_aspecto(const char *caminho) { (void)caminho; return 0.0f; }
+
+// Fixture host has no GPU, account or text zoom.
+int contalib_tem_conta(void) { return 0; }
+int trakt_ativo(void) { return 0; }
+int simkl_ativo(void) { return 0; }
+int gpun_efeito_ativo(int step) { (void)step; return 0; }
+float gfx_escala(void) { return 1; }
+float gfx_escala_txt(void) { return 1; }
+float gfx_escala_tela_txt(void) { return 1; }
+float gfx_poster_k(void) { return 1; }
+float gfx_escala_txt_entrar(void) { return 1; }
+void gfx_escala_sair(float value) { (void)value; }

@@ -15,23 +15,26 @@ static int reportedDesktop(int display, SDL_DisplayMode *mode) {
 #include "../src/ajustes.c"
 #undef SDL_GetDesktopDisplayMode
 #include <assert.h>
+#include "fixtures/settings-restoration/scopes.h"
 #include "nvtmp.h"
 #include <unistd.h>
 
 int main(void) {
+  assertStageAScopes();
   for (int i = 0; i < AJ_N; i++)
     for (int j = i + 1; CHAVE[i][0] != '-' && j < AJ_N; j++)
       assert(strcmp(CHAVE[i], CHAVE[j]));
   // Fresh settings and Restore default must select Automatic on every platform.
   const int automatic[] = { AJ_AMPLIACAO_ALGO, AJ_AMPLIAR_UI, AJ_RESOLUCAO,
     AJ_GPU_EFEITOS, AJ_ANIM, AJ_VIDRO, AJ_VIDRO_FOSCO, AJ_VIDRO_QUALIDADE };
+  const int expectedScope[] = {3, 3, 1, 1, 1, 3, 3, 1};
   for (unsigned i = 0; i < sizeof automatic / sizeof *automatic; i++) {
     int op = automatic[i];
     const char *label = OPCOES[op].valores[valor[op]];
     assert(!strcmp(label, "Automático") || !strcmp(label, "Automática"));
     assert(valor[op] == valorPadrao[op]);
     assert(uxValorPadrao(op) == valorPadrao[op]);
-    assert(somenteDesteAparelho(op) && !dePerfil(op));
+    assert(somenteDesteAparelho(op) && ajustes_escopo(op) == expectedScope[i]);
   }
   assert(valor[AJ_HDR_INTERFACE] == 0 && !ajustes_hdr_interface());
   assert(somenteDesteAparelho(AJ_HDR_INTERFACE) && !ajustePortavel(AJ_HDR_INTERFACE));
@@ -205,7 +208,7 @@ int main(void) {
   assert(valor[AJ_MDB_MAL] == 0);
   assert(valor[AJ_PULAR_CREDITOS] == 1 && !ajustes_pular_creditos());
   assert(!strcmp(CHAVE[AJ_PULAR_CREDITOS], "pularCreditosLocal"));
-  assert(somenteDesteAparelho(AJ_PULAR_CREDITOS) && !dePerfil(AJ_PULAR_CREDITOS));
+  assert(somenteDesteAparelho(AJ_PULAR_CREDITOS) && (ajustes_escopo(AJ_PULAR_CREDITOS) == stageAScope[AJ_PULAR_CREDITOS]));
   assert(!strcmp(i18n(OPCOES[AJ_PULAR_CREDITOS].rotulo), "Skip the credits automatically"));
   assert(!ajustes_proximo_auto() && ajustes_proximo_contagem() == 5);
   assert(AJ_INTERFACE_MODO == AJ_PROXIMO_CONTAGEM + 1);
@@ -279,17 +282,17 @@ int main(void) {
          uxValorPadrao(AJ_LOG_REDE) == 1 && !ajustes_log_rede()); // V_LIGA: 1 = Off
   // Comentarios do Trakt no painel de pausa: ligado de fabrica; fora do blob do web (como reacaoCreditosLocal).
   assert(valor[AJ_PAUSA_COMENTARIOS] == 0 && valorPadrao[AJ_PAUSA_COMENTARIOS] == 0 && ajustes_pausa_comentarios());
-  assert(!strcmp(CHAVE[AJ_PAUSA_COMENTARIOS], "pausaComentariosLocal") && somenteDesteAparelho(AJ_PAUSA_COMENTARIOS) && !dePerfil(AJ_PAUSA_COMENTARIOS));
+  assert(!strcmp(CHAVE[AJ_PAUSA_COMENTARIOS], "pausaComentariosLocal") && somenteDesteAparelho(AJ_PAUSA_COMENTARIOS) && (ajustes_escopo(AJ_PAUSA_COMENTARIOS) == stageAScope[AJ_PAUSA_COMENTARIOS]));
   // Cada opcao nova confere a SUA posicao (depois das ja existentes), sem fixar
   // o fim da lista: duas opcoes acrescentadas em PRs diferentes nao se quebram.
   assert(AJ_PAUSA_COMENTARIOS > AJ_LOG_REDE && AJ_PAUSA_NOTAS == AJ_PAUSA_COMENTARIOS + 1 && AJ_PAUSA_ELENCO == AJ_PAUSA_NOTAS + 1 && AJ_N > AJ_PAUSA_ELENCO);
   assert(valor[AJ_PAUSA_ELENCO] == 1 && valorPadrao[AJ_PAUSA_ELENCO] == 1 && !ajustes_pausa_elenco());   // V_LIGA: 1 = Off
-  assert(!strcmp(CHAVE[AJ_PAUSA_ELENCO], "pausaElencoLocal") && somenteDesteAparelho(AJ_PAUSA_ELENCO) && !dePerfil(AJ_PAUSA_ELENCO));
+  assert(!strcmp(CHAVE[AJ_PAUSA_ELENCO], "pausaElencoLocal") && somenteDesteAparelho(AJ_PAUSA_ELENCO) && (ajustes_escopo(AJ_PAUSA_ELENCO) == stageAScope[AJ_PAUSA_ELENCO]));
   assert(valor[AJ_PAUSA_NOTAS] == 0 && valorPadrao[AJ_PAUSA_NOTAS] == 0 && ajustes_pausa_notas());
-  assert(!strcmp(CHAVE[AJ_PAUSA_NOTAS], "pausaNotasLocal") && somenteDesteAparelho(AJ_PAUSA_NOTAS) && !dePerfil(AJ_PAUSA_NOTAS));
+  assert(!strcmp(CHAVE[AJ_PAUSA_NOTAS], "pausaNotasLocal") && somenteDesteAparelho(AJ_PAUSA_NOTAS) && (ajustes_escopo(AJ_PAUSA_NOTAS) == stageAScope[AJ_PAUSA_NOTAS]));
   // #492: retomada morna e o prazo do video pronto
   assert(valor[AJ_RETOMADA_MORNA] == 0 && ajustes_retomada_morna());   // V_LIGA: 0 = Ligado
-  assert(!strcmp(CHAVE[AJ_RETOMADA_MORNA], "retomadaMornaLocal") && somenteDesteAparelho(AJ_RETOMADA_MORNA) && !dePerfil(AJ_RETOMADA_MORNA));
+  assert(!strcmp(CHAVE[AJ_RETOMADA_MORNA], "retomadaMornaLocal") && somenteDesteAparelho(AJ_RETOMADA_MORNA) && (ajustes_escopo(AJ_RETOMADA_MORNA) == stageAScope[AJ_RETOMADA_MORNA]));
   assert(valorPadrao[AJ_RETOMADA_MORNA] == 0 && ajustes_manter_video_ms() == 120000u);   // 2 min
   valor[AJ_MANTER_PRAZO] = 0; assert(ajustes_manter_video_ms() == 120000u);
   valor[AJ_MANTER_PRAZO] = 4; assert(ajustes_manter_video_ms() == 0u);
@@ -329,11 +332,11 @@ int main(void) {
          !strcmp(OPCOES[AJ_ABERTURA_FUNDO].valores[1], "Arte") && !strcmp(OPCOES[AJ_ABERTURA_FUNDO].valores[2], "Arte borrada"));
   // #205: estilo da tela de abertura: Centro (A3) por padrao, Canto (B3), local.
   assert(valor[AJ_ABERTURA_ESTILO] == 0 && ajustes_abertura_estilo() == 0);
-  assert(!strcmp(CHAVE[AJ_ABERTURA_ESTILO], "aberturaEstiloLocal") && somenteDesteAparelho(AJ_ABERTURA_ESTILO) && !dePerfil(AJ_ABERTURA_ESTILO));
+  assert(!strcmp(CHAVE[AJ_ABERTURA_ESTILO], "aberturaEstiloLocal") && somenteDesteAparelho(AJ_ABERTURA_ESTILO) && (ajustes_escopo(AJ_ABERTURA_ESTILO) == stageAScope[AJ_ABERTURA_ESTILO]));
   valor[AJ_ABERTURA_ESTILO] = 1; assert(ajustes_abertura_estilo() == 1);
   valor[AJ_ABERTURA_ESTILO] = 0; assert(ajustes_abertura_estilo() == 0);
   assert(valor[AJ_VIDRO_QUALIDADE] == 0 && ajustes_vidro_qualidade() == 0 && OPCOES[AJ_VIDRO_QUALIDADE].n == 3);
-  assert(!strcmp(CHAVE[AJ_VIDRO_QUALIDADE], "vidroQualidadeLocal") && somenteDesteAparelho(AJ_VIDRO_QUALIDADE) && !dePerfil(AJ_VIDRO_QUALIDADE));
+  assert(!strcmp(CHAVE[AJ_VIDRO_QUALIDADE], "vidroQualidadeLocal") && somenteDesteAparelho(AJ_VIDRO_QUALIDADE) && (ajustes_escopo(AJ_VIDRO_QUALIDADE) == stageAScope[AJ_VIDRO_QUALIDADE]));
   valor[AJ_VIDRO_QUALIDADE] = 1; assert(ajustes_vidro_qualidade() == 1);
   valor[AJ_VIDRO_QUALIDADE] = 2; assert(ajustes_vidro_qualidade() == 2);
   valor[AJ_VIDRO_QUALIDADE] = 0;
@@ -342,7 +345,7 @@ int main(void) {
   assert(!strcmp(i18n(OPCOES[AJ_ABERTURA_ESTILO].rotulo), "Opening screen style"));
   // #205: titulo das fileiras: Classico por padrao (nada muda ate escolher), local, 4 valores.
   assert(valor[AJ_TITULO_FIL] == 0 && ajustes_titulo_fil() == 0);
-  assert(!strcmp(CHAVE[AJ_TITULO_FIL], "rowTitleStyleLocal") && somenteDesteAparelho(AJ_TITULO_FIL) && !dePerfil(AJ_TITULO_FIL));
+  assert(!strcmp(CHAVE[AJ_TITULO_FIL], "rowTitleStyleLocal") && somenteDesteAparelho(AJ_TITULO_FIL) && (ajustes_escopo(AJ_TITULO_FIL) == stageAScope[AJ_TITULO_FIL]));
   valor[AJ_TITULO_FIL] = 3; assert(ajustes_titulo_fil() == 3);
   valor[AJ_TITULO_FIL] = 9; assert(ajustes_titulo_fil() == 0);   // arquivo torto volta ao Classico
   valor[AJ_TITULO_FIL] = 0;
@@ -352,8 +355,8 @@ int main(void) {
   assert(!strcmp(i18n(OPCOES[AJ_TITULO_FIL].rotulo), "Row titles"));
   // #205: fundo da Dinamica: Cinza por padrao, depois Cor e Imersivo; a cor e local.
   assert(valor[AJ_FUNDO_DIN] == 0 && ajustes_fundo_din() == 0);
-  assert(!strcmp(CHAVE[AJ_FUNDO_DIN], "fundoDinamicaLocal") && somenteDesteAparelho(AJ_FUNDO_DIN) && !dePerfil(AJ_FUNDO_DIN));
-  assert(!strcmp(CHAVE[AJ_FUNDO_DIN_COR], "fundoDinamicaCorLocal") && somenteDesteAparelho(AJ_FUNDO_DIN_COR) && !dePerfil(AJ_FUNDO_DIN_COR));
+  assert(!strcmp(CHAVE[AJ_FUNDO_DIN], "fundoDinamicaLocal") && somenteDesteAparelho(AJ_FUNDO_DIN) && (ajustes_escopo(AJ_FUNDO_DIN) == stageAScope[AJ_FUNDO_DIN]));
+  assert(!strcmp(CHAVE[AJ_FUNDO_DIN_COR], "fundoDinamicaCorLocal") && somenteDesteAparelho(AJ_FUNDO_DIN_COR) && (ajustes_escopo(AJ_FUNDO_DIN_COR) == stageAScope[AJ_FUNDO_DIN_COR]));
   valor[AJ_FUNDO_DIN] = 2; assert(ajustes_fundo_din() == 2);
   valor[AJ_FUNDO_DIN] = 3; assert(ajustes_fundo_din() == 3);
   valor[AJ_FUNDO_DIN] = 9; assert(ajustes_fundo_din() == 0);   // arquivo de outra versao
@@ -373,7 +376,7 @@ int main(void) {
   // na secao da pagina do titulo, com tres valores.
   assert(!strcmp(CHAVE[AJ_EP_TAMANHO], "epTamanhoLocal"));
   assert(valor[AJ_EP_TAMANHO] == 1 && ajustes_ep_tamanho() == 1);
-  assert(somenteDesteAparelho(AJ_EP_TAMANHO) && !dePerfil(AJ_EP_TAMANHO));
+  assert(somenteDesteAparelho(AJ_EP_TAMANHO) && (ajustes_escopo(AJ_EP_TAMANHO) == stageAScope[AJ_EP_TAMANHO]));
   assert(OPCOES[AJ_EP_TAMANHO].n == 3 && !strcmp(V_EP_TAMANHO[1], "Médio"));
   assert(!strcmp(i18n(OPCOES[AJ_EP_TAMANHO].rotulo), "Episode card size"));
   valor[AJ_EP_TAMANHO] = 0; assert(ajustes_ep_tamanho() == 0);
@@ -385,7 +388,7 @@ int main(void) {
   // em Reproducao, com Lembrar + Completo/Compacto/Minimo.
   assert(!strcmp(CHAVE[AJ_ESTAT_TAMANHO], "estatTamanhoLocal"));
   assert(valor[AJ_ESTAT_TAMANHO] == 0 && ajustes_estat_tamanho() == -1);
-  assert(somenteDesteAparelho(AJ_ESTAT_TAMANHO) && !dePerfil(AJ_ESTAT_TAMANHO) && OPCOES[AJ_ESTAT_TAMANHO].n == 4);
+  assert(somenteDesteAparelho(AJ_ESTAT_TAMANHO) && (ajustes_escopo(AJ_ESTAT_TAMANHO) == stageAScope[AJ_ESTAT_TAMANHO]) && OPCOES[AJ_ESTAT_TAMANHO].n == 4);
   valor[AJ_ESTAT_TAMANHO] = 1; assert(ajustes_estat_tamanho() == 0);
   valor[AJ_ESTAT_TAMANHO] = 3; assert(ajustes_estat_tamanho() == 2);
   valor[AJ_ESTAT_TAMANHO] = 0;
@@ -472,7 +475,7 @@ int main(void) {
   assert(definirValorDireto(AJ_VIDRO_FOSCO, 2));
   assert(!gpun_fosco_vetado());
   // Formato do player: de fabrica, o que o OSD sempre foi (marcas no canto de cima); local (o web nao tem).
-  assert(AJ_PLR_FORMATO > AJ_LOG_REDE && AJ_PAUSA_COMENTARIOS == AJ_PLR_FORMATO + 1 && AJ_PLR_FORMATO_POS == AJ_PAUSA_ELENCO + 1 && AJ_N > AJ_PLR_FORMATO_POS);
+  assert(AJ_PLR_FORMATO > AJ_LOG_REDE && AJ_PERFIL_INFANTIL == AJ_PLR_FORMATO + 1 && AJ_PAUSA_COMENTARIOS == AJ_PERFIL_INFANTIL + 1 && AJ_PLR_FORMATO_POS == AJ_PAUSA_ELENCO + 1 && AJ_N > AJ_PLR_FORMATO_POS);
   assert(valor[AJ_PLR_FORMATO_POS] == PLR_POS_CANTO && ajustes_plr_formato_pos() == PLR_POS_CANTO);
   assert(!strcmp(CHAVE[AJ_PLR_FORMATO_POS], "plrFormatoPosLocal") && somenteDesteAparelho(AJ_PLR_FORMATO_POS));
   valor[AJ_PLR_FORMATO_POS] = 99; assert(ajustes_plr_formato_pos() == PLR_POS_CANTO);   // fora da lista: o canto

@@ -12,7 +12,7 @@ static int uxVoltar(SDL_Keycode k) {
 }
 static int uxOk(SDL_Keycode k) { return k == SDLK_RETURN || k == SDLK_KP_ENTER; }
 static void uxNotificar(const char *s) {
-  snprintf(uxAviso, sizeof uxAviso, "%s", s);
+  snprintf(uxAviso, sizeof uxAviso, "%s", i18n(s));
   uxAvisoAte = SDL_GetTicks() + 4500;
 }
 static void uxCancelar(void) {
@@ -418,6 +418,23 @@ static int uxEvento(SDL_Keycode k) {
     if (uxOk(k) || (k == SDLK_RIGHT && !lista) || (k == SDLK_LEFT && lista)) return uxAlternarLayout();
     if (uxVoltar(k) || k == SDLK_LEFT) { uxCabLayout = 0; focoIndice = 1; sairArmado = 0; return 1; }
     if (k == SDLK_DOWN) uxCabLayout = 0;
+    return 1;
+  }
+  if (focoIndice && !ajRetrato()) {
+    int dest = uxIndice;
+    if (uxVoltar(k) || k == SDLK_LEFT) { sair = 1; return 1; }
+    uxTopo = -1;
+    if (k == SDLK_UP && dest > 0) dest--;
+    if (k == SDLK_DOWN && dest < nSecoes + 1) dest++;
+    if (dest != uxIndice) {
+      if (dest >= 2) focarSecao(dest - 2);
+      uxIndice = dest; focoIndice = 1;
+    }
+    if (uxOk(k) || k == SDLK_RIGHT) {
+      if (uxIndice == 0) { uxVeioBusca = 0; uxPediuBusca = 1; }
+      else if (uxIndice == 1) { uxListarDiferencas(); uxDifFoco = 0; focoIndice = 0; }
+      else { focoIndice = 0; uxVeioBusca = 0; }
+    }
     return 1;
   }
   if (focoIndice) {
