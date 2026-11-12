@@ -20,6 +20,11 @@ require(ffmpegAar == null || ffmpegAar.isFile) {
 val versao = Regex("\"version\"\\s*:\\s*\"([^\"]+)\"")
     .find(File(raiz, "deploy/app/appinfo.json").readText())!!.groupValues[1]
 val (vx, vy, vz) = versao.split(".").map { it.toInt() }
+// Better Nuvio release app (space.nuvio.better) keeps its own version line,
+// starting at 1.0.0 (owner, 12 Nov 2026): android/better-version.txt.
+// Debug/strictdebug and the other platforms keep appinfo.json.
+val betterVersao = File(raiz, "android/better-version.txt").readText().trim()
+val (bx, by, bz) = betterVersao.split(".").map { it.toInt() }
 
 android {
     namespace = "space.nuvio.nativelegacy"
@@ -32,6 +37,7 @@ android {
         targetSdk = 35
         versionCode = vx * 10000 + vy * 100 + vz
         versionName = versao
+        manifestPlaceholders["appLabel"] = "@string/app_name"
         ndk { if (!lite) abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
         externalNativeBuild {
             cmake {
@@ -88,6 +94,12 @@ android {
         release {
             isMinifyEnabled = false
             if (ks != null) signingConfig = signingConfigs.getByName("release")
+            // Better Nuvio's own release app (owner, 12 Nov 2026): never the
+            // upstream space.nuvio.nativelegacy package or its key.
+            manifestPlaceholders["appLabel"] = "Better Nuvio"
+            // The C core's NV_VERSAO (shown in Settings > About and compared by
+            // the updater) follows the same release version.
+            externalNativeBuild { cmake { arguments += "-DNV_VERSAO_BETTER=$betterVersao" } }
         }
     }
 
@@ -152,3 +164,15 @@ dependencies {
     testImplementation("org.json:json:20240303") // real JSON parsing for offline account-contract tests
 }
 
+// Better Nuvio release builds install as their own app, space.nuvio.better,
+// signed with ~/.nuvio-android/release.jks. Debug stays
+// space.nuvio.nativelegacy.strictdebug; the Java/JNI namespace is unchanged.
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.applicationId.set("space.nuvio.better")
+        variant.outputs.forEach { out ->
+            out.versionName.set(betterVersao)
+            out.versionCode.set(bx * 10000 + by * 100 + bz)
+        }
+    }
+}

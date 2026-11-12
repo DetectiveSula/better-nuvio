@@ -25,10 +25,11 @@
 set -eo pipefail
 cd "$(dirname "$0")/.."
 
-# Impressao SHA-256 do certificado da chave de release (gerada em 30/09/2026,
-# copia de seguranca no Vaultwarden). Trocar a chave = ninguem atualiza por
-# cima; so mude isto junto de um aviso para desinstalar e reinstalar.
-CERT_SHA256=c3c967d4fac138de15126da01ea3ae43b52e6aa23106e336c2acc607ae0f2add
+# SHA-256 of the Better Nuvio release certificate (~/.nuvio-android/release.jks,
+# created 12 Nov 2026 for package space.nuvio.better). Changing the key means
+# nobody can update over the top: change it only with an uninstall notice.
+# (Upstream Nuvio's key was c3c967d4fac138de15126da01ea3ae43b52e6aa23106e336c2acc607ae0f2add.)
+CERT_SHA256=3d06229a1b8afdd6d1570d2e791e837264f838abed06ff96848667d315c017a9
 
 python3 tools/release.py --check-tree
 tools/env.sh --require-core >/dev/null
@@ -36,6 +37,8 @@ tools/env.sh --require-core >/dev/null
 VER=$(sed -n 's/.*"version": *"\([0-9.]*\)".*/\1/p' deploy/app/appinfo.json)
 VT=$(grep -v '<?xml' tools/tizen-config.xml | sed -n 's/.*[[:space:]]version="\([0-9.]*\)".*/\1/p' | head -1)
 [ -n "$VER" ] && [ "$VER" = "$VT" ] || { echo "release-android: appinfo.json ($VER) != tizen-config.xml ($VT)" >&2; exit 1; }
+# Better Nuvio release app (space.nuvio.better): its own version line.
+BVER=$(tr -d '[:space:]' < android/better-version.txt)
 
 if [ -z "${NUVIO_KEYSTORE:-}" ] && [ -f "$HOME/.nuvio-android/release.env" ]; then
   set -a; . "$HOME/.nuvio-android/release.env"; set +a
@@ -43,14 +46,14 @@ fi
 [ -n "${NUVIO_KEYSTORE:-}" ] && [ -f "$NUVIO_KEYSTORE" ] || {
   echo "release-android: sem a chave de release. Restaure ~/.nuvio-android/release.jks e release.env do Vaultwarden." >&2; exit 1; }
 
-OUT="${NUVIO_RELEASE_OUT:-build/release-$VER}"; mkdir -p "$OUT"
+OUT="${NUVIO_RELEASE_OUT:-build/release-better-$BVER}"; mkdir -p "$OUT"
 rm -f "$OUT"/Nuvio-*-android*.apk "$OUT/SHA256SUMS-android"
-echo "== release-android $VER (commit $(git rev-parse --short HEAD)) -> $OUT"
+echo "== release-android Better Nuvio $BVER (commit $(git rev-parse --short HEAD)) -> $OUT"
 
 # Release sem conta/sync instala e so mostra "0 addons" na TV (01/10/2026,
 # worktree em /private/tmp sem o local.properties do caminho padrao).
 NUVIO_APK_LITE=0 NUVIO_REQUIRE_CORE=1 bash tools/android.sh --release-only
-A="build/android/Nuvio-$VER-android.apk"
+A="build/android/Better-Nuvio-$BVER-android.apk"
 [ -f "$A" ] || { echo "release-android: faltou $A (o android.sh nao gerou o release)" >&2; exit 1; }
 
 SDK="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
@@ -58,7 +61,7 @@ BT=$(ls -d "$SDK"/build-tools/* | sort -V | tail -1)
 CERT=$("$BT/apksigner" verify --print-certs "$A" 2>/dev/null | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
 [ "$CERT" = "$CERT_SHA256" ] || { echo "release-android: $A assinado com $CERT, esperado $CERT_SHA256" >&2; exit 1; }
 VN=$("$BT/aapt2" dump badging "$A" 2>/dev/null | sed -n "s/.*versionName='\([^']*\)'.*/\1/p" | head -1)
-[ "$VN" = "$VER" ] || { echo "release-android: versionName $VN != $VER" >&2; exit 1; }
+[ "$VN" = "$BVER" ] || { echo "release-android: versionName $VN != $BVER" >&2; exit 1; }
 
 SEGREDO='(^|/)(trakt|addons|tmdb|mdblist|sessao|simkl[^/]*|fanart|diag-token)\.txt$|collections\.json$|catalogo-rede\.bin|local\.properties|\.env$|(^|/)(trakt|stalker|xtream|listas|discord)-p[0-9]|\.jks$|\.keystore$'
 # A lista uma vez so: `unzip | grep -q` com pipefail falha quando o grep fecha
@@ -90,12 +93,12 @@ fi
 
 cp "$A" "$OUT/"
 for arch in armv7 arm64; do
-LITE="build/android/Nuvio-$VER-android-lite-$arch.apk"
+LITE="build/android/Better-Nuvio-$BVER-android-lite-$arch.apk"
 [ -f "$LITE" ] || { echo "release-android: missing $LITE" >&2; exit 1; }
 CERT=$("$BT/apksigner" verify --print-certs "$LITE" 2>/dev/null | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
 [ "$CERT" = "$CERT_SHA256" ] || { echo "release-android: lite signing certificate mismatch" >&2; exit 1; }
 VN=$("$BT/aapt2" dump badging "$LITE" 2>/dev/null | sed -n "s/.*versionName='\([^']*\)'.*/\1/p" | head -1)
-[ "$VN" = "$VER" ] || { echo "release-android: lite version mismatch" >&2; exit 1; }
+[ "$VN" = "$BVER" ] || { echo "release-android: lite version mismatch" >&2; exit 1; }
 cp "$LITE" "$OUT/"
 done
 ( cd "$OUT" &&

@@ -48,6 +48,8 @@ for d in ndk/27.2.12479018 platforms/android-35 build-tools/35.0.0 cmake/3.22.1;
 done
 
 VER=$(sed -n 's/^[[:space:]]*"version":[[:space:]]*"\([^"]*\)".*/\1/p' deploy/app/appinfo.json | head -1)
+# Better Nuvio release app (space.nuvio.better) has its own version line.
+BVER=$(tr -d '[:space:]' < android/better-version.txt)
 [ -n "$VER" ] || { echo "android.sh: sem version em deploy/app/appinfo.json" >&2; exit 1; }
 
 echo "[1/5] fontes do SDL em $CACHE/src"
@@ -154,13 +156,13 @@ if [ "$RELEASE_ONLY" = 0 ]; then
 fi
 if [ "$DEBUG_ONLY" = 0 ] && [ -n "${NUVIO_KEYSTORE:-}" ]; then
   if [ "$LITE" != 1 ]; then
-    cp "$APP_BUILD/outputs/apk/release/app-release.apk" "$SAIDA/Nuvio-$VER-android.apk"
-    APKS+=("$SAIDA/Nuvio-$VER-android.apk")
+    cp "$APP_BUILD/outputs/apk/release/app-release.apk" "$SAIDA/Better-Nuvio-$BVER-android.apk"
+    APKS+=("$SAIDA/Better-Nuvio-$BVER-android.apk")
     "${GR[@]}" -Pnuvio.apkLite=1 assembleRelease
   fi
   for pair in armeabi-v7a:armv7 arm64-v8a:arm64; do
-    cp "android/app/build-lite/outputs/apk/release/app-${pair%:*}-release.apk" "$SAIDA/Nuvio-$VER-android-lite-${pair#*:}.apk"
-    APKS+=("$SAIDA/Nuvio-$VER-android-lite-${pair#*:}.apk")
+    cp "android/app/build-lite/outputs/apk/release/app-${pair%:*}-release.apk" "$SAIDA/Better-Nuvio-$BVER-android-lite-${pair#*:}.apk"
+    APKS+=("$SAIDA/Better-Nuvio-$BVER-android-lite-${pair#*:}.apk")
   done
 else
   echo "  release fora: sem NUVIO_KEYSTORE"

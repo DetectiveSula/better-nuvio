@@ -148,6 +148,10 @@ if(NUVIO_ENV_CMAKE AND EXISTS "${NUVIO_ENV_CMAKE}")
   include("${NUVIO_ENV_CMAKE}")
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${NUVIO_ENV_CMAKE}")
 endif()
+# Better Nuvio release app: its own version line (android/better-version.txt).
+if(NV_VERSAO_BETTER)
+  set(NV_VERSAO "${NV_VERSAO_BETTER}")
+endif()
 foreach(k ${NV_KEYS})
   # \" literal: o gerador de build escapa o resto.
   target_compile_definitions(main PRIVATE "${k}=\"${${k}}\"")
