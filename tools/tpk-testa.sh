@@ -22,7 +22,7 @@ ctr_run --rm --platform "$TPK_PLATFORM" -v "$PWD":/work -w /work "$TPK_IMAGE" sh
   if [ -n \"${NV_HOST_LOCALE:-}\" ]; then localedef -i \"${NV_HOST_LOCALE%%.*}\" -f UTF-8 \"${NV_HOST_LOCALE:-}\" 2>/dev/null || true; fi
   gcc \$CFLAGS tools/tpk/hostfalso.c -o /tmp/host -lEGL -lGLESv2 -ldl
   mkdir -p /tmp/dados
-  __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json DISPLAY=:9 EGL_PLATFORM=x11 NV_HOST_LOCALE=\"${NV_HOST_LOCALE:-}\" timeout 900 ${TPK_EXEC[*]} /tmp/host build/tpk/libnuvio.so $Q || echo \"host saiu com \$?\"
+  __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json DISPLAY=:9 EGL_PLATFORM=x11 NV_HOST_LOCALE=\"${NV_HOST_LOCALE:-}\" timeout 900 ${TPK_EXEC[*]:-} /tmp/host build/tpk/libnuvio.so $Q || echo \"host saiu com \$?\"
   cp /tmp/dados/nuvio.log /tmp/dados/quadro.ppm build/tpk/teste/ 2>/dev/null || true
 "
 [ -f build/tpk/teste/quadro.ppm ] && sips -s format png build/tpk/teste/quadro.ppm --out build/tpk/teste/quadro.png >/dev/null && rm build/tpk/teste/quadro.ppm

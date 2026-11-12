@@ -137,6 +137,11 @@ static void at_sha256_hex(const unsigned char *buf, size_t n, char *hex65) {
 #define AT_URL "https://api.github.com/repos/DetectiveSula/better-nuvio/releases/latest"
 #endif
 #define AT_PAGINA "https://github.com/DetectiveSula/better-nuvio/releases"
+#elif defined(NV_TPK)
+// Better Nuvio's own Samsung app (BetterNuv1.BetterNuvio, 12 Nov 2026): its
+// releases live with the Android ones; the .so attachments keep their names.
+#define AT_URL   "https://api.github.com/repos/DetectiveSula/better-nuvio/releases/latest"
+#define AT_PAGINA "https://github.com/DetectiveSula/better-nuvio/releases"
 #else
 #define AT_URL   "https://api.github.com/repos/iqui27/nuvio-native-legacy/releases/latest"
 #define AT_PAGINA "https://github.com/iqui27/nuvio-native-legacy/releases"

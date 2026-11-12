@@ -136,6 +136,11 @@ fi
 echo "[1/3] libnuvio.so (ARMv7 softfp, glibc <= 2.28)"
 ENVF=$(mktemp "${TMPDIR:-/tmp}/nuvio-tpk-env.XXXXXXXX"); trap 'rm -f "$ENVF"' EXIT
 tools/env.sh --env-file "$ENVF"
+# Better Nuvio's Samsung app (BetterNuv1.BetterNuvio) shares the Better Nuvio
+# release version line (android/better-version.txt) with the Android app: it
+# goes into the core's NV_VERSAO and the manifests' version below.
+BVER=$(tr -d '[:space:]' < android/better-version.txt)
+sed -i.bak "s/^NV_VERSAO=.*/NV_VERSAO=$BVER/" "$ENVF" && rm -f "$ENVF.bak"
 # Motor P2P (<raiz>/tpk de tools/p2p-motor/build-tpk.sh, achada por tools/p2p-motor/pasta.sh): liga o motor P2P
 # embutido (src/p2pmotor.h) SO na libnuvio.so dos hosts 6+, por dlopen
 # (-DNV_P2P_MOTOR_DLOPEN: sem NEEDED, a auto-atualizacao de uma libnuvio.so

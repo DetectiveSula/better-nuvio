@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns="http://tizen.org/ns/packages" api-version="6" package="NuvioTV002.Nuvio" version="1.5.1">
+<manifest xmlns="http://tizen.org/ns/packages" api-version="6" package="BetterNuv1.BetterNuvio" version="1.5.1">
   <profile name="tv" />
-  <ui-application appid="NuvioTV002.Nuvio" exec="NuvioTpk60.dll" type="dotnet"
+  <ui-application appid="BetterNuv1.BetterNuvio" exec="NuvioTpk60.dll" type="dotnet"
                   multiple="false" taskmanage="true" nodisplay="false" launch_mode="single">
-    <label>Nuvio Legacy</label>
+    <label>Better Nuvio</label>
     <icon>NuvioTpk60.png</icon>
   </ui-application>
   <privileges>
