@@ -364,7 +364,7 @@ static void gravar(const char *id) {
   // NUVIO_SHOT_MENU: blur proof. Fraction of pixels with a |horizontal luma step| > 6 over the empty
   // right strip of the open sidebar (x 330..410, y 175..780, no labels there):
   // page text/pills seen through a flat tint give a high value, frost a low one.
-  if (getenv("NUVIO_SHOT_MENU")) {
+  if (getenv("NUVIO_SHOT_MENU") && menu_aberto()) {
     menu_probe_check(pix);
   }
   free(pix);
@@ -388,6 +388,11 @@ static void quadros(int n) {
     txt_novo_quadro();
     tex_novo_quadro();
     gfx_novo_quadro();
+    if (getenv("NUVIO_SHOT_MENU")) {
+      if (!menu_aberto() && !getenv("NUVIO_SHOT_MENU_CLOSING")) { menu_iniciar(); menu_abrir_sobre(1); }
+      menu_atualizar(1.0f / 60.0f, SDL_GetTicks());
+      menu_preparar_fundo();
+    }
     glClearColor(NV_COR_FUNDO_R, NV_COR_FUNDO_G, NV_COR_FUNDO_B, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     detail_desenhar(SDL_GetTicks());
@@ -404,12 +409,26 @@ static void quadros(int n) {
     }
     // NUVIO_SHOT_MENU=1: the sidebar opened over the page (menu_abrir_sobre), as app.c draws it.
     if (getenv("NUVIO_SHOT_MENU")) {
-      if (!menu_aberto()) { menu_iniciar(); menu_abrir_sobre(1); }
-      menu_atualizar(1.0f / 60.0f, SDL_GetTicks());
       menu_probe_draw();
+      int sourcesBeforeMenu=gfx_vidro_com_fonte;
       menu_desenhar(SDL_GetTicks());
+      if(getenv("NUVIO_SHOT_MENU_STABILITY")&&menu_aberto()&&i>10)
+        assert(gfx_vidro_com_fonte>sourcesBeforeMenu);
       if (getenv("NUVIO_SHOT_MENU_OPAQUE")) gfx_cor((GfxRect){330, 175, 81, 605}, 0, .1f, .1f, .1f, 1);
       if (i == n - 1) printf("menu-fonte: com_fonte=%d capturas=%d\n", gfx_vidro_com_fonte, gfx_vidro_capturas);
+      if (getenv("NUVIO_SHOT_MENU_STABILITY") && (i < 60 || i >= 120)) {
+        static unsigned char previous[80 * 400 * 4];
+        static int havePrevious;
+        unsigned char current[sizeof previous];
+        double sum=0,delta=0;
+        glReadPixels(330, 1080-650, 80, 400, GL_RGBA, GL_UNSIGNED_BYTE, current);
+        for (size_t k=0;k<sizeof current;k++) if(k%4!=3) {
+          sum+=current[k]; if(havePrevious)delta+=abs((int)current[k]-previous[k]);
+        }
+        printf("sidebar-frame %d mean=%.3f delta=%.3f captures=%d\n",i,
+               sum/(80*400*3),delta/(80*400*3),gfx_vidro_capturas);
+        memcpy(previous,current,sizeof previous);havePrevious=1;
+      }
     }
     // The sources sheet over the page, as app.c draws it.
     if (stream_folha_aberta()) { stream_folha_atualizar(1.0f / 60.0f, SDL_GetTicks()); stream_folha_desenhar(SDL_GetTicks()); }
@@ -492,6 +511,8 @@ int main(int argc, char **argv) {
     if (lg && *lg) fprintf(f, "idioma %d\n", atoi(lg));
     // Acento azul do mockup (#5aa2ff/#42a5f5): o tema Oceano.
     fputs("selected_theme 2\n", f);
+    if (getenv("NUVIO_SHOT_MENU_STABILITY"))
+      fputs("modernSidebar 0\nmodernSidebarBlur 0\n",f);
     if (getenv("NUVIO_SHOT_LAYOUT")) fprintf(f, "homeLayoutLocal %d\n", atoi(getenv("NUVIO_SHOT_LAYOUT")));
     if (getenv("NUVIO_SHOT_VIDRO") && atoi(getenv("NUVIO_SHOT_VIDRO")))
       fputs("vidroLocal 0\n", f);
@@ -506,7 +527,7 @@ int main(int argc, char **argv) {
     ajustes_dir(dd); }
   ajustes_teste_vidro_env();   // NUVIO_SHOT_VIDRO_FOSCO / _OPAC
   // First-run appearance migration overrides the file; apply shot settings after it.
-  if (getenv("NUVIO_TRAKT_SHOT") || getenv("NUVIO_TRAKT_CHECK") || getenv("NUVIO_DETAIL_CHECK") || getenv("NUVIO_DETAIL_SHOT")) {
+  if (getenv("NUVIO_TRAKT_SHOT") || getenv("NUVIO_TRAKT_CHECK") || getenv("NUVIO_DETAIL_CHECK") || getenv("NUVIO_DETAIL_SHOT") || getenv("NUVIO_SHOT_MENU_STABILITY")) {
     ajustes_definir_vidro(getenv("NUVIO_SHOT_VIDRO") && atoi(getenv("NUVIO_SHOT_VIDRO")));
     assert(ajustes_vidro() == (getenv("NUVIO_SHOT_VIDRO") && atoi(getenv("NUVIO_SHOT_VIDRO"))));
   }
@@ -520,6 +541,8 @@ int main(int argc, char **argv) {
     printf("PASS: renderer config=%s drawable=%dx%d frost=%d minimal=%d GL=%s (host only)\n",
            config, w, h, ajustes_vidro_fosco(), gfx_efeitos_minimos(), glGetString(GL_VERSION));
   }
+  if (getenv("NUVIO_SHOT_MENU_STABILITY"))
+    printf("sidebar-config layout=%d modern=%d blur=%d\n",ajustes_home_layout(),ajustes_rail_moderna(),ajustes_rail_moderna_blur());
   if (vt_ligado()) vt_vidro();
   // As marcas das notas (IMDb, Rotten Tomatoes, Trakt) vem da pasta de arte.
   { char ar[1024]; if (realpath("deploy/app/art", ar)) extras_carregar(ar); }
@@ -528,6 +551,25 @@ int main(int argc, char **argv) {
 #ifdef NV_SHOT_HOOKS
   if (getenv("NUVIO_C9_CACHE")) return vc_run();
 #endif
+  if (getenv("NUVIO_SHOT_MENU_STABILITY") && quer(argc,argv,"sidebar-transitions")) {
+    abrir(1,0,0,0);gravar("sidebar-open");
+    setenv("NUVIO_SHOT_MENU_CLOSING","1",1);
+    SDL_Event back={0};back.type=SDL_KEYDOWN;back.key.keysym.sym=SDLK_ESCAPE;menu_evento(&back);quadros(90);
+    assert(!menu_aberto() && !menu_sobre());gravar("sidebar-closed");
+    puts("PASS: native details sidebar open/close rendering and Back dismissal (host GL)");return 0;
+  }
+  if (getenv("NUVIO_SHOT_MENU_STABILITY") && quer(argc,argv,"sidebar-sections")) {
+    const int sections[]={SEC_NOTAS,SEC_ELENCO};
+    const char *names[]={"sidebar-ratings","sidebar-cast"};
+    for(int k=0;k<2;k++) {
+      unsetenv("NUVIO_SHOT_MENU_CLOSING");
+      abrir(1,1,sections[k],0);gravar(names[k]);
+      setenv("NUVIO_SHOT_MENU_CLOSING","1",1);
+      SDL_Event back={0};back.type=SDL_KEYDOWN;back.key.keysym.sym=SDLK_ESCAPE;
+      menu_evento(&back);quadros(90);assert(!menu_aberto()&&!menu_sobre());
+    }
+    puts("PASS: actual Ratings/Cast sidebar rendering and Back dismissal (host GL)");return 0;
+  }
   if (getenv("NUVIO_TRAKT_CHECK")) return trakt_checks();
   if (getenv("NUVIO_DETAIL_CHECK")) {
     const char *m = getenv("NUVIO_DETAIL_CHECK");

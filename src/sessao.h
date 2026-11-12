@@ -43,6 +43,20 @@ const char *sessao_codigo(void);          // codigo a exibir; "" fora do fluxo
 const char *sessao_url_login(void);       // URL a exibir
 const char *sessao_erro(void);            // ultima falha, para a tela mostrar
 const char *sessao_usuario(void);         // `sub` do JWT; "" quando deslogado
+// Log-safe account fingerprint: 8 hex chars (top 32 bits of FNV-1a 64 of `id`,
+// the same "conta xxxxxxxx" the J7 tools show). Never log the id itself.
+// "-" for an empty id. `out` must hold 9 bytes.
+static inline const char *sessao_impressao(const char *id, char out[9]) {
+  unsigned long long h = 1469598103934665603ULL;
+  if (!id || !*id) { out[0] = '-'; out[1] = 0; return out; }
+  for (const unsigned char *p = (const unsigned char *)id; *p; p++) h = (h ^ *p) * 1099511628211ULL;
+  if (!h) h = 1;
+  static const char hex[] = "0123456789abcdef";
+  unsigned v = (unsigned)(h >> 32);
+  for (int i = 7; i >= 0; i--) { out[i] = hex[v & 15]; v >>= 4; }
+  out[8] = 0;
+  return out;
+}
 
 // TOKEN DE ACESSO CRU, para quem precisa se autenticar em um servidor que NAO
 // e o Supabase do Nuvio. Hoje so o servico de recomendacoes (recomenda.c), que

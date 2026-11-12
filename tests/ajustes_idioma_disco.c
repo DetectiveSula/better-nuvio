@@ -427,18 +427,18 @@ int main(void) {
     assert(m && strstr(m, "\"value\":\"en\""));
     free(m);
   }
-  valor[AJ_IDIOMA] = 1 + IDIOMA_PT;
-  idiomaEscolhido();
-  if (strcmp(i18n(V_TMDB_LING[33]), "Espanhol (América Latina)")) {
-    fputs("FAIL P2: pt-BR metadata label is not Portuguese\n", stderr);
-    failures++;
+  // Stage A: Settings render in English whatever the saved app language
+  // (docs/settings-restoration/STATUS.md), so the metadata-language choices
+  // read in English for pt-BR, en and es alike.
+  static const int langs[] = { IDIOMA_PT, IDIOMA_EN, IDIOMA_ES };
+  for (int k = 0; k < 3; k++) {
+    valor[AJ_IDIOMA] = 1 + langs[k];
+    idiomaEscolhido();
+    if (strcmp(i18n(V_TMDB_LING[33]), "Spanish (Latin America)")) {
+      fprintf(stderr, "FAIL P2: metadata label not in English for language %d\n", langs[k]);
+      failures++;
+    }
   }
-  valor[AJ_IDIOMA] = 1 + IDIOMA_EN;
-  idiomaEscolhido();
-  assert(!strcmp(i18n(V_TMDB_LING[33]), "Spanish (Latin America)"));
-  valor[AJ_IDIOMA] = 1 + IDIOMA_ES;
-  idiomaEscolhido();
-  assert(!strcmp(i18n(V_TMDB_LING[33]), "Español (Latinoamérica)"));
 
   unlink(caminho);
   { char tmp[700]; snprintf(tmp, sizeof tmp, "%s/ajustes.tmp", dir); unlink(tmp); }

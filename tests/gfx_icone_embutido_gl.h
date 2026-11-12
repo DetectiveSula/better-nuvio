@@ -20,6 +20,8 @@
 #define glClearColor(...) ((void)0)
 #define glClear(...) ((void)0)
 #define glDeleteProgram(...) ((void)0)
+#define glDeleteFramebuffers(...) ((void)0)
+#define glBindFramebuffer(...) ((void)0)
 void teste_glGenTextures(GLsizei n, GLuint *t);
 void teste_glDeleteTextures(GLsizei n, const GLuint *t);
 void teste_glBindTexture(GLenum target, GLuint t);

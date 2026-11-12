@@ -146,7 +146,7 @@ static void afLegenda(int i, GfxRect r, float alpha) {
 static const char *afArteDeitada(const SvEvento *e) {
   int k = e->imdb[0] ? cat_indice_por_imdb(e->imdb) : -1;
   const CatItem *it = k >= 0 ? cat_item(k) : NULL;
-  const char *u = it ? artehero_url_card_fonte(it, ajustes_hero_fonte(), ajustes_hero_arte_diferente()) : NULL;
+  const char *u = it ? artehero_url_card_fonte(it, 0, 0) : NULL;
   return u && u[0] ? u : (e->arte[0] ? e->arte : e->poster);
 }
 static void afCartao(int i, GfxRect r, int foco, Uint32 agora) {

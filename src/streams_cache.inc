@@ -18,6 +18,13 @@ const char *stream_cache_rotulo(const Stream *s) {
   static const char *labels[]={"Unknown","Cached","Uncached","Error"};
   int state=stream_cache_estado(s);return labels[state>=0&&state<4?state:0];
 }
+// Pinned Android DebridStreamPresentation: hide NOT_CACHED only for torrents
+// needing local resolution, with active provider evidence. Keep failures, absent
+// evidence and ready/direct URLs visible; this is not the stricter Cached chip.
+static int cacheOcultarConfirmada(const Stream *s) {
+  return !s->filtro.naoVod && !s->url[0] && s->infoHash[0] &&
+    cacheConsultaAtual(s) && s->cacheConsulta==2;
+}
 static int streamForaCache(const Stream *s) {
   if(s->cacheRequerResolver && !s->infoHash[0] && !s->hashTorrent[0])return 1;
   if(cacheConsultaAtual(s)) {

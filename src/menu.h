@@ -38,6 +38,8 @@ typedef enum {
 // Zera destino e animacao. So e necessario se o app reinicializar a UI; o
 // estado inicial ja e valido sem chamar (destino = MENU_INICIO, barra fora).
 int  menu_iniciar(void);
+// Call before page drawing: reserve the details overlay's background-only blur source.
+void menu_preparar_fundo(void);
 
 // Desliza a barra para dentro E entrega o foco a ela. Chamar com o menu ja
 // aberto nao faz nada, entao e seguro ligar direto no ESQUERDA da home.

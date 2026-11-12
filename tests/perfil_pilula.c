@@ -26,18 +26,20 @@ int main(void) {
   assert(menu_pilula_rect(&px, &py, &pw, &ph));
   assert(pfDy() > 0.0f);
   assert(PF_TOPO >= py + ph + 20.0f - 0.5f);   // avatar/name start below the pill
-  assert(rNumero(0).y == PF_NUM_Y);
-  assert(rCartao(0).y == PF_CARD_Y);
-  // Header, numbers and cards keep the mockup's spacing: only the whole block moved.
-  assert(PF_NUM_Y - PF_TOPO == 212.0f - 56.0f);
-  assert(PF_CARD_Y - PF_NUM_Y == 356.0f - 212.0f);
-  // And the block still ends above the footer notice.
-  assert(rCartao(0).y + rCartao(0).h < PF_AVISO_Y);
+  // The 30-day dashboard (perfil_painel.inc) starts below the pill too.
+  assert(PN_TOPO >= py + ph + 20.0f - 0.5f);
+  assert(rKpi(0).y == PN_KPI_Y);
+  assert(PN_KPI_Y - PN_TOPO == PN_AV + 22.0f);
+  // The middle row gives up height so the bottom row still fits above the notice.
+  assert(rGrafico().y == PN_MEIO_Y && rGrafico().h >= 300.0f);
+  assert(rTopo().h >= 200.0f && rTopo().y + rTopo().h <= PF_AVISO_Y);
+  assert(rFato(3).y + rFato(3).h <= PF_AVISO_Y);
 
   layout(1);   // any other layout: the top left is free
   assert(!menu_pilula_rect(&px, &py, &pw, &ph));
   assert(pfDy() == 0.0f);
-  assert(PF_TOPO == 56.0f && PF_NUM_Y == 212.0f && PF_CARD_Y == 356.0f);
+  assert(PF_TOPO == 56.0f && PN_TOPO == 48.0f && PN_KPI_Y == 154.0f);
+  assert(rGrafico().h == 372.0f && rTopo().y + rTopo().h <= PF_AVISO_Y);
 
   puts("PASS: perfil_pilula");
   return 0;

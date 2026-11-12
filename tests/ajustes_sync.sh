@@ -15,7 +15,8 @@ cc "${sources[@]}" tests/ajustes_sync.c -Isrc -o "$bin" -O0 -g -pthread \
   -lSDL2 -lSDL2_image -lSDL2_ttf -lz -framework OpenGL \
   -Wno-deprecated-declarations -Wno-macro-redefined
 rc=0
-for scenario in ${*:-roundtrip defaults empty offline legacy webedit quota}; do
+# "quota" restored the row quota from the retired device snapshot (Stage I).
+for scenario in ${*:-roundtrip defaults empty offline legacy webedit}; do
   mkdir "$dir/$scenario"
   "$bin" "$dir/$scenario" "$scenario" || rc=1
 done

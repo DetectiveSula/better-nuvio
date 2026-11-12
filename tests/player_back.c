@@ -114,6 +114,17 @@ int main(int argc, char **argv) {
     e.type = SDL_KEYDOWN; app_evento(&e);
     assert(saindo && pediuSair);
 
+    // The paused player must retain the same hide-then-exit Back sequence.
+    // Device verification exposed repeated dismissals after the idle pause
+    // overlay returned; isolate pause itself from that independent timer.
+    reset(); tocando = 0; pausaPessoa = 1;
+    e.type = SDL_KEYDOWN; e.key.repeat = 0;
+    app_evento(&e);
+    assert(!visivel && !saindo && !pediuSair && !tocando);
+    e.type = SDL_KEYUP; app_evento(&e);
+    e.type = SDL_KEYDOWN; app_evento(&e);
+    assert(saindo && pediuSair && !tocando);
+
     reset(); visivel = 0; anim = .4f;
     app_evento(&e);
     assert(!visivel && !saindo && !pediuSair);

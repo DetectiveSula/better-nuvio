@@ -438,8 +438,11 @@ static void gate(void) {
   perfil_infantil_esquecer();
   admin_pin_esquecer();
   pfEntrada();
-  focoIndice = 1; uxTopo = AJ2_T_PERFIL;
-  assert(uxEvento(SDLK_RETURN) && pfTela == PF_MENU && ajModalAberto());
+  // TV route (Stage A sidebar): Switch Profile > Profile, OK.
+  focarOpcao(AJ_PERFIL_ATIVO); focoIndice = 0; uxTopo = -1;
+  { SDL_Event e; memset(&e, 0, sizeof e); e.type = SDL_KEYDOWN; e.key.keysym.sym = SDLK_RETURN;
+    ajustes_evento(&e); }
+  assert(pfTela == PF_MENU && ajModalAberto());
   pfExigirAdmin(PA_EDITAR, 2);
   assert(pfFase == 3 && !edPerfil);
   assert(pfDigitado("4821") == 1 && pfFase == 4);

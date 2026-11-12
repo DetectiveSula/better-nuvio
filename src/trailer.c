@@ -6,6 +6,7 @@
 #include "trailerfonte.h"
 #include "extras.h"
 #include "linguas.h"
+#include "idiomacod.h"
 #include "video.h"      // trailer_osd_desenhar reads video_pos/duracao on every target
 #include <stdio.h>
 #include <stdlib.h>
@@ -71,6 +72,40 @@ void trailer_recorte(int vw, int vh, float z, float dw, float dh,
   w &= ~1; h &= ~1;
   *sw = w; *sh = h;
   *sx = ((vw - w) / 2) & ~1; *sy = ((vh - h) / 2) & ~1;
+}
+
+// TRAILER LIKELY WITH BURNED-IN SUBTITLES (owner, 6 Nov 2026: "crop from the
+// top"). Same zoom and same horizontal crop; only the VERTICAL trim moves up so
+// the bottom subtitle band stays in the card. The bottom keeps at most the
+// standard bar trim — a 16:9 frame with a 2.39:1 picture inside (IMDb) has
+// ~12.8% of black at the bottom, so trimming exactly that never shows a black
+// strip — and nothing at all on a matted frame (Apple 2.39:1, no bars inside).
+// The rest comes off the top. `legenda` 0 = trailer_recorte (centred).
+void trailer_recorte_legenda(int vw, int vh, float z, float dw, float dh, int legenda,
+                             int *sx, int *sy, int *sw, int *sh) {
+  int excesso, baixo, barra;
+  trailer_recorte(vw, vh, z, dw, dh, sx, sy, sw, sh);
+  if (!legenda || vh <= 0 || *sh >= vh) return;
+  excesso = vh - *sh;
+  barra = (vw > 0 && (float)vw / (float)vh > 1.85f) ? 0
+        : (int)((float)vh * (1.0f - (16.0f / 9.0f) / 2.39f) * 0.5f);
+  baixo = excesso / 2 < barra ? excesso / 2 : barra;
+  *sy = (excesso - baixo) & ~1;
+  if (*sy + *sh > vh) *sy = (vh - *sh) & ~1;
+}
+
+// Best-effort signal, set by whoever opens the trailer (details page: the
+// title's TMDB original_language; Home: the same, cached by the hero trailer
+// lookup). Likely subtitled = known, not English, not the app's language —
+// regional (English) trailers of foreign titles usually carry burned-in
+// subtitles; it is a guess, never a guarantee. Read when the crop goes out.
+static int legendaProvavel;
+int trailer_legenda_provavel(const char *original, const char *app) {
+  return original && original[0] && strcmp(original, "en") &&
+         (!app || strcmp(original, app));
+}
+void trailer_idioma_original(const char *iso) {
+  legendaProvavel = trailer_legenda_provavel(iso, idioma_iso(ajustes_idioma()));
 }
 
 #ifdef __EMSCRIPTEN__
@@ -313,6 +348,29 @@ static int    volumeTocandoEnviado;   // ver nativoAplicar (#281)
 static int    imagemVista;
 static Uint32 tocandoVisto;
 #endif
+// ANDROID: THE ARTWORK STAYS UNTIL THE TRAILER HAS ITS FINAL GEOMETRY (Stage H
+// polish, 6 Nov 2026). The zoom (Slight/Cinema/Ultra) used to be applied only
+// at `playing` + 800 ms — a webOS workaround — so the video first showed at full
+// frame and then jumped; the size change also made NvPlayer.kt recreate the
+// SurfaceView (the TCL workaround, every non-MStar/Amlogic decoder: Fire
+// Stick, BlueStacks), a brief black flash. Now the crop goes out as soon as the
+// frame size is known, and the video is revealed only when that crop is sent
+// AND the native layout is confirmed (video_janela_pronta: applied, surface
+// valid, no recreation pending) — as the Samsung path already waits. Sticky per
+// source: once shown it never hides again. Prazos: show anyway if the layout
+// never confirms (old behaviour, never a stuck trailer).
+#define NV_TRAILER_ANDROID_PRAZO_TOCANDO_MS 2500
+#define NV_TRAILER_ANDROID_PRAZO_ABERTO_MS  6000
+int trailer_portao_android(int recortePendente, int janelaPronta, int jaMostrado,
+                           long tocandoHaMs, long abertoHaMs) {
+  if (jaMostrado) return 1;
+  if (!recortePendente && janelaPronta) return 1;
+  if (tocandoHaMs >= NV_TRAILER_ANDROID_PRAZO_TOCANDO_MS) return 1;
+  return abertoHaMs >= NV_TRAILER_ANDROID_PRAZO_ABERTO_MS;
+}
+#ifdef NV_ANDROID
+static int mostradoAndroid;
+#endif
 int trailer_suportado(void) {
 #if defined(__APPLE__) || defined(NV_LINUX_DESKTOP)
   return falso != 0;
@@ -361,6 +419,23 @@ static void nativoAplicar(void) {
     fflush(stdout);
   }
 #endif
+#ifdef NV_ANDROID
+  // ANDROID: the crop as soon as the frame has a size — before the first
+  // visible frame (trailer_mostra_video holds the artwork until it settles).
+  // No periodic re-apply: NvPlayer.kt re-applies its last window itself after
+  // a surface recreation, and identical requests are skipped there.
+  (void)reaplicarEm; (void)quadroInteiroEnviado;   // webOS/Tizen-only steps
+  if (video_tocando() && !tocandoDesde) tocandoDesde = SDL_GetTicks() | 1;
+  if (recortePendente && video_pronto() && video_largura() > 0 && video_altura() > 0) {
+    int sw, sh, sx, sy;
+    trailer_recorte_legenda(video_largura(), video_altura(), ajustes_trailer_zoom(),
+                            rect.w, rect.h, legendaProvavel, &sx, &sy, &sw, &sh);
+    if (video_recorte_fonte_trailer())
+      video_janela_fonte(sx, sy, sw, sh,
+                         (int)rect.x, (int)rect.y, (int)rect.w, (int)rect.h);
+    recortePendente = 0;
+  }
+#else
   // O RECORTE SO DEPOIS DE `playing` + um respiro. E a ordem do player, a
   // unica em que o recorte comprovadamente pega nesta TV: la o modo salvo vai
   // ao plano no videoInfo como quadro INTEIRO e o zoom de verdade so e pedido
@@ -379,12 +454,12 @@ static void nativoAplicar(void) {
 #ifdef NV_TPK
     // O cartao e cover puro (zoom 1): video_tpk.c recorta a fonte onde ha
     // prova (Tizen 6.x) e encaixa o quadro inteiro nas demais familias.
-    trailer_recorte(video_largura(), video_altura(), noCartao ? 1.0f : ajustes_trailer_zoom(),
-                    rect.w, rect.h, &sx, &sy, &sw, &sh);
+    trailer_recorte_legenda(video_largura(), video_altura(), noCartao ? 1.0f : ajustes_trailer_zoom(),
+                            rect.w, rect.h, legendaProvavel, &sx, &sy, &sw, &sh);
     if (video_recorte_fonte_trailer() || noCartao)
 #else
-    trailer_recorte(video_largura(), video_altura(), ajustes_trailer_zoom(),
-                    rect.w, rect.h, &sx, &sy, &sw, &sh);
+    trailer_recorte_legenda(video_largura(), video_altura(), ajustes_trailer_zoom(),
+                            rect.w, rect.h, legendaProvavel, &sx, &sy, &sw, &sh);
     if (video_recorte_fonte_trailer())
 #endif
       video_janela_fonte(sx, sy, sw, sh,
@@ -399,6 +474,7 @@ static void nativoAplicar(void) {
     if (SDL_GetTicks() >= reaplicarAte) reaplicarAte = 0;
     else { reaplicarEm = SDL_GetTicks() + 1500; video_recorte_reaplicar(); }
   }
+#endif
 }
 #endif
 
@@ -453,6 +529,9 @@ void trailer_abrir(const char *fonte, GfxRect r, int som, int modoCheia) {
     tocouFonte = 0;
     volumePendente = 1; recortePendente = 1; pausado = 0; reaplicarAte = 0;
     tocandoDesde = 0; quadroInteiroEnviado = 0;
+#ifdef NV_ANDROID
+    mostradoAndroid = 0;
+#endif
 #ifdef NV_TPK
     recorteEnviadoEm = 0; mostraLogado = 0; imagemVista = 0; tocandoVisto = 0;
     volumeTocandoEnviado = 0;
@@ -550,6 +629,25 @@ int trailer_tocando(void) {
 int trailer_mostra_video(void) {
 #ifdef NV_ANDROID
   if (noCartao && !video_janela_pronta()) return 0;
+  if (aberto) {
+    Uint32 t = SDL_GetTicks();
+    // Signed and clamped: `tocandoDesde` is stored as ticks|1, so in the same
+    // millisecond the unsigned difference would wrap to ~4e9 ms.
+    Sint32 dt = tocandoDesde ? (Sint32)(t - tocandoDesde) : -1;
+    Sint32 da = abertoEm ? (Sint32)(t - abertoEm) : 0;
+    if (tocandoDesde && dt < 0) dt = 0;
+    if (da < 0) da = 0;
+    if (!trailer_portao_android(recortePendente, video_janela_pronta(), mostradoAndroid,
+                                (long)dt, (long)da))
+      return 0;
+    if (!mostradoAndroid) {
+      mostradoAndroid = 1;
+      printf("[trailer] android: video visivel +%dms (zoom %.2f, %s)\n",
+             (int)da, ajustes_trailer_zoom(),
+             !recortePendente && video_janela_pronta() ? "geometria final" : "prazo");
+      fflush(stdout);
+    }
+  }
 #endif
 #if defined(NV_TPK) && !defined(__EMSCRIPTEN__)
   Uint32 t = SDL_GetTicks();

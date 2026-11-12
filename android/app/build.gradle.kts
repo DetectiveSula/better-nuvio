@@ -36,6 +36,8 @@ android {
         externalNativeBuild {
             cmake {
                 arguments += listOf(
+                    "-DNV_VALIDATION_READONLY=${if (findProperty("nuvio.validationReadonly") == "1") "ON" else "OFF"}",
+                    "-DNV_VALIDATION_LOGIN=${if (findProperty("nuvio.validationLogin") == "1") "ON" else "OFF"}",
                     "-DNV_APK_LITE=${if (lite) "ON" else "OFF"}",
                     "-DANDROID_STL=c++_static",  // hidapi do SDL (hid.cpp) e C++
                     "-DNUVIO_RAIZ=$raiz",
@@ -147,5 +149,6 @@ dependencies {
     }
     implementation("androidx.core:core-ktx:1.13.1")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303") // real JSON parsing for offline account-contract tests
 }
 

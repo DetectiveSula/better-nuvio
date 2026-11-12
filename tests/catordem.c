@@ -179,9 +179,9 @@ int main(void) {
     confere("all 300 catalogues retained", catordem_n(), 300);
     confereTexto("late item sorted first", catordem_chave(0), "a_movie_c299");
     confere("late disabled item hidden", catordem_oculta("a_movie_c299", ""), 1);
-    confere("explicit empty items clears remote state", catordem_ler("{\"items\":[]}"), 1);
-    confere("remote order cleared", catordem_n(), 0);
-    confere("remote hidden state cleared", catordem_oculta("a_movie_c299", ""), 0);
+    confere("empty items preserve the last valid TV snapshot", catordem_ler("{\"items\":[]}"), 0);
+    confere("remote order retained", catordem_n(), 300);
+    confere("remote hidden state retained", catordem_oculta("a_movie_c299", ""), 1);
     confere("repeated empty does not rebuild", catordem_ler("{\"items\":[]}"), 0);
   }
 

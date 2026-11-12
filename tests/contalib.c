@@ -229,6 +229,19 @@ static const char *VISTOS =
     "\"title\":\"Game of Thrones\",\"season\":null,\"episode\":null,"
     "\"watched_at\":1756300000000}]";
 
+/* Stage E: a journal with one watched intent (ttA S6E<estE> at estMs), and an
+ * unmark-here gate for ttA S6E5. */
+static int estE = 6;
+static long long estMs = 300;
+static int locaisTeste(int (*cb)(const char *, int, int, long long, void *), void *u) {
+  cb("ttA", 6, estE, estMs, u);
+  return 1;
+}
+static int ocultoE5(const char *id, int t, int e, long long ms) {
+  (void)ms;
+  return !strcmp(id, "ttA") && t == 6 && e == 5;
+}
+
 int main(void) {
   static const char *SEMENTE[3] = { "tt0111161", "tt4154796", "tt0068646" };
   static const char *OUTRA[2]   = { "tt0816692", "tt0109830" };
@@ -429,6 +442,39 @@ int main(void) {
     contalib_ler_vistos(VISTOS);
     confere("pula vistos: uma semente", contalib_sementes_a_seguir(s, 2, 0), 1);
     confere("pula E4 e E5 ja vistos: sugere E6", s[0].episodio, 6);
+  }
+  // STAGE E: the TV's own gestures move the account's next-up at once (regular
+  // Nuvio recomputes from its local watched history), without a new pull.
+  {
+    static const char *VISTOS =
+      "["
+      "{\"content_id\":\"ttA\",\"content_type\":\"series\",\"season\":6,\"episode\":4,\"watched_at\":100},"
+      "{\"content_id\":\"ttA\",\"content_type\":\"series\",\"season\":6,\"episode\":5,\"watched_at\":200}"
+      "]";
+    ContaSemente s[2];
+    contalib_ler_vistos(VISTOS);
+    contalib_filtros(NULL, NULL);
+    contalib_gestos_locais(NULL);
+    confere("snapshot: next-up S6E6", contalib_sementes_a_seguir(s, 2, 1) == 1 && s[0].episodio == 6, 1);
+    /* 1/2. marked watched (or playback finished: the journal intent) */
+    estE = 6; estMs = 300;
+    contalib_gestos_locais(locaisTeste);
+    confere("mark S6E6 here: next-up S6E7", contalib_sementes_a_seguir(s, 2, 1) == 1 && s[0].episodio == 7, 1);
+    confere("mark: anchor time is the gesture", (int)s[0].vistoMs, 300);
+    /* also with the most-recent anchor rule */
+    confere("mark (recent anchor): S6E7", contalib_sementes_a_seguir(s, 2, 0) == 1 && s[0].episodio == 7, 1);
+    contalib_gestos_locais(NULL);
+    /* 3. unmarked here after the pull: S6E5 drops, next-up goes back to S6E5 */
+    contalib_filtros(NULL, ocultoE5);
+    confere("unmark S6E5 here: next-up S6E5", contalib_sementes_a_seguir(s, 2, 1) == 1 && s[0].episodio == 5, 1);
+    contalib_filtros(NULL, NULL);
+    /* merge: an older local intent never moves a newer remote time back */
+    { ContaVisto v[2], out[4];
+      memset(v, 0, sizeof v);
+      snprintf(v[0].id, sizeof v[0].id, "ttA"); v[0].temporada = 6; v[0].episodio = 6; v[0].vistoMs = 500;
+      estE = 6; estMs = 300;
+      confere("merge: no duplicate", contalib_vistos_com_locais(v, 1, out, 4, NULL, locaisTeste), 1);
+      confere("merge: latest time wins", (int)out[0].vistoMs, 500); }
   }
   contalib_esquecer();
   { ContaSemente s[1];

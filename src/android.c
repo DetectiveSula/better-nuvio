@@ -430,6 +430,40 @@ int android_fonte_evento(char *dst, size_t n) {
   return r;
 }
 
+int android_profile_editor_open(const char *json) {
+  // NewStringUTF expects modified UTF-8; encode the JSON as ASCII so emoji in
+  // existing profile names cannot reach it as invalid four-byte sequences.
+  static const char hex[]="0123456789abcdef";
+  size_t n=strlen(json);char *encoded=malloc(n*2+1);int ok;
+  if(!encoded)return 0;
+  for(size_t i=0;i<n;i++){unsigned char c=(unsigned char)json[i];encoded[2*i]=hex[c>>4];encoded[2*i+1]=hex[c&15];}
+  encoded[n*2]=0;ok=chamaBool("editarPerfil", "(Ljava/lang/String;)Z", encoded, 0, 0);
+  memset(encoded,0,n*2);free(encoded);return ok;
+}
+void android_profile_editor_close(void) { chamaBool("fecharEditorPerfil", "()Z", NULL, 0, 0); }
+int android_profile_editor_event(char *dst, size_t n) {
+  JNIEnv *env = (JNIEnv *)SDL_AndroidGetJNIEnv();
+  jobject act = (jobject)SDL_AndroidGetActivity();
+  jclass cls;
+  jmethodID m;
+  jstring js = NULL;
+  int r = 0;
+  if (n) dst[0] = 0;
+  if (!env || !act) return 0;
+  cls = (*env)->GetObjectClass(env, act);
+  m = cls ? (*env)->GetMethodID(env, cls, "proximoPerfilEditado", "()Ljava/lang/String;") : NULL;
+  if (m) js = (jstring)(*env)->CallObjectMethod(env, act, m);
+  if ((*env)->ExceptionCheck(env)) { (*env)->ExceptionClear(env); js = NULL; }
+  if (js) {
+    const char *c = (*env)->GetStringUTFChars(env, js, NULL);
+    if (c) { snprintf(dst, n, "%s", c); r = 1; (*env)->ReleaseStringUTFChars(env, js, c); }
+    (*env)->DeleteLocalRef(env, js);
+  }
+  if (cls) (*env)->DeleteLocalRef(env, cls);
+  (*env)->DeleteLocalRef(env, act);
+  return r;
+}
+
 // Metodo da Activity com ate dois textos; devolve o jobject/valor pelo tipo.
 static jmethodID metodo(JNIEnv *env, jobject act, jclass *cls, const char *nome, const char *assin) {
   *cls = (*env)->GetObjectClass(env, act);

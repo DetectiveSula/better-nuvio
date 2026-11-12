@@ -27,7 +27,7 @@ void novidades1312_desenhar(unsigned int agora) { (void)agora; }
 void novidades1312_evento(const void *e) { (void)e; }
 EOF
 dados="$(mktemp -d "${TMPDIR:-/tmp}/nuvio-busca-dados-XXXXXX")"
-NUVIO_DADOS="$dados" "$tmp/shot" "$saida"
+NUVIO_BUSCA_TENDENCIAS=0 NUVIO_DADOS="$dados" "$tmp/shot" "$saida"
 # JPEG de 1400 px para olhar: o BMP de 1920x1080 tem 8 MB e nao abre em todo
 # visualizador. So no Mac (sips).
 if command -v sips >/dev/null 2>&1; then

@@ -6,6 +6,9 @@ void servidores_esquecer_todos(void);   // servidores.c: wipe every profile's to
 #include "perfis.h"
 #include "perfisessao.h"
 #include "perfilinfantil.h"
+#include "familia.h"
+// Stage H: fallback for subset-linked tests that leave familia*.c out; the app links the real one.
+__attribute__((weak)) void familia_esquecer(void) {}
 #include "agenda.h"
 #include "lembrete.h"
 #include "dados.h"
@@ -112,6 +115,21 @@ static void resumoFixo(const char *frase) {
   resumoPublicar(&r);
 }
 static unsigned ultimoOk;
+// Pending foreground/player refresh (sync_pedir_atualizacao) and when the last
+// cycle began, on one monotonic clock (callers' frame clocks have other epochs).
+static unsigned long long atualizacaoEm, cicloIniciadoEm;
+static const char *atualizacaoMotivo = "";
+#ifdef NV_SYNC_TESTE
+static unsigned long long syncDesvioTeste;   // tests/syncaddons.c: time passes without sleeping
+void sync_teste_avancar_relogio(unsigned ms) { syncDesvioTeste += ms; }
+#else
+#define syncDesvioTeste 0ull
+#endif
+static unsigned long long syncMonoMs(void) {
+  struct timespec t;
+  clock_gettime(CLOCK_MONOTONIC, &t);
+  return (unsigned long long)t.tv_sec * 1000ull + (unsigned long long)(t.tv_nsec / 1000000) + 1ull + syncDesvioTeste;
+}
 static int sujoProgresso, sujoAjustes;
 static int addonsPerfilCiclo;
 #define SY_ADD_PREFIXO "conta-addons-pend-"
@@ -180,6 +198,10 @@ static int ajustesRestaurando = 1;
 static unsigned long long ajustesUltimoLocal;
 static int ajustesTemLocal;
 static void ajustesDetectarMudancas(void) {
+  ajustes_better_contexto();
+  ajustes_better_observar();
+  ajustes_compartilhados_contexto();
+  ajustes_compartilhados_observar();
   if (__atomic_load_n(&ajustesRestaurando, __ATOMIC_ACQUIRE)) return;
   unsigned long long hash = ajustes_sync_hash();
   if (ajustesTemLocal && hash != ajustesUltimoLocal) sync_proteger_ajustes_locais();
@@ -1020,104 +1042,45 @@ static int guardarOuCopia(const char *sup, int perfil, int n, char **blob) {
 static int puxarAjustesPerfil(const char *corpo) {
   char *r;
   int st = 0, ok = 0;
-  const char *p;
   carregarProtecaoAjustes();
-  // PUXA SEMPRE, inclusive com a protecao local ligada — e a mudanca desta
-  // versao. O blob e a BASE da costura de subida: sem ele, empurrarAjustes nao
-  // tem o que reescrever e ficaria calado para sempre justamente na TV que
-  // acabou de proteger os ajustes locais. O que a protecao decide agora e so se
-  // o blob e APLICADO (temAjustesBlob abaixo), nao se ele e buscado.
+  // Pull even after local edits. The typed bridge protects pending fields
+  // individually; the old whole-blob protection marker is not a sync policy.
   r = rpcDoCiclo("sync_pull_profile_settings_blob", corpo, &st);
-  if (!ok2xx(r, st) || !perfilDoCicloAtual()) { free(r); return 0; }
-  // A resposta e [{ "settings_json": { ... } }]; o que interessa e o objeto de
-  // dentro, cru e INTEIRO.
-  p = js_raiz_array(r);
-  if (p) {
-    const char *fimObj = js_fim(p);
-    const char *k = strstr(p, "\"settings_json\"");
-    if (k && k < fimObj) {
-      const char *v = strchr(k, ':');
-      if (v) {
-        v++;
-        while (*v && (unsigned char)*v <= ' ') v++;
-        if (*v == '{') {
-          const char *f = js_fim(v);
-          size_t n = (size_t)(f - v);
-          char *novo = (char *)malloc(n + 1);
-          if (novo) {
-            memcpy(novo, v, n);
-            novo[n] = 0;
-            if (nv_perfil_sessao_travar(sessaoDoCiclo)) {
-              free(ajustesBlob);
-              ajustesBlob = novo;
-              ajustesBlobGeracao++;
-              ajustesBlobPerfil = perfilDoCiclo;
-              temAjustesBlob = aplicarAjustes;
-              ok = 1;
-              nv_perfil_sessao_destravar();
-              printf("[sync] blob de ajustes: %d bytes\n", (int)n);
-            } else free(novo);
-          }
-        } else {
-          // O web aceita o blob tambem como STRING JSON serializada. Este
-          // servidor devolve objeto; se um dia devolver string, o certo e
-          // dizer, nao aplicar um pedaco.
-          printf("[sync] blob de ajustes nao veio como objeto; nao aplicado\n");
-        }
-      }
-    }
+  if (!ok2xx(r, st) || !perfilDoCicloAtual()) {
+    if (!ok2xx(r, st)) printf("[ajustes-conta] pull falhou (HTTP %d): ajustes locais mantidos\n", st);
+    free(r); return 0;
   }
-  // A successful empty result is a new account, not a failed pull. It is
-  // safe to seed an empty base only after the server confirmed its absence.
-  const char *empty = r;
-  char raw[16];
-  while (*empty && (unsigned char)*empty <= ' ') empty++;
-  int noSettings = *empty == '[';
-  if (noSettings) {
-    empty++; while (*empty && (unsigned char)*empty <= ' ') empty++;
-    noSettings = *empty == ']';
-  }
-  if (!ok && (noSettings || (js_bruto(r, NULL, "settings_json", raw, sizeof raw) && !strcmp(raw, "null")))) {
+  // Only a complete original RPC envelope supplies an authoritative base.
+  // Failures, malformed/partial envelopes and old sessions leave it untouched.
+  char *novo = NULL;
+  if (ajustes_compartilhados_resposta(r, &novo)) {
     if (nv_perfil_sessao_travar(sessaoDoCiclo)) {
       free(ajustesBlob);
-      ajustesBlob = strdup("{}");
-      ajustesBlobPerfil = perfilDoCiclo;
+      ajustesBlob = novo;
       ajustesBlobGeracao++;
-      temAjustesBlob = aplicarAjustes;
-      ok = ajustesBlob != NULL;
+      ajustesBlobPerfil = perfilDoCiclo;
+      temAjustesBlob = 1;
+      ok = 1;
       nv_perfil_sessao_destravar();
-    }
+    } else free(novo);
+  } else {
+    // Counts only: the body may hold other features' values.
+    printf("[ajustes-conta] resposta recusada (%s, %u bytes): ajustes locais mantidos\n",
+           ajustes_compartilhados_motivo(), (unsigned)strlen(r));
   }
   free(r);
   return ok;
 }
 
-// AJUSTES DESTA TV -> CONTA (#85). Empurra o blob COSTURADO: o que veio da
-// conta, com os valores locais escritos por cima das chaves que este app
-// conhece. Ver ajustes_mesclar_blob para a regra do que sobe.
-//
-// TRES TRAVAS, todas contra a mesma familia de defeito — o aparelho apagar dado
-// da conta:
-//   1. SEM BASE, SEM PUSH. Se nenhum pull deste perfil trouxe blob (rede fora,
-//      primeiro arranque, perfil sem ajustes salvos), nao ha o que costurar e
-//      nao se manda nada. Montar um blob do zero aqui mandaria as ~40 chaves
-//      deste app e apagaria da conta todas as outras — a "lista vazia apaga
-//      tudo" da secao 1.6, na versao de ajustes.
-//   2. DEPOIS DO PULL DESTE MESMO CICLO. A base e sempre a mais nova que o
-//      servidor deu, entao o que so o web mudou nao e sobrescrito por um blob
-//      velho guardado em memoria.
-//   3. Existing web keys keep their types; portable C preferences use
-//      c_settings_v1, including accounts with a confirmed empty blob.
-//
-// A base guardada e trocada pelo que foi ACEITO: sem isso, o ciclo seguinte
-// costuraria sobre um blob que o servidor ja nao tem mais e mandaria a mesma
-// diferenca de novo.
+// Official-format profile updates only, following a successful pull in this
+// cycle. Merge pending allowlisted fields, not a local settings snapshot.
+// Existing account/session locking prevents an old context acknowledging or
+// publishing into another profile. No Native/device extensions are generated.
 static void empurrarAjustes(void) {
   char *mesclado = NULL, *r;
   Jsw w;
   int st = 0;
-  if (!sujoAjustes || !temAjustesPerfil || temAjustesBlob ||
-      __atomic_load_n(&ajustesRestaurando, __ATOMIC_ACQUIRE)) return;
+  if (!ajustes_compartilhados_pendentes() || !temAjustesPerfil) return;
   if (ajustes_edicao_perfil()) return;
   if (jaAusente("sync_push_profile_settings_blob")) return;
   if (!nv_perfil_sessao_travar(sessaoDoCiclo)) return;
@@ -1126,7 +1089,7 @@ static void empurrarAjustes(void) {
     printf("[sync] ajustes locais pendentes, mas sem blob da conta para costurar: nada enviado\n");
     return;
   }
-  if (ajustes_mesclar_blob(ajustesBlob, &mesclado) <= 0 || !mesclado) {
+  if (ajustes_compartilhados_mesclar(ajustesBlob, &mesclado) <= 0 || !mesclado) {
     // Nothing differs from the freshly pulled account blob: skip the upload.
     free(mesclado);
     sujoAjustes = 0;
@@ -1138,6 +1101,7 @@ static void empurrarAjustes(void) {
   jsw_obj_ini(&w);
   jsw_ci(&w, "p_profile_id", perfilDoCiclo);
   jsw_cs(&w, "p_platform", "tv");
+  jsw_cs(&w, "p_origin_client_id", dados_cliente_id());
   jsw_chave(&w, "p_settings_json");
   jsw_bruto(&w, mesclado);
   jsw_obj_fim(&w);
@@ -1145,6 +1109,7 @@ static void empurrarAjustes(void) {
   jsw_livre(&w);
   if (!nv_perfil_sessao_travar(sessaoDoCiclo)) { free(r); free(mesclado); return; }
   if (ok2xx(r, st)) {
+    ajustes_compartilhados_confirmar(mesclado);
     sujoAjustes = 0;
     free(ajustesBlob);
     ajustesBlob = mesclado;
@@ -1176,6 +1141,7 @@ static void empurrarAjustes(void) {
 // no fio principal. Interpretar neste fio e mexer na ordem das fileiras no meio
 // de um quadro que ja esta desenhando a home — a mesma razao que faz os addons
 // esperarem sync_passo.
+static int catHomePerfil=-1; // scope of the received read-only home snapshot
 static int puxarCatHome(const char *corpo) {
   char *r;
   int st = 0;
@@ -1256,9 +1222,11 @@ static void puxarSoLeitura(void) {
            "{\"p_profile_id\":%d,\"p_platform\":\"tv\"}", perfil);
   temAjustesPerfil = puxarAjustesPerfil(corpo);
 
+  int homePerfil=perfis_home_config();
   snprintf(corpo, sizeof corpo,
-           "{\"p_profile_id\":%d,\"p_platform\":\"home_catalog_shared\"}", perfil);
+           "{\"p_profile_id\":%d,\"p_platform\":\"home_catalog_shared\"}", homePerfil);
   temCatHome = puxarCatHome(corpo);
+  if(temCatHome)catHomePerfil=homePerfil;
 }
 
 // O SERVIDOR DA CONTA CAIU NO MEIO DO CICLO (os addons falharam com 5xx/429/
@@ -1441,6 +1409,7 @@ static void *rodar(void *u) {
   // DEPOIS de puxarSoLeitura, pelo mesmo motivo dos addons e com um agravante:
   // a base da costura e o blob que acabou de chegar. Ver empurrarAjustes.
   empurrarAjustes();
+  ajustes_better_ciclo(sessaoDoCiclo);
   sincronizarPlugins();
   // Sempre, nao so quando `sujoProgresso`: linhas migradas do formato antigo
   // nascem pendentes sem ninguem ter marcado nada.
@@ -1494,10 +1463,11 @@ static void *rodar(void *u) {
 // home ficaria desenhada na ordem do OUTRO perfil ate a rede responder.
 static void restaurarOrdemLocal(void) {
   int tinha, mudou;
-  if (!sessao_logada() || catordemCachePerfil == perfis_ativo()) return;
+  if (!sessao_logada() || catordemCachePerfil == perfis_ativo()*16+perfis_home_config()) return;
   tinha = catordem_tem_ordem();
-  mudou = catordem_cache_carregar(perfis_ativo(), sessao_usuario());
-  catordemCachePerfil = perfis_ativo();
+  mudou = catordem_cache_carregar(perfis_home_config(), sessao_usuario());
+  catordemCachePerfil = perfis_ativo()*16+perfis_home_config();
+  colfileiras_sincronizar(); // publish the cached snapshot even while offline
   if (mudou || tinha) desc_remontar_fileiras();
 }
 
@@ -1532,6 +1502,8 @@ void sync_iniciar(void) {
   pedidoComFioVivo = 0;
   if (nuvem_freio_ativo()) return;
   ajustesDetectarMudancas();
+  cicloIniciadoEm = syncMonoMs();
+  atualizacaoEm = 0;   // this cycle is the requested refresh
   addonsPerfilCiclo = perfis_ativo_addons();
   cicloInterrompido = 0;
   perfilDoCiclo = perfis_ativo();
@@ -1557,9 +1529,30 @@ void sync_iniciar(void) {
 // reproducao NAO e — uma rajada de HTTP no meio do video disputa CPU e rede
 // com o decodificador, e um engasgo de imagem custa mais que 5 minutos de
 // atraso no progresso.
+void sync_pedir_atualizacao(unsigned agoraMs, const char *motivo) {
+  unsigned long long agora = syncMonoMs();
+  (void)agoraMs;
+  if (!sessao_logada()) return;
+  if (cicloIniciadoEm && agora - cicloIniciadoEm < SYNC_PRIMEIRO_PLANO_MIN_MS) {
+    printf("[sync] %s: conta lida ha %u s, sem nova leitura\n", motivo,
+           (unsigned)((agora - cicloIniciadoEm) / 1000u));
+    return;
+  }
+  atualizacaoEm = agora + SYNC_PRIMEIRO_PLANO_ATRASO_MS;
+  atualizacaoMotivo = motivo;
+}
+
 int sync_periodico(unsigned agoraMs) {
   if (!sessao_logada() || fioVivo) return 0;
   if (nuvem_freio_ativo()) return 0;
+  if (atualizacaoEm && syncMonoMs() >= atualizacaoEm) {
+    atualizacaoEm = 0;
+    if (ultimoOk) {   // before the first success the startup cycle is in charge
+      printf("[sync] %s: lendo ajustes e ordem da Home da conta\n", atualizacaoMotivo);
+      sync_iniciar();
+      return 1;
+    }
+  }
   // Sem nenhum ciclo bem-sucedido ainda, quem manda e quem chamou sync_iniciar
   // — nao adianta insistir por cima de uma falha que o freio ja esta segurando.
   if (!ultimoOk) return 0;
@@ -1608,8 +1601,8 @@ static int aplicarEstruturaDaConta(int medir) {
   // e o baseline de jank desta TV nao tem essa folga; duas remontagens no mesmo
   // quadro (addons e ordem) custariam o dobro por nada.
   if (temCatHomeBlob && catHomeBlob) {
-    if (catordem_ler(catHomeBlob)) {
-      catordem_cache_gravar(perfis_ativo(), sessao_usuario(), catHomeBlob);
+    if (catHomePerfil==perfis_home_config() && catordem_ler(catHomeBlob)) {
+      catordem_cache_gravar(perfis_home_config(), sessao_usuario(), catHomeBlob);
       if (catordem_tem_ocultar_nao_lancados())
         ajustes_definir_ocultar_nao_lancados(catordem_ocultar_nao_lancados());
       // `hide_catalog_underline` e lido e NAO aplicado: nao ha sublinhado de
@@ -1632,11 +1625,14 @@ static int aplicarEstruturaDaConta(int medir) {
   // Publish account additions, removals and visibility while Settings is open;
   // relying on the next Home draw left the editor on an older snapshot (#233).
   if (atualizarColecoes) colfileiras_sincronizar();
+  if (atualizarColecoes && addonsPerfilCiclo>0 && addonsPerfilCiclo!=perfis_ativo_addons())
+    pedidoComFioVivo=1; // existing retry mechanism: re-read the newly authoritative addon scope
   if (medir) spMarcar(SP_SINCRONIZAR);
   return mudou;
 }
 
 void sync_passo(unsigned agoraMs) {
+  if(ajustes_better_passo())ajustesTemLocal=0;
   if (sessao_logada()) desc_sessao_passo();
   // Consome apenas uma resposta da conta/perfil que a pediu. A rede segue no
   // mesmo fio de sempre; uma colecao lenta nao segura o progresso recebido.
@@ -1877,14 +1873,16 @@ void sync_passo(unsigned agoraMs) {
   spMarcar(SP_REMONTAR); }
   int blobAplicado = 0, ajustesMudaram = 0;
   if (temAjustesBlob && ajustesBlob && !ajustes_edicao_perfil()) {
-    ajustesMudaram = ajustes_aplicar_blob(ajustesBlob);
+    ajustes_compartilhados_observar();
+    ajustesMudaram = ajustes_compartilhados_aplicar(ajustesBlob);
     blobAplicado = 1;
     // O BLOB NAO E LIBERADO AQUI (mudou em #85): ele e a base da costura que
     // sobe no proximo ciclo. Quem o libera e o pull seguinte, que o substitui,
     // e o logout.
     temAjustesBlob = 0;
-    aplicarAjustes = 0;   // daqui para frente, o que a pessoa mudar na TV fica
+    aplicarAjustes = 0;   // legacy source-rule protection; shared fields use their journal
     __atomic_store_n(&ajustesRestaurando, 0, __ATOMIC_RELEASE);
+    ajustesTemLocal = 0; // Rebaseline imported changes; never flag them as local edits.
     ajustesDetectarMudancas();
   }
   // #187: uma linha por blob novo (aplicado ou protegido) dizendo qual idioma
@@ -1949,7 +1947,7 @@ void sync_passo(unsigned agoraMs) {
   if (pedidoComFioVivo) {
     pedidoComFioVivo = 0;
     if ((cicloInterrompido && !perfis_precisa_escolher()) ||
-        (!cicloInterrompido && perfilDoCiclo != perfis_ativo()))
+        (!cicloInterrompido && (perfilDoCiclo != perfis_ativo() || addonsPerfilCiclo != perfis_ativo_addons())))
       sync_iniciar();
   }
 }
@@ -2195,6 +2193,8 @@ int sync_empurrar_credencial(const char *provider, const char *credJson) {
 }
 
 void sync_reaplicar_ajustes(void) {
+  ajustes_better_contexto();
+  ajustes_compartilhados_contexto();
   ajustesTemLocal = 0;
   cat_historico_contexto(sessao_usuario(), perfis_ativo());
   // A conta ou o perfil ativo mudou: solta pins dos dois grupos para que cada
@@ -2341,6 +2341,8 @@ void sync_proteger_ajustes_locais(void) {
 }
 
 void sync_esquecer_usuario(void) {
+  ajustes_better_esquecer();
+  ajustes_compartilhados_esquecer();
   ajustesTemLocal = 0;
   // Reject old worker publications before any private cache is purged.
   perfis_invalidar_sessao();
@@ -2448,6 +2450,7 @@ void sync_esquecer_usuario(void) {
   perfilAplicado = 0;
   perfis_esquecer();
   perfil_infantil_esquecer();   // tambem apaga as marcas de ajustes travados
+  familia_esquecer();           // Stage H: no Family cards from the old account
   prog_esquecer_tudo();
   perfilcont_esquecer();
   psparede_esquecer();   // a parede de cada perfil (fundo "Filmes") e da conta que saiu

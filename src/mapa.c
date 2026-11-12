@@ -104,7 +104,7 @@ static void lerObraLista(const char *p, const char *f, MapaObra *o, long *gen, i
   o->ano = anoDe(data);
   if (js_texto(p, f, "poster_path", cam, sizeof cam)) urlImg(o->poster, sizeof o->poster, "w185", cam);
   cam[0] = 0;
-  if (js_texto(p, f, "backdrop_path", cam, sizeof cam)) urlImg(o->fundo, sizeof o->fundo, "w780", cam);
+  if (js_texto(p, f, "backdrop_path", cam, sizeof cam)) urlImg(o->fundo, sizeof o->fundo, "w1280", cam);
   { char sin[600] = "";
     js_texto(p, f, "overview", sin, sizeof sin);
     copiaLimpa(o->sinopse, sizeof o->sinopse, sin); }
@@ -147,7 +147,7 @@ int mapa_ler_detalhe(const char *json, int serie, MapaSemente *s) {
     urlImg(s->obra.poster, sizeof s->obra.poster, "w185", cam);
   cam[0] = 0;
   if (js_texto_raiz(json, "backdrop_path", cam, sizeof cam))
-    urlImg(s->obra.fundo, sizeof s->obra.fundo, "w780", cam);
+    urlImg(s->obra.fundo, sizeof s->obra.fundo, "w1280", cam);
   { char sin[900] = "";
     if (js_texto_raiz(json, "overview", sin, sizeof sin) && sin[0])
       copiaLimpa(s->obra.sinopse, sizeof s->obra.sinopse, sin); }
@@ -2311,6 +2311,7 @@ static void climaFundir(void) {
       c->itens[c->n] = r->o[i];
       c->visto[c->n] = (unsigned char)visto;
       c->n++;
+      if (!strcmp(r->o[i].tipo, "series")) c->series++; else c->filmes++;
       if (visto) c->vistos++;
     }
   }
@@ -2533,6 +2534,7 @@ void mapa_climas_pedir(void) {
       MapaClima *c = &novo.c[m];
       if (!mapa_clima_casa(m, gen, NULL, 0, serie)) continue;
       c->total++;
+      if (serie) c->series++; else c->filmes++;
       if (visto) c->vistos++;
       // Metade para o que ela viu, metade para o que nao: as duas fileiras do
       // clima aberto tem de onde tirar.

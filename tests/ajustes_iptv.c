@@ -63,12 +63,13 @@ static void campo(int op,const char *t) {
   salvarTeclado(t);
 }
 static IptvConta selecionada(void){IptvConta c;assert(iptv_conta_selecionada(&c));return c;}
+// Stage A folded Live TV into "Content & Discovery", whose sidebar summary is
+// the add-on count; aj2MenuValor takes a category index, not a scene id, so
+// there is no Live TV account line left to compare. What remains: the count is
+// right and asking for it never moves the selected account.
 static void resumoContas(int quantas) {
-  char texto[160],esperado[160];int antes=iptv_conta_indice();
-  aj2MenuValor(AJS_TVAOVIVO,texto,sizeof texto);
-  if(quantas)snprintf(esperado,sizeof esperado,"%s: %d",i18n("Contas de TV ao vivo"),quantas);
-  else snprintf(esperado,sizeof esperado,"%s",i18n("Não configurado"));
-  assert(!strcmp(texto,esperado) && iptv_conta_indice()==antes);
+  int antes=iptv_conta_indice();
+  assert(iptv_contas(NULL,0)==quantas && iptv_conta_indice()==antes);
 }
 static int listaOp(int tipo){return AJ_IPTV_LISTA_XTREAM+tipo-IPTV_XTREAM;}
 static void raiz(void) {
@@ -176,7 +177,8 @@ int main(int argc,char **argv) {
   tocar(AJ_IPTV_ORDEM);perfis_invalidar_sessao();key(SDLK_RETURN);assert(!frAberta);
   puts("PASS: guide-order setting and account arrow controls preserve selection/credentials and reject stale profiles");
   raiz();tocar(AJ_EPG_MEMORIA);key(SDLK_RIGHT);key(SDLK_RETURN);
-  assert(valor[AJ_EPG_MEMORIA]==1 && somenteDesteAparelho(AJ_EPG_MEMORIA) && !dePerfil(AJ_EPG_MEMORIA));
+  // Owner decision 12 Nov 2026: EPG memory is per profile on this TV.
+  assert(valor[AJ_EPG_MEMORIA]==1 && somenteDesteAparelho(AJ_EPG_MEMORIA) && dePerfil(AJ_EPG_MEMORIA));
   tocar(AJ_EPG_MEMORIA);key(SDLK_RIGHT);key(SDLK_RETURN);assert(valor[AJ_EPG_MEMORIA]==2);
   tocar(AJ_GUIA_CATEGORIAS);assert(uxEditor && !uxNCategorias);key(SDLK_RETURN);assert(!categoriaGravacoes);ajToqueConfirmar(0,0);assert(!uxEditor && !categoriaGravacoes);
   nCategoriasTeste=2;

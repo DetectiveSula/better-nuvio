@@ -28,10 +28,11 @@ int main(void) {
     assert(valor[AJ_FONTE_UI] == escolhido);
     assert(txt_fonte_interface() == familia);
   }
-  // #400: escolha do aparelho; persistencia sem importar/exportar pela conta.
+  // #400, owner decision 12 Nov 2026: per profile on this TV; persisted
+  // without importing/exporting through the account.
   assert(!ajustes_fonte_ordem_addon());
   assert(somenteDesteAparelho(AJ_FONTE_ORDEM_ADDON));
-  assert(!dePerfil(AJ_FONTE_ORDEM_ADDON));
+  assert(dePerfil(AJ_FONTE_ORDEM_ADDON));
   assert(!strcmp(CHAVE[AJ_FONTE_ORDEM_ADDON], "fonteOrdemLocal"));
   mudarValor(AJ_FONTE_ORDEM_ADDON, 1);
   assert(ajustes_fonte_ordem_addon());

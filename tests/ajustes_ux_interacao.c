@@ -390,6 +390,36 @@ int main(void) {
   key(SDLK_ESCAPE); assert(!apoioAberto && focoOp == AJ_APOIAR);
   key(SDLK_RETURN); assert(apoioAberto); key(SDLK_RETURN); assert(!apoioAberto && focoOp == AJ_APOIAR);
 
+  // Responsive Background cards must fit inside the measured row at both
+  // narrow inspector and expanded editor widths (the screenshot regression).
+  focarOpcao(AJ_FUNDO);
+  for (int expanded=0; expanded<2; expanded++) {
+    uxEditor=expanded; uxOp=AJ_FUNDO;
+    GfxRect panel=aj2ListaR();
+    float cw=(panel.w-36.0f-60.0f-32.0f)/3.0f;
+    float painted=4+10+(cw-20)*9/16+10+29+10;
+    assert(ajLinhaH(focoItem)>=AJ2_LN_LINHA1+20+painted+23);
+  }
+  uxCancelar();
+  // Drive the real modal with the TV OK/Down/Back input path, not just a setter.
+  valor[AJ_HERO]=0;fil_definir_hero_fonte("");
+  focarOpcao(AJ_HERO_CATALOGOS);key(SDLK_RETURN);
+  assert(hcAberta && hcFoco==1);key(SDLK_DOWN);key(SDLK_RETURN);
+  assert(!hcAberta && !strcmp(fil_hero_fonte(),"*"));
+  key(SDLK_RETURN);assert(hcAberta && hcFoco==2);
+  key(SDLK_UP);key(SDLK_RETURN);assert(!hcAberta && !*fil_hero_fonte());
+  key(SDLK_RETURN);key(SDLK_ESCAPE);assert(!hcAberta);
+  // Custom URL is an existing setting, with its own validation and persistence.
+  focarOpcao(AJ_POSTER_MODELO);assert(secAtual==3);
+  valor[AJ_POSTER_PROV]=PP_MODELO;
+  pstDefinir(AJ_POSTER_MODELO,"https://posters.example/{type}/{imdb}.jpg?style=Test");
+  assert(!strcmp(pstModelo,"https://posters.example/{type}/{imdb}.jpg?style=Test"));
+  pstCarregar();assert(strstr(pstModelo,"style=Test"));
+  assert(!inativa(AJ_POSTER_MODELO));
+  valor[AJ_POSTER_PROV]=PP_DESLIGADO;assert(inativa(AJ_POSTER_MODELO));
+  assert(strstr(i18n(rotuloOpcao(AJ_AMIGOS_ESTILO)),"Family"));
+  puts("PASS responsive Background bounds, Hero catalogue remote input, custom URL persistence and Family label");
+
   // Reabrir a tela preserva valores confirmados e não confirma rascunhos.
   int confirmado = valor[AJ_RELOGIO]; ajustes_encerrar(); ajustes_iniciar();
   assert(valor[AJ_RELOGIO] == confirmado);

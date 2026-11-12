@@ -41,7 +41,25 @@ static int colDoPerfil(void) {
   return !col_tem_conta() || geracaoCol == fil_perfil_geracao();
 }
 
+static void projetarConta(void) {
+  // Snapshot the current profile before projecting; retain every unmatched Native row.
+  const char *profileKeys[FIL_MAX];int profileEnabled[FIL_MAX],profileCount=catordem_n();
+  if(profileCount>FIL_MAX)profileCount=FIL_MAX;
+  for(int i=0;i<profileCount;i++){profileKeys[i]=catordem_chave(i);profileEnabled[i]=!catordem_oculta(profileKeys[i],profileKeys[i]);}
+  fil_projecao_conta(profileKeys,profileEnabled,profileCount);
+  // pinToTop collections of this profile (account folders only, never extras).
+  { char chaves[64][FIL_CHAVE]; const char *ptr[64]; int n=0;
+    for (int i=0;i<col_n() && n<64;i++) {
+      const ColFolder *f=col_folder(i);
+      if (!f || f->extra || !f->fixa || !colDoPerfil()) continue;
+      col_chave_pasta(f,chaves[n],FIL_CHAVE);
+      ptr[n]=chaves[n]; n++;
+    }
+    fil_definir_colecoes_fixas(ptr,n); }
+}
+
 void colfileiras_contexto(void) {
+  projetarConta();
   if (fil_conta_dono(sessao_usuario()) && col_tem_conta()) col_esquecer_perfil();
 }
 
@@ -162,7 +180,7 @@ void colfileiras_sincronizar(void) {
     if (fil_oculta(grupo) || catordem_oculta(grupo, grupo)) continue;
     for (int j = 0; j < f->nSources; j++) {
       char chave[FIL_CHAVE];
-      if (chaveFonte(&f->sources[j], chave) && !fil_adicionada_na_tv(chave))   // #327
+      if (chaveFonte(&f->sources[j], chave) && catordem_estado(chave)<0 && !fil_adicionada_na_tv(chave)) // shared catalogue rows stay distinct from collections
         for (int k = 0; k < q; k++)
           if (!strcmp(ordenadas[k], chave)) dentro[k] = 1;
     }

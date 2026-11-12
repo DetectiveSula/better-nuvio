@@ -8,6 +8,15 @@ static int layoutTeste = HOME_LAYOUT_DINAMICA;
 int gfx_vidro_camada;
 float gfx_tex_aspect_atual;
 float gfx_card_forcar_cover_atual;
+static int hidePill, modernSidebar=1;
+int txt_largura(TxtEstilo estilo,const char *s) { (void)estilo; return strlen(s)*15; }
+int gfx_efeitos_minimos(void) { return 0; }
+static GfxRect reservedBackdrop;
+static int backdropReservations;
+void gfx_vidro_fundo_reservar(GfxRect r) { reservedBackdrop=r; backdropReservations++; }
+int ajustes_rail_moderna(void){return modernSidebar;}
+int ajustes_animacoes_reduzidas(void){return 0;}
+int ajustes_menu_ocultar_pilula(void){return hidePill;}
 int ajustes_home_layout(void) { return layoutTeste; }
 int ajustes_menu_explorar(void) { return 1; }
 int ajustes_menu_guia(void) { return 1; }
@@ -35,6 +44,10 @@ static void tecla(SDL_Keycode k) {
 static int visivel(void) { float ys[NV_MENU_FOCOS_TV]; tvLayout(ys, NULL); return ys[MENU_ST0] >= 0.0f; }
 
 int main(void) {
+  tvAbre=0;tvPilAlfa=1;hidePill=0;assert(menu_pilula_alfa()>0);
+  hidePill=1;assert(menu_pilula_alfa()==0);menu_abrir();assert(menu_aberto());
+  menu_fechar();hidePill=0;
+
   float base = painelReal(1.0f);
   assert(fabsf(base - 355.0f * 0.9f) < 0.01f);
   assert(fabsf(painelReal(1.1f) - base) < 0.01f);
@@ -120,6 +133,63 @@ int main(void) {
     menu_fechar();
   }
 #endif
+  // The Modern sidebar switch changes actual geometry, not just a label.
+  layoutTeste=HOME_LAYOUT_MODERNA;modernSidebar=1;
+  assert(!padrao() && geoEm(0,1).x>0);
+  modernSidebar=0;assert(padrao() && geoEm(0,1).x==0);
+  modernSidebar=1;
+  // Over details there is no collapsed rail: blur must sample the same
+  // footprint on every opening/closing frame, not morph across video holes.
+  sobre=semRail=1;MenuGeo overlay=geoEm(expansaoVisual(),1);
+  for(int frame=0;frame<=100;frame++){
+    expande=frame/100.0f;MenuGeo at=geoEm(expansaoVisual(),1);
+    assert(at.x==overlay.x&&at.y==overlay.y&&at.w==overlay.w&&at.h==overlay.h);
+  }
+  sobre=semRail=0;expande=.3f;assert(expansaoVisual()==expande);
+  sobre=semRail=1;modernSidebar=0;assert(expansaoVisual()==expande);
+  sobre=semRail=0;modernSidebar=1;
+  puts("PASS: details overlay opening/closing keeps one blur footprint; Home morph retained");
+  layoutTeste=HOME_LAYOUT_DINAMICA;
+  // The Dynamic pill and panel must share one pre-content capture on every
+  // route, including hidden pills, details, closing tails and small UI scales.
+  for(int scale=0;scale<2;scale++) {
+    escalaTeste=scale ? .7f : 1.0f;
+    for(int route=0;route<MENU_N;route++) {
+      destino=route;
+      for(int overlayMode=0;overlayMode<2;overlayMode++) {
+        sobre=semRail=overlayMode;
+        aberto=0;tvAbre=tvAbreV=0;linha=route;
+        backdropReservations=0;menu_preparar_fundo();
+        assert(backdropReservations==1);
+        GfxRect fixed=reservedBackdrop;
+        assert(fixed.h==NV_LAYOUT_REAL_H);
+        for(int frame=0;frame<240;frame++) {
+          aberto=frame<120;
+          menu_atualizar(frame%2 ? .05f : 1.0f/120,frame*17);
+          menu_preparar_fundo();
+          assert(memcmp(&fixed,&reservedBackdrop,sizeof fixed)==0);
+          GfxRect p=tvPilula(),q=tvPainel();
+          assert((p.x+p.w)*menuEscala()<=fixed.w);
+          assert((q.x+q.w)*menuEscala()<=fixed.w);
+        }
+      }
+    }
+  }
+  escalaTeste=1;destino=MENU_INICIO;sobre=semRail=0;
+  layoutTeste=HOME_LAYOUT_MODERNA;
+  puts("PASS: all Dynamic routes reserve one backdrop through repeated opening and closing");
+  // Idle open frames must become exactly stable, including the spring velocity.
+  aberto=1;expande=0;expandeV=0;desliza=0;
+  for(int frame=0;frame<600;frame++)menu_atualizar(1.0f/60.0f,frame*17);
+  assert(expande==1 && expandeV==0 && desliza==1);
+  MenuGeo stable=geoEm(expande,1);
+  for(int frame=0;frame<120;frame++)menu_atualizar(1.0f/60.0f,12000+frame*17);
+  MenuGeo later=geoEm(expande,1);
+  assert(stable.w==later.w && stable.h==later.h && stable.y==later.y);
+  aberto=0;
+  for(int frame=0;frame<600;frame++)menu_atualizar(1.0f/60.0f,15000+frame*17);
+  assert(expande==0 && expandeV==0 && desliza==0);
+  puts("PASS: Modern sidebar geometry switch and settled open/close animation");
   puts("PASS: Apple TV scale, D-pad collapse/expand, mobile swipe and service selection");
   return 0;
 }

@@ -43,6 +43,9 @@ int  android_st_ditar(const char *idioma);
 void android_st_fechar(void);
 int android_importar_fonte(int slot);
 int android_fonte_evento(char *dst, size_t n);
+int android_profile_editor_open(const char *json);
+int android_profile_editor_event(char *dst,size_t n);
+void android_profile_editor_close(void);
 int  android_st_evento(char *dst, size_t n);
 // #205: NuvioActivity.volumesExternos (getExternalFilesDirs), one path per line,
 // index 0 = primary/emulated. 1 = veio texto em dst.

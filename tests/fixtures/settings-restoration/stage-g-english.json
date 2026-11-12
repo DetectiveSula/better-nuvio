@@ -1,0 +1,7 @@
+[
+  "Automatic",
+  "Enabled Home rows load automatically within the platform memory budget. The old local quota is retained for recovery.",
+  "Managed by your synced profile. Native preferences are kept for offline recovery.",
+  "Synced profile",
+  "Synced Home rows follow this profile's addon configuration. The device override is preserved for fallback when no valid synced configuration is available."
+]

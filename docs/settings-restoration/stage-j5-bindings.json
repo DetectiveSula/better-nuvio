@@ -1,0 +1,71 @@
+{
+  "stage": "J5",
+  "approval": "STAGE-J.md section 9.4; J1 portable state outside settings table",
+  "namespace": "better_nuvio",
+  "scope": "account + selected profile, including inheriting profiles",
+  "j1_inventory_sha256": "3663b630d314e1bbdbb16a0e52843d4e37aeb73b51cec579dcd23b2a94fdf260",
+  "identity": "Version-1 digest of complete official catalogue key (type, ID and parameters) and duplicate-family rank/count; app and collection keys have separate domain. Only the opaque digest is transmitted. Configured endpoints/fingerprints/names are not transmitted or hashed into the digest. Duplicate rank is determined privately from the complete account instance list, independent of available catalogues and list order.",
+  "fields": [
+    {
+      "key": "home_<row-digest>_s",
+      "purpose": "Row shape/presentation",
+      "type": "enum",
+      "values": "Unchanged FilTipo 0..FIL_TIPO_N-1",
+      "exclusions": "Fixed app rows do not accept shape overrides"
+    },
+    {
+      "key": "home_<row-digest>_z",
+      "purpose": "Row size",
+      "type": "enum",
+      "values": "Unchanged FilTam 0..FIL_TAM_N-1"
+    },
+    {
+      "key": "home_<row-digest>_o",
+      "purpose": "Collection item order",
+      "type": "enum",
+      "values": "Unchanged FilOrdem 0..FIL_ORD_N-1",
+      "exclusions": "Only collection rows consume this control"
+    },
+    {
+      "key": "home_<row-digest>_v",
+      "purpose": "Portable personal hide",
+      "type": "bool",
+      "values": "true=hidden, false=visible where official profile permits",
+      "exclusions": "Never overrides original Nuvio disabled state, unavailable addon or local social consent"
+    },
+    {
+      "key": "home_<row-digest>_a",
+      "purpose": "Friends Watching / Last Session placement",
+      "type": "string",
+      "values": "Preceding row digest or start; missing target keeps existing placement",
+      "exclusions": "Shared catalogue ordering remains Stage G authority"
+    },
+    {
+      "key": "homeHeroSource",
+      "purpose": "Selected hero source",
+      "type": "string",
+      "values": "auto, random, or row digest; unavailable source renders automatic without erasing selection"
+    }
+  ],
+  "local_only": [
+    "Home row/memory quota, emergency cap, registry budgets",
+    "Available catalogue list, titles, addon endpoint/configuration, URL fingerprints",
+    "Hardware/device preferences, credentials, tokens and consent",
+    "91 Better controls (90 original J4 plus reviewed Home layout) and 32 Stage I keep separate ownership; other unresolved and all 87 device-only controls remain excluded"
+  ],
+  "default_writes": false,
+  "schema_version": 1,
+  "bounds": {
+    "max_fields": 4096,
+    "max_document_bytes": 1048576,
+    "max_json_tokens": 98304
+  },
+  "source_files": [
+    "src/fileiras_home.inc",
+    "src/homewire.h",
+    "src/ajustes_better.inc",
+    "src/bnsettings.c",
+    "src/bnaccount.c",
+    "src/bncodec.c"
+  ]
+}

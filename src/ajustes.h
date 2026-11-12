@@ -648,6 +648,9 @@ int   ajustes_selo_visto_modo(void);   // 0 desligado, 1 icone (check), 2 escrit
 // Desligado de fabrica; busca, biblioteca e historico nao sao filtrados.
 int   ajustes_ocultar_filmes_vistos(void);
 int   ajustes_bib_home(void);   // #507: Library row on Home
+int   ajustes_familia(void);            // Stage H: Family Watching row (per profile, default Off)
+int   ajustes_familia_partilhar(void);  // Stage H: this profile shares its activity (default Off)
+int   ajustes_familia_partilha_perfil(int perfil); // another profile's consent on this device
 void  ajustes_definir_ocultar_filmes_vistos(int ligado);
 // MODO SEGURO (seguro.h). Chamar no arranque, DEPOIS de ajustes_dir e de
 // avisos_iniciar: `caiu` = a sessao anterior nao se despediu. Desfaz o ajuste
@@ -825,6 +828,8 @@ void ajustes_padroes_infantis(int perfil);
 // escritos por cima. Devolve quantas chaves foram reescritas; 0 quando nao havia
 // nada a mudar, e nesse caso *saida fica NULL. Quem chama libera com free().
 //
+// Legacy snapshot helper, retained for explicit compatibility/import tests.
+// Automatic account sync uses ajustes_compartilhados_* below instead.
 // Existing web fields keep their types and unknown features survive. Portable
 // C settings, including appearance, language, subtitles and row/addon order,
 // live under c_settings_v1. Device/display/decoder budgets, local endpoints
@@ -832,6 +837,42 @@ void ajustes_padroes_infantis(int perfil);
 int ajustes_mesclar_blob(const char *base, char **saida);
 // Main-thread local edit detector; avoids building the account JSON snapshot.
 unsigned long long ajustes_sync_hash(void);
+void ajustes_better_contexto(void);
+void ajustes_better_observar(void);
+int ajustes_better_passo(void);
+void ajustes_better_ciclo(uint64_t session);
+void ajustes_better_esquecer(void);
+int ajustes_better_writes(int enabled);
+// Home-row edits on this profile currently reach the account (J4/J5 uploads on).
+int ajustes_better_envia(void);
+// The option is a J4 Better Nuvio binding (synced only while ajustes_better_envia()).
+int ajustes_better_op_vinculada(int op);
+/* J7: the J4/J5 better_nuvio field allowlist (leak check). */
+int ajustes_better_chave_sincronizavel(const char *key);
+size_t ajustes_better_n(void);
+const char *ajustes_better_chave(size_t i);
+void ajustes_better_perfil_gravado(int,const int *,const int *);
+void ajustes_better_editor_begin(void);
+void ajustes_better_editor_ready(void);
+void ajustes_better_editor_observar(void);
+void ajustes_better_editor_end(void);
+void ajustes_better_boot(void);
+void ajustes_better_loading(void);
+void ajustes_better_perfil_antes(int,const int *);
+// Typed official profile settings; never imports/exports Native device files.
+int ajustes_compartilhados_validar(const char *json);
+int ajustes_compartilhados_resposta(const char *response, char **out);
+// Why the last account settings document was refused ("" when accepted).
+// A fixed English phrase; never contains account data.
+const char *ajustes_compartilhados_motivo(void);
+void ajustes_compartilhados_contexto(void);
+void ajustes_compartilhados_esquecer(void);
+void ajustes_compartilhados_observar(void);
+void ajustes_compartilhados_edicao(int profile, const int *before, const int *after);
+int ajustes_compartilhados_pendentes(void);
+int ajustes_compartilhados_aplicar(const char *json);
+int ajustes_compartilhados_mesclar(const char *base, char **out);
+void ajustes_compartilhados_confirmar(const char *sent);
 // #187: uma linha "[tmdb] idioma dos metadados: ..." com o que a TV pede ao
 // TMDB, de onde vem (ajuste desta TV) e o tmdb_language cru da conta.
 void ajustes_tmdb_idioma_relatar(const char *blob);
@@ -875,6 +916,22 @@ int ajustes_shot_valor(const char *chave, int v);   // capturas: opcao pela chav
 // Same provider-specific days cap as Nuvio Android (Trakt only).
 int ajustes_cw_dias(void);
 
-#endif
+/* J6 official-field writes require separate explicit local permission. */
+int ajustes_oficiais_permitir_escritas(int enabled);
 
 int ajustes_torbox_adicionar_cache(void); // explicit opt-in, effective only with the TorBox resolver
+
+// Local, append-only settings expansion. No new account schema fields.
+int ajustes_menu_ocultar_pilula(void);
+Uint32 ajustes_trailer_detalhe_espera_ms(void);
+int ajustes_posplay_recomendacoes(void);
+int ajustes_posplay_percent(void);
+int ajustes_ainda_episodios(void);
+int ajustes_legenda_automatica_completa(void);
+
+unsigned ajustes_profundidade_superficies(void);
+
+int ajustes_posplay_trailer(void);
+Uint32 ajustes_posplay_trailer_espera_ms(void);
+
+#endif

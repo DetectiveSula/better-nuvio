@@ -12,7 +12,7 @@
 #ifndef NV_PSPAREDE_H
 #define NV_PSPAREDE_H
 
-#define PSPAREDE_MAX   12   // cartazes guardados por perfil
+#define PSPAREDE_MAX   36   // four distinct posters per moving column
 #define PSPAREDE_URL NV_ARTE_URL_MAX   // mesmo teto do CatItem.poster
 
 // Guarda a parede do perfil ativo a partir do catalogo e do progresso.

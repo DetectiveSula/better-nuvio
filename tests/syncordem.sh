@@ -55,10 +55,10 @@ echo "$SAIDA" | grep -qF 'nao tento de novo por 7 dias' \
 sessao credencial-reabrir
 echo "$SAIDA" | grep -qF 'recusa lembrada do disco' \
   || { echo "FALHOU: recusa nao sobreviveu ao arranque"; exit 1; }
-# #378: com os ajustes locais protegidos, os idiomas da conta chegam assim mesmo.
+# #378 after Stage I: the old protection marker no longer blocks; the account's languages arrive.
 export NV_T_DIR="$dir/legconta"; mkdir "$NV_T_DIR"
 sessao legconta
-echo "$SAIDA" | grep -qF 'idiomas da conta entregues mesmo protegido' \
+echo "$SAIDA" | grep -qF 'idiomas da conta entregues' \
   || { echo "FALHOU: sessao legconta"; exit 1; }
 export NV_T_DIR="$dir/legconta-troca"; mkdir "$NV_T_DIR"
 sessao legconta-troca

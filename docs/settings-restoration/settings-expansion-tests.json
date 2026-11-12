@@ -1,0 +1,283 @@
+{
+  "summary": {
+    "relevant_suites": 42,
+    "suite_failures": 0,
+    "android_jvm": {
+      "tests": 64,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "original_bindings_preserved": 413,
+    "android_binding_count": 434,
+    "host_binding_count": 433,
+    "host_value_contracts": 341,
+    "focused_functional_bindings": 30,
+    "filter_subchoices": 228,
+    "apk_packaged": false,
+    "device_tests": false,
+    "live_account_operations": false,
+    "android_native_abis": [
+      "arm64-v8a",
+      "armeabi-v7a"
+    ],
+    "actual_local_gl_framebuffer": "PASS",
+    "launcher_resource_pairs": 10,
+    "final_native_rerun": "build/settings-expansion/native-final.log",
+    "preservation_log": "build/settings-expansion/preservation-final.log"
+  },
+  "suites": [
+    {
+      "name": "ajustes_perfil",
+      "rc": 0,
+      "seconds": 50.7,
+      "log": "build/settings-expansion/regressions/ajustes_perfil.log"
+    },
+    {
+      "name": "cw_parity",
+      "rc": 0,
+      "seconds": 8.5,
+      "log": "build/settings-expansion/regressions/cw_parity.log"
+    },
+    {
+      "name": "faixas_canal",
+      "rc": 0,
+      "seconds": 0.4,
+      "log": "build/settings-expansion/regressions/faixas_canal.log"
+    },
+    {
+      "name": "faixas_estilo_ctl",
+      "rc": 0,
+      "seconds": 0.4,
+      "log": "build/settings-expansion/regressions/faixas_estilo_ctl.log"
+    },
+    {
+      "name": "faixas_texto",
+      "rc": 0,
+      "seconds": 1.2,
+      "log": "build/settings-expansion/regressions/faixas_texto.log"
+    },
+    {
+      "name": "fileiras_android",
+      "rc": 0,
+      "seconds": 3.1,
+      "log": "build/settings-expansion/regressions/fileiras_android.log"
+    },
+    {
+      "name": "fileiras_navegacao",
+      "rc": 0,
+      "seconds": 47.1,
+      "log": "build/settings-expansion/regressions/fileiras_navegacao.log"
+    },
+    {
+      "name": "fontefalha",
+      "rc": 0,
+      "seconds": 0.7,
+      "log": "build/settings-expansion/regressions/fontefalha.log"
+    },
+    {
+      "name": "gfx_icone_embutido",
+      "rc": 0,
+      "seconds": 0.8,
+      "log": "build/settings-expansion/regressions/gfx_icone_embutido.log"
+    },
+    {
+      "name": "home",
+      "rc": 0,
+      "seconds": 6.5,
+      "log": "build/settings-expansion/regressions/home.log"
+    },
+    {
+      "name": "home_rows_official",
+      "rc": 0,
+      "seconds": 1.0,
+      "log": "build/settings-expansion/regressions/home_rows_official.log"
+    },
+    {
+      "name": "home_rows_profiles",
+      "rc": 0,
+      "seconds": 0.7,
+      "log": "build/settings-expansion/regressions/home_rows_profiles.log"
+    },
+    {
+      "name": "home_rows_stage_g",
+      "rc": 0,
+      "seconds": 0.8,
+      "log": "build/settings-expansion/regressions/home_rows_stage_g.log"
+    },
+    {
+      "name": "homepos",
+      "rc": 0,
+      "seconds": 5.7,
+      "log": "build/settings-expansion/regressions/homepos.log"
+    },
+    {
+      "name": "iconeapp_policy",
+      "rc": 0,
+      "seconds": 0.4,
+      "log": "build/settings-expansion/regressions/iconeapp_policy.log"
+    },
+    {
+      "name": "issue607_subtitle",
+      "rc": 0,
+      "seconds": 0.6,
+      "log": "build/settings-expansion/regressions/issue607_subtitle.log"
+    },
+    {
+      "name": "lg_subtitle_selection",
+      "rc": 0,
+      "seconds": 0.6,
+      "log": "build/settings-expansion/regressions/lg_subtitle_selection.log"
+    },
+    {
+      "name": "linguas",
+      "rc": 0,
+      "seconds": 0.4,
+      "log": "build/settings-expansion/regressions/linguas.log"
+    },
+    {
+      "name": "menu_geometry",
+      "rc": 0,
+      "seconds": 0.3,
+      "log": "build/settings-expansion/regressions/menu_geometry.log"
+    },
+    {
+      "name": "menu_ocultos",
+      "rc": 0,
+      "seconds": 60.1,
+      "log": "build/settings-expansion/regressions/menu_ocultos.log"
+    },
+    {
+      "name": "menu_tvos",
+      "rc": 0,
+      "seconds": 0.7,
+      "log": "build/settings-expansion/regressions/menu_tvos.log"
+    },
+    {
+      "name": "player_android_retomada",
+      "rc": 0,
+      "seconds": 51.1,
+      "log": "build/settings-expansion/regressions/player_android_retomada.log"
+    },
+    {
+      "name": "posplay",
+      "rc": 0,
+      "seconds": 45.1,
+      "log": "build/settings-expansion/regressions/posplay.log"
+    },
+    {
+      "name": "posplay_recuo",
+      "rc": 0,
+      "seconds": 45.2,
+      "log": "build/settings-expansion/regressions/posplay_recuo.log"
+    },
+    {
+      "name": "postplay_preview",
+      "rc": 0,
+      "seconds": 0.4,
+      "log": "build/settings-expansion/regressions/postplay_preview.log"
+    },
+    {
+      "name": "settings_expansion_native",
+      "rc": 0,
+      "seconds": 46.2,
+      "log": "build/settings-expansion/regressions/settings_expansion_native.log"
+    },
+    {
+      "name": "settings_expansion_policy",
+      "rc": 0,
+      "seconds": 0.7,
+      "log": "build/settings-expansion/regressions/settings_expansion_policy.log"
+    },
+    {
+      "name": "settings_expansion_subtitles",
+      "rc": 0,
+      "seconds": 0.5,
+      "log": "build/settings-expansion/regressions/settings_expansion_subtitles.log"
+    },
+    {
+      "name": "settings_stage_a",
+      "rc": 0,
+      "seconds": 49.0,
+      "log": "build/settings-expansion/regressions/settings_stage_a.log"
+    },
+    {
+      "name": "settings_stage_b",
+      "rc": 0,
+      "seconds": 47.4,
+      "log": "build/settings-expansion/regressions/settings_stage_b.log"
+    },
+    {
+      "name": "settings_stage_c",
+      "rc": 0,
+      "seconds": 114.6,
+      "log": "build/settings-expansion/regressions/settings_stage_c.log"
+    },
+    {
+      "name": "settings_stage_d",
+      "rc": 0,
+      "seconds": 45.4,
+      "log": "build/settings-expansion/regressions/settings_stage_d.log"
+    },
+    {
+      "name": "settings_stage_h_familia",
+      "rc": 0,
+      "seconds": 45.8,
+      "log": "build/settings-expansion/regressions/settings_stage_h_familia.log"
+    },
+    {
+      "name": "settings_stage_i",
+      "rc": 0,
+      "seconds": 21.8,
+      "log": "build/settings-expansion/regressions/settings_stage_i.log"
+    },
+    {
+      "name": "settings_stage_j4",
+      "rc": 0,
+      "seconds": 19.7,
+      "log": "build/settings-expansion/regressions/settings_stage_j4.log"
+    },
+    {
+      "name": "settings_stage_j5",
+      "rc": 0,
+      "seconds": 1.2,
+      "log": "build/settings-expansion/regressions/settings_stage_j5.log"
+    },
+    {
+      "name": "settings_stage_j5_native",
+      "rc": 0,
+      "seconds": 20.1,
+      "log": "build/settings-expansion/regressions/settings_stage_j5_native.log"
+    },
+    {
+      "name": "settings_stage_j6",
+      "rc": 0,
+      "seconds": 21.4,
+      "log": "build/settings-expansion/regressions/settings_stage_j6.log"
+    },
+    {
+      "name": "settings_stage_j7",
+      "rc": 0,
+      "seconds": 22.4,
+      "log": "build/settings-expansion/regressions/settings_stage_j7.log"
+    },
+    {
+      "name": "stream_cache_filter",
+      "rc": 0,
+      "seconds": 45.3,
+      "log": "build/settings-expansion/regressions/stream_cache_filter.log"
+    },
+    {
+      "name": "torbox_cached_add",
+      "rc": 0,
+      "seconds": 63.4,
+      "log": "build/settings-expansion/regressions/torbox_cached_add.log"
+    },
+    {
+      "name": "validation_readonly",
+      "rc": 0,
+      "seconds": 0.6,
+      "log": "build/settings-expansion/regressions/validation_readonly.log"
+    }
+  ]
+}

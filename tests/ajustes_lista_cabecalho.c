@@ -96,7 +96,9 @@ int main(void) {
     assert(viewport[2] == width && viewport[3] == height);
     for (int s = 0; s < 2; s++) {
       gfx_escala_ui_definir(scales[s]);
-      assert(gfx_escala_ui() == scales[s]);
+      // Portrait phone layouts double the text scale (gfx.c, escalaTxtEfetiva);
+      // the UI-size choice itself is the base.
+      assert(gfx_escala_ui_base() == scales[s]);
       assert(ajustes_layout_lista());
       capture(window, width, height, (int)lroundf(scales[s] * 100));
       GfxRect badge, clock;

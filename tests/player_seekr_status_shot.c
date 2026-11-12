@@ -40,9 +40,9 @@ int main(int argc, char **argv) {
   const int states[] = {SEEKR_LIMITE_LOCAL, SEEKR_LIMITE_PROVEDOR,
     SEEKR_CHAVE_RECUSADA, SEEKR_REDE_INDISPONIVEL,
     SEEKR_ARMAZENAMENTO_INDISPONIVEL, SEEKR_RELOGIO_INDISPONIVEL,
-    SEEKR_SEM_PREVIA, SEEKR_DESLIGADO};
+    SEEKR_SEM_PREVIA};
   const char *ids[] = {"seekr-local", "seekr-provider", "seekr-key", "seekr-network",
-    "seekr-storage", "seekr-clock", "seekr-empty", "seekr-no-key"};
+    "seekr-storage", "seekr-clock", "seekr-empty"};
   abrir(&filme); simular(3840,1606,"",1,1);
   player_shot_estado(relogio,4360,9420,1,0,1,1);
   player_shot_buscando(1);
@@ -57,6 +57,11 @@ int main(int argc, char **argv) {
     seekrMiniatura(96,1728,.5f,850,1);
     assert(materialCalls == 1);
   }
+  // Seekr off without a key is the user's choice: no status island.
+  statusFixture=SEEKR_DESLIGADO; temChaveFixture=0; materialCalls=0;
+  ajustes_shot_valor("seekrChave", 0);
+  seekrMiniatura(96,1728,.5f,850,1);
+  assert(!materialCalls);
   // The status is ephemeral: visual smoothing after release is not a new
   // blocked-preview alert. It also never shows when the option is disabled.
   statusFixture=SEEKR_LIMITE_LOCAL;

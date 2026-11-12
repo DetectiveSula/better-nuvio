@@ -220,6 +220,8 @@ static void carregar(void) {
 }
 int legfontes_n(void) { carregar(); return nFontes; }
 const char *legfontes_nome(int i) { carregar(); return i >= 0 && i < nFontes ? fontes[i].nome : ""; }
+const char *legfontes_id(int i) { carregar(); return i >= 0 && i < nFontes ? fontes[i].id : ""; }
+const char *legfontes_escolha_id(int slot) { carregar();return slot>=0&&slot<LEGFONTES_SLOTS?escolha[slot]:""; }
 int legfontes_selecionada(int slot) {
   carregar();
   if (slot < 0 || slot >= LEGFONTES_SLOTS) return -1;
@@ -313,6 +315,15 @@ int legfontes_escolher_transacao(int slot, int i, int (*confirmar)(void *), void
   return 1;
 }
 int legfontes_escolher(int slot, int i) { return legfontes_escolher_transacao(slot, i, NULL, NULL); }
+int legfontes_reservar_secundaria_id(const char *id) {
+  carregar();if(!idValido(id))return 0;
+  for(int i=0;i<nFontes;i++)if(!strcmp(fontes[i].id,id))return 0;
+  if(!strcmp(escolha[LEGFONTE_SECUNDARIA],id))return 1;
+  char ids[LEGFONTES_SLOTS][21];memcpy(ids,escolha,sizeof ids);
+  snprintf(ids[LEGFONTE_SECUNDARIA],sizeof ids[0],"%s",id);
+  if(!gravarEscolhas(ids))return 0;
+  memcpy(escolha,ids,sizeof escolha);revisao++;return 1;
+}
 int legfontes_remover(int i) {
   carregar();
   if (i < 0 || i >= nFontes) return 0;

@@ -87,6 +87,42 @@ int main(int argc, char **argv) {
   assert(fclose(f) == 0);
   player_dir(argv[1]); player_leg_estilo_carregar();
   assert(ajustes_leg_borda_rgb(player_leg_estilo()->corBorda) == 0);
+  // Exercise each ordinary primary subtitle setting through the real Settings
+  // callback and player preference reader, including every slider step.
+  const int ops[] = {AJ_LEG1_TAMANHO, AJ_LEG1_FONTE, AJ_LEG1_COR,
+    AJ_LEG1_OPACIDADE, AJ_LEG1_FUNDO, AJ_LEG1_POSICAO, AJ_LEG1_BORDA,
+    AJ_LEG1_ATRASO, AJ_LEG1_NEGRITO, AJ_LEG1_COR_BORDA};
+  for (unsigned i = 0; i < sizeof ops / sizeof *ops; i++) {
+    const Opcao *o = &OPCOES[ops[i]];
+    int lo = o->tipo == OP_NUMERO ? o->min : 0;
+    int hi = o->tipo == OP_NUMERO ? o->max : o->n - 1;
+    int step = o->tipo == OP_NUMERO ? o->passo : 1;
+    VideoLegendaEstilo before = *player_leg_estilo();
+    for (int v = lo; v <= hi; v += step) {
+      assert(ajLegendaDefinir(ops[i], v));
+      VideoLegendaEstilo expected = before;
+      switch (ops[i]) {
+        case AJ_LEG1_TAMANHO: expected.tamanho = v; break;
+        case AJ_LEG1_FONTE: expected.familia = v; break;
+        case AJ_LEG1_COR: expected.cor = v; break;
+        case AJ_LEG1_OPACIDADE: expected.opacidade = v; break;
+        case AJ_LEG1_FUNDO: expected.fundo = v; break;
+        case AJ_LEG1_POSICAO: expected.posicao = v; break;
+        case AJ_LEG1_BORDA: expected.borda = v; break;
+        case AJ_LEG1_ATRASO: expected.atrasoMs = v; break;
+        case AJ_LEG1_NEGRITO: expected.negrito = !v; break;
+        case AJ_LEG1_COR_BORDA: expected.corBorda = v; break;
+      }
+      assert(!memcmp(player_leg_estilo(), &expected, sizeof expected));
+      player_dir(argv[1]); player_leg_estilo_carregar();
+      assert(!memcmp(player_leg_estilo(), &expected, sizeof expected));
+    }
+    assert(player_leg_estilo_definir(&before, -1));
+    player_dir(argv[1]); player_leg_estilo_carregar();
+    assert(!memcmp(player_leg_estilo(), &before, sizeof before));
+    printf("PASS primary subtitle Settings callback, consumer, restart, independent restoration: id=%d (%d values)\n",
+           ops[i], (hi - lo) / step + 1);
+  }
   puts("legenda_borda_preta: PASS");
   return 0;
 }

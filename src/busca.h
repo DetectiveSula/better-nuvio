@@ -47,6 +47,8 @@ void busca_definir_consulta(const char *t);
 const char *busca_consulta(void);
 // Foco na barra: 0 teclado, 1 campo, 2 Falar, 3 celular. Para testes.
 int  busca_foco_campo(void);
+// Test hook: titles listed now by type, people, and the active filter tab.
+void busca_teste_tipos(int *filmes, int *series, int *pessoas, int *aba);
 #ifdef NV_TESTE
 void busca_teste_layout_recentes(void);
 #endif

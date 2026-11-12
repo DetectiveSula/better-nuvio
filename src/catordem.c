@@ -4,6 +4,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <pthread.h>
+#include <stdlib.h>
 
 // Chave de DESATIVAR do web (<base>_<tipo>_<catalogoId>_<nome>) nao cabe em 192:
 // so a base do Xperience tem 367 caracteres. A lista de ocultos guarda as duas
@@ -74,10 +75,6 @@ static const char *fimElemento(const char *p) {
   return js_fim(p);
 }
 
-static void minusculas(char *s) {
-  for (; *s; s++) *s = (char)tolower((unsigned char)*s);
-}
-
 static void addOrdem(const char *chave) {
   int i;
   if (!chave || !chave[0]) return;
@@ -94,12 +91,12 @@ static void addOculto(const char *chave) {
   snprintf(ocultos[nOcultos++], CATORD_DESL, "%s", chave);
 }
 
-// syncItemKey() do web: colecao vira `collection_<id>`, catalogo vira
-// `<addonId>_<tipo>_<catalogoId>`. Sem as tres partes o item NAO tem
+// homeCatalogKey() do app oficial: colecao vira `collection_<id>`, catalogo vira
+// `<addonId>_<catalogTypeKey(tipo)>_<catalogoId>`. Sem as tres partes o item NAO tem
 // identidade e e descartado — casar pela metade poria a fileira errada no
 // lugar da que a pessoa escolheu.
 static int chaveDoItem(const char *ini, const char *fim, char *dst, size_t tam) {
-  char addon[96], tipo[32], cat[96], col[96], b[32];
+  char addon[96], tipo[32], tipoChave[32], cat[96], col[96], b[32];
   if (js_bruto(ini, fim, "is_collection", b, sizeof b) ||
       js_bruto(ini, fim, "isCollection", b, sizeof b)) {
     if (strstr(b, "true")) {
@@ -118,8 +115,8 @@ static int chaveDoItem(const char *ini, const char *fim, char *dst, size_t tam) 
   if (!js_texto(ini, fim, "catalog_id", cat, sizeof cat))
     js_texto(ini, fim, "catalogId", cat, sizeof cat);
   if (!addon[0] || !tipo[0] || !cat[0]) return 0;
-  minusculas(tipo);
-  snprintf(dst, tam, "%s_%s_%s", addon, tipo, cat);
+  catordem_tipo_chave(tipo, tipoChave, sizeof tipoChave);
+  snprintf(dst, tam, "%s_%s_%s", addon, tipoChave, cat);
   return 1;
 }
 
@@ -244,6 +241,13 @@ int catordem_ler(const char *resposta) {
   antes = assinaturaLida();
   nAntesOrdem = nOrdem; nAntesOcultos = nOcultos;
   if (!resposta || !*resposta) { printf("[catordem] resposta vazia\n"); return 0; }
+  // A partial/failed transport response cannot replace a valid profile snapshot.
+  size_t len = strlen(resposta);
+  char *wrapped = malloc(len + 3);
+  if (!wrapped) return 0;
+  snprintf(wrapped, len + 3, "[%s]", resposta);
+  int valid = js_array_valido(wrapped); free(wrapped);
+  if (!valid) return 0;
   blob = blobDe(resposta, &fim);
   // DIZ QUAL DOS CASOS E. Este ponto ja devolveu 0 em silencio uma vez, e do
   // lado de fora "a home nao obedeceu" ficava indistinguivel de "o servidor
@@ -282,6 +286,8 @@ int catordem_ler(const char *resposta) {
       return 0;
     }
   }
+
+  if(!nOrdem && !nOcultos){alvo=vivo;return 0;} // pinned Android startup pull is non-destructive
 
   { char b[16];
     if (js_bruto(blob, fim, "hide_unreleased_content", b, sizeof b)) {
@@ -383,4 +389,14 @@ void catordem_esquecer(void) {
   temNLanc = valNLanc = temSublinhado = valSublinhado = 0;
   memset(bancas, 0, sizeof bancas);   // zera as duas: n=0 e sem chave de quem saiu
   pthread_mutex_unlock(&trava);
+}
+
+
+int catordem_estado(const char *key) {
+  if (!key || !*key) return -1;
+  int result=-1;
+  pthread_mutex_lock(&trava);
+  for(int i=0;i<vivo->no;i++)if(!strcmp(key,vivo->ord[i])){result=1;break;}
+  for(int i=0;i<vivo->nc;i++)if(!strcmp(key,vivo->ocu[i])){result=0;break;}
+  pthread_mutex_unlock(&trava);return result;
 }

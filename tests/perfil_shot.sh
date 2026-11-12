@@ -11,7 +11,7 @@ cd "$(dirname "$0")/.."
 fontes=()
 for f in src/*.c src/dts/*.c; do [ "$f" != src/main.c ] && fontes+=("$f"); done
 cc "${fontes[@]}" tests/perfil_shot.c -Isrc -o ${TMPDIR:-/tmp}/nuvio-perfil-shot \
-  -O1 -g -DNV_SOCIALVIS_DEMO -I/opt/homebrew/include -I/opt/homebrew/include/SDL2 \
+  -O1 -g -DNV_SOCIALVIS_DEMO ${NUVIO_SHOT_RETRATO:+-DNV_TOUCH_UI} -I/opt/homebrew/include -I/opt/homebrew/include/SDL2 \
   -L/opt/homebrew/lib -lSDL2 -lSDL2_image -lSDL2_ttf -lz -framework OpenGL \
   -Wall -Wextra -Wno-deprecated-declarations -Wno-macro-redefined
 

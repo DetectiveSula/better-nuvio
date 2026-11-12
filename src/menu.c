@@ -28,6 +28,8 @@
 #include "ponteiro.h"
 #include "home.h"
 #include "colecoes.h"
+#include "rolagemtoque.h"
+#include "phone_menu_geometry.h"
 #define NV_ESCALA_TELA   // o arquivo inteiro mede pela tela virtual (escala.h)
 #include "escala.h"
 #include <math.h>
@@ -202,13 +204,41 @@ static void tvToqueLimpar(void);
 #endif
 static void tvAtualizar(float dt);
 static void tvDesenhar(void);
+static void tvPrepararFundo(void);
 static void iconeTraco(int d, float cx, float cy, float s, float r, float g, float b, float a);
 static void topoAtualizar(float dt);
 static void topoDesenhar(void);
 static void topoMover(int dir);
 
-static int padrao(void) { return ajustes_home_layout() == HOME_LAYOUT_PADRAO; }
-static int topo(void) { return ajustes_menu_topo(); }   // #461: barra no topo
+// The phone keeps the same destinations and actions as TV. Only its chrome
+// changes: a touch-sized header opens a portrait drawer instead of a TV rail.
+static int phoneAtivo(void) {
+#ifdef NV_TOUCH_UI
+  return layout_modo_mobile() && NV_LAYOUT_REAL_H > NV_LAYOUT_REAL_W;
+#else
+  return 0;
+#endif
+}
+static void phoneDesenhar(void);
+#ifdef NV_TOUCH_UI
+static float phoneOffset;
+static ToqueRolagem phoneRolagem;
+#endif
+
+static int padrao(void) {
+  return ajustes_home_layout() == HOME_LAYOUT_PADRAO ||
+         (ajustes_home_layout() == HOME_LAYOUT_MODERNA && !ajustes_rail_moderna());
+}
+// Details has no collapsed icon rail to morph from. Resizing frosted glass
+// over the page during its fade changes the sampled backdrop region (and can
+// cross a live trailer hole), producing flashes on Android GPUs. Keep this
+// overlay's full panel footprint fixed and animate opacity only. Home retains
+// its existing rail-to-panel morph; no backdrop or video is frozen.
+static float expansaoVisual(void) {
+  return sobre && semRail && ajustes_home_layout() == HOME_LAYOUT_MODERNA &&
+         ajustes_rail_moderna() ? 1.0f : expande;
+}
+static int topo(void) { return !phoneAtivo() && ajustes_menu_topo(); }   // #461: barra no topo
 static float limita01(float v) { return v < 0.0f ? 0.0f : v > 1.0f ? 1.0f : v; }
 
 // A GEOMETRIA DO PAINEL numa largura `e` (0 = rail, 1 = aberto; o repique da
@@ -340,7 +370,7 @@ static void desenhaMaterial(const MenuGeo *g, float a) {
     // assistindo" em x 152..400), e a 80 % ele atravessava legivel entre os
     // rotulos (captura de tests/homelayouts_shot.sh): sobe a 86 %.
     float al = anim_mistura(.80f, .86f, limita01((g->w - NV_MENU_W_RAIL) / (NV_MENU_W_ABERTO - NV_MENU_W_RAIL)));
-    gfx_vidro_camada = 1;   // frost over page glass too (detail pills, tabs, cards)
+    gfx_vidro_camada = ajustes_rail_moderna_blur() ? (sobre && semRail ? 3 : 1) : 2;
     gfx_vidro_material(r, raio, al, a);
     gfx_vidro_camada = 0;
   } else {
@@ -424,6 +454,8 @@ static void desenhaBarra(float e, float a, int focos, float entrada) {
 int menu_iniciar(void) {
 #ifdef NV_TOUCH_UI
   tvToqueLimpar();
+  phoneOffset = 0;
+  toquerol_limpar(&phoneRolagem);
 #endif
   aberto = 0; destino = MENU_INICIO; linha = MENU_INICIO; mudou = 0;
   desliza = 0.0f; expande = 0.0f; expandeV = 0.0f;
@@ -435,6 +467,8 @@ void menu_abrir(void) {
   if (aberto) return;
 #ifdef NV_TOUCH_UI
   tvToqueLimpar();
+  phoneOffset = 0;
+  toquerol_limpar(&phoneRolagem);
 #endif
   // O destaque comeca sempre no destino em vigor, nunca onde ficou da ultima
   // vez: a barra e um mapa de onde voce esta, e abrir com o destaque em outro
@@ -502,6 +536,9 @@ int menu_pediu_spotlight(void) { int p = pediuSpot; pediuSpot = 0; return p; }
 
 void menu_evento(const SDL_Event *e) {
   if (!aberto) return;
+#ifdef NV_TOUCH_UI
+  if (toquerol_navegacao(e)) toquerol_limpar(&phoneRolagem);
+#endif
   if (e->type == SDL_KEYUP && buscaOk &&
       (e->key.keysym.sym == SDLK_RETURN || e->key.keysym.sym == SDLK_KP_ENTER)) {
     int longo = buscaLongo;
@@ -603,6 +640,12 @@ void menu_atualizar(float dt, Uint32 agora) {
     // Fechando, a forma nao passa da rail para menos (encolher abaixo de 88
     // seria um defeito, nao um repique).
     if (!aberto && expande < 0.0f) { expande = 0.0f; if (expandeV < 0.0f) expandeV = 0.0f; }
+  }
+  // An open panel used to integrate its spring forever. Tiny width/height
+  // changes kept invalidating the blur region and snapping text at subpixels.
+  // Settle both endpoints, without suppressing the opening spring animation.
+  if (fabsf(expande - alvo) < 0.0005f && fabsf(expandeV) < 0.005f) {
+    expande = alvo; expandeV = 0.0f;
   }
   for (int i = 0; i < NV_MENU_FOCOS; i++) {
     float a = (aberto && i == linha) ? 1.0f : 0.0f;
@@ -728,13 +771,22 @@ static int railFixa(void) { return !topo() && !ajustes_rail_recolhida() && !(sob
 float menu_barra_borda(void) {
   MenuGeo g;
   float e;
-  if (tvAtivo() || topo()) return 0.0f;
+  if (phoneAtivo() || tvAtivo() || topo()) return 0.0f;
   if (aberto) e = 1.0f;
-  else if (desliza >= 0.002f || expande > 0.004f) e = limita01(expande);
+  else if (desliza >= 0.002f || expande > 0.004f) e = limita01(expansaoVisual());
   else if (railFixa()) e = 0.0f;
   else return 0.0f;
   g = geoEm(e, railFixa() ? 1.0f : (aberto ? 1.0f : anim_suave(desliza)));
   return (g.x + g.w) * NV_MENU_ESCALA;
+}
+
+void menu_preparar_fundo(void) {
+  if (phoneAtivo()) return;
+  if (tvAtivo()) { tvPrepararFundo(); return; }
+  if (sobre && semRail && !topo()) {
+    MenuGeo g=geoEm(1.0f,1.0f);
+    gfx_vidro_fundo_reservar((GfxRect){0,0,(g.x+g.w)*NV_MENU_ESCALA,NV_LAYOUT_REAL_H});
+  }
 }
 
 static void menu_desenharCorpo_(Uint32 agora);
@@ -742,6 +794,12 @@ static void menu_desenharCorpo_(Uint32 agora);
 // tela virtual dele.
 void menu_desenhar(Uint32 agora) {
   float ant = gfx_escala();
+  if (phoneAtivo()) {
+    gfx_escala_sair(1.0f);
+    phoneDesenhar();
+    gfx_escala_sair(ant);
+    return;
+  }
   gfx_escala_sair(NV_MENU_ESCALA);   // fator FIXO, nao o do Tamanho da interface
   menu_desenharCorpo_(agora);
   gfx_escala_sair(ant);
@@ -756,7 +814,7 @@ static void menu_desenharCorpo_(Uint32 agora) {
   // Rail fixa sempre presente, como no shell legacy: a pilula estreita, so
   // icones. `collapseSidebar`: com a barra RECOLHIDA o web nao desenha rail
   // nenhuma; o painel so aparece quando ganha foco.
-  int fixa = railFixa();
+  int fixa = railFixa() && !(ajustes_menu_ocultar_pilula() && ajustes_rail_moderna());
   if (!aberto && desliza < 0.002f && expande <= 0.004f) {
     if (fixa) {
       MenuGeo g = geoEm(0.0f, 1.0f);
@@ -774,7 +832,7 @@ static void menu_desenharCorpo_(Uint32 agora) {
   // O VEU usa a rampa CRUA: a medida da referencia e uma reta (ver
   // NV_MENU_ABRIR_MS). A FORMA anda na mola da ilha (`expande`).
   float entrada = anim_suave(desliza);
-  float e = expande;
+  float e = expansaoVisual();
   // Luz ESCURA nascendo 600 px fora da tela, na altura do meio: e quase uma
   // rampa horizontal (o centro esta longe), zerada por volta de x = 1100. Um
   // quad do tamanho da area que ela alcanca, nao da tela inteira.
@@ -912,7 +970,7 @@ static int tvToqueRolar(const PonteiroRolagem *e) {
 #endif
 static float tvPilAlfa = 1.0f, tvPilAlvo = 1.0f;
 
-static int tvAtivo(void) { return ajustes_home_layout() == HOME_LAYOUT_DINAMICA; }
+static int tvAtivo(void) { return !phoneAtivo() && ajustes_home_layout() == HOME_LAYOUT_DINAMICA; }
 
 // Ordem do original: Inicio, Busca, Explorar... (o resto segue a ordem do app).
 static const int TV_ORDEM[MENU_N] = {
@@ -989,8 +1047,25 @@ static GfxRect tvPilula(void) {
   return r;
 }
 
+static void tvPrepararFundo(void) {
+  // The Dynamic pill grows into a panel on every page. Reserve the entire
+  // path BEFORE page content, even when the pill is hidden. Otherwise the
+  // growing glass can miss last frame's background capture and read text,
+  // cards or its own scrim for one frame, then switch back on the next.
+  GfxRect p=tvPilula(), q=tvPainel();
+  float right=fmaxf(p.x+p.w,q.x+q.w)*NV_MENU_ESCALA;
+  gfx_vidro_fundo_reservar((GfxRect){0,0,right,NV_LAYOUT_REAL_H});
+}
+
 int menu_pilula_rect(float *x, float *y, float *w, float *h) {
   GfxRect r;
+  if (phoneAtivo()) {
+    if (x) *x = 48;
+    if (y) *y = 36;
+    if (w) *w = NV_LAYOUT_REAL_W - 96;
+    if (h) *h = 120;
+    return 1;
+  }
   if (!tvAtivo()) { if (x) *x = 0; if (y) *y = 0; if (w) *w = 0; if (h) *h = 0; return 0; }
   r = tvPilula();
   // O retangulo devolvido INCLUI a seta, que fica a esquerda da pilula. Em
@@ -1003,14 +1078,14 @@ int menu_pilula_rect(float *x, float *y, float *w, float *h) {
     if (h) *h = r.h * e; }
   return 1;
 }
-int menu_pilula_titulo(void) { return tvAtivo(); }
+int menu_pilula_titulo(void) { return phoneAtivo() || tvAtivo(); }
 float menu_pilula_alfa(void) {
   if (!tvAtivo()) return 0.0f;
-  { float a = tvPilAlfa * (1.0f - tvAbre); return a < 0.0f ? 0.0f : a; }
+  { float a = (ajustes_menu_ocultar_pilula() ? 0.0f : tvPilAlfa) * (1.0f - tvAbre); return a < 0.0f ? 0.0f : a; }
 }
 // O cabecalho da barra da Apple TV tem relogio proprio: aberta, a ilha do
 // canto duplicava a hora (11:29 + 11:29 na captura da TCL).
-int menu_relogio_cabe(void) { return !(aberto && tvAtivo()); }
+int menu_relogio_cabe(void) { return !(aberto && (phoneAtivo() || tvAtivo())); }
 void menu_pilula_mostrar(float alvo) {
   // Negativo = some JA, sem mola: ao trocar para uma tela com titulo no canto
   // a pilula nao pode ficar 300 ms por cima dele.
@@ -1166,6 +1241,90 @@ static void tvAvatar(GfxRect av, float alfa) {
   }
 }
 
+#ifdef NV_TOUCH_UI
+static void phoneAbrir(int a, int b) {
+  (void)a; (void)b;
+  if (phoneAtivo()) menu_abrir();
+}
+static void phoneEscolher(int d, int b) {
+  (void)b;
+  if (!phoneAtivo() || !aberto || d < 0 || d > MENU_RODAPE ||
+      (d < MENU_N && !mostra(d))) return;
+  linha = d;
+  escolher();  // exactly the same routing/profile switch as the TV sidebar
+}
+static int phoneRolar(const PonteiroRolagem *e) {
+  if (!phoneAtivo() || !aberto) { toquerol_limpar(&phoneRolagem); return 0; }
+  return toquerol_evento(&phoneRolagem, e);
+}
+static void phoneTexto(const char *s, float x, float y, float w, int dark) {
+  TxtLinha l = txt_linha_corta(TXT_TITULO3, s, dark ? 24 : 245,
+    dark ? 24 : 245, dark ? 28 : 247, 255, w);
+  txt_desenhar(l, x, y);
+}
+static void phoneDesenhar(void) {
+  float w = NV_LAYOUT_REAL_W, h = NV_LAYOUT_REAL_H;
+  if (!aberto) {
+    toquerol_limpar(&phoneRolagem);
+    if (!ponteiro_borda_registrada()) return;
+    GfxRect button = {48, 36, 120, 120};
+    gfx_cor(button, .5f, .12f, .12f, .14f, .94f);
+    for (int k = 0; k < 3; k++)
+      gfx_cor((GfxRect){82, 72 + k * 20, 52, 5}, .5f, .96f, .96f, .98f, 1);
+    phoneTexto(destino == MENU_INICIO ? "NUVIO" : i18n(ROTULOS[destino]),
+      204, 68, w - 420, 0);
+    ponteiro_alvo(button.x, button.y, button.w, button.h, NULL, phoneAbrir, 0, 0);
+    return;
+  }
+
+  PhoneMenuGeometry g = phone_menu_geometry(w, h, visiveis() + 1);
+  gfx_cor((GfxRect){0, 0, w, h}, 0, 0, 0, 0, .70f);
+  gfx_cor(g.panel, 56 / g.panel.h, .13f, .13f, .15f, 1);
+  ponteiro_alvo(0, 0, w, h, NULL, ponteiroFora, 0, 0);
+  ponteiro_alvo(g.panel.x, g.panel.y, g.panel.w, g.panel.h, NULL, NULL, 0, 0);
+  phoneTexto("NUVIO", g.panel.x + 48, g.panel.y + 44, g.panel.w - 220, 0);
+  GfxRect close = {g.panel.x + g.panel.w - 132, g.panel.y + 24, 108, 108};
+  gfx_icone((GfxRect){close.x + 30, close.y + 30, 48, 48}, "aj_x", 1, 1, 1, .9f);
+  ponteiro_alvo(close.x, close.y, close.w, close.h, NULL, ponteiroFora, 0, 0);
+
+  // Keyboard focus follows the same order; a finger can freely scroll without
+  // snapping back to the selected destination on the next frame.
+  int focusIndex = 0;
+  for (int d = 0; d < MENU_N && d < linha; d++) if (mostra(d)) focusIndex++;
+  if (linha == MENU_RODAPE) focusIndex = visiveis();
+  if (!toquerol_livre(&phoneRolagem)) {
+    float y = focusIndex * g.step;
+    phoneOffset = fmaxf(phoneOffset, y + g.rowHeight - g.rows.h);
+    phoneOffset = fminf(phoneOffset, y);
+  }
+  phoneOffset = fmaxf(0, fminf(g.maxScroll, phoneOffset));
+  toquerol_vincular(&phoneRolagem, g.rows, 1, 0, g.maxScroll, 1, &phoneOffset);
+  ponteiro_rolagem(phoneRolar);
+  gfx_recorte(g.rows.x, g.rows.y, g.rows.w, g.rows.h);
+  int index = 0;
+  for (int d = 0; d <= MENU_RODAPE; d++) {
+    if (d < MENU_N && !mostra(d)) continue;
+    float y = g.rows.y + index++ * g.step - phoneOffset;
+    GfxRect row = {g.rows.x, y, g.rows.w, g.rowHeight};
+    if (y + row.h <= g.rows.y || y >= g.rows.y + g.rows.h) continue;
+    int selected = d == linha;
+    if (selected) gfx_cor(row, 32 / row.h, .96f, .96f, .98f, 1);
+    if (d == MENU_RODAPE) tvAvatar((GfxRect){row.x + 32, y + 34, 64, 64}, 1);
+    else iconeTraco(d, row.x + 64, y + row.h / 2, 52,
+      selected ? .08f : .85f, selected ? .08f : .85f, selected ? .1f : .88f, 1);
+    phoneTexto(i18n(d == MENU_RODAPE ? "Trocar de perfil" : ROTULOS[d]),
+      row.x + 132, y + 40, row.w - 172, selected);
+    // Register only the visible segment: clipped rows never steal taps from
+    // the header, close button or outside dismissal area.
+    float top = fmaxf(y, g.rows.y), bottom = fminf(y + row.h, g.rows.y + g.rows.h);
+    ponteiro_alvo(row.x, top, row.w, bottom - top, NULL, phoneEscolher, d, 0);
+  }
+  gfx_sem_recorte();
+}
+#else
+static void phoneDesenhar(void) {}
+#endif
+
 // Escurece SO o lado esquerdo: faixas verticais de cor chapada com o alfa
 // caindo em degraus pequenos ate sumir em x ~ 900. Cada pixel e pintado UMA
 // vez e pelo shader mais barato (GFX_COR). MEDIDO na C9 (01/10): com uma
@@ -1211,7 +1370,7 @@ static void tvDesenhar(void) {
   float s = tvAbre < 0.0f ? 0.0f : (tvAbre > 1.0f ? 1.0f : tvAbre);
   GfxRect P = tvPilula(), Q = tvPainel(), R;
   float qh = tvAltura > 0.0f ? tvAltura : Q.h;
-  float pa = tvPilAlfa;
+  float pa = ajustes_menu_ocultar_pilula() ? 0.0f : tvPilAlfa;
   float A, raioPx;
   float ar, ag, ab;
   ajustes_acento(&ar, &ag, &ab);
@@ -1269,7 +1428,16 @@ static void tvDesenhar(void) {
   // The shared material at TV_MIOLO_MIN (88 % at the default "Opacity"): at
   // 78 % the Home row titles read through the panel (TCL print). It follows
   // the slider like every other glass surface.
-  gfx_vidro_camada = 1;   // frost over page glass too (detail pills, tabs, cards)
+  // A source can be unavailable for a frame (video plane, quality governor,
+  // texture upload or frost disabled). The glass fallback is intentionally
+  // translucent; without a backing, moving focus/expanding Streaming exposed
+  // sharp page text and artwork through it. Keep the closed pill translucent,
+  // but give the open navigation panel an opaque, geometry-matched foundation.
+  // The glass still supplies its blurred colour, rim and highlight above it.
+  { float backing = s >= .999f ? 1.0f : s;
+    if (backing > .001f)
+      gfx_cor(R, raioPx / R.h, 0x1a/255.0f, 0x1c/255.0f, 0x21/255.0f, backing * A); }
+  gfx_vidro_camada = 3;   // same reserved background throughout pill/panel morph
   gfx_vidro_material(R, raioPx / R.h, TV_MIOLO_MIN, A);
   gfx_vidro_camada = 0;
   gfx_vidro_matiz(R, raioPx / R.h, A);

@@ -42,6 +42,10 @@ static int uxDiferente(int op) {
 static const char *uxEscopoValor(int op, int v) {
   if (op == AJ_TEMA && v >= AJ_TEMA_DINAMICA) return "Só este perfil, nesta TV";
   if (op == AJ_TMDB_IDIOMA && v == 0) return "Só este perfil, nesta TV";
+  /* J4-bound options really follow the account while this profile's Better
+   * Nuvio uploads are on (same rule as the Home-rows notice); never in release. */
+  if (escopoDe(op) != ESC_PERFIL_CONTA && ajustes_better_op_vinculada(op) && ajustes_better_envia())
+    return "Conta/perfil";
   switch (escopoDe(op)) {   // 2.1: tres escopos
     case ESC_PERFIL_CONTA: return "Conta/perfil";
     case ESC_PERFIL_LOCAL: return "Só este perfil, nesta TV";
@@ -110,6 +114,19 @@ static void uxValorTexto(int op, int v, char *buf, size_t tam) {
     const char *s=v==(n?n:1)?i18n(ajIptvAdicionarNome(tipo)):!n?i18n("Nenhuma"):ajIptvNome(ajIptvDoTipo(tipo,v));
     snprintf(buf,tam,"%s",s);return;
   }
+  const char *preset=NULL;
+  if(op==AJ_LARGURA_DP)preset=nv_settings_preset(nvWidthPresets,6,v);
+  if(op==AJ_RAIO_DP)preset=nv_settings_preset(nvRadiusPresets,5,v);
+  if(op==AJ_PROF_BORDA)preset=nv_settings_preset(nvEdgePresets,3,v);
+  if(op==AJ_PROF_COBERTURA)preset=nv_settings_preset(nvCoveragePresets,3,v);
+  if(preset){snprintf(buf,tam,"%s (%d%s)",preset,v,op==AJ_LARGURA_DP||op==AJ_RAIO_DP?" dp":"%");return;}
+  if(op==AJ_POSPLAY_PERCENT&&!v){snprintf(buf,tam,"Automatic (existing credits policy)");return;}
+  if(op==AJ_AINDA_EPISODIOS){
+    if(!v)snprintf(buf,tam,"Off");
+    else snprintf(buf,tam,v==1?"%d episode":"%d episodes",v);
+    return;
+  }
+  if(op==AJ_DET_TRAILER_ESPERA||op==AJ_POSPLAY_TRAILER_ESPERA){snprintf(buf,tam,"%d.%d s",v/10,v%10);return;}
   o = &OPCOES[op];
   if (ajFonte(op)) texto = ajFonteNome(op, v);
   else if (o->tipo == OP_ACAO) texto = i18n("Abrir");
@@ -258,7 +275,7 @@ static const char *uxSinonimos(int op) {
       return "regex expressao regular padrao filtro nome idioma espanhol latino castellano multi dual remux auto-play autoplay regex match pattern";
     case AJ_TAM_MAX: case AJ_TAM_MIN: return "tamanho maximo minimo gb gigabyte arquivo franquia dados internet limite cota plano economizar fonte automatica size quota data cap";
     case AJ_FILTROS_FONTES: case AJ_FILTRO_TAM_MAX: case AJ_FILTRO_GRUPOS:
-      return "filtros excluir exclusao resolucao qualidade tamanho tags visuais hdr dolby vision audio canais encode idiomas linguas grupos lancamento antes limite links filter exclude resolution quality size visual audio channels codec encode language release group";
+      return "filtros excluir exclusao resolucao qualidade tamanho tags visuais hdr dolby vision audio canais encode idiomas linguas grupos lancamento antes limite links filter exclude resolution quality size visual audio channels codec encode language release group preferred required excluded resolutions qualities visual tags audio tags channels encodes languages release groups min max minimum maximum sorting sort per resolution quality limit results";
     case AJ_FALHA_PROVEDORES: case AJ_FALHA_PROVEDOR_ORDEM: case AJ_FALHA_RD_LIMITE: case AJ_FALHA_TB_LIMITE: case AJ_FALHA_PM_LIMITE: case AJ_FALHA_AD_LIMITE:
       return "falha erro provedor debrid trocar ordem prioridade limite links timeout failover fallback retry real-debrid torbox premiumize alldebrid";
     case AJ_FALHA_ADDONS: case AJ_FALHA_ADDON_ORDEM: case AJ_FALHA_ADDON_LIMITE:
@@ -428,7 +445,7 @@ int ajustes_buscar(const char *consulta, AjusteBuscaResultado *resultados, int c
     if (op < 0 || op >= AJ_N || visto[op]) continue;
     if (!ajOpcaoDisponivel(op)) continue;
     visto[op] = 1;
-    if (op == AJ_ICONE_APP && !apoiador_ativo()) continue;
+    /* App Icon & Banner remains visible; existing supporter gate is retained. */
     if ((op == AJ_PERFIL_PESQ || op == AJ_PERFIL_EDITAR) && !recomenda_ativo()) continue;
     if (op == AJ_BUSCA_CINEMETA && valor[op] == 0 && !cinemetaInstalado()) continue;
     uxNormalizar(i18n(rotuloOpcao(op)), titulo, sizeof titulo);

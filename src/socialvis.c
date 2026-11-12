@@ -183,6 +183,7 @@ static void doCatalogo(void) {
       char pid[96];
       SvEvento *e;
       if (!it || !it->socialSlug[0] || !it->imdb[0]) continue;
+      if (!strncmp(it->socialSlug, "familia:", 8)) continue;   // Stage H: not friends
       if (!strncmp(it->socialSlug, "nuvio:", 6)) snprintf(pid, sizeof pid, "%s", it->socialSlug);
       else snprintf(pid, sizeof pid, "trakt:%s", it->socialSlug);
       if (jaTemEvento(pid, it->imdb, it->tipo, acaoDoTexto(it->socialAcao), it->temporada, it->episodio) ||
@@ -343,7 +344,7 @@ static int svDoServidor(SvEvento *saida, int max) {
     if (!cf || strcmp(cf->chave, "social_activity") || cf->socialGeracao != recomenda_geracao()) continue;
     for (i = 0; i < cf->n && nT < 16; i++) {
       const CatItem *it = cat_item(cf->ini + i);
-      if (it && strncmp(it->socialSlug, "nuvio:", 6)) trakt[nT++] = *it;
+      if (it && strncmp(it->socialSlug, "nuvio:", 6) && strncmp(it->socialSlug, "familia:", 8)) trakt[nT++] = *it;
     }
     break;
   }

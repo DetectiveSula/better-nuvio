@@ -38,6 +38,13 @@ Uint32 SDL_GetTicks(void) { return (Uint32)fakeNow; }
 float gfx_escala_ui(void) { return 1; }
 const char *i18n(const char *s) { return s; }
 int debrid_ativo(void) { return 0; }
+// No resolver/provider in this isolated source-sheet geometry fixture.
+int ajustes_resolver_ativo(void) { return 0; }
+int ajustes_resolver_provedor(void) { return -1; }
+unsigned debrid_cache_geracao(void) { return 0; }
+unsigned addons_parcial_rev(void) { return 0; }
+int addons_parcial_abas(AddonAba *out, int max) { (void)out; (void)max; return 0; }
+unsigned fontesmortas_versao(void) { return 0; }
 int p2p_ativo(void) { return 0; }
 int selospacote_ativo(void) { return -1; }
 unsigned selospacote_versao(void) { return 1; }
@@ -297,17 +304,17 @@ int main(void) {
   // #205: uma carta "fora do cache" fica no FIM do proprio grupo de qualidade,
   // nao despejada depois de todos os grupos. E a carta em foco que acaba de
   // virar fora-do-cache leva o foco junto (foraCacheFoco, como verificarUma faz).
-  lista[2].foraCache=1;
+  lista[2].foraCache=1; atomic_fetch_add(&folhaRevisao,1);
   { const int regra[]={3,1,0,5,2,4};montar(automaticaDaFolha());expect(regra,6); }
   // O foco segue a carta: a virada chega como chega de verdade — o fio marca
   // foraCache e o indice, sem montar no meio — e a atualizacao prende o foco
   // pelo indice com o Y do layout de ANTES.
-  lista[2].foraCache=0;montar(automaticaDaFolha());expect(incremental,6);
-  lista[2].foraCache=1;
+  lista[2].foraCache=0; atomic_fetch_add(&folhaRevisao,1);montar(automaticaDaFolha());expect(incremental,6);
+  lista[2].foraCache=1; atomic_fetch_add(&folhaRevisao,1);
   atomic_store(&foraCacheFoco,2);
   stream_folha_atualizar(.016f,0);
   assert(filtrado(foco)==2); // o foco seguiu a carta para o lugar novo
-  lista[2].foraCache=0;montar(automaticaDaFolha());expect(incremental,6);
+  lista[2].foraCache=0; atomic_fetch_add(&folhaRevisao,1);montar(automaticaDaFolha());expect(incremental,6);
   foco=linhaDe(2); // a secao seguinte parte do foco na carta 2, como antes
   stream_atualizar_lista(sources,5);assert(filtrado(foco)==focused);
   { const int reaberta[]={3,1,2,0,4};expect(reaberta,5); } // o melhor (3) volta como primeira linha
@@ -356,8 +363,8 @@ int main(void) {
   { int seen0=linhaDe(0),seen1=linhaDe(1),seen2=linhaDe(2); assert(seen0>=0 && seen2>=0 && seen1>seen0 && seen1>seen2); }
   // The focused row opens the connection line even when there is no file name.
   { int r=linhaDe(2); lista[2].arquivo[0]=0; assert(!arquivoDa(&lista[2])[0]);
-    foco=r; grupo=1; abreFoco=1; nOrdem=r; float h=alturaLinha(2,-1);
-    assert(h>=FOLHA_LINHA_H+FOLHA_FIT_H-.01f); nOrdem=r+1; float o=alturaLinha(2,-1);
+    foco=r; grupo=1; abreFoco=1; nOrdem=r; float h=alturaLinha(2,-1,abreFoco);
+    assert(h>=FOLHA_LINHA_H+FOLHA_FIT_H-.01f); nOrdem=r+1; float o=alturaLinha(2,-1,0);
     assert(o<FOLHA_LINHA_H+FOLHA_MARCA_H+.01f); montar(automaticaDaFolha()); }
   stream_fit_duracao("tt3",0,SF_DUR_DESCONHECIDA);stream_folha_abrir();
   assert(fitTexto(0,txt,sizeof txt)==SF_DESCONHECIDA && !strcmp(txt,"Conexão: duração do título desconhecida"));

@@ -127,6 +127,7 @@ const char *sessao_usuario(void) { return "conta-teste"; }
 int catordem_n(void) { return 0; }
 const char *catordem_chave(int i) { (void)i; return ""; }
 int catordem_oculta(const char *chave, const char *outra) { (void)chave; (void)outra; return 0; }
+int catordem_estado(const char *chave) { (void)chave; return -1; }   // no synced snapshot
 int catordem_unir(const char *const *v, int n, int *saida, int max) {
   (void)v; if (n > max) n = max; for (int i = 0; i < n; i++) saida[i] = i; return n;
 }

@@ -216,6 +216,7 @@ int main(int argc, char **argv) {
     snprintf(fl[0].titulo, sizeof fl[0].titulo, "Popular");
     snprintf(fl[0].tipo, sizeof fl[0].tipo, "movie");
     fl[0].ini = 0; fl[0].n = n / 2;
+    snprintf(fl[0].base, sizeof fl[0].base, "%s", "https://catalog.nuvio.tv");   /* search is Nuvio-only */
     fl[1] = fl[0];
     snprintf(fl[1].chave, sizeof fl[1].chave, "shot.b");
     snprintf(fl[1].titulo, sizeof fl[1].titulo, "Trending");
@@ -272,6 +273,24 @@ int main(int argc, char **argv) {
     assert(pp.tituloTmdb == 24428 && !strcmp(pp.tituloTipo, "movie"));
     assert(!strcmp(pp.nome, "Scarlett Johansson"));
     assert(!busca_pediu_pessoa(&pp)); }
+  // FILTER TABS (mock-up): up to the tabs, Movies, OK -> only movies remain;
+  // the counts stay those of all results; All brings everything back.
+  { int f0, s0, p0, a, f, s, p, i;
+    busca_teste_tipos(&f0, &s0, &p0, &a);
+    assert(a == 0 && p0 == 3);
+    for (i = 0; i < 6; i++) tecla(SDLK_UP);        /* people -> titles -> banner -> tabs */
+    tecla(SDLK_RIGHT); tecla(SDLK_RETURN);          /* Movies */
+    busca_teste_tipos(&f, &s, &p, &a);
+    assert(a == 1 && s == 0 && p == 0 && f > 0);
+    snprintf(nome, sizeof nome, "%s-abas-filmes.bmp", saida);
+    capturaEm(nome, 600);
+    tecla(SDLK_RIGHT); tecla(SDLK_RIGHT); tecla(SDLK_RETURN);   /* People */
+    busca_teste_tipos(&f, &s, &p, &a);
+    assert(a == 3 && f == 0 && s == 0 && p == 3);
+    for (i = 0; i < 3; i++) tecla(SDLK_LEFT);
+    tecla(SDLK_RETURN);                              /* All */
+    busca_teste_tipos(&f, &s, &p, &a);
+    assert(a == 0 && f == f0 && s == s0 && p == p0); }
   spotpessoa_teste(NULL);
   // ANDROID (sistexto em modo de teste): CIMA da primeira fileira foca o campo,
   // direita o Falar; OK no campo chama o teclado do sistema e o texto dele

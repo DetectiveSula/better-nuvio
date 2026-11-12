@@ -29,6 +29,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -85,56 +86,56 @@ static void quadros(int n, const char *nome) {
   }
 }
 
-// --- catalogo sintetico ---------------------------------------------------------
+// --- catalogo de teste ----------------------------------------------------------
+// O catalogo EMBARCADO (deploy/app/art/catalogo.txt): titulo, cartaz, backdrop,
+// generos e sinopse de verdade e coerentes entre si. So direcao, elenco, nota e
+// progresso sao de exemplo (o arquivo nao os tem).
 
-typedef struct {
-  const char *titulo, *genero, *meta, *poster, *tipo, *direcao, *ator;
-  int nota, progresso;
-} Linha;
-static const Linha CAT[] = {
-  { "The Prestige", "Filme  ·  Drama  ·  Mistério", "2006  ·  130 min", "02", "movie", "Lena Hart", "Tomás Weber", 85, 96 },
-  { "Frequency", "Filme  ·  Crime  ·  Drama", "2000  ·  118 min", "05", "movie", "Iris Moon", "Paulo Vidal", 72, 96 },
-  { "Prisoners", "Filme  ·  Crime  ·  Drama", "2013  ·  153 min", "09", "movie", "Iris Moon", "Tomás Weber", 81, 45 },
-  { "The Martian", "Filme  ·  Aventura  ·  Drama", "2015  ·  141 min", "12", "movie", "Rui Sato", "Ana Kowalski", 80, 96 },
-  { "3 Body Problem", "Série  ·  Ficção científica  ·  Mistério", "2024", "15", "series", "", "Ana Kowalski", 76, 45 },
-  { "Lost", "Série  ·  Mistério  ·  Aventura", "2004", "21", "series", "", "Paulo Vidal", 83, 0 },
-  { "The Mist", "Série  ·  Ficção científica  ·  Mistério", "2017", "19", "series", "", "Tomás Weber", 64, 0 },
-  { "Maniac", "Série  ·  Comédia  ·  Drama", "2018", "39", "series", "", "Ana Kowalski", 77, 0 },
-  { "Project Hail Mary", "Filme  ·  Aventura  ·  Ficção científica", "2026  ·  157 min", "13", "movie", "Rui Sato", "Paulo Vidal", 84, 0 },
-  { "From", "Série  ·  Drama  ·  Terror", "2022", "04", "series", "", "Paulo Vidal", 77, 0 },
-  { "Space/Time", "Filme  ·  Ficção científica  ·  Mistério", "2025  ·  90 min", "14", "movie", "Lena Hart", "Ana Kowalski", 61, 0 },
-  { "Mr. K", "Filme  ·  Drama  ·  Mistério", "2025  ·  96 min", "38", "movie", "Lena Hart", "Tomás Weber", 66, 0 },
-  { "Locke & Key", "Série  ·  Fantasia  ·  Drama", "2020", "27", "series", "", "Tomás Weber", 73, 0 },
-  { "WandaVision", "Série  ·  Ficção científica  ·  Mistério", "2021", "31", "series", "", "Ana Kowalski", 79, 0 },
-  { "Fallout", "Série  ·  Ação  ·  Aventura", "2024", "00", "series", "", "Paulo Vidal", 82, 0 },
-  { "Extrapolations", "Série  ·  Drama  ·  Ficção científica", "2023", "17", "series", "", "Ana Kowalski", 60, 0 },
-  { "The Umbrella Academy", "Série  ·  Ação  ·  Ficção científica", "2019", "35", "series", "", "Paulo Vidal", 76, 0 },
-  { "IT: Welcome to Derry", "Série  ·  Drama  ·  Mistério", "2025", "29", "series", "", "Tomás Weber", 78, 0 },
-  { "Zodiac", "Filme  ·  Crime  ·  Mistério", "2007  ·  157 min", "07", "movie", "Iris Moon", "Paulo Vidal", 77, 0 },
-  { "Severance", "Série  ·  Drama  ·  Mistério", "2022", "23", "series", "", "Ana Kowalski", 87, 0 },
-  { "Dark Comedy Night", "Filme  ·  Comédia  ·  Crime", "2019  ·  101 min", "33", "movie", "Rui Sato", "Paulo Vidal", 70, 0 },
-};
-#define NCAT (int)(sizeof CAT / sizeof CAT[0])
+static int indiceDe(const char *titulo) {
+  int i;
+  for (i = 0; i < cat_n(); i++) if (!strcmp(cat_item(i)->titulo, titulo)) return i;
+  return -1;
+}
 
 static void semearCatalogo(void) {
-  static CatItem itens[NCAT];
-  int i;
+  static CatItem itens[64];
+  static const char *const direcao[] = { "Lena Hart", "Iris Moon", "Rui Sato", "" };
+  static const char *const ator[] = { "Tomás Weber", "Paulo Vidal", "Ana Kowalski" };
+  static const struct { const char *t; int p; } prog[] = {
+    { "The Prestige", 96 }, { "Frequency", 96 }, { "Prisoners", 45 },
+    { "The Martian", 96 }, { "3 Body Problem", 45 } };
+  char linha[2048];
+  FILE *f = fopen("deploy/app/art/catalogo.txt", "r");
+  int n = 0, k;
+  assert(f);
   memset(itens, 0, sizeof itens);
-  for (i = 0; i < NCAT; i++) {
-    CatItem *c = &itens[i];
-    snprintf(c->imdb, sizeof c->imdb, "tt-exp-%02d", i);
-    snprintf(c->tipo, sizeof c->tipo, "%s", CAT[i].tipo);
-    snprintf(c->titulo, sizeof c->titulo, "%s", CAT[i].titulo);
-    snprintf(c->genero, sizeof c->genero, "%s", CAT[i].genero);
-    snprintf(c->meta, sizeof c->meta, "%s", CAT[i].meta);
-    snprintf(c->poster, sizeof c->poster, "deploy/app/art/poster/%s.jpg", CAT[i].poster);
-    snprintf(c->direcao, sizeof c->direcao, "%s", CAT[i].direcao);
-    snprintf(c->elenco[0].nome, sizeof c->elenco[0].nome, "%s", CAT[i].ator);
+  while (n < 64 && fgets(linha, sizeof linha, f)) {
+    char *campo[8] = { 0 }, *p = linha;
+    CatItem *c = &itens[n];
+    int nc = 0;
+    linha[strcspn(linha, "\r\n")] = 0;
+    while (nc < 8) { campo[nc++] = p; p = strchr(p, '|'); if (!p) break; *p++ = 0; }
+    if (nc < 8) continue;
+    snprintf(c->imdb, sizeof c->imdb, "tt-exp-%02d", n);
+    snprintf(c->tipo, sizeof c->tipo, "%s", strncmp(campo[4], "Programa", 8) ? "movie" : "series");
+    snprintf(c->titulo, sizeof c->titulo, "%s", campo[3]);
+    snprintf(c->genero, sizeof c->genero, "%s", campo[4]);
+    snprintf(c->meta, sizeof c->meta, "%s", campo[5]);
+    snprintf(c->sinopse, sizeof c->sinopse, "%s", campo[7]);
+    snprintf(c->poster, sizeof c->poster, "deploy/app/art/%s", campo[1]);
+    snprintf(c->backdrop, sizeof c->backdrop, "deploy/app/art/%s", campo[0]);
+    if (!strcmp(c->tipo, "movie"))
+      snprintf(c->direcao, sizeof c->direcao, "%s", direcao[n % 4]);
+    snprintf(c->elenco[0].nome, sizeof c->elenco[0].nome, "%s", ator[n % 3]);
     c->nElenco = 1;
-    c->nota = CAT[i].nota;
-    c->progresso = CAT[i].progresso;
+    c->nota = 61 + (n * 7) % 27;
+    for (k = 0; k < (int)(sizeof prog / sizeof prog[0]); k++)
+      if (!strcmp(prog[k].t, c->titulo)) c->progresso = prog[k].p;
+    n++;
   }
-  cat_definir_tudo(itens, NCAT, NULL, 0);
+  fclose(f);
+  assert(n >= 30);
+  cat_definir_tudo(itens, n, NULL, 0);
 }
 
 static void focoPublicado(char *dst, size_t n, int *grupos) {
@@ -189,17 +190,41 @@ int main(int argc, char **argv) {
   assert(gfx_iniciar());
   assert(txt_iniciar("deploy/app", 1));
   tex_iniciar(64);
+  gfx_icones_dir("deploy/app/art");
   gfx_tex_esquecer(0);
   semearCatalogo();
 
   // Os climas saem do catalogo, sem rede: o primeiro (maior afinidade) tem de
   // ter titulos.
+  int primeiroClima;
   { static MapaClimas cl;
     unsigned rev = 0;
+    int i, f = 0, se = 0, soma = 0;
     mapa_climas_pedir();
     assert(mapa_climas_copiar(&cl, &rev));
-    assert(cl.n == MAPA_CLIMA_N && cl.c[0].n > 0 && cl.c[0].afinidade >= cl.c[1].afinidade); }
+    assert(cl.n == MAPA_CLIMA_N && cl.c[0].n > 0 && cl.c[0].afinidade >= cl.c[1].afinidade);
+    primeiroClima = cl.c[0].id;
+    // Contagem por tipo (filtro Filmes/Series da TV): sem /discover, soma o total.
+    for (i = 0; i < cl.n; i++) {
+      assert(cl.c[i].filmes + cl.c[i].series == cl.c[i].total);
+      f += cl.c[i].filmes > 0; se += cl.c[i].series > 0; soma += cl.c[i].total;
+    }
+    assert(f > 0 && se > 0 && soma > 0); }
 
+  // NUVIO_SHOT_TEAL=1: o acento mais proximo do teal do mock-up, pela regua
+  // de cores do menu rapido (o selected_theme do arquivo nao vale aqui).
+  if (getenv("NUVIO_SHOT_TEAL") && *getenv("NUVIO_SHOT_TEAL") == '1') {
+    int i, melhor = -1; float nota = -9.0f;
+    for (i = 0; i < 18; i++) {
+      float r, g, b, n;
+      ajustes_rapido_cor(i, &r, &g, &b);
+      n = g + b - 2.0f * r - fabsf(g - b);
+      if (n > nota) { nota = n; melhor = i; }
+    }
+    if (melhor >= 0) ajustes_rapido_cor_definir(melhor);
+  }
+  { float ar, ag, ab; ajustes_acento(&ar, &ag, &ab);
+    printf("explorar_shot: acento %.2f %.2f %.2f\n", ar, ag, ab); }
   explorar_iniciar();
   // NUVIO_VIDRO_TELAS=<dir> (tests/vidro_telas.sh): glass budget, climates.
   if (vt_ligado()) {
@@ -212,8 +237,18 @@ int main(int argc, char **argv) {
     return vtFalhas ? 1 : 0;
   }
   quadros(90, "1-climas");
+  // TV: o foco nasce no botao do destaque, que abre o clima de maior afinidade.
+  { int sec = -1, idx = -1;
+    explorar_tv_foco(&sec, &idx);
+    assert(sec == 0 && idx == 0); }
   tecla(SDLK_RETURN);
+  assert(explorar_clima_aberto() == primeiroClima);
   quadros(70, "2-clima");
+  // A segunda fileira (ja vistos): mesmo tamanho, com selo; volta para a primeira.
+  tecla(SDLK_DOWN);
+  quadros(50, "2b-clima-vistos");
+  tecla(SDLK_UP);
+  quadros(20, NULL);
 
   tecla(SDLK_RETURN);
   quadros(70, "3-vizinhanca");
@@ -239,7 +274,7 @@ int main(int argc, char **argv) {
   // Entrada pelo Detalhe: a toca comeca no titulo da pagina.
   explorar_iniciar();
   { MapaObra o;
-    assert(mapa_obra_do_catalogo(2, &o));
+    assert(mapa_obra_do_catalogo(indiceDe("Prisoners"), &o));
     explorar_abrir_titulo(&o); }
   quadros(70, "6-detalhe");
   focoPublicado(volta, sizeof volta, &grupos);
@@ -247,7 +282,46 @@ int main(int argc, char **argv) {
   // Voltar no primeiro degrau devolve a pagina do titulo.
   tecla(SDLK_ESCAPE);
   { int idx = -1;
-    assert(explorar_pediu_abrir(&idx) && idx == 2); }
+    assert(explorar_pediu_abrir(&idx) && idx == indiceDe("Prisoners")); }
+
+  // TV: a pagina de climas do mock-up, secao por secao, pelo D-pad.
+  explorar_iniciar();
+  quadros(40, NULL);
+  { int sec, idx, aberto;
+    tecla(SDLK_RIGHT);                      // segundo destaque (pontos)
+    quadros(40, "7-destaque2");
+    tecla(SDLK_DOWN);                       // colecoes
+    explorar_tv_foco(&sec, &idx); assert(sec == 1 && idx == 0);
+    tecla(SDLK_RIGHT);
+    quadros(40, "8-colecoes");
+    explorar_tv_foco(&sec, &idx); assert(sec == 1 && idx == 1);
+    tecla(SDLK_DOWN);                       // continuar explorando (ha progresso)
+    explorar_tv_foco(&sec, &idx); assert(sec == 2 && idx == 0);
+    quadros(40, "9-continuar");
+    tecla(SDLK_DOWN);                       // filtros
+    explorar_tv_foco(&sec, &idx); assert(sec == 3 && idx == 0);
+    tecla(SDLK_RIGHT); tecla(SDLK_RETURN);  // Filmes
+    quadros(40, "10-filtro-filmes");
+    tecla(SDLK_RIGHT); tecla(SDLK_RETURN);  // Series
+    tecla(SDLK_LEFT); tecla(SDLK_LEFT); tecla(SDLK_RETURN);   // Todos de novo
+    tecla(SDLK_DOWN);                       // grade
+    explorar_tv_foco(&sec, &idx); assert(sec == 4 && idx == 0);
+    tecla(SDLK_DOWN); tecla(SDLK_RIGHT);
+    explorar_tv_foco(&sec, &idx); assert(sec == 4 && idx == 5);
+    quadros(50, "11-grade");
+    // Ordem editorial na grade: a posicao 5 e o clima 5 ("Família complicada").
+    tecla(SDLK_RETURN);
+    aberto = explorar_clima_aberto();
+    assert(aberto == 5);
+    tecla(SDLK_ESCAPE);                     // volta com o foco onde estava
+    assert(explorar_clima_aberto() == -1);
+    explorar_tv_foco(&sec, &idx); assert(sec == 4 && idx == 5);
+    // Para cima ate o banner, e Esquerda na borda devolve a barra lateral.
+    { int k; for (k = 0; k < 8; k++) tecla(SDLK_UP); }
+    explorar_tv_foco(&sec, &idx); assert(sec == 0);
+    (void)explorar_quer_sair();
+    tecla(SDLK_LEFT); tecla(SDLK_LEFT);
+    assert(explorar_quer_sair()); }
 
   printf("explorar_shot: raiz=%s -> %s -> %s; capturas gravadas\n", raiz, passo1, passo2);
   explorar_encerrar();

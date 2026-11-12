@@ -655,6 +655,21 @@ int trakt_cw_meta_resolvido(const char *id) {
   pthread_mutex_unlock(&cwMetaTrava); return found;
 }
 
+// Subset-linked builds without cwordem.c's Stage E store: record the instant
+// only, exactly as before Stage E (the real version keeps the raw value).
+// Subset-linked builds without descoberta.c: no add-on answer, so the existing
+// source decides, as before Stage E.
+__attribute__((weak)) int desc_lancamento_addon(const char *tipo, const char *id, int t, int e,
+                                                char *dst, size_t n) {
+  (void)tipo; (void)id; (void)t; (void)e;
+  if (dst && n) dst[0] = 0;
+  return -1;
+}
+__attribute__((weak)) void cwo_marcar_estreia_cru(const char *id, const char *cru) {
+  long long ms = js_ms_iso(cru);
+  cwo_marcar_estreia(id, ms > 0 ? ms : CWO_SEM_DATA);
+}
+
 static int enfeitar(CatItem *d, const char *tipo, uint64_t sessao) {
   if (!nv_perfil_sessao_atual(sessao)) return 0;
   cwMetaEstado(d->imdb, sessao, 0);
@@ -800,10 +815,32 @@ static int enfeitar(CatItem *d, const char *tipo, uint64_t sessao) {
   if (d->progresso == 0 && d->temporada >= 0 && d->episodio > 0 && !strcmp(tipo, "series")) {
     char quando[40] = "";
     long long ms;
-    if (metaep_lancamento(epc, d->temporada, d->episodio, quando, sizeof quando)) {
+    // STAGE E: the date is the one the USER'S METADATA ADD-ON gives (regular
+    // Nuvio: getMetaFromAllAddons + selectEpisodeReleaseValue without TMDB).
+    // The add-on listing the episode without a date means no date. Only when
+    // no add-on answers or none lists the episode does the existing source
+    // (catalog.nuvio.tv, then Cinemeta) still decide.
+    int doAddon = desc_lancamento_addon("series", serie, d->temporada, d->episodio,
+                                        quando, sizeof quando);
+    if (doAddon == 0) {
+      if (nv_perfil_sessao_travar(sessao)) {
+        cwo_marcar_estreia(d->imdb, CWO_SEM_DATA); nv_perfil_sessao_destravar();
+      }
+      // Same rule as below for an undated account season rollover.
+      if (daConta && virou) {
+        printf("[trakt] a seguir da conta %s: temporada nova sem data no addon de metadados; fora\n",
+               d->imdb);
+        free(corpo); free(corpoCine);
+        return 0;
+      }
+    } else if (doAddon == 1 || metaep_lancamento(epc, d->temporada, d->episodio, quando, sizeof quando)) {
       ms = js_ms_iso(quando);
       if (nv_perfil_sessao_travar(sessao)) {
-        cwo_marcar_estreia(d->imdb, ms > 0 ? ms : CWO_SEM_DATA); nv_perfil_sessao_destravar();
+        // Stage E: the raw value, so the official date rules can tell a plain
+        // date from an instant (cwo_marcar_estreia_cru -> epdata.h).
+        if (ms > 0) cwo_marcar_estreia_cru(d->imdb, quando);
+        else cwo_marcar_estreia(d->imdb, CWO_SEM_DATA);
+        nv_perfil_sessao_destravar();
       }
       if (ms <= 0)
         printf("[trakt] estreia: %s sem released/firstAired no Cinemeta (\"%s\")\n",

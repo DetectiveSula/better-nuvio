@@ -38,16 +38,22 @@ int main(void) {
  assert(ajSceneForCategory(5)==AJS_REPRODUCAO);
  assert(ajSceneForOption(AJ_LEG_LINGUA)==AJS_IDIOMAS);
  assert(ajSceneForOption(AJ_TMDB_EPS)==AJS_TITULO);
+ assert(counts[AJ_TMDB_CHAVE_LOCAL]==1&&category[AJ_TMDB_CHAVE_LOCAL]==6);
+ assert(ajSceneForOption(AJ_TMDB_CHAVE_LOCAL)==AJS_TITULO);
  assert(ajSceneForOption(AJ_XTREAM_CONEXOES)==AJS_TVAOVIVO);
 '''
 routing=json.loads((ROOT/'tests/fixtures/settings-restoration/stage-b-routing.json').read_text())
 assert set(routing)=={'AJ_FALHA_PROVEDORES','AJ_FALHA_PROVEDOR_ORDEM','AJ_DISCORD'}
 assert all(x['to']=='Integrations' for x in routing.values())
+presentation_overrides={'AJ_FILTROS_FONTES':{'category':'Integrations'},'AJ_PROF_BRILHO':{'advanced':0}}
+# Custom provider configuration is now adjacent to Custom posters in Layout.
+for option in ('AJ_POSTER_INST','AJ_POSTER_TOKEN','AJ_POSTER_EXTRA','AJ_POSTER_CHAVE','AJ_POSTER_MODELO','AJ_POSTER_TESTAR'):
+    presentation_overrides[option]={'category':'Layout','advanced':0}
 categories=['Account','Switch Profile','Appearance','Layout','Content & Discovery','Playback','Integrations','Tracking','Notifications','Advanced','About']
 for r in records:
     unit += '#if ' + r['gate'] + '\n'
     unit += 'assert(counts[%s]==1); assert(ajSceneForOption(%s)==%s); assert(ajArtBlockForOption(%s)==%d);\n' % (r['id'], r['id'], r['scene'], r['id'], r['block'])
-    unit += 'assert(category[%s]==%d); assert(advanced[%s]==%d);\n' % (r['id'], categories.index(routing.get(r['id'],{}).get('to',r['category'])), r['id'], r['advanced'])
+    unit += 'assert(category[%s]==%d); assert(advanced[%s]==%d);\n' % (r['id'], categories.index(presentation_overrides.get(r['id'],{}).get('category',routing.get(r['id'],{}).get('to',r['category']))), r['id'], presentation_overrides.get(r['id'],{}).get('advanced',r['advanced']))
     unit += '#endif\n'
 unit += 'return 0;}\n'
 import tempfile
@@ -68,6 +74,8 @@ pairs={decode(a):decode(b) for a,b in re.findall(r'\{\s*('+string+')\s*,\s*('+st
 extras={decode(a) for a,b in re.findall(r'\{\s*('+string+')\s*,\s*('+string+')\s*\}', (ROOT/'src/idioma.c').read_text())}
 stage_c_english=set(json.loads((ROOT/'tests/fixtures/settings-restoration/stage-c-english.json').read_text()))
 stage_c_english.update(json.loads((ROOT/'tests/fixtures/settings-restoration/stage-d-optin-english.json').read_text()))
+stage_c_english.update(json.loads((ROOT/'tests/fixtures/settings-restoration/stage-g-english.json').read_text()))
+stage_c_english.update(json.loads((ROOT/'tests/fixtures/settings-restoration/expansion-english.json').read_text()))
 technical={'Dolby Vision','Dolby Atmos','TMDB','MDBList','IMDb','Letterboxd','MyAnimeList',
 'Discord','Xtream','M3U','Stalker','IMDb + TMDB','HLS (.m3u8)','TS (.ts)','Chips',
 'SpatialPosters','RPDB','YouTube','English','Inter','LG Display','Droid Sans','Montserrat',

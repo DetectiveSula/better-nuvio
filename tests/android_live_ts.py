@@ -6,13 +6,26 @@ import tempfile
 import zipfile
 
 root = Path(__file__).resolve().parent.parent
-cache = Path.home() / '.gradle/caches/modules-2/files-2.1'
-jdk = next((Path.home() / '.local/jdks').glob('jdk-17*/Contents/Home'))
+cache = Path(os.environ.get('GRADLE_USER_HOME', str(Path.home() / '.gradle'))) / 'caches/modules-2/files-2.1'
+jdk = Path(os.environ['JAVA_HOME']) if os.environ.get('JAVA_HOME') else next(
+    (Path.home() / '.local/jdks').glob('jdk-17*/Contents/Home'), None)
+if jdk is None and Path('/usr/libexec/java_home').is_file():
+    jdk = Path(subprocess.check_output(['/usr/libexec/java_home', '-v', '17'], text=True).strip())
+if jdk is None or not (jdk / 'bin/javac').is_file():
+    raise RuntimeError('JDK 17 is required: set JAVA_HOME to the installed JDK')
+def cached_jar(pattern):
+    # A Gradle cache can also contain sources/javadoc artifacts. Those are not
+    # executable dependencies, even when glob happens to return them first.
+    matches = sorted(p for p in cache.glob(pattern)
+                     if not p.name.endswith(('-sources.jar', '-javadoc.jar')))
+    if not matches:
+        raise RuntimeError(f'Missing cached test dependency: {pattern}; run the Android unit-test dependency setup')
+    return matches[0]
 compiler = list(cache.glob('org.jetbrains.kotlin/*/2.0.21/*/*.jar'))
 compiler += list(cache.glob('org.jetbrains.intellij.deps/trove4j/*/*/*.jar'))
 compiler += list(cache.glob('org.jetbrains/annotations/13.0/*/*.jar'))
 compiler += list(cache.glob('org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm/*/*/*.jar'))
-stdlib = next(cache.glob('org.jetbrains.kotlin/kotlin-stdlib/2.0.21/*/*.jar'))
+stdlib = cached_jar('org.jetbrains.kotlin/kotlin-stdlib/2.0.21/*/*.jar')
 sdk = Path(os.environ.get('ANDROID_HOME', str(Path.home() / 'Library/Android/sdk'))) / 'platforms/android-35/android.jar'
 kt = root / 'android/app/src/main/java/space/nuvio/nativelegacy'
 test = root / 'android/app/src/test/java'
@@ -27,7 +40,7 @@ with tempfile.TemporaryDirectory(prefix='nuvio-live-ts-') as directory:
         deps.append(jar)
     for pattern in ('junit/junit/4.13.2/*/*.jar', 'org.hamcrest/hamcrest-core/1.3/*/*.jar',
                     'com.google.guava/guava/*/*/*.jar', 'androidx.annotation/annotation-jvm/*/*/*.jar'):
-        deps.append(next(cache.glob(pattern)))
+        deps.append(cached_jar(pattern))
     aar = next(cache.glob('androidx.annotation/annotation-experimental/*/*/*.aar'))
     jar = work / 'annotation-experimental.jar'
     with zipfile.ZipFile(aar) as archive:

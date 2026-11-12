@@ -25,6 +25,7 @@
 // So para a cache UNICA de manifesto (desc_manifesto_cache_obter/guardar): ver
 // a nota grande em sondar(), mais abaixo.
 #include "descoberta.h"
+#include "catordem.h"
 #include "legextras.h"
 #include "watchstate.h"
 #include "watchstate_envio.h"
@@ -743,7 +744,10 @@ void addons_catalogo_chave(const char *id, const char *base, const char *tipo,
     nv_addon_chave(base, instance, sizeof instance);
     id = instance;
   }
-  snprintf(dst, tam, "%s_%s_%s", id, tipo, catalogo);
+  // Same type normalisation as the synced snapshot (catalogTypeKey).
+  char tipoChave[32];
+  catordem_tipo_chave(tipo, tipoChave, sizeof tipoChave);
+  snprintf(dst, tam, "%s_%s_%s", id, tipoChave, catalogo);
 }
 
 const char *addons_id_manifesto(int i) {

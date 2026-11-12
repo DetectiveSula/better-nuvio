@@ -214,7 +214,14 @@ static char epShow[24];
 static int  epPedTemp, epPedNum;
 static NvPerfilSessao epComentSessao;
 static int  nComent;
-static struct { char titulo[120], ano[8], imdb[16], poster[NV_ARTE_URL_MAX]; } rel[EX_REL_MAX];
+// fundo/logo/sinopse/generos/nota/duracao: post-play shows one recommendation
+// at a time over its own backdrop (official Nuvio TV layout); the detail grid
+// still reads only titulo/ano/imdb/poster.
+static struct {
+  char titulo[120], ano[8], imdb[16], poster[NV_ARTE_URL_MAX];
+  char fundo[NV_ARTE_URL_MAX], logo[NV_ARTE_URL_MAX], sinopse[480], generos[64];
+  int nota, notaFonte, duracao;   // nota 0..100 (-1 = none), duracao in minutes
+} rel[EX_REL_MAX];
 // Vistos: um bit por episodio, ate 40 episodios em 20 temporadas. Vetor fixo
 // porque a consulta acontece no DESENHO de cada card, a cada quadro — uma
 // busca em lista ali custaria mais que a resposta.
@@ -237,6 +244,52 @@ static int epsBase;
 // "proximo episodio" e da matriz `vistos` ficou velho e o mapa manda.
 static unsigned epsRev;
 static int  nRel;
+
+// TMDB movie/TV genre ids -> English names (desc_genero_pt translates them).
+static const char *generoTmdb(long id) {
+  static const struct { long id; const char *nome; } G[] = {
+    { 28, "Action" }, { 12, "Adventure" }, { 16, "Animation" }, { 35, "Comedy" },
+    { 80, "Crime" }, { 99, "Documentary" }, { 18, "Drama" }, { 10751, "Family" },
+    { 14, "Fantasy" }, { 36, "History" }, { 27, "Horror" }, { 10402, "Music" },
+    { 9648, "Mystery" }, { 10749, "Romance" }, { 878, "Science Fiction" },
+    { 53, "Thriller" }, { 10752, "War" }, { 37, "Western" }, { 10759, "Action" },
+    { 10762, "Kids" }, { 10765, "Science Fiction" }, { 10768, "War" }, { 10764, "Reality-TV" },
+  };
+  size_t i;
+  for (i = 0; i < sizeof G / sizeof *G; i++) if (G[i].id == id) return G[i].nome;
+  return NULL;
+}
+// "a, b" from the first two genres; skips duplicates and unknown ids.
+static void juntarGenero(char *dst, size_t n, const char *g) {
+  size_t k = strlen(dst);
+  if (!g || !*g || strstr(dst, g)) return;
+  if (k && strchr(dst, ',') ) return;   // already two
+  snprintf(dst + k, n - k, "%s%s", k ? ", " : "", g);
+}
+// Trakt slug ("science-fiction") -> "Science Fiction".
+static void generoTrakt(const char *slug, char *out, size_t n) {
+  size_t i, k = 0; int ini = 1;
+  for (i = 0; slug[i] && k + 1 < n; i++) {
+    char c = slug[i] == '-' ? ' ' : slug[i];
+    out[k++] = ini && c >= 'a' && c <= 'z' ? (char)(c - 32) : c;
+    ini = c == ' ';
+  }
+  out[k] = 0;
+}
+// Trakt image path without scheme, ".webp" stripped (see the poster note below).
+static void imagemTrakt(const char *img, const char *fim, const char *chave, char *out, size_t n) {
+  const char *v = (img && img < fim) ? js_array(img, fim, chave) : NULL;
+  out[0] = 0;
+  if (v && *v == '"') {
+    const char *e = strchr(v + 1, '"');
+    size_t k = e ? (size_t)(e - v - 1) : 0, t;
+    if (k > 0 && k + 9 < n) {
+      memcpy(out, "https://", 8); memcpy(out + 8, v + 1, k); out[8 + k] = 0;
+      t = strlen(out);
+      if (t > 5 && !strcmp(out + t - 5, ".webp")) out[t - 5] = 0;
+    }
+  }
+}
 static struct { int numero; int nEps; struct { int ep, nota; } eps[EX_EP_MAX]; }
             temps[EX_TEMP_MAX];
 static int  nTemps;
@@ -262,6 +315,10 @@ static int  fichaDur;
 // neste corpo; o parse antigo os jogava fora, como jogava fora status e
 // runtime do filme antes da ficha tecnica existir.
 static char agStatus[32], agDataProx[16], agDataUlt[16], agNomeEp[120];
+// O NOME e o CARTAZ da serie, da RAIZ do mesmo corpo: gravados junto com a
+// data, a Agenda nao abre a serie como "Serie" e retangulo cinza (Ghosts,
+// 12/11/2026 — a serie vinha do progresso, fora do catalogo).
+static char agTitulo[160], agPoster[300];
 static int  agTemp, agEp;
 static struct { char yt[16], nome[80], mini[80]; int idiomaPreferido; } trailer[EX_TRAILER_MAX];
 static int  nTrailer;
@@ -285,6 +342,7 @@ static time_t heroTrailerTentativaEm;
 static pthread_t heroTrailerThread;
 static pthread_cond_t heroTrailerCv = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t heroTrailerTrava = PTHREAD_MUTEX_INITIALIZER;
+static void idiomaOrigGuardar(const char *id, const char *iso);   // Stage H, below
 // Um vazio pode ser uma falha passageira (timeout, 5xx, Wi-Fi acordando).
 // A mesma obra pode tentar de novo depois deste intervalo; resultado valido
 // continua sendo idempotente e nao repete a viagem.
@@ -321,6 +379,10 @@ static int sessaoDoFioAtual(void) {
   return nv_perfil_sessao_atual(p ? *p : 0);
 }
 static int  serieEmCurso, seriePedido, fioVivo;
+static int relacionadosPedido;
+static int pedirRelacionadosTmdb(int serie) {
+  return ajustes_tmdb_mais() || (!serie && ajustes_posplay_recomendacoes());
+}
 // DOIS FIOS PERMANENTES, UMA GERACAO POR PEDIDO (19/09).
 //
 // Antes cada titulo aberto criava um fio novo que fazia de 7 a 9 pedidos EM
@@ -1095,14 +1157,14 @@ static void *buscar(void *arg) {
         (serie ||
          (ajustes_tmdb_ficha() || ajustes_tmdb_datas() ||
           ajustes_tmdb_trailers() || ajustes_tmdb_col() ||
-          ajustes_tmdb_prod()))) {
+          ajustes_tmdb_prod() || pedirRelacionadosTmdb(serie)))) {
       // `append_to_response` faz o TMDB devolver extras DENTRO deste mesmo
       // corpo. O conjunto segue os toggles da conta: release_dates responde a
       // tmdb_use_release_dates, videos a tmdb_use_trailers, recommendations a
       // tmdb_use_more_like_this. O corpo sempre traz status, runtime e as
       // produtoras/redes — ler nao custa viagem nenhuma.
       urlFicha(url, sizeof url, serie, idT, chave, desc_tmdb_idioma(),
-               ajustes_tmdb_datas(), ajustes_tmdb_trailers(), ajustes_tmdb_mais(), "");
+               ajustes_tmdb_datas(), ajustes_tmdb_trailers(), pedirRelacionadosTmdb(serie), "");
       corpo = rede_baixar(url, 15);
       if (corpo && ajustes_tmdb_trailers() &&
           (!PREF_AUDIO()[0] || !strcmp(PREF_AUDIO(), "~"))) {
@@ -1111,7 +1173,7 @@ static void *buscar(void *arg) {
         if (original[0] && strcmp(original, "en")) {
           char *comOriginal;
           urlFicha(url, sizeof url, serie, idT, chave, desc_tmdb_idioma(),
-                   ajustes_tmdb_datas(), 1, ajustes_tmdb_mais(), original);
+                   ajustes_tmdb_datas(), 1, pedirRelacionadosTmdb(serie), original);
           comOriginal = rede_baixar(url, 15);
           if (comOriginal) { free(corpo); corpo = comOriginal; }
         }
@@ -1153,7 +1215,14 @@ static void *buscar(void *arg) {
           const char *b = strstr(corpo, "\"next_episode_to_air\"");
           agTemp = agEp = 0;
           agDataProx[0] = agNomeEp[0] = agDataUlt[0] = 0;
+          agTitulo[0] = agPoster[0] = 0;
           js_texto(corpo, fimC, "status", agStatus, sizeof agStatus);
+          // Chaves da RAIZ: "name" e "poster_path" tambem existem dentro dos
+          // episodios e das temporadas.
+          js_texto_raiz(corpo, "name", agTitulo, sizeof agTitulo);
+          { char cam[200] = "";
+            if (js_texto_raiz(corpo, "poster_path", cam, sizeof cam) && cam[0] == '/')
+              snprintf(agPoster, sizeof agPoster, "https://image.tmdb.org/t/p/w342%s", cam); }
           if (b) {
             const char *o = strchr(b, '{');
             const char *nulo = strstr(b, "null");
@@ -1327,13 +1396,13 @@ static void *buscar(void *arg) {
         // "tmdb:", como o credito de ator ja faz. O Trakt continua sendo a
         // resposta quando este append falhar ou vier vazio — ver a guarda
         // `!nRel` na consulta de relacionados logo abaixo.
-        if (ajustes_tmdb_mais()) {
+        if (pedirRelacionadosTmdb(serie)) {
           const char *rec = strstr(corpo, "\"recommendations\"");
           const char *p2 = rec ? js_array(rec, fimC, "results") : NULL;
           int nr = 0;
           while (p2 && nr < EX_REL_MAX) {
             const char *pf = js_fim(p2);
-            char t[120] = "", dt[16] = "", pp[200] = "";
+            char t[120] = "", dt[16] = "", pp[200] = "", bd[200] = "", sin[480] = "";
             long tid;
             js_texto(p2, pf, serie ? "name" : "title", t, sizeof t);
             js_texto(p2, pf, serie ? "first_air_date" : "release_date",
@@ -1344,8 +1413,30 @@ static void *buscar(void *arg) {
                        "https://image.tmdb.org/t/p/w342%s", pp);
               snprintf(pp, sizeof pp, "%s", url2);
             } else pp[0] = 0;
+            if (js_texto(p2, pf, "backdrop_path", bd, sizeof bd) && bd[0] == '/') {
+              char url3[230];
+              snprintf(url3, sizeof url3, "https://image.tmdb.org/t/p/w1280%s", bd);
+              snprintf(bd, sizeof bd, "%s", url3);
+            } else bd[0] = 0;
+            js_texto(p2, pf, "overview", sin, sizeof sin);
             tid = (long)js_num(p2, pf, "id", 0.0);
             if (t[0] && tid > 0) {
+              memset(&rel[nr], 0, sizeof rel[nr]);
+              snprintf(rel[nr].fundo, sizeof rel[nr].fundo, "%s", bd);
+              snprintf(rel[nr].sinopse, sizeof rel[nr].sinopse, "%s", sin);
+              { double va = js_num(p2, pf, "vote_average", 0.0);
+                rel[nr].nota = va > 0.0 ? (int)(va * 10.0 + 0.5) : -1;
+                rel[nr].notaFonte = EX_TMDB; }
+              { const char *g = strstr(p2, "\"genre_ids\"");
+                if (g && g < pf && (g = strchr(g, '[')) && g < pf) {
+                  g++;
+                  while (*g && *g != ']' && g < pf) {
+                    while (*g == ' ' || *g == ',') g++;
+                    if (*g < '0' || *g > '9') break;
+                    juntarGenero(rel[nr].generos, sizeof rel[nr].generos,
+                                 desc_genero_pt(generoTmdb(atol(g))));
+                    while (*g >= '0' && *g <= '9') g++;
+                  } } }
               snprintf(rel[nr].titulo, sizeof rel[nr].titulo, "%s", t);
               if (strlen(dt) >= 4) { memcpy(rel[nr].ano, dt, 4); rel[nr].ano[4] = 0; }
               else rel[nr].ano[0] = 0;
@@ -1377,7 +1468,7 @@ static void *buscar(void *arg) {
         // trava propria. Segurar a deste modulo durante uma escrita de arquivo
         // faria o desenho esperar o disco no fio principal.
         if (serie && (agStatus[0] || agDataProx[0]))
-          agenda_registrar(id, NULL, NULL, agStatus, agTemp, agEp, agNomeEp,
+          agenda_registrar(id, agTitulo, agPoster, agStatus, agTemp, agEp, agNomeEp,
                            agDataProx, agDataUlt);
         // TRAILER DA TEMPORADA MAIS RECENTE, quando a obra nao tem nenhum
         // (#123). Um GET a mais so nesse caso; o trailer de temporada e da
@@ -1580,11 +1671,13 @@ static void relacionadosEPublicar(const char *id, int serie, int temTrakt) {
   if (nRel == 0 && temTrakt)
   {
   snprintf(url, sizeof url,
-           "https://api.trakt.tv/%s/%s/related?limit=%d&extended=images",
+           "https://api.trakt.tv/%s/%s/related?limit=%d&extended=full,images",
            tipo, id, EX_REL_MAX);
   corpo = rede_baixar_com(url, 15, cab);
   if (corpo) {
-    struct { char t[120], a[8], i[16], po[200]; } achado[EX_REL_MAX];
+    // static: the extended fields would put ~20 KB on the network thread's stack.
+    static struct { char t[120], a[8], i[16], po[200], fa[300], lg[300], sin[480], gen[64];
+                    int nota, dur; } achado[EX_REL_MAX];
     int n = 0;
     // p+1 e nao js_prox: js_prox recebe o FIM do elemento anterior, e aqui
     // ainda nao ha anterior. Com js_prox o primeiro item era pulado e, em
@@ -1629,6 +1722,28 @@ static void relacionadosEPublicar(const char *id, int serie, int temTrakt) {
                 achado[n].po[t - 5] = 0; }
           }
         } }
+      { const char *img = strstr(p, "\"images\"");
+        imagemTrakt(img, f, "fanart", achado[n].fa, sizeof achado[n].fa);
+        imagemTrakt(img, f, "logo", achado[n].lg, sizeof achado[n].lg); }
+      achado[n].sin[0] = achado[n].gen[0] = 0;
+      js_texto(p, f, "overview", achado[n].sin, sizeof achado[n].sin);
+      { double r = js_num(p, f, "rating", 0.0);
+        achado[n].nota = r > 0.0 ? (int)(r * 10.0 + 0.5) : -1; }
+      achado[n].dur = (int)js_num(p, f, "runtime", 0.0);
+      { const char *g = strstr(p, "\"genres\"");
+        const char *v = (g && g < f) ? js_array(g, f, "genres") : NULL;
+        int q = 0;
+        while (v && *v == '"' && q < 2) {
+          char slug[40], nome[48];
+          const char *e = strchr(v + 1, '"');
+          size_t k = e ? (size_t)(e - v - 1) : 0;
+          if (!e || k >= sizeof slug) break;
+          memcpy(slug, v + 1, k); slug[k] = 0;
+          generoTrakt(slug, nome, sizeof nome);
+          juntarGenero(achado[n].gen, sizeof achado[n].gen, desc_genero_pt(nome));
+          q++;
+          v = e + 1; while (*v == ',' || *v == ' ') v++;
+        } }
       ano = js_num(p, f, "year", 0.0);
       if (ano > 1800.0) snprintf(achado[n].a, sizeof achado[n].a, "%d", (int)ano);
       else achado[n].a[0] = 0;
@@ -1640,6 +1755,12 @@ static void relacionadosEPublicar(const char *id, int serie, int temTrakt) {
     if (!strcmp(id, idPedido) && sessaoDoFioAtual()) {
       int k;
       for (k = 0; k < n; k++) {
+        memset(&rel[k], 0, sizeof rel[k]);
+        snprintf(rel[k].fundo, sizeof rel[k].fundo, "%s", achado[k].fa);
+        snprintf(rel[k].logo, sizeof rel[k].logo, "%s", achado[k].lg);
+        snprintf(rel[k].sinopse, sizeof rel[k].sinopse, "%s", achado[k].sin);
+        snprintf(rel[k].generos, sizeof rel[k].generos, "%s", achado[k].gen);
+        rel[k].nota = achado[k].nota; rel[k].notaFonte = EX_TRAKT; rel[k].duracao = achado[k].dur;
         snprintf(rel[k].titulo, sizeof rel[k].titulo, "%s", achado[k].t);
         snprintf(rel[k].ano, sizeof rel[k].ano, "%s", achado[k].a);
         snprintf(rel[k].imdb, sizeof rel[k].imdb, "%s", achado[k].i);
@@ -1750,6 +1871,7 @@ void extras_pedir(const char *imdb, int serie, long tmdbId) {
   // ("anime") abre como filme e o /meta o resolve como serie — ai os extras
   // tem de ser refeitos por /tv e /shows (detail.c repede).
   if (!strcmp(idPedido, imdb) && seriePedido == serie &&
+      relacionadosPedido == pedirRelacionadosTmdb(serie) &&
       !strcmp(audioPedido, PREF_AUDIO()) && nv_perfil_sessao_atual(sessaoPedido)) {
     printf("[vistoep] %s: extras reutilizados; fio=%d pronto=%d; sem nova consulta\n",
            imdb, fioVivo, progressoPronto);
@@ -1759,6 +1881,7 @@ void extras_pedir(const char *imdb, int serie, long tmdbId) {
   snprintf(audioPedido, sizeof audioPedido, "%s", PREF_AUDIO());
   sessaoPedido = nv_perfil_sessao_ler();
   seriePedido = serie;
+  relacionadosPedido = pedirRelacionadosTmdb(serie);
   tmdbPedido = tmdbId;
   zerarPublicado();
   snprintf(idEmCurso, sizeof idEmCurso, "%s", imdb);
@@ -2190,6 +2313,7 @@ static void *lacoHeroTrailer(void *ignorado) {
           if (corpo) {
             char original[8] = "";
             js_texto_raiz(corpo, "original_language", original, sizeof original);
+            idiomaOrigGuardar(id, original);   // Stage H: trailer subtitle-safe crop
             if ((!PREF_AUDIO()[0] || !strcmp(PREF_AUDIO(), "~")) &&
                 original[0] && strcmp(original, "en")) {
               char *comOriginal;
@@ -2350,6 +2474,39 @@ int extras_n_estudios(void) { return nEstudio; }
 // O idioma original do titulo que esta na ficha, ou "" quando nao se sabe.
 const char *extras_idioma_original(void) { return fichaIdiomaOrig; }
 
+// Stage H (trailer subtitles): the TMDB original_language per title, cached by
+// the Home hero trailer lookup, so a Home trailer can be cropped
+// subtitle-safe (trailer_idioma_original). Small ring; "" = unknown.
+#define EX_IDIOMA_ORIG_MAX 64
+static struct { char id[24]; char iso[8]; } idiomaOrig[EX_IDIOMA_ORIG_MAX];
+static int nIdiomaOrig, proxIdiomaOrig;
+static pthread_mutex_t idiomaOrigTrava = PTHREAD_MUTEX_INITIALIZER;
+static void idiomaOrigGuardar(const char *id, const char *iso) {
+  int i;
+  if (!id || !id[0] || !iso || !iso[0]) return;
+  pthread_mutex_lock(&idiomaOrigTrava);
+  for (i = 0; i < nIdiomaOrig; i++) if (!strcmp(idiomaOrig[i].id, id)) break;
+  if (i == nIdiomaOrig) {
+    i = nIdiomaOrig < EX_IDIOMA_ORIG_MAX ? nIdiomaOrig++ : proxIdiomaOrig;
+    proxIdiomaOrig = (i + 1) % EX_IDIOMA_ORIG_MAX;
+    snprintf(idiomaOrig[i].id, sizeof idiomaOrig[i].id, "%s", id);
+  }
+  snprintf(idiomaOrig[i].iso, sizeof idiomaOrig[i].iso, "%s", iso);
+  pthread_mutex_unlock(&idiomaOrigTrava);
+}
+void extras_idioma_original_de(const char *imdb, char *dst, size_t cap) {
+  char id[24];
+  int i;
+  if (!dst || !cap) return;
+  dst[0] = 0;
+  normalizarHeroId(imdb, id, sizeof id);
+  if (!id[0]) return;
+  pthread_mutex_lock(&idiomaOrigTrava);
+  for (i = 0; i < nIdiomaOrig; i++)
+    if (!strcmp(idiomaOrig[i].id, id)) { snprintf(dst, cap, "%s", idiomaOrig[i].iso); break; }
+  pthread_mutex_unlock(&idiomaOrigTrava);
+}
+
 const char *extras_estudio_nome(int i) {
   return (i >= 0 && i < nEstudio) ? estudio[i].nome : "";
 }
@@ -2387,6 +2544,15 @@ const char *extras_relacionado_imdb(int i) {
 }
 const char *extras_relacionado_poster(int i) {
   return (i >= 0 && i < nRel) ? rel[i].poster : "";
+}
+const char *extras_relacionado_fundo(int i) { return (i >= 0 && i < nRel) ? rel[i].fundo : ""; }
+const char *extras_relacionado_logo(int i) { return (i >= 0 && i < nRel) ? rel[i].logo : ""; }
+const char *extras_relacionado_sinopse(int i) { return (i >= 0 && i < nRel) ? rel[i].sinopse : ""; }
+const char *extras_relacionado_generos(int i) { return (i >= 0 && i < nRel) ? rel[i].generos : ""; }
+int extras_relacionado_duracao(int i) { return (i >= 0 && i < nRel) ? rel[i].duracao : 0; }
+int extras_relacionado_nota(int i, int *fonte) {
+  if (fonte) *fonte = (i >= 0 && i < nRel) ? rel[i].notaFonte : 0;
+  return (i >= 0 && i < nRel && rel[i].nota > 0) ? rel[i].nota : -1;
 }
 
 int extras_ep_visto(int temporada, int episodio) {
@@ -2458,6 +2624,8 @@ void extras_shot_relacionados_ids(const char *const *titulo, const char *const *
   int i;
   nRel = n < EX_REL_MAX ? n : EX_REL_MAX;
   for (i = 0; i < nRel; i++) {
+    memset(&rel[i], 0, sizeof rel[i]);
+    rel[i].nota = -1;
     snprintf(rel[i].titulo, sizeof rel[i].titulo, "%s", titulo[i]);
     snprintf(rel[i].ano, sizeof rel[i].ano, "%s", ano[i]);
     if (imdb && imdb[i] && imdb[i][0])
@@ -2466,6 +2634,15 @@ void extras_shot_relacionados_ids(const char *const *titulo, const char *const *
       snprintf(rel[i].imdb, sizeof rel[i].imdb, "tt%07d", 100 + i);
     snprintf(rel[i].poster, sizeof rel[i].poster, "%s", poster[i]);
   }
+}
+void extras_shot_relacionado_extra(int i, const char *fundo, const char *logo, const char *sinopse,
+                                   const char *generos, int nota, int fonte, int duracao) {
+  if (i < 0 || i >= nRel) return;
+  snprintf(rel[i].fundo, sizeof rel[i].fundo, "%s", fundo ? fundo : "");
+  snprintf(rel[i].logo, sizeof rel[i].logo, "%s", logo ? logo : "");
+  snprintf(rel[i].sinopse, sizeof rel[i].sinopse, "%s", sinopse ? sinopse : "");
+  snprintf(rel[i].generos, sizeof rel[i].generos, "%s", generos ? generos : "");
+  rel[i].nota = nota; rel[i].notaFonte = fonte; rel[i].duracao = duracao;
 }
 #endif
 

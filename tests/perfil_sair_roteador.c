@@ -33,7 +33,8 @@ int main(void) {
   tela = TELA_PERFIL;
   perfil_abrir();
   perfil_definir_dados(&d);
-  tecla(SDLK_LEFT);
+  // O painel abre no dia de HOJE: a borda esquerda e o dia 0.
+  for (int i = 0; i < PERFIL_DIAS; i++) tecla(SDLK_LEFT);
   assert(perfil_quer_sair());
   assert(perfil_aberto());           // #371: ainda vivo, a barra pode abrir por cima
   // Barra proibida (PiP): o roteador manda para a Home.

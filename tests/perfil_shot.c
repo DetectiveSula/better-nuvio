@@ -26,14 +26,20 @@
 #include "text.h"
 #include "tex_cache.h"
 #include "socialvis.h"
+#include "perfilnuvio.h"
+#include "layout.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 static SDL_Window *win;
+// RETRATO (NUVIO_SHOT_RETRATO=1, build com -DNV_TOUCH_UI): celular em pe,
+// 1080 x 1920, o painel em coluna rolando (pfRetrato em perfil.c).
+static int SW = 1920, SH = 1080, retrato;
 
 static void tecla(SDL_Keycode k) {
   SDL_Event e = { 0 };
@@ -54,15 +60,15 @@ static void captura(const char *nome) {
     perfil_desenhar(SDL_GetTicks());
     rail_shot_desenhar(MENU_PERFIL);
     if (i == 89) {
-      unsigned char *pix = malloc(1920 * 1080 * 4);
+      unsigned char *pix = malloc((size_t)SW * SH * 4);
       SDL_Surface *s;
       int y;
       assert(pix);
-      glReadPixels(0, 0, 1920, 1080, GL_RGBA, GL_UNSIGNED_BYTE, pix);
-      s = SDL_CreateRGBSurfaceWithFormat(0, 1920, 1080, 32, SDL_PIXELFORMAT_RGBA32);
+      glReadPixels(0, 0, SW, SH, GL_RGBA, GL_UNSIGNED_BYTE, pix);
+      s = SDL_CreateRGBSurfaceWithFormat(0, SW, SH, 32, SDL_PIXELFORMAT_RGBA32);
       assert(s);
-      for (y = 0; y < 1080; y++)
-        memcpy((char *)s->pixels + y * s->pitch, pix + (1079 - y) * 1920 * 4, 1920 * 4);
+      for (y = 0; y < SH; y++)
+        memcpy((char *)s->pixels + y * s->pitch, pix + (size_t)(SH - 1 - y) * SW * 4, (size_t)SW * 4);
       assert(SDL_SaveBMP(s, nome) == 0);
       SDL_FreeSurface(s); free(pix);
     }
@@ -72,50 +78,83 @@ static void captura(const char *nome) {
          nome, gfx_fill, gfx_n_rect);
 }
 
-// A FORMA REAL do snapshot do trakt.c: mes de 30 dias comecando numa terca
-// (primeiroDiaSemana = 2), atividade irregular com um pico, streak em curso e
-// os avisos de recorte que o produtor sempre liga.
+// O PAINEL DE 30 DIAS montado pelo CAMINHO REAL (perfilnuvio_montar) sobre
+// vistos e progresso de mentira: os mesmos dias do mockup "Option A + C"
+// (42,5 h, maratona de From em 29/10, filmes em seis dias). Cartazes do
+// pacote de design (design/universo-2026), nenhuma URL de rede.
+static ContaVisto SV[400];
+static ProgRegistro SR[400];
+static int nSV, nSR;
+static void ev(const char *id, const char *tipo, int t, int e, long long fim, int durMin) {
+  ContaVisto *v = &SV[nSV++];
+  ProgRegistro *r = &SR[nSR++];
+  snprintf(v->id, sizeof v->id, "%s", id); snprintf(v->tipo, sizeof v->tipo, "%s", tipo);
+  v->temporada = t; v->episodio = e; v->vistoMs = fim;
+  r->perfil = 1;
+  snprintf(r->contentId, sizeof r->contentId, "%s", id); snprintf(r->tipo, sizeof r->tipo, "%s", tipo);
+  r->temporada = t; r->episodio = e; r->posSeg = r->durSeg = durMin * 60.0; r->lastWatchedMs = fim;
+}
+static long long quando(int mes, int dia, int h, int m) {
+  struct tm tm = {0};
+  tm.tm_year = 126; tm.tm_mon = mes - 1; tm.tm_mday = dia; tm.tm_hour = h; tm.tm_min = m; tm.tm_isdst = -1;
+  return (long long)mktime(&tm) * 1000;
+}
 static void montar(PerfilDados *d) {
-  static const unsigned short ATIV[30] = {
-    0,2,0,1,0,0,3, 1,0,0,0,4,1,0, 0,1,1,0,7,2,0, 0,0,1,2,3,1, 2,1,1
+  // Minutos de serie e de filme por dia, 09/10 a 07/11.
+  static const int SERIE[30] = { 0,72,18,0,48,30,54, 0,0,90,132,0,36,60, 30,150,60,114,0,0,288,84,0,0,66,120,96,54,84,72 };
+  static const int FILME[30] = { 0,0,132,0,0,156,66, 0,0,0,0,0,210,0, 0,0,108,0,0,0,0,0,0,0,0,0,0,0,120,0 };
+  static const char *SHOW[4] = { "tt9813792", "tt12637874", "tt0000101", "tt0000102" };
+  static const char *MOVIE[6] = { "tt0482571", "tt1392214", "tt11097384", "tt0000201", "tt0000202", "tt0000203" };
+  static PerfilMeta M[10];
+  static const struct { const char *id, *tit, *poster, *gen; int dur; } MD[10] = {
+    { "tt9813792", "From", "design/universo-2026/assets/poster-04.jpg", "Terror, Mistério, Drama", 50 },
+    { "tt12637874", "Fallout", "design/universo-2026/assets/poster-00.jpg", "Ficção científica, Drama", 60 },
+    { "tt0000101", "Widow's Bay", "design/universo-2026/assets/poster-01.jpg", "Mistério, Terror", 38 },
+    { "tt0000102", "Uma Série de Eventos Muito Longos com Nome Enorme", "design/universo-2026/assets/poster-02.jpg", "Drama", 30 },
+    { "tt0482571", "O Grande Truque", "design/universo-2026/assets/poster-02.jpg", "Drama, Mistério", 130 },
+    { "tt1392214", "Os Suspeitos", "design/universo-2026/assets/poster-09.jpg", "Crime, Drama", 153 },
+    { "tt11097384", "Spaceman", "design/universo-2026/assets/poster-10.jpg", "Ficção científica", 107 },
+    { "tt0000201", "Filme Quatro", "design/universo-2026/assets/poster-12.jpg", "Drama", 0 },
+    { "tt0000202", "Filme Cinco", "design/universo-2026/assets/poster-13.jpg", "Comédia", 0 },
+    { "tt0000203", "Filme Seis", "design/universo-2026/assets/poster-15.jpg", "Ação", 0 },
   };
-  static const char *TIT[4] = {
-    "Pluribus", "A Casa do Dragão", "Duna: Parte Dois",
-    "Uma Série de Eventos Muito Longos com Nome Enorme"
-  };
-  static const char *DET[4] = { "T1E6", "T2E4", "Filme", "T3E11" };
-  static const char *GEN[4] = { "Drama", "Ficção científica", "Ação", "Comédia" };
-  static const int GQ[4] = { 34, 21, 17, 9 };
-  int i;
-  memset(d, 0, sizeof *d);
+  int ep[4] = { 1, 1, 1, 1 }, filme = 0;
+  nSV = nSR = 0;
+  for (int i = 0; i < 30; i++) {
+    int mes = i < 23 ? 10 : 11, dd = i < 23 ? 9 + i : i - 22;
+    long long fim = quando(mes, dd, i == 29 ? 20 : 23, i == 29 ? 30 : 10);
+    if (FILME[i]) {
+      int dur = FILME[i] > 180 ? FILME[i] / 2 : FILME[i];
+      ev(MOVIE[filme % 6], "movie", 0, 0, quando(mes, dd, 19, 50), dur); filme++;
+      if (FILME[i] > 180) { ev(MOVIE[filme % 6], "movie", 0, 0, quando(mes, dd, 17, 30), dur); filme++; }
+    }
+    if (i == 20) {   // 29/10: a maratona de From (5 x 50 min) e um Widow's Bay
+      long long t = quando(10, 29, 18, 30);
+      for (int k = 0; k < 5; k++) { t += 55 * 60000LL; ev(SHOW[0], "series", 2, 3 + k, t, 50); }
+      ev(SHOW[2], "series", 1, 3, quando(10, 29, 17, 40), 38);
+      continue;
+    }
+    for (int m = SERIE[i], k = i % 4; m > 0; k = (k + 1) % 4) {
+      int dur = MD[k].dur;
+      ev(SHOW[k], "series", 1, ep[k]++, fim, dur);
+      fim -= (dur + 8) * 60000LL; m -= dur;
+    }
+  }
+  for (int i = 0; i < 10; i++) {
+    snprintf(M[i].id, sizeof M[i].id, "%s", MD[i].id);
+    snprintf(M[i].titulo, sizeof M[i].titulo, "%s", MD[i].tit);
+    snprintf(M[i].poster, sizeof M[i].poster, "%s", MD[i].poster);
+    snprintf(M[i].genero, sizeof M[i].genero, "%s", MD[i].gen);
+    M[i].duracaoMin = MD[i].dur;
+  }
+  // "Neste dia": Os Suspeitos, um ano antes.
+  { ContaVisto *v = &SV[nSV++];
+    snprintf(v->id, sizeof v->id, "tt1392214"); snprintf(v->tipo, sizeof v->tipo, "movie");
+    v->vistoMs = quando(11, 7, 21, 40) - 365LL * 86400000LL; }
+  perfilnuvio_montar(SV, nSV, SR, nSR, 1, M, 10, quando(11, 7, 21, 0), d);
   snprintf(d->nome, sizeof d->nome, "Henrique Rocha");
-  snprintf(d->usuario, sizeof d->usuario, "iqui27");
-  snprintf(d->periodo, sizeof d->periodo, "SETEMBRO 2026");
-  d->minutos = 2384; d->plays = 41; d->filmes = 6; d->episodios = 35;
-  d->nDias = 30; d->primeiroDiaSemana = 2;
-  for (i = 0; i < 30; i++) {
-    d->atividade[i] = ATIV[i];
-    if (ATIV[i]) d->diasAtivosMes++;
-  }
-  d->streakAtual = 3;
-  d->nGeneros = PERFIL_MAX_GENEROS;
-  for (i = 0; i < d->nGeneros; i++) {
-    snprintf(d->generos[i].nome, sizeof d->generos[i].nome, "%s", GEN[i]);
-    d->generos[i].quantidade = GQ[i];
-  }
-  d->nDestaques = PERFIL_MAX_DESTAQUES;
-  for (i = 0; i < d->nDestaques; i++) {
-    PerfilDestaque *p = &d->destaques[i];
-    snprintf(p->id, sizeof p->id, "tt000000%d", i);
-    snprintf(p->titulo, sizeof p->titulo, "%s", TIT[i % 4]);
-    snprintf(p->detalhe, sizeof p->detalhe, "%s", DET[i % 4]);
-    snprintf(p->backdrop, sizeof p->backdrop, "deploy/app/art/0%d.jpg", i);
-    p->plays = 9 - i * 2; p->minutos = 480 - i * 90;
-  }
-  // Os dois que o trakt.c sempre liga, e que faziam o aviso sair duplicado.
-  d->parcial = 1;
-  snprintf(d->aviso, sizeof d->aviso,
-           "Recorte das 100 reproduções mais recentes do mês. Durações informadas pelo Trakt.");
+  printf("  painel: %d min, %d eps, %d filmes, %d titulos, maratona %d eps, streak %d\n",
+         d->minutos, d->episodios, d->filmes, d->titulos, d->maratona.episodios, d->streakAtual);
 }
 
 int main(int argc, char **argv) {
@@ -125,18 +164,24 @@ int main(int argc, char **argv) {
   SDL_GLContext gl;
   int i;
 
+#ifdef NV_TOUCH_UI
+  if (getenv("NUVIO_SHOT_RETRATO")) {
+    retrato = 1; SW = 1080; SH = 1920;
+    layout_tela_definir(SW, SH); layout_modo_definir(1);
+  }
+#endif
   assert(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) == 0);
   IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
   win = SDL_CreateWindow("Nuvio: revisão do Perfil e Stats",
                          SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                         1920, 1080, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+                         SW, SH, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
   assert(win);
   gl = SDL_GL_CreateContext(win); assert(gl);
   SDL_GL_SetSwapInterval(0);
-  glViewport(0, 0, 1920, 1080);
-  gfx_tamanho_alvo(1920, 1080);
+  glViewport(0, 0, SW, SH);
+  gfx_tamanho_alvo(SW, SH);
   assert(gfx_iniciar());
   assert(txt_iniciar("deploy/app", 1));
   tex_iniciar(64);
@@ -170,7 +215,8 @@ int main(int argc, char **argv) {
     snprintf(caminho, sizeof caminho, "%s/ajustes.txt", dados_dir());
     f = fopen(caminho, "w");
     assert(f);
-    fprintf(f, "idioma 0\nselected_theme 2\n");
+    // NUVIO_SHOT_IDIOMA=<n>: o indice de idiomacod.h (1 = ingles, 26 = japones...).
+    fprintf(f, "idioma %d\nselected_theme 2\n", getenv("NUVIO_SHOT_IDIOMA") ? atoi(getenv("NUVIO_SHOT_IDIOMA")) : 0);
     // NUVIO_SHOT_VIDRO=1: Interface de vidro ligada (V_LIGA: 0 = Ligado).
     // NUVIO_SHOT_VIDRO=0: o material solido (vidroLocal 1).
     if (getenv("NUVIO_SHOT_VIDRO"))
@@ -201,30 +247,49 @@ int main(int argc, char **argv) {
   snprintf(nome, sizeof nome, "%s-carregando.bmp", prefixo);
   captura(nome);
 
-  // 2. PRONTO, foco no calendario (a primeira parada).
+  // 2. PRONTO: o foco abre no grafico, no dia de hoje.
   perfil_definir_dados(&d);
-  snprintf(nome, sizeof nome, "%s-calendario.bmp", prefixo);
+#ifdef NV_TOUCH_UI
+  if (retrato) {
+    extern float nv_layout_w, nv_layout_h;
+    // ajustes_dir aplicou o layout gravado (TV); o celular em pe vem por cima.
+    layout_tela_definir(SW, SH); layout_modo_definir(1);
+    printf("  retrato: layout %.0f x %.0f\n", nv_layout_w, nv_layout_h);
+    snprintf(nome, sizeof nome, "%s-retrato-topo.bmp", prefixo);
+    captura(nome);
+    tecla(SDLK_DOWN);                     // cartazes: a coluna rola ate eles
+    snprintf(nome, sizeof nome, "%s-retrato-cartazes.bmp", prefixo);
+    captura(nome);
+    tex_encerrar(); txt_encerrar(); gfx_encerrar();
+    SDL_GL_DeleteContext(gl); SDL_DestroyWindow(win); SDL_Quit();
+    puts("PASS: capturas do Perfil e Stats (retrato) gravadas.");
+    return 0;
+  }
+#endif
+  snprintf(nome, sizeof nome, "%s-painel.bmp", prefixo);
   captura(nome);
 
-  // 3. Andando pelo calendario: uma semana para baixo e tres dias a direita,
-  //    para o anel cair num dia aceso no meio da grade.
-  tecla(SDLK_DOWN); tecla(SDLK_DOWN);
-  for (i = 0; i < 4; i++) tecla(SDLK_RIGHT);
+  // 3. Nove dias para tras: 29/10, o dia da maratona (a etiqueta aparece).
+  for (i = 0; i < 9; i++) tecla(SDLK_LEFT);
   snprintf(nome, sizeof nome, "%s-dia.bmp", prefixo);
   captura(nome);
 
-  // 4. A segunda parada: direita ate o fim do mes passa para os destaques.
-  // O dia em foco e o 19 (indice 18): 11 setas ate o dia 30 e a 12a passa
-  // para os destaques. (Com a terceira parada, setas a mais seguiriam ate o
-  // cartao Amigos.)
-  for (i = 0; i < 12; i++) tecla(SDLK_RIGHT);
-  tecla(SDLK_DOWN);
-  snprintf(nome, sizeof nome, "%s-destaques.bmp", prefixo);
+  // 4. OK abre a folha do dia; Voltar fecha so a folha.
+  tecla(SDLK_RETURN); tecla(SDLK_DOWN);
+  snprintf(nome, sizeof nome, "%s-folha.bmp", prefixo);
+  captura(nome);
+  { SDL_Event e = { 0 };
+    e.type = SDL_KEYDOWN; e.key.keysym.sym = SDLK_ESCAPE;
+    perfil_evento(&e);
+    assert(perfil_aberto()); }
+
+  // 5. Baixo vai aos cartazes; direita anda um.
+  tecla(SDLK_DOWN); tecla(SDLK_RIGHT);
+  snprintf(nome, sizeof nome, "%s-cartazes.bmp", prefixo);
   captura(nome);
 
-  // 4b. A TERCEIRA PARADA (2.0): direita no fim dos destaques vai ao cartao
-  //     Amigos, que vira superficie clara com o anel no primeiro rosto.
-  tecla(SDLK_RIGHT);
+  // 6. Cima volta ao grafico; cima de novo vai a pilula Amigos.
+  tecla(SDLK_UP); tecla(SDLK_UP);
   snprintf(nome, sizeof nome, "%s-amigos.bmp", prefixo);
   captura(nome);
 
@@ -241,10 +306,8 @@ int main(int argc, char **argv) {
     pp.cmp[SV_CMP_COMUM].estado = SV_CMPE_OK;
     pp.cmp[SV_CMP_COMUM].filmes = 9; pp.cmp[SV_CMP_COMUM].series = 5;
     socialvis_definir_perfil_extra("nuvio:pedro", &pp);
-    for (i = 0; i < k; i++) tecla(SDLK_RIGHT);
-    snprintf(nome, sizeof nome, "%s-amigos-pedro.bmp", prefixo);
-    captura(nome); }
-  tecla(SDLK_RETURN);
+    tecla(SDLK_RETURN);
+    for (i = 0; i < k; i++) tecla(SDLK_RIGHT); }
   snprintf(nome, sizeof nome, "%s-duelo.bmp", prefixo);
   captura(nome);
   tecla(SDLK_DOWN);
@@ -265,7 +328,7 @@ int main(int argc, char **argv) {
   //    A banda de numeros nao pode desabar nem deslocar as secoes de baixo.
   { PerfilDados m = d;
     m.nome[0] = m.usuario[0] = m.avatar[0] = 0;
-    m.nGeneros = 0; m.minutos = 0; m.streakCompleto = 1;
+    m.nGeneros = 0; m.cobertura |= PF_COB_ESTIMADO; m.marcados = 12;
     perfil_definir_dados(&m); }
   snprintf(nome, sizeof nome, "%s-sem-identidade.bmp", prefixo);
   captura(nome);

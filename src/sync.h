@@ -118,6 +118,15 @@ void sync_passo(unsigned agoraMs);
 // sucesso. 1 quando disparou.
 int  sync_periodico(unsigned agoraMs);
 
+// Refresh the account (settings, Home order) after returning to the foreground
+// or closing the player. Regular NuvioTV's ProfileSettingsSyncService
+// foreground pull timing: 2.5 s later, at most once a minute since the last
+// cycle start. Runs through sync_periodico (so never during playback) and
+// respects the backoff of nuvem.c. `motivo` is a fixed log label.
+#define SYNC_PRIMEIRO_PLANO_ATRASO_MS 2500u
+#define SYNC_PRIMEIRO_PLANO_MIN_MS    60000u
+void sync_pedir_atualizacao(unsigned agoraMs, const char *motivo);
+
 // Apaga do aparelho tudo que pertence a quem estava logado. Chamar JUNTO com
 // sessao_sair() — a sessao sozinha nao basta.
 //

@@ -18,7 +18,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+static int fixtureEnded;
+int posplayFixtureEnded(void){return fixtureEnded;}
+#define video_terminou posplayFixtureEnded
 #include "../src/posplay.c"
+#undef video_terminou
 
 static Uint32 dedoAgora556 = 50000;
 static Uint32 relogioDedo556(void) { return dedoAgora556; }
@@ -42,7 +46,7 @@ static void aquecer(double dur, int ehSerie) {
 
 // A DECISAO DO FILME, pela linha de log (ver a nota longa no main: sem
 // relacionados, posplay_visivel() diria "nao" em qualquer caso). Roda um
-// quadro com a saida desviada e diz se "[posplay] relacionados em" saiu.
+// quadro com a saida desviada e diz se "[posplay] movie recommendation window:" saiu.
 static int quadroFilmeDecide(float dt, double pos, double dur) {
   char linha[256];
   FILE *f;
@@ -61,7 +65,7 @@ static int quadroFilmeDecide(float dt, double pos, double dur) {
   f = fopen(nvt("/nuvio-posplay-log.txt"), "r");
   if (f) {
     while (fgets(linha, sizeof linha, f))
-      if (strstr(linha, "[posplay] relacionados em")) decidiu = 1;
+      if (strstr(linha, "[posplay] movie recommendation window:")) decidiu = 1;
     fclose(f);
   }
   remove(nvt("/nuvio-posplay-log.txt"));
@@ -266,7 +270,7 @@ int main(void) {
   // de filme so fica visivel quando ha titulos relacionados, que vem da rede e
   // aqui sao zero — entao a visibilidade diria "nao apareceu" em TODOS os casos
   // e o teste passaria com qualquer coisa, inclusive com a funcao desligada. A
-  // linha "[posplay] relacionados em ..." e impressa exatamente quando a decisao
+  // linha "[posplay] movie recommendation window: ..." e impressa exatamente quando a decisao
   // dispara, que e o que este teste quer medir.
   { struct { double dur, pos; int esperado; const char *nome; } casos[] = {
       { 3600.0,    0.0, 0, "filme de 1h no segundo zero" },
@@ -306,7 +310,7 @@ int main(void) {
       f = fopen(nvt("/nuvio-posplay-log.txt"), "r");
       if (f) {
         while (fgets(linha, sizeof linha, f))
-          if (strstr(linha, "[posplay] relacionados em")) decidiu = 1;
+          if (strstr(linha, "[posplay] movie recommendation window:")) decidiu = 1;
         fclose(f);
       }
       if (decidiu != casos[k2].esperado) {
@@ -400,13 +404,51 @@ int main(void) {
     posplay_fechar(); aquecer(7200, 0);
     posplay_atualizar(.016f, 1000, 7100, 7200, 0, 0, 0);
     assert(posplay_visivel());
-    assert(tecla(SDLK_RIGHT) == 1 && tecla(SDLK_RETURN) == 1);
+    // Official focus order: Details -> (< disabled at the first) -> >.
+    assert(posplay_teste_botao() == PB_ABRIR);
+    assert(tecla(SDLK_RIGHT) == 1 && posplay_teste_botao() == PB_PROX);
+    assert(tecla(SDLK_RETURN) == 1 && posplay_visivel() && posplay_teste_foco() == 1);
+    assert(posplay_teste_botao() == PB_ANT);        // > is now disabled
+    assert(tecla(SDLK_LEFT) == 1 && posplay_teste_botao() == PB_ABRIR);
+    assert(tecla(SDLK_RETURN) == 1);
     assert(!posplay_visivel() && desc_titulo_pronto() >= 0);
     extras_shot_relacionados(titulos, anos, posters, 0);
     cat_definir(&c, 1); cat_definir_episodios(0, eps, 10);
     posplay_fechar();
   }
   puts("ok  OK em relacionado fora do catalogo abre o titulo");
+
+  // OFFICIAL LAYOUT, remote: all 12 recommendations are reachable (the poster
+  // row stopped at 8), arrows never leave the page (they reached the player,
+  // which seeks), Up focuses the video window and its OK returns to the player.
+  { CatItem filme = {0};
+    const char *t[12], *an[12], *po[12];
+    int i;
+    for (i = 0; i < 12; i++) { t[i] = "Rec"; an[i] = "2020"; po[i] = ""; }
+    snprintf(filme.imdb, sizeof filme.imdb, "tt0000100");
+    snprintf(filme.tipo, sizeof filme.tipo, "movie");
+    cat_definir(&filme, 1);
+    extras_shot_relacionados(t, an, po, 12);
+    posplay_fechar(); aquecer(7200, 0);
+    posplay_atualizar(.016f, 1000, 7100, 7200, 0, 0, 0);
+    assert(posplay_visivel() && posplay_teste_botao() == PB_ABRIR);
+    assert(tecla(SDLK_LEFT) == 1 && posplay_teste_botao() == PB_ABRIR);   // consumed at the edge
+    assert(tecla(SDLK_RIGHT) == 1 && posplay_teste_botao() == PB_PROX);
+    for (i = 1; i < 12; i++) assert(tecla(SDLK_RETURN) == 1 && posplay_teste_foco() == i);
+    assert(posplay_teste_botao() == PB_ANT && tecla(SDLK_RIGHT) == 1 && posplay_teste_botao() == PB_ANT);
+    assert(tecla(SDLK_RETURN) == 1 && posplay_teste_foco() == 10 && posplay_teste_botao() == PB_ANT);
+    assert(tecla(SDLK_RIGHT) == 1 && posplay_teste_botao() == PB_PROX);
+    assert(tecla(SDLK_UP) == 1 && posplay_teste_botao() == PB_JANELA);
+    assert(tecla(SDLK_LEFT) == 1 && tecla(SDLK_RIGHT) == 1 && tecla(SDLK_UP) == 1);
+    assert(posplay_teste_botao() == PB_JANELA && posplay_visivel());
+    assert(tecla(SDLK_DOWN) == 1 && posplay_teste_botao() == PB_ABRIR && posplay_visivel());
+    assert(tecla(SDLK_UP) == 1 && tecla(SDLK_RETURN) == 2);              // return to player
+    assert(!posplay_visivel() && posplay_pediu_titulo() < 0);
+    extras_shot_relacionados(t, an, po, 0);
+    cat_definir(&c, 1); cat_definir_episodios(0, eps, 10);
+    posplay_fechar();
+  }
+  puts("ok  pagina oficial: 12 recomendacoes, setas presas, Cima foca a janela");
 
   // #419: recomendacao TMDB ("tmdb:<id>") no pos-play abre com a semente que
   // ja temos, mesmo sem IMDb no catalogo e sem depender do /meta imediato.
@@ -643,6 +685,10 @@ int main(void) {
     posplay_fechar(); aquecer(3600, 1);
     posplay_atualizar(.016f, 1000, 3450, 3600, 1, 0, 1);
     assert(posplay_visivel() && temProximo());
+    // Left/Right/Up stay with the card: returning 0 let the player seek the
+    // video under it (#121) and could push playback out of the end window.
+    assert(tecla(SDLK_LEFT) == 1 && tecla(SDLK_RIGHT) == 1 && tecla(SDLK_UP) == 1);
+    assert(posplay_visivel() && !posplay_pediu_episodio(NULL, NULL));
     assert(tecla(SDLK_RETURN) == 1);
     assert(posplay_pediu_episodio(&t, &e) && t == 0 && e == 2);
     assert(!posplay_pediu_episodio(NULL, NULL));
@@ -691,6 +737,85 @@ int main(void) {
     player_encerrar(); posplay_fechar();
   }
   puts("ok  #556: S00 Next por OK, contagem, recuo, cena e toque");
+  /* Settings expansion: exercise the actual episode countdown and remote OK. */
+  memset(&c,0,sizeof c);strcpy(c.tipo,"series");strcpy(c.imdb,"tt-expansion-fixture");c.temporada=5;c.episodio=3;
+  memset(eps,0,sizeof eps);for(i=0;i<10;i++){eps[i].temporada=5;eps[i].episodio=i+1;}
+  cat_definir(&c,1);cat_definir_episodios(0,eps,10);player_definir_episodio(5,3);
+  assert(ajustes_shot_valor("proximoAutoLocal",0));
+  assert(ajustes_shot_valor("proximoContagemLocal",3));
+  for(int interval=1;interval<=20;interval++){
+    assert(ajustes_shot_valor("stillWatchingEpisodeCountLocal",interval));
+    posplay_troca_manual();abrirPainel();
+    watchedAutomatically=(unsigned)interval-1;lastAutoCounted[0]=0;
+    posplay_atualizar(.016f,5000,3599,3600,1,0,1);
+    assert(stillWatchingPrompt && posplay_visivel() && !posplay_pediu_episodio(NULL,NULL));
+    posplay_atualizar(.016f,15000,3600,3600,1,0,1);
+    assert(stillWatchingPrompt && !posplay_pediu_episodio(NULL,NULL));
+    SDL_Event held={0};held.type=SDL_KEYDOWN;held.key.keysym.sym=SDLK_RETURN;held.key.repeat=1;
+    assert(posplay_evento(&held)==1 && stillWatchingPrompt && !posplay_pediu_episodio(NULL,NULL));
+    assert(tecla(SDLK_RETURN)==1);assert(!stillWatchingPrompt);
+    assert(posplay_pediu_episodio(&t,&e)&&t==5&&e==4);
+  }
+  assert(ajustes_shot_valor("stillWatchingEpisodeCountLocal",3));
+  posplay_troca_manual();player_definir_episodio(5,3);abrirPainel();
+  posplay_atualizar(.016f,5000,3599,3600,1,0,1);
+  assert(watchedAutomatically==1&&posplay_pediu_episodio(&t,&e)&&e==4);
+  for(int playing=4;playing<=5;playing++){
+    posplay_fechar();posplay_fechar(); /* real close/open lifecycle pair */
+    assert(watchedAutomatically==(unsigned)(playing-3));player_definir_episodio(5,playing);aquecer(3600,1);
+    assert(!unattendedCarry&&watchedAutomatically==(unsigned)(playing-3));
+    posplay_atualizar(.016f,1000,3000,3600,1,0,1);posplay_atualizar(.016f,5000,3599,3600,1,0,1);
+    if(playing==4)assert(!stillWatchingPrompt&&posplay_pediu_episodio(&t,&e)&&e==5);
+    else assert(stillWatchingPrompt&&!posplay_pediu_episodio(NULL,NULL));
+  }
+  posplay_fechar();assert(!watchedAutomatically&&!unattendedCarry);
+  player_definir_episodio(5,3);
+  puts("PASS still-watching: counter survives automatic player close/open pairs, prompts on episode three and resets on manual stop");
+  assert(ajustes_shot_valor("stillWatchingEpisodeCountLocal",0));
+  posplay_troca_manual();abrirPainel();posplay_atualizar(.016f,5000,3599,3600,1,0,1);
+  assert(!stillWatchingPrompt&&posplay_pediu_episodio(&t,&e));
+  assert(ajustes_shot_valor("proximoAutoLocal",1));
+  assert(ajustes_shot_valor("stillWatchingEpisodeCountLocal",1));
+  posplay_troca_manual();abrirPainel();posplay_atualizar(.016f,5000,3599,3600,1,0,1);
+  assert(!stillWatchingPrompt&&!posplay_pediu_episodio(NULL,NULL));
+  for(int pct=1;pct<=100;pct++){
+    assert(ajustes_shot_valor("postPlayRecommendationsLocal",0));
+    assert(ajustes_shot_valor("postPlayThresholdPercentLocal",pct));
+    assert(!posplay_regra_filme(pct*36.0-1,3600,0));
+    assert(posplay_regra_filme(pct*36.0,3600,0));
+    assert(ajustes_shot_valor("postPlayRecommendationsLocal",1));
+    assert(!posplay_regra_filme(3600,3600,0));
+  }
+  // Unlike a policy-only check, exercise opening the actual recommendation
+  // panel with populated/late/empty related-title responses and master Off.
+  {
+    CatItem movie={0};strcpy(movie.imdb,"tt0000100");strcpy(movie.tipo,"movie");cat_definir(&movie,1);
+    const char *titles[]={"Mock recommendation"},*years[]={"2026"},*posters[]={""};
+    for(int pct=10;pct<=100;pct+=10){
+      assert(ajustes_shot_valor("postPlayRecommendationsLocal",0));
+      assert(ajustes_shot_valor("postPlayThresholdPercentLocal",pct));
+      extras_shot_relacionados(titles,years,posters,1);posplay_fechar();aquecer(3600,0);
+      posplay_atualizar(.016f,1000,pct*36.0-1,3600,0,0,0);assert(!posplay_visivel());
+      posplay_atualizar(.016f,1016,pct*36.0,3600,0,0,0);assert(posplay_visivel()&&!serie);
+      assert(tecla(SDLK_AC_BACK)==1);posplay_atualizar(.016f,1100,pct*36.0,3600,0,0,0);assert(!posplay_visivel());
+    }
+    extras_shot_relacionados(titles,years,posters,1);posplay_fechar();
+    fixtureEnded=1;
+    posplay_atualizar(.016f,1800,1000,3600,0,0,0);assert(!posplay_visivel()); // truncated EOF
+    posplay_atualizar(.016f,1816,3599.75,3600,0,0,0);assert(posplay_visivel()); // fractional real EOF, even before 8s warm-up
+    fixtureEnded=0;
+    extras_shot_relacionados(titles,years,posters,0);posplay_fechar();aquecer(3600,0);
+    posplay_atualizar(.016f,2000,3600,3600,0,0,0);assert(!posplay_visivel());
+    extras_shot_relacionados(titles,years,posters,1);
+    posplay_atualizar(.016f,2016,3600,3600,0,0,0);assert(posplay_visivel());
+    assert(ajustes_shot_valor("postPlayRecommendationsLocal",1));posplay_fechar();aquecer(3600,0);
+    posplay_atualizar(.016f,3000,3600,3600,0,0,0);assert(!posplay_visivel());
+    extras_shot_relacionados(titles,years,posters,0);
+    puts("PASS: actual recommendation panel at 10–100%, master Off, late/empty list and dismissal");
+  }
+  puts("PASS expansion: all 20 still-watching intervals block real automatic next until OK; Off/autoplay Off respected; 100 recommendation percentages/master Off");
+  ajustes_shot_valor("proximoAutoLocal",0);ajustes_shot_valor("stillWatchingEpisodeCountLocal",0);
+  ajustes_shot_valor("postPlayRecommendationsLocal",0);ajustes_shot_valor("postPlayThresholdPercentLocal",0);posplay_troca_manual();
   puts("posplay: tudo ok");
   return 0;
 }

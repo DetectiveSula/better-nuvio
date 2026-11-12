@@ -358,3 +358,12 @@
   1, 0, 1, 0, /* Stage C: resolve Off, automatic provider, prepare Off/0 */
   // Stage D cached-addition opt-in (after all Stage C defaults).
   1, /* Allow cached TorBox additions: Off */
+  // Stage H Family Watching (after Stage D).
+  1, 1, /* Family Watching row: Off; share my watching activity: Off */
+
+  // Local expansion: preserve legacy appearance/timing until explicitly changed.
+  1, 25, 0, 0, 0, 0, /* pill visible, 2.5s detail, recommendations on/auto, prompt off, full subtitles on */
+  0, 0, 0, 0, 0, 0, /* filter subeditors read their saved backend values */
+
+  1,25, /* Separate post-play preview Off; 2.5 s delay. */
+  0, /* Local TMDB credential action: no preference value or remote field. */

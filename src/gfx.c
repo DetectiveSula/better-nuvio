@@ -1,3 +1,4 @@
+#include "setor.h"
 #include "gfx.h"
 #include "tex_cache.h"
 #include <SDL2/SDL.h>
@@ -34,7 +35,7 @@ static const char *const VID_NOMES[VID_NU] = {
   "uLuzDir", "uEspec", "uDens", "uAmostra", "uRuido", "uRuidoEsc" };
 typedef struct {
   GLuint prog;
-  GLint rect, tela, tex, foco, reflexo, par, raio, cor, asp, texAsp, forcarCover, veuTela, heroiVeu, borda, varre, veu, desl, fundo,
+  GLint rect, tela, tex, foco, reflexo, depth, par, raio, cor, asp, texAsp, forcarCover, veuTela, heroiVeu, borda, varre, veu, desl, fundo,
         grad0, grad1, grad2, tempo, reg0, reg1, reg2, reg3, vaza, acento;
   GLint amb, ambOn;         // uAmb/uAmbOn: so os tres modos de arte com rampa
   GLint texB, texAspB, alfaB;   // camadas do destaque (gfx_hero_camadas)
@@ -59,6 +60,7 @@ static int progAtual = -1;
 // Proporcao da textura corrente, para o "cover". Fica global porque o desenho e
 // imediato: quem chama define antes de cada rect com textura.
 float gfx_tex_aspect_atual = 0.0f;
+int gfx_card_superficie_atual=NV_CARD_POSTERS;
 int gfx_arte_opaca_atual = 0;
 float gfx_janela_atual[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
 // TEXTURA (cor de destaque "Textura"): a do titulo em cena, posta uma vez por
@@ -160,14 +162,23 @@ static int escUiFixa;   // NUVIO_TAMANHO_UI (capturas): Ajustes nao sobrescreve
 // home, detalhe e biblioteca ligam so ela (gfx_escala_txt_entrar).
 void gfx_escala_ui_definir(float s) { if (!escUiFixa) escUi = (s >= 0.8f && s <= 2.0f) ? s : 1.0f; }
 void gfx_escala_txt_definir(float s) { escTxt = (s >= 0.8f && s <= 1.5f) ? s : 1.0f; }
-float gfx_escala_ui(void) { return escUi * escTxt; }
+// A 1080-unit portrait canvas has roughly three layout pixels per dp on a
+// phone. Preserve the TV typography ratios while keeping body copy legible;
+// the saved text-size choice itself is unchanged and still scales this base.
+static float escalaTxtEfetiva(void) {
+#ifdef NV_TOUCH_UI
+  if (layout_modo_mobile() && nv_layout_h > nv_layout_w) return escTxt * 2.0f;
+#endif
+  return escTxt;
+}
+float gfx_escala_ui(void) { return escUi * escalaTxtEfetiva(); }
 float gfx_escala_ui_base(void) { return escUi; }
-float gfx_escala_txt(void) { return escTxt; }
-float gfx_poster_k(void) { return escAtiva != 1.0f ? 1.0f / escTxt : 1.0f; }
+float gfx_escala_txt(void) { return escalaTxtEfetiva(); }
+float gfx_poster_k(void) { return escAtiva != 1.0f ? 1.0f / escalaTxtEfetiva() : 1.0f; }
 float gfx_escala(void) { return escAtiva; }
-float gfx_escala_entrar(void) { float a = escAtiva; escAtiva = escUi * escTxt; return a; }
-float gfx_escala_tela_txt(void) { return (escTxt != 1.0f && escAtiva == escTxt) ? escTxt : 1.0f; }
-float gfx_escala_txt_entrar(void) { float a = escAtiva; escAtiva = escTxt; return a; }
+float gfx_escala_entrar(void) { float a = escAtiva; escAtiva = escUi * escalaTxtEfetiva(); return a; }
+float gfx_escala_tela_txt(void) { float t = escalaTxtEfetiva(); return (t != 1.0f && escAtiva == t) ? t : 1.0f; }
+float gfx_escala_txt_entrar(void) { float a = escAtiva; escAtiva = escalaTxtEfetiva(); return a; }
 void gfx_escala_sair(float anterior) { escAtiva = anterior; }
 // TRANSFORMACAO DE GRUPO (gfx_transformar): escala em torno de (ox, oy) e
 // deslocamento, em coordenadas de layout, ANTES do fator da camada. As
@@ -482,6 +493,7 @@ static const char *FS_COVER =
 static const char *FS_CORPO[GFX_NMODOS] = {
   // GFX_CARD — arte inteira com cantos e especular no foco (sem zoom nem corte)
   "uniform float uReflexo;\n"
+  "uniform vec3 uDepth;\n"
   "#ifdef HERO_CARD\n"
   "uniform vec4 uHeroiVeu;\n"
   "#endif\n"
@@ -523,7 +535,9 @@ static const char *FS_CORPO[GFX_NMODOS] = {
   // inferior esquerdo e desliza ate o repouso; em 0 e o especular de sempre.
   // Um pouco mais forte enquanto anda, para o olho seguir a passagem.
   "    float e = (dot(vUv-0.5, vec2(0.5029,-0.8644)) + uPar.x*3.0 + uVarre) * 3.0;\n"
-  "    cor += exp(-e*e) * (0.16 + 0.10*min(abs(uVarre),1.0)) * uFoco * uReflexo;\n"
+  "    cor += exp(-e*e) * (0.16 + 0.10*min(abs(uVarre),1.0)) * uFoco * uReflexo * (uDepth.z>=0.99?1.0:1.0-smoothstep(uDepth.z+0.05,uDepth.z+0.20,vUv.y));\n"
+  "    float depthMask=uDepth.z>=0.99?1.0:1.0-smoothstep(uDepth.z+0.03,uDepth.z+0.12,vUv.y);\n"
+  "    cor += (1.0-smoothstep(0.0,0.014,abs(d)))*uDepth.x*uFoco*depthMask*0.35;\n"
   "    cor *= (0.80 + 0.20*uFoco);\n"
   // O REBORDO E OPCIONAL (Ajustes > Borda no cartaz em foco). O resto do
   // bloco de foco fica: o cartaz em foco continua mais claro e com o
@@ -901,7 +915,13 @@ static const char *FS_CORPO[GFX_NMODOS] = {
   "  if (uPar.y < 0.0) {\n"
   "    vec2 q = (vUv - 0.5) * vec2(uAspect, 1.0);\n"
   "    float ta = fract(atan(q.x, -q.y) / 6.2831853 - uDesliza);\n"
-  "    m *= smoothstep(0.0, 0.01, ta) * smoothstep(-uPar.y, -uPar.y - 0.01, ta);\n"
+  // Pontas com 1 px de rampa, medida em PIXELS ao longo do arco (voltas x 2pi
+  // x raio x uAlt). Era smoothstep(0, 0.01 volta): 3,6 graus, ~12 px de
+  // borrao numa fatia de 200 px do relogio do Perfil. `ts` desfaz o fract para
+  // a ponta inicial ter rampa dos dois lados.
+  "    float tp = 6.2831853 * max(length(q), 0.0001) * uAlt;\n"
+  "    float ts = ta - step(0.5 - 0.5 * uPar.y, ta);\n"
+  "    m *= clamp(0.5 + ts * tp, 0.0, 1.0) * clamp(0.5 + (-uPar.y - ts) * tp, 0.0, 1.0);\n"
   "    if (m <= 0.002) discard;\n"
   "  }\n"
   "  gl_FragColor = vec4(uCor.rgb, uCor.a * m);\n"
@@ -991,6 +1011,7 @@ static const char *FS_CORPO[GFX_NMODOS] = {
   // GFX_AVATAR: mascara radial exata. O GFX_CARD usa o SDF de retangulo
   // arredondado e over-scan de parallax; num circulo pequeno isso deixava a
   // aresta irregular e deslocava a fotografia dentro do disco.
+  "uniform vec3 uDepth;\n"
   "void main(){\n"
   "  vec2 p=(vUv-0.5)*vec2(uAspect,1.0);\n"
   "  float d=length(p);\n"
@@ -1001,6 +1022,8 @@ static const char *FS_CORPO[GFX_NMODOS] = {
   // uPar.y sobe a janela do cover (fracao da textura): rosto no alto do retrato.
   "  vec2 uvc=cover(vUv); uvc.y-=uPar.y;\n"
   "  vec3 c=texture2D(uTex,clamp(uvc,0.0,1.0)).rgb;\n"
+  "  float depthMask=uDepth.z>=0.99?1.0:1.0-smoothstep(uDepth.z+0.03,uDepth.z+0.12,vUv.y);\n"
+  "  c+=depthMask*uFoco*(uDepth.x*exp(-abs(0.5-d)*uAlt*0.5)*0.35+uDepth.y*max(0.0,1.0-vUv.y)*0.16);\n"
   "  gl_FragColor=vec4(c,m*uCor.a);\n"
   "}\n",
 
@@ -1253,7 +1276,13 @@ static const char *FS_CORPO[GFX_NMODOS] = {
   "  }\n"
   "  if (uPar.y < 0.0) {\n"   // o arco do GFX_ANEL
   "    float ta = fract(atan(p.x, -p.y) / 6.2831853 - uDesliza);\n"
-  "    m *= smoothstep(0.0, 0.01, ta) * smoothstep(-uPar.y, -uPar.y - 0.01, ta);\n"
+  // Pontas com 1 px de rampa, medida em PIXELS ao longo do arco (voltas x 2pi
+  // x raio x uAlt). Era smoothstep(0, 0.01 volta): 3,6 graus, ~12 px de
+  // borrao numa fatia de 200 px do relogio do Perfil. `ts` desfaz o fract para
+  // a ponta inicial ter rampa dos dois lados.
+  "    float tp = 6.2831853 * max(length(p), 0.0001) * uAlt;\n"
+  "    float ts = ta - step(0.5 - 0.5 * uPar.y, ta);\n"
+  "    m *= clamp(0.5 + ts * tp, 0.0, 1.0) * clamp(0.5 + (-uPar.y - ts) * tp, 0.0, 1.0);\n"
   "    if (m <= 0.002) discard;\n"
   "  }\n"
   "  float g = 0.5 + 0.5 * cos(atan(p.y, p.x) - uTempo * 0.9);\n"
@@ -1783,6 +1812,7 @@ static int progMontar(int m) {
   progs[m].tex  = glGetUniformLocation(p, "uTex");
   progs[m].foco = glGetUniformLocation(p, "uFoco");
   progs[m].reflexo = glGetUniformLocation(p, "uReflexo");
+  progs[m].depth = glGetUniformLocation(p, "uDepth");
   progs[m].par  = glGetUniformLocation(p, "uPar");
   progs[m].raio = glGetUniformLocation(p, "uRaio");
   progs[m].peso = glGetUniformLocation(p, "uPeso");
@@ -2122,6 +2152,8 @@ static float vidroLeAnt[4], vidroLeCur[4];   // union of what the glasses read, 
 // The same as up to VID_NREG boxes, merged where they overlap: what the backdrop
 // capture copies and blurs (vidroFundoFechar).
 #define VID_NREG 4
+#define VID_ALCANCE 68.0f   // Blur sampling reach, in screen-layout pixels.
+#define VID_FOLGA 64.0f     // Slack for scrolling between frames.
 static float vidroRegAnt[VID_NREG][4], vidroRegCur[VID_NREG][4];
 static int vidroNRegAnt, vidroNRegCur;
 static float vidroDesde[4];   // caixa do que foi pintado na tela desde a ultima captura
@@ -2142,6 +2174,7 @@ int gfx_vidro_so_fundo = NV_VIDRO_SO_FUNDO;
 // without it (old path). fundoDepois: a full-screen draw (modal veil) came
 // after the layer, so the glasses need the old path to see it.
 static int fundoFim, fundoDepois, fundoValido;
+static float fundoReserva[4];
 static unsigned fundoHash;
 // A backdrop crossfading under moving glass (detail page title <-> episodes,
 // #205): every frame changed the hash and recaptured + reblurred it, a copy
@@ -2194,6 +2227,16 @@ static int vidroRegContem(const float r[][4], int n, const float b[4]) {
   int i;
   for (i = 0; i < n; i++) if (vidroContem(r[i], b)) return 1;
   return 0;
+}
+// Screen-layout coordinates, before any page content is drawn. Reserve the
+// overlay footprint in this frame's background capture, not last frame's
+// scrolling card regions. Otherwise the first/closing frame can sample text
+// and cards from the live framebuffer instead of the background alone.
+void gfx_vidro_fundo_reservar(GfxRect r) {
+  float l=r.x-VID_ALCANCE, t=r.y-VID_ALCANCE;
+  float rr=r.x+r.w+VID_ALCANCE, b=r.y+r.h+VID_ALCANCE;
+  vidroUne(fundoReserva,l,t,rr,b);
+  vidroUne(vidroLeAnt,l,t,rr,b);
 }
 #ifdef NV_SHOT_HOOKS
 // tests/dina_pisca_shot.c: a copia do backdrop tem de acontecer com o fundo
@@ -2309,6 +2352,7 @@ void gfx_novo_quadro(void) {
   memcpy(vidroRegAnt, vidroRegCur, sizeof vidroRegAnt); vidroNRegAnt = vidroNRegCur; vidroNRegCur = 0;
   vidroSlot = -1; vidroRecapturou = 0;
   fundoFim = fundoDepois = 0; fundoPasso = -1;
+  memset(fundoReserva, 0, sizeof fundoReserva);
   gfx_vidro_capturas = 0; gfx_vidro_passadas = 0; gfx_vidro_com_fonte = 0; gfx_vidro_chapados = 0; gfx_vidro_area = 0;
   gfx_vidro_fill = gfx_vidro_copia = 0.0;
   ambFonte = 0; dinPendente = 0; dinAdiado = 0; dinNOp = 0;
@@ -2686,8 +2730,10 @@ void gfx_rect(GfxRect r, GLuint tex, GfxModo modo, float foco,
   if (P->foco >= 0)   glUniform1f(P->foco, foco);
   // #410: o especular da arte tambem obedece a Reflexo/Profundidade.
   // uFoco continua inteiro: contraste e rebordo nao sao intensidade de reflexo.
+  int depthOn=(P->reflexo>=0||P->depth>=0)&&nv_card_depth_enabled(ajustes_profundidade(),ajustes_profundidade_superficies(),gfx_card_superficie_atual);
   if (P->reflexo >= 0)
-    glUniform1f(P->reflexo, ajustes_profundidade() ? ajustes_profundidade_brilho() : 0.0f);
+    glUniform1f(P->reflexo,depthOn?ajustes_profundidade_brilho():0.0f);
+  if(P->depth>=0)glUniform3f(P->depth,depthOn?ajustes_profundidade_borda():0.0f,depthOn?ajustes_profundidade_brilho():0.0f,ajustes_profundidade_cobertura());
   if (P->par >= 0)    glUniform2f(P->par, parx, pary);
   if (P->raio >= 0)   glUniform1f(P->raio, raio);
   if (P->peso >= 0 && parx < 0) glUniform3f(P->peso, -parx, pary, raio);
@@ -3450,6 +3496,32 @@ void gfx_arco(GfxRect r, float esp, float ini, float frac,
   gfx_rect(r, 0, GFX_ANEL, 0, esp / r.h, frac >= 0.999f ? 0.0f : -frac, 0.5f, cr, cg, cb, ca);
   gfx_desliza_atual = 0.0f;
 }
+// Setor de anel (relogio de 24 h do Perfil): gfx_arco no circulo de raio r1,
+// traco r1 - r0, com o quad CORTADO na caixa do setor (setor.h). Sem o corte,
+// 24 fatias seriam 24 quadrados inteiros de preenchimento; com ele, cada uma
+// pinta so o retangulo que a contem. Mesmo programa, mesmo fragmento.
+void gfx_setor(float cx, float cy, float r0, float r1, float ini, float frac,
+               float cr, float cg, float cb, float ca) {
+  GfxRect r;
+  float c[4], x0, y0, x1, y1;
+  if (r1 <= 0.0f || frac <= 0.0f) return;
+  if (r0 < 0.0f) r0 = 0.0f;
+  if (r0 >= r1) return;
+  r = (GfxRect){ cx - r1, cy - r1, 2.0f * r1, 2.0f * r1 };
+  setor_caixa(cx, cy, r0, r1, ini, frac, 2.0f, c);
+  x0 = (c[0] - r.x) / r.w; y0 = (c[1] - r.y) / r.h;
+  x1 = (c[0] + c[2] - r.x) / r.w; y1 = (c[1] + c[3] - r.y) / r.h;
+  if (x0 < 0.0f) x0 = 0.0f;
+  if (y0 < 0.0f) y0 = 0.0f;
+  if (x1 > 1.0f) x1 = 1.0f;
+  if (y1 > 1.0f) y1 = 1.0f;
+  if (progs[GFX_ANEL].sub >= 0 && x1 > x0 && y1 > y0) {
+    if (ambPendente) gfx_ambiente_descarregar();
+    subAtual[0] = x0; subAtual[1] = y0; subAtual[2] = x1; subAtual[3] = y1;
+  }
+  gfx_arco(r, r1 - r0, ini, frac, cr, cg, cb, ca);
+  subAtual[0] = subAtual[1] = 0.0f; subAtual[2] = subAtual[3] = 1.0f;
+}
 // CONCENTRICO: o rect cresce g = folga + esp de cada lado e o raio em pixels
 // cresce o MESMO g. Com o raio normalizado copiado da peca (o erro comum), o
 // canto do anel fica mais fechado que o da peca e o vao entre os dois engorda
@@ -3520,8 +3592,6 @@ static float vidroTom(float cinza);
 //
 // COM VIDEO VIVO POR BAIXO a tela nao e o fundo (o plano de video fica atras
 // dela, pelo alfa 0 do furo): o player avisa por quadro e o vidro sai chapado.
-#define VID_ALCANCE 68.0f   // BLUR_REACH: ate onde a lente e o desfoque leem fora do vidro
-#define VID_FOLGA 64.0f     // slack around last frame's glass regions (scroll per frame)
 #define VID_RUIDO_N 256
 static GLuint vidGrab, vidH2, vidH2Fbo, vidQa, vidQaFbo, vidQb, vidQbFbo, vidRuido, vidProg;
 static GLuint vidSlot[VID_NSLOTS], vidSlotFbo[VID_NSLOTS], vidFundo, vidFundoFbo;
@@ -3829,6 +3899,10 @@ static void vidroFundoFechar(void) {
     reg[i][0] = vidroRegAnt[i][0] - VID_FOLGA; reg[i][1] = vidroRegAnt[i][1] - VID_FOLGA;
     reg[i][2] = vidroRegAnt[i][2] + VID_FOLGA; reg[i][3] = vidroRegAnt[i][3] + VID_FOLGA;
   }
+  if (fundoReserva[2]>fundoReserva[0]) {
+    vidroRegUne(reg,&n,fundoReserva);
+    fora = !vidroRegContem(fundoReg,fundoNReg,fundoReserva);
+  }
   fundoFim = 2;
   if (foscoBloq || !ajustes_vidro_fosco() || efeitosMinimos) return;
   if (!vidPreparar()) return;
@@ -3899,8 +3973,12 @@ static GLuint vidroFonte(GfxRect r) {
   if (gfx_vidro_so_fundo) {
     if (!fundoFim) vidroFundoFechar();
     // A new region misses for one frame and takes the slot path below.
-    if (fundoFim == 1 && !fundoDepois && vidroRegContem(fundoReg, fundoNReg, lido)) return vidFundo;
+    if (fundoFim == 1 && (!fundoDepois || gfx_vidro_camada==3) && vidroRegContem(fundoReg, fundoNReg, lido)) return vidFundo;
   }
+  // A reserved navigation overlay must never switch to a foreground capture
+  // as underlying Ratings/Cast cards move. An unavailable background uses the
+  // existing solid fallback, not a different source for one animation frame.
+  if (gfx_vidro_camada==3) return 0;
   if (!vidH2 || vidW != telaW || vidH != telaH) { if (!vidPreparar()) return 0; }
   else if (vidroSlot >= 0 && vidroContem(vidroSlotReg[vidroSlot], lido) && !vidroCruza(vidroDesde, lido))
     return vidSlot[vidroSlot];
@@ -4011,7 +4089,7 @@ void gfx_vidro(GfxRect r, float raio, int tipo, float cinza, float dens, float a
   tela[0] = t.x; tela[1] = t.y; tela[2] = t.x + t.w; tela[3] = t.y + t.h;
   // Wholly off the screen (detail hero buttons scrolled away) paints nothing:
   // no capture for it.
-  chapado = !ajustes_vidro_fosco() || efeitosMinimos || snapAtivo || miniAtiva || giroOn ||
+  chapado = gfx_vidro_camada == 2 || !ajustes_vidro_fosco() || efeitosMinimos || snapAtivo || miniAtiva || giroOn ||
             gfx_opacidade_grupo < 0.999f ||
             t.x >= NV_TELA_W || t.y >= NV_TELA_H || t.x + t.w <= 0.0f || t.y + t.h <= 0.0f;
   // A layer over the page (sidebar) frosts even where page glass (pills, cards)

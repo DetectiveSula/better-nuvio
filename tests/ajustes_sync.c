@@ -117,9 +117,12 @@ int main(int argc, char **argv) {
     sync_proteger_ajustes_locais(); cycle();
     check(pushes == 1, "settings saved, including first blob for empty account");
     check(strstr(cloud, "untouched\":42") || !strcmp(argv[2], "empty"), "unknown cloud feature preserved");
+    // Stage I retired the automatic Native snapshot (STAGE-I.md): a save must
+    // not add c_settings_v1/c_devices_v1, so no display override can leak.
     const char *shared, *sharedEnd;
-    check(ajJsonGet(cloud, cloud + strlen(cloud), "c_settings_v1", &shared, &sharedEnd) &&
-          !js_tem(shared, sharedEnd, "c_resolucaoUi"), "display override excluded from shared preferences");
+    check(!ajJsonGet(cloud, cloud + strlen(cloud), "c_settings_v1", &shared, &sharedEnd) &&
+          !ajJsonGet(cloud, cloud + strlen(cloud), "c_devices_v1", &shared, &sharedEnd) &&
+          !strstr(cloud, "c_resolucaoUi"), "no Native snapshot or display override uploaded");
     if (webEdit) {
       // Simulate web edits after the TV uploaded its C snapshot.
       char *updated = malloc(strlen(cloud) + 256); assert(updated);
@@ -148,21 +151,10 @@ int main(int argc, char **argv) {
       expected[AJ_TEMA] = 8; expected[AJ_HERO] = 0;
     }
     login(); cycle();
-    char *music = dados_ler("musicas-p1.txt");
-    check(music && !strcmp(music, "tt1160419:0\tDune OST\tHans Zimmer\n"), "saved music restored from profile settings");
-    free(music);
-    for (int i = 0; i < AJ_N; i++) if (ajustePortavel(i) && !ajLegendaPrincipal(i))
-      check(valor[i] == expected[i], CHAVE[i]);
-    check(valor[AJ_TEMA] == expected[AJ_TEMA] && valor[AJ_HOME_LAYOUT] == expected[AJ_HOME_LAYOUT] && valor[AJ_IDIOMA] == 4, "appearance/layout/language restored");
-    check(valor[AJ_HERO] == expected[AJ_HERO] && valor[AJ_PULAR_ABERTURA] == 0, "player/home settings restored");
-    check(valor[AJ_LEG_LINGUA] == 3 && valor[AJ_LEG2_COR] == 2 && player_leg_estilo()->tamanho == 160, "subtitle languages and both styles restored");
-    check(valor[AJ_FONTE_UI] == 1, "interface font restored");
-    check(valor[AJ_RESOLUCAO] == RES_4K, "same-device display setting restored");
-    check(fontefalha_provedores() && fontefalha_provedor_limite(0) == 7, "source fallback preferences restored");
-    char first[FR_NOME_MAX]; fonteregra_ordem_nome(0, first, sizeof first);
-    check(fonteregra_ordem_n() == 2 && !strcmp(first, "Addon B"), "addon order restored");
-    check(!strcmp(fil_chave(0), "org.test_series_new"), "home row order restored");
-    check(fil_limite_gravado() == FIL_LIMITE_PADRAO, "home row quota restored from device snapshot");
+    // Native-only values were restored from the retired snapshot; their
+    // replacement coverage is settings_stage_i/j5/j6/j7. Here: login must not
+    // push defaults over the account.
+    (void)expected;
     check(pushes == 1 && !strcmp(saved, cloud), "login restores without default push");
     if (webEdit) {
       sync_proteger_ajustes_locais(); cycle();

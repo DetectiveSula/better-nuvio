@@ -1,7 +1,7 @@
 #!/bin/bash
 export TMPDIR="${TMPDIR:-/tmp}"
 TMPDIR="${TMPDIR%/}"
-set -eu
+set -e
 cd "$(dirname "$0")/.."
 for variant in full lite-arm64 lite-armv7; do
 flags=()

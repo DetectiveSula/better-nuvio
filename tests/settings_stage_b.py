@@ -59,6 +59,18 @@ stage_c=json.loads((ROOT/'tests/fixtures/settings-restoration/stage-c-wiring.jso
 stage_d=json.loads((ROOT/'tests/fixtures/settings-restoration/stage-d-wiring.json').read_text())
 assert set(stage_d)=={'src/debrid.c','src/streams.c'}
 optin=json.loads((ROOT/'tests/fixtures/settings-restoration/stage-d-optin-wiring.json').read_text())
+filtering=json.loads((ROOT/'tests/fixtures/settings-restoration/stage-d-filter-wiring.json').read_text())
+assert set(filtering)=={'src/streams.c'}
+stage_g=json.loads((ROOT/'tests/fixtures/settings-restoration/stage-g-wiring.json').read_text())
+assert set(stage_g)=={'src/perfis.c'}
+stage_i=json.loads((ROOT/'tests/fixtures/settings-restoration/stage-i-wiring.json').read_text())
+assert set(stage_i)=={'function:gravar'}
+stage_j4=json.loads((ROOT/'tests/fixtures/settings-restoration/stage-j4-wiring.json').read_text())
+assert set(stage_j4)=={'function:gravar','function:ajustes_dir'}
+stage_j5=json.loads((ROOT/'tests/fixtures/settings-restoration/stage-j5-wiring.json').read_text())
+assert set(stage_j5)=={'function:ajustes_dir'}
+expansion=json.loads((ROOT/'tests/fixtures/settings-restoration/expansion-wiring.json').read_text())
+assert set(expansion)=={'function:visivel','function:definirValorDireto','src/ajustes_ux_padrao.inc','src/ajustes_scenes.inc','src/streams.c','src/fontefalha.c'}
 for path,digest in contract.items():
     if path in stage_c:
         assert stage_c[path]['before']==digest, 'Stage B baseline changed: '+path
@@ -75,10 +87,56 @@ for path,digest in contract.items():
             lines=iter(optin[path]['after'].splitlines())
             assert all(any(line==candidate for candidate in lines) for line in digest.splitlines()), path
         digest=optin[path]['after']
+    if path in filtering:
+        assert filtering[path]['before']==digest and filtering[path]['reason']
+        digest=filtering[path]['after']
+    if path in stage_g:
+        assert stage_g[path]['before']==digest and stage_g[path]['reason']
+        digest=stage_g[path]['after']
     if path.startswith('function:'):
+        if path in stage_i:
+            assert stage_i[path]['before']==digest and stage_i[path]['reason']
+            lines=iter(stage_i[path]['after'].splitlines())
+            assert all(any(line==candidate for candidate in lines) for line in digest.splitlines()), path
+            digest=stage_i[path]['after']
         name=path.split(':',1)[1]
+        if path in stage_j4:
+            assert stage_j4[path]['before']==digest and stage_j4[path]['reason']
+            lines=iter(stage_j4[path]['after'].splitlines())
+            assert all(any(line==candidate for candidate in lines) for line in digest.splitlines()), path
+            digest=stage_j4[path]['after']
+        if path in stage_j5:
+            assert stage_j5[path]['before']==digest and stage_j5[path]['reason']
+            lines=iter(stage_j5[path]['after'].splitlines())
+            assert all(any(line==candidate for candidate in lines) for line in digest.splitlines()), path
+            digest=stage_j5[path]['after']
+        if path in expansion:
+            assert expansion[path]["before"]==digest and expansion[path]["reason"]
+            digest=expansion[path]["after"]
         current=source
         # Exact frozen function text; source line numbers may move.
         assert digest in current, 'Existing setting wiring/visibility changed: '+name
-    else:assert hashlib.sha256((ROOT/path).read_bytes()).hexdigest()==digest,path
+    else:
+        if path in expansion:
+            assert expansion[path]["before"]==digest and expansion[path]["reason"]
+            digest=expansion[path]["after"]
+        data=(ROOT/path).read_bytes()
+        if path=='src/ajustes_ux_padrao.inc':
+            # One user-approved append-only credential action. Freeze every
+            # pre-existing byte/default rather than regenerating its digest.
+            suffix=b'  0, /* Local TMDB credential action: no preference value or remote field. */\n'
+            assert data.endswith(suffix) and data.count(suffix)==1
+            data=data[:-len(suffix)]
+        if path=='src/ajustes_scenes.inc':
+            for addition in (b'if(op==AJ_TMDB_CHAVE_LOCAL)return AJS_TITULO;\n',
+                             b'if(op==AJ_TMDB_CHAVE_LOCAL)return 3;\n'):
+                assert data.count(addition)==1
+                data=data.replace(addition,b'')
+        if path=='src/perfis.c':
+            # Reviewed log-only privacy change; retain the exact Stage G contract.
+            new=b'{ char fp[9]; printf("[perfis] %d perfil(is), dono=conta %s, ativo=%d\\n", n, sessao_impressao(dono, fp), ativo); }'
+            old=b'printf("[perfis] %d perfil(is), dono=%s, ativo=%d\\n", n, dono, ativo);'
+            assert data.count(new)==1
+            data=data.replace(new,old)
+        assert hashlib.sha256(data).hexdigest()==digest,path
 print('PASS: all 413 provenance records, 125 explicit Legacy controls, negative equivalence cases and gates across 6 builds; original wiring retained with explicit Stage C/D policy additions')

@@ -21,6 +21,8 @@
 #include "app.h"
 #include "teclavoltar.h"
 #include "deeplink.h"
+#include "j0sonda.h"
+#include "j7arme.h"
 #include "telefoneui.h"
 #include "descanso.h"
 #include "iconeapp.h"
@@ -91,6 +93,8 @@
 #include "contapend.h"
 #include "vistonao.h"
 #include "contalib.h"
+#include "perfilnuvio.h"
+#include "metaprov.h"
 #include "recomenda.h"
 #include "atividade.h"
 #include "recenviar.h"
@@ -168,6 +172,11 @@ void video_tpk_cdn_arquivo(const char *url, int usenet, int item, int file);
 #include "legauto.h"
 #include "idioma.h"
 #include "descoberta.h"
+#include "familia.h"
+// Stage H: fallback for subset-linked tests that leave familia*.c out; the app links the real one.
+__attribute__((weak)) void familia_passo(void) {}
+__attribute__((weak)) void familia_home_aberta(void) {}
+__attribute__((weak)) void familia_rede_registrar(void) {}
 #include "ilha_voo.h"
 #include "colecoes.h"
 #include "posterprov.h"
@@ -549,19 +558,96 @@ static unsigned long long perfilSimklCredencial;
 static _Atomic int perfilCarga; // 0=ocioso, 1=rede, 2=snapshot pronto
 static _Atomic unsigned perfilGeracao = 1;
 static pthread_mutex_t perfilTrava = PTHREAD_MUTEX_INITIALIZER;
-typedef struct { unsigned geracao; int perfil; char conta[96]; } PerfilPedido;
+// PAINEL DE 30 DIAS (docs/profile-stats-dashboard/PLAN.md). A fonte e Nuvio
+// sync: os vistos e o progresso que sync.c ja puxou para o perfil ativo. O fio
+// principal COPIA tudo no pedido (contalib e progresso sao dele); o fio do
+// perfil so completa as metas (titulo, cartaz, generos, duracao) e monta
+// (perfilnuvio.c). Trakt/Simkl ficam de reserva para quem nao tem sessao Nuvio
+// ou so tem historico no tracker.
+#define PERFIL_META_MAX   24
+#define PERFIL_META_REDE  12   // no maximo 12 pedidos de /meta por carga
+#define PERFIL_META_S      6
+typedef struct {
+  unsigned geracao; int perfil; char conta[96];
+  int nuvio;
+  long long agoraMs;
+  ContaVisto *vistos; int nVistos;
+  ProgRegistro *prog; int nProg;
+  PerfilMeta metas[PERFIL_META_MAX];
+  char tipos[PERFIL_META_MAX][8];
+  int nMetas;
+  char nome[64], avatar[300];
+} PerfilPedido;
+
+// Metas ja resolvidas, para a recarga nao refazer a rede. So o fio do perfil
+// escreve; a trava existe porque duas cargas podem se sobrepor na troca de perfil.
+#define PERFIL_META_CACHE 64
+static PerfilMeta perfilMetaCache[PERFIL_META_CACHE];
+static int perfilMetaCacheN, perfilMetaCacheProx;
+static pthread_mutex_t perfilMetaTrava = PTHREAD_MUTEX_INITIALIZER;
+
+static void perfilMetaMesclar(PerfilMeta *d, const PerfilMeta *o) {
+  if (!d->titulo[0]) snprintf(d->titulo, sizeof d->titulo, "%s", o->titulo);
+  if (!d->poster[0]) snprintf(d->poster, sizeof d->poster, "%s", o->poster);
+  if (!d->genero[0]) snprintf(d->genero, sizeof d->genero, "%s", o->genero);
+  if (d->duracaoMin <= 0) d->duracaoMin = o->duracaoMin;
+}
+static int perfilMetaIncompleta(const PerfilMeta *m) {
+  return !m->titulo[0] || !m->genero[0] || m->duracaoMin <= 0;
+}
+static int perfilMetaDoCache(PerfilMeta *m) {
+  int achou = 0;
+  pthread_mutex_lock(&perfilMetaTrava);
+  for (int i = 0; i < perfilMetaCacheN; i++)
+    if (!strcmp(perfilMetaCache[i].id, m->id)) { perfilMetaMesclar(m, &perfilMetaCache[i]); achou = 1; break; }
+  pthread_mutex_unlock(&perfilMetaTrava);
+  return achou;
+}
+static void perfilMetaGuardar(const PerfilMeta *m) {
+  pthread_mutex_lock(&perfilMetaTrava);
+  int i;
+  for (i = 0; i < perfilMetaCacheN; i++) if (!strcmp(perfilMetaCache[i].id, m->id)) break;
+  if (i == perfilMetaCacheN) {
+    if (perfilMetaCacheN < PERFIL_META_CACHE) perfilMetaCacheN++;
+    else { i = perfilMetaCacheProx; perfilMetaCacheProx = (perfilMetaCacheProx + 1) % PERFIL_META_CACHE; }
+  }
+  perfilMetaCache[i] = *m;
+  pthread_mutex_unlock(&perfilMetaTrava);
+}
+
+// FIO DO PERFIL: completa as metas (cache, depois /meta) e monta o painel.
+static void perfilNuvioMontar(PerfilPedido *p, PerfilDados *d) {
+  int rede = 0;
+  for (int i = 0; i < p->nMetas; i++) {
+    PerfilMeta *m = &p->metas[i];
+    if (perfilMetaDoCache(m) || !perfilMetaIncompleta(m) || rede >= PERFIL_META_REDE) continue;
+    rede++;
+    char *corpo = metaprov_meta(p->tipos[i], m->id, PERFIL_META_S, NULL);
+    if (corpo) {
+      if (perfilnuvio_meta_ler(corpo, m)) perfilMetaGuardar(m);
+      free(corpo);
+    }
+  }
+  perfilnuvio_montar(p->vistos, p->nVistos, p->prog, p->nProg, p->perfil,
+                     p->metas, p->nMetas, p->agoraMs, d);
+  snprintf(d->nome, sizeof d->nome, "%s", p->nome);
+  snprintf(d->avatar, sizeof d->avatar, "%s", p->avatar);
+}
 static void *carregarPerfil(void *u) {
   PerfilPedido *pedido=u;
-  PerfilDados novo={0};
+  // No heap: PerfilDados passa de 60 KB com o painel de 30 dias, e a pilha
+  // de fio do WASM/TV nao e lugar para isso.
+  PerfilDados *novo=calloc(1,sizeof *novo);
   int sucesso=0;
   unsigned long long skCredencial=0;
   // A pagina pertence a pessoa, nao ao Trakt. Preferimos o Trakt quando os
   // dois estao ligados para preservar o snapshot antigo; num perfil so com
   // Simkl, identidade e historico mensal vem do proprio Simkl.
-  if (trakt_ativo()) sucesso=trakt_perfil(&novo);
-  if (!sucesso && simkl_ativo()) {
+  if (novo && pedido->nuvio) { perfilNuvioMontar(pedido, novo); sucesso=1; }
+  else if (novo && trakt_ativo()) sucesso=trakt_perfil(novo);
+  if (novo && !sucesso && !pedido->nuvio && simkl_ativo()) {
     skCredencial=simklauth_credencial_copiar(NULL,0);
-    sucesso=simkl_perfil(&novo);
+    sucesso=simkl_perfil(novo);
   }
   pthread_mutex_lock(&perfilTrava);
   // A troca de conta/perfil invalida a resposta. O worker termina, mas nunca
@@ -571,10 +657,13 @@ static void *carregarPerfil(void *u) {
      perfis_ativo()==pedido->perfil && !strcmp(sessao_usuario(),pedido->conta)){
     perfilSucesso=sucesso;
     perfilSimklCredencial=skCredencial;
-    perfilPendente=novo;
+    if (novo) perfilPendente=*novo; else { memset(&perfilPendente,0,sizeof perfilPendente); perfilSucesso=0; }
     atomic_store_explicit(&perfilCarga,2,memory_order_release);
   }
   pthread_mutex_unlock(&perfilTrava);
+  free(novo);
+  free(pedido->vistos);
+  free(pedido->prog);
   free(pedido);
   return NULL;
 }
@@ -589,6 +678,79 @@ static void invalidarPerfil(void) {
   pthread_mutex_lock(&perfilTrava);memset(&perfilPendente,0,sizeof perfilPendente);perfilSucesso=0;pthread_mutex_unlock(&perfilTrava);
   perfil_definir_dados(NULL);
 }
+// Assinatura barata do progresso do perfil: linhas, instante mais novo e soma
+// das posicoes. Muda quando um pull/push do progresso mexe em algo.
+static ProgRegistro perfilProgBuf[PROG_MAX];
+static long long perfilProgAssinatura(int perfil) {
+  int n = prog_ler(perfilProgBuf, PROG_MAX);
+  long long sig = 0, mx = 0, k = 0;
+  for (int i = 0; i < n; i++) {
+    if (perfilProgBuf[i].perfil != perfil) continue;
+    k++;
+    sig += (long long)perfilProgBuf[i].posSeg;
+    if (perfilProgBuf[i].lastWatchedMs > mx) mx = perfilProgBuf[i].lastWatchedMs;
+  }
+  return sig * 31 + mx * 7 + k;
+}
+static unsigned perfilRevVistos;
+static long long perfilProgSig;
+static Uint32 perfilPedidoEm;
+
+// FIO PRINCIPAL: copia o retrato de Nuvio sync no pedido. Sem sessao, ou com
+// a conta vazia e um tracker ligado, deixa `nuvio` em 0 (reserva Trakt/Simkl).
+static void perfilNuvioCopiar(PerfilPedido *p) {
+  int nv, nr, k = 0;
+  char ids[PERFIL_META_MAX][24];
+  if (!sessao_logada()) return;
+  nv = contalib_n_vistos();
+  if (nv < 0) nv = 0;
+  nr = prog_ler(perfilProgBuf, PROG_MAX);
+  p->prog = malloc(sizeof *p->prog * (size_t)(nr > 0 ? nr : 1));
+  p->vistos = malloc(sizeof *p->vistos * (size_t)(nv > 0 ? nv : 1));
+  if (!p->prog || !p->vistos) { free(p->prog); free(p->vistos); p->prog = NULL; p->vistos = NULL; return; }
+  for (int i = 0; i < nr; i++) if (perfilProgBuf[i].perfil == p->perfil) p->prog[k++] = perfilProgBuf[i];
+  p->nProg = k;
+  for (int i = 0; i < nv; i++) { const ContaVisto *x = contalib_visto(i); if (x) p->vistos[p->nVistos++] = *x; }
+  if (!p->nVistos && !p->nProg && (trakt_ativo() || simkl_ativo())) {
+    free(p->prog); free(p->vistos); p->prog = NULL; p->vistos = NULL; p->nProg = p->nVistos = 0;
+    return;
+  }
+  p->agoraMs = prog_agora_ms();
+  p->nMetas = perfilnuvio_ids_meta(p->vistos, p->nVistos, p->prog, p->nProg, p->perfil,
+                                   p->agoraMs, ids, p->tipos, PERFIL_META_MAX);
+  for (int i = 0; i < p->nMetas; i++) {
+    PerfilMeta *m = &p->metas[i];
+    snprintf(m->id, sizeof m->id, "%s", ids[i]);
+    for (int q = 0, n = contalib_n(); q < n; q++) {
+      const ContaLibItem *it = contalib_item(q);
+      if (!it || strcmp(it->id, m->id)) continue;
+      snprintf(m->titulo, sizeof m->titulo, "%s", it->titulo);
+      snprintf(m->poster, sizeof m->poster, "%s", it->poster);
+      snprintf(m->genero, sizeof m->genero, "%s", it->genero);
+      break;
+    }
+  }
+  { const ContaPerfil *cp = perfis_item_ativo();
+    if (cp) {
+      snprintf(p->nome, sizeof p->nome, "%s", cp->nome);
+      snprintf(p->avatar, sizeof p->avatar, "%s", cp->avatarUrl);
+    } }
+  p->nuvio = 1;
+}
+
+// Com a tela aberta, um pull novo de vistos ou de progresso refaz o painel —
+// olhando a cada 5 s e pedindo no maximo a cada 30 s.
+static void pedirPerfil(void);
+static void perfilNuvioVigiar(Uint32 agora) {
+  static Uint32 olhou;
+  if (!sessao_logada() || atomic_load_explicit(&perfilCarga, memory_order_acquire) != 0) return;
+  if (agora - olhou < 5000) return;
+  olhou = agora;
+  if (agora - perfilPedidoEm < 30000) return;
+  if (contalib_vistos_revisao() == perfilRevVistos && perfilProgAssinatura(perfis_ativo()) == perfilProgSig) return;
+  pedirPerfil();
+}
+
 static void pedirPerfil(void) {
   pthread_t t;
   int esperado = 0;
@@ -600,8 +762,12 @@ static void pedirPerfil(void) {
   pedido->geracao=atomic_load_explicit(&perfilGeracao,memory_order_acquire);
   pedido->perfil=perfis_ativo();
   snprintf(pedido->conta,sizeof pedido->conta,"%s",sessao_usuario());
+  perfilRevVistos=contalib_vistos_revisao();
+  perfilProgSig=perfilProgAssinatura(pedido->perfil);
+  perfilPedidoEm=SDL_GetTicks();
+  perfilNuvioCopiar(pedido);
   if (pthread_create(&t, NULL, carregarPerfil, pedido) == 0) pthread_detach(t);
-  else { free(pedido); atomic_store(&perfilCarga,0); perfil_definir_erro("Nao foi possivel iniciar a consulta. Tente novamente."); }
+  else { free(pedido->vistos); free(pedido->prog); free(pedido); atomic_store(&perfilCarga,0); perfil_definir_erro("Nao foi possivel iniciar a consulta. Tente novamente."); }
 }
 
 // A verificacao faz uma requisicao por fonte candidata e bloqueia; num fio
@@ -3767,6 +3933,8 @@ int app_iniciar(const char *dirArte) {
   // o pull da biblioteca e dos vistos respeita o que a pessoa mudou aqui.
   salvos_ao_definir(salvoParaConta);
   contalib_filtros(contapend_lista_oculta, contapend_visto_oculto);
+  contalib_gestos_locais(contapend_vistos_marcados);   // Stage E: local watched history first
+  familia_rede_registrar();   // Stage H: debug-only, test-account-only, read-only
   // DESMARCAR GANHA (vistonao.h): o que a pessoa desmarcou nesta TV fica
   // guardado por perfil e barra o "visto" de qualquer fonte (Trakt, conta,
   // jornal) que nao seja mais novo que o gesto. Antes da primeira leitura.
@@ -4862,6 +5030,12 @@ static void recuperarErroFonte(void) {
 }
 
 void app_atualizar(float dt, Uint32 agora) {
+  // Revoking debug upload permission must not wait for a profile or network job.
+  // Activation and snapshots still use the authenticated profile-gated dispatcher.
+  if (deeplink_desarmar_pendente()) {
+    j7arme_pedir(J7_DESARMAR, NULL);
+    j7arme_passo();
+  }
   relogioFocoValidar();
   ajustes_fontes_atualizar();
   { static int morno = -1; int ligado = ajustes_retomada_morna();
@@ -5287,6 +5461,12 @@ void app_atualizar(float dt, Uint32 agora) {
   // E o ciclo automatico — nunca com o player aberto: rajada de HTTP no meio
   // do video disputa CPU e rede com o decodificador.
 #ifndef NV_LEVE
+  // Closing the player asks for an account refresh (settings changed on another
+  // device during playback), on the same 2.5 s / once-a-minute rule as resume.
+  { static int playerAntes;
+    int aberto = player_aberto();
+    if (playerAntes && !aberto) sync_pedir_atualizacao((unsigned)agora, "player fechado");
+    playerAntes = aberto; }
   if (!player_aberto()) sync_periodico((unsigned)agora);
 #endif
   // "CONTINUAR ASSISTINDO" ENVELHECE (issue #66, "it's not updating"). A
@@ -5304,6 +5484,30 @@ void app_atualizar(float dt, Uint32 agora) {
       printf("[home] 10 min na home: refazendo Continuar assistindo\n"); fflush(stdout);
       desc_refazer_continuar();
     } }
+  // STAGE E: A WATCHED/UNWATCHED GESTURE REFRESHES "CONTINUE WATCHING" NOW
+  // (regular Nuvio recomputes it from its local watched history on each
+  // change). Before, a mark from the episode menu, a card menu, the Saved
+  // panel or the Agenda only showed after the next account pull — in practice
+  // a profile switch. Only this row is rebuilt (desc_refazer_continuar: one
+  // thread, coalesced; no full Home reload), and not while the player is open:
+  // its exit already rebuilds, and a pending gesture is picked up right after.
+  { static unsigned revGestos;
+    static int conhecido;
+    unsigned r = contapend_revisao_gestos();
+    if (!conhecido) { revGestos = r; conhecido = 1; }
+    else if (r != revGestos && !player_aberto()) {
+      revGestos = r;
+      printf("[home] gesto de visto: refazendo Continuar assistindo\n"); fflush(stdout);
+      desc_refazer_continuar();
+    } }
+  // STAGE H — FAMILY WATCHING (familia.h): snapshot of the profiles and of the
+  // settings that gate the row (throttled inside), and "Home opened" asks the
+  // next catalogue cycle for a fresh read. No network here.
+  familia_passo();
+  { static int naHome;
+    int ehHome = tela == TELA_HOME;
+    if (ehHome && !naHome) familia_home_aberta();
+    naHome = ehHome; }
 
   // A LISTA LOCAL TEM DE SOBREVIVER A REPUBLICACAO DO CATALOGO.
   //
@@ -5330,19 +5534,20 @@ void app_atualizar(float dt, Uint32 agora) {
   trocaDeTituloSeSolicitada();
   marcarAssistidoSeSolicitado();
   if (atomic_load_explicit(&perfilCarga, memory_order_acquire) == 2) {
-    PerfilDados snapshot; int sucesso;
+    static PerfilDados snapshot; int sucesso;   // static: >60 KB, fio principal
     pthread_mutex_lock(&perfilTrava); snapshot=perfilPendente; sucesso=perfilSucesso;
     if (perfilSimklCredencial && perfilSimklCredencial != simklauth_credencial_copiar(NULL,0)) sucesso=0;
     pthread_mutex_unlock(&perfilTrava);
     if (sucesso) perfil_definir_dados(&snapshot);
     else if (!trakt_ativo() && !simkl_ativo())
       perfil_definir_estado(PERFIL_ESTADO_DESCONECTADO,
-                            "Nenhum histórico conectado. Vincule Trakt ou Simkl para ver seu perfil.");
+                            "Entre na sua conta Nuvio para ver as estatísticas deste perfil.");
     else perfil_definir_estado(PERFIL_ESTADO_INDISPONIVEL,
                                "Perfil indisponível. O último resumo continua seguro, se houver.");
     atomic_store_explicit(&perfilCarga, 0, memory_order_release);
   }
   if (tela == TELA_PERFIL && perfil_pediu_atualizar()) pedirPerfil();
+  if (tela == TELA_PERFIL && perfil_aberto()) perfilNuvioVigiar(SDL_GetTicks());
   // Titulo escolhido no painel de Salvos. Ele entrega o IMDb e nao um indice:
   // a lista dele inclui titulos que NAO estao no catalogo (vieram do arquivo
   // local, ver salvospainel.c), e um indice para esses nao existe. Sem item no
@@ -5422,7 +5627,14 @@ void app_atualizar(float dt, Uint32 agora) {
   }
   { DeepLink dl;
     if (tela != TELA_LOGIN && tela != TELA_ESCOLHA_PERFIL &&
-        !desc_titulo_buscando() && deeplink_pegar(&dl)) deeplinkAbrir(&dl); }
+        !desc_titulo_buscando() && deeplink_pegar(&dl)) {
+      // Stage J0 account probe (Android debug builds only): never opens a title.
+      if (dl.tipo == DL_SONDA_J0) j0sonda_pedir(dl.sondaFase, dl.sondaToken);
+      else if (dl.tipo == DL_J7) j7arme_pedir(dl.sondaFase, dl.sondaToken);   // J7a test uploads
+      else deeplinkAbrir(&dl);
+    }
+    j0sonda_passo();
+    j7arme_passo(); }
   // Da pagina do titulo, um titulo escolhido no painel de Salvos/avisos TROCA a
   // pagina (a de baixo fecha seca). So esse pedido: os demais seguem de fora.
   if (detail_aberto() && !player_aberto()) {
@@ -6970,6 +7182,7 @@ static void desenharCtxDoPainel(Uint32 agora) {
 // pinta-la direto ou uma vez so, dentro do FBO do fundo parado.
 static void desenharAtrasDoPainel(void *ctx) {
   Uint32 agora = *(const Uint32 *)ctx;
+  menu_preparar_fundo();
   // "Ver tudo" cobre a tela de tras por completo (fundo opaco), entao a home
   // nao precisa ser desenhada por baixo — a mesma conta do detail_cobre_tela.
   if (!detail_cobre_tela() && !vertudo_aberta()) {

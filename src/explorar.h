@@ -23,5 +23,10 @@ void explorar_desenhar(Uint32 agora);
 int explorar_quer_sair(void);
 int explorar_pediu_relogio(void);
 int explorar_pediu_abrir(int *indice);
+// O id (mapa_clima_nome) do clima aberto, ou -1 fora dele. Para os testes.
+int explorar_clima_aberto(void);
+// TV: a secao (0 destaque, 1 colecoes, 2 continuar, 3 filtros, 4 grade) e o
+// indice em foco na pagina de climas. Para os testes.
+void explorar_tv_foco(int *secao, int *indice);
 
 #endif

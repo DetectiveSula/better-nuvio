@@ -1,0 +1,2716 @@
+{
+  "date": "2026-11-08",
+  "device": "BlueStacks Air, Android ARM64, profile 1",
+  "installed_apk_sha256": "24875b3ee997d220aa26e9c8fc9e440e3834e2d4d954d762b3216895b7c3af6f",
+  "scope": "Approved temporary local settings and Scrubs playback on dedicated profile. Validation build blocks settings/progress/provider writes and sync arming. Authentication refresh remains permitted. No main-account or credential inspection.",
+  "summary": {
+    "bindings": 434,
+    "observed_bindings": 98,
+    "all_settings_certified": false,
+    "restart_tests": "App exit/reopen: Modern layout and Hide pill; not all controls",
+    "preferences_restored": "Original values restored for tested general settings and player styles. Exact private progress/title-choice files could not be backed up; do not claim byte-for-byte restoration.",
+    "filter_checkbox_ui_checks": 228,
+    "filter_subeditor_rows": 29,
+    "sort_choices": 6
+  },
+  "navigation": "Edge gesture opens menu; directional keys/OK enter settings, categories and editors; Back returns editor/category/Home. Pointer clicks appeared offset; source/emulator/tool cause unresolved.",
+  "controls": [
+    {
+      "id": "AJ_QUALIDADE",
+      "label": "Maximum quality",
+      "device_status": "PARTIAL editor and playback; selection policy needs follow-up",
+      "evidence": "Automatic -> 720p saved and preview changed, but restarting existing Scrubs playback resumed 1080p AAC. Source code uses a preference penalty, not a hard exclusion; reuse/available-source path not established by this device observation. Automatic restored."
+    },
+    {
+      "id": "AJ_DV",
+      "label": "Dolby Vision",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ATMOS",
+      "label": "Prefer Dolby Atmos sound",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LEG_LINGUA",
+      "label": "Subtitle language",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_AUD_LINGUA",
+      "label": "Audio language",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PAUSA_OVERLAY",
+      "label": "Pause panel",
+      "device_status": "PARTIAL actual Off behaviour; On idle panel follow-up",
+      "evidence": "On -> Off disabled subordinate settings. Paused player retained stable controls without idle overlay and Back hide-then-exit worked. Original On restored. Overlay timing/hover interaction with On still needs controlled verification."
+    },
+    {
+      "id": "AJ_FONTE_MANUAL",
+      "label": "Pick the source yourself",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_AUTO",
+      "label": "Automatic source",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_REPOR",
+      "label": "Another source on failure",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_TEXTO",
+      "label": "Source text",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LANDSCAPE",
+      "label": "Landscape posters",
+      "device_status": "PARTIAL; explicit row-shape precedence established",
+      "evidence": "Off → On → Off. Existing explicit portrait rows retain shape, as FIL_TIPO_CARTAZ maps to FILEIRA_POSTER. Global preference applies automatic row types; automatic-row device test pending."
+    },
+    {
+      "id": "AJ_HERO_CHEIO",
+      "label": "Full-screen backdrop",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_HERO_FUNDO",
+      "label": "Featured background image",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_HERO_ARTE_DIF",
+      "label": "Hero with different art",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_HERO_TRAILER",
+      "label": "Trailer on the hero",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FIL_LIMITE",
+      "label": "Row limit",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FIL_ORDEM",
+      "label": "Reorder and enable rows",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_RAIL",
+      "label": "Sidebar",
+      "device_status": "PASS actual collapsed/pinned rail with Modern sidebar Off",
+      "evidence": "Pinned -> Collapsed removes persistent left rail and widens settings; Pinned restores it. Original Pinned restored. Modern sidebar mode correctly disables this dependent control."
+    },
+    {
+      "id": "AJ_RAIL_MODERNA",
+      "label": "Modern sidebar",
+      "device_status": "PARTIAL mode and dependencies observed in Modern; restored",
+      "initial": "On",
+      "tested": [
+        "Off",
+        "On"
+      ],
+      "restored": "On",
+      "evidence": "On -> Off enables legacy Sidebar pinned/collapsed and menu-position controls; actual side/top/collapsed paths exercised. On restored; Home layout restored Dynamic. Full visual icon-difference/restart matrix not certified."
+    },
+    {
+      "id": "AJ_RAIL_BLUR",
+      "label": "Modern sidebar blur",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_HERO",
+      "label": "Show hero",
+      "device_status": "PASS actual Dynamic visibility; restored",
+      "initial": "Off",
+      "tested": [],
+      "restored": "Off",
+      "evidence": "Off → On → Off. Up from restored row focus reveals actual full hero. Off removes reserved hero area."
+    },
+    {
+      "id": "AJ_HERO_CATALOGOS",
+      "label": "Hero catalogs",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PS_FUNDO",
+      "label": "Profile picker background",
+      "device_status": "PASS actual picker modes; remote artwork branch not exercised",
+      "evidence": "Movies, Stripes, Profile art, Light and Projector visited individually. Stripes renders stripes; Profile art without remote art uses colour glow, Light uses colour glow, Projector renders cinema beam/film border. Movies original restored. No remote profile artwork written."
+    },
+    {
+      "id": "AJ_DESCOBRIR",
+      "label": "Discover location",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ROTULOS",
+      "label": "Poster labels",
+      "device_status": "PASS actual portrait poster-label visibility; restored",
+      "evidence": "On -> Off removed title/type lines under portrait cards while in-card landscape labels remained. On restored, portrait labels returned."
+    },
+    {
+      "id": "AJ_NOME_ADDON",
+      "label": "Add-on name in the row",
+      "device_status": "PASS fixed and verified in approved updated BlueStacks APK",
+      "evidence": "Installed 24875b3e… approved update. On adds from Nuvio Catalog Addon beside actual Trending Movies/Series headings; no caption on CW/Family rows, no counter overlap. Setting retained on settings reentry. Off restored and captions disappeared. Runtime key-based snapshot isolates profiles/duplicate catalogue identities; four heading styles pass host draw checks."
+    },
+    {
+      "id": "AJ_SUFIXO_TIPO",
+      "label": "Movie or series in the row name",
+      "device_status": "PASS actual row heading; restored",
+      "evidence": "Off -> On changed Movies by Year to Movies by Year - Movie. Names already ending Series did not duplicate the suffix. Off restored."
+    },
+    {
+      "id": "AJ_OCULTAR_NLANC",
+      "label": "Hide unreleased",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_NOTAS_HOME",
+      "label": "IMDb rating on posters",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_GRAD_CLASSICO",
+      "label": "Old highlight on the focused poster",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_CW_LIGADO",
+      "label": "Show \"Continue Watching\"",
+      "device_status": "PASS actual Home visibility off/on",
+      "evidence": "Off removes Continue Watching while Family Watching remains. On restores Scrubs and Abbott Elementary; original On restored."
+    },
+    {
+      "id": "AJ_CW_OK",
+      "label": "OK on the card",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_CW_FONTE",
+      "label": "Source for \"Continue Watching\"",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_CW_ESTILO",
+      "label": "\"Continue Watching\" style",
+      "device_status": "PARTIAL actual Card/Wide/Poster modes",
+      "evidence": "Saved and viewed Card, Wide and Poster on real Dynamic Home; Poster gives upright artwork, Card and Wide currently both landscape. Original Card restored. Initial Right outside editor did not change value; repeated using actual editor and confirmed saved Poster before Home inspection."
+    },
+    {
+      "id": "AJ_CW_THUMB",
+      "label": "Episode thumbnail",
+      "device_status": "PASS actual episode versus series artwork",
+      "evidence": "On -> Off changes Scrubs card from episode scene to series artwork. Original On restored, episode scene returned."
+    },
+    {
+      "id": "AJ_CW_BLUR_PROX",
+      "label": "Blur next episode",
+      "device_status": "PARTIAL UI/dependency; eligible unwatched card not established",
+      "evidence": "Off -> On saves and shows spoiler preview. Home cards unchanged for currently resumed Scrubs and unaired Abbott; no qualifying unwatched aired episode exercised. Original Off restored."
+    },
+    {
+      "id": "AJ_CW_FURTHEST",
+      "label": "Next up from furthest episode",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_CW_NAO_EXIBIDOS",
+      "label": "Show unaired episodes",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_CW_ORDEM",
+      "label": "Sort order",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DET_BLUR_NAO_VISTOS",
+      "label": "Blur unwatched",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DET_TRAILER",
+      "label": "Trailer button",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DET_META_EXT",
+      "label": "Prefer external metadata",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DET_DATA_CHEIA",
+      "label": "Full release date",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DET_VEU",
+      "label": "Backdrop dimming",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DET_TRAILER_AUTO",
+      "label": "Auto-play trailer",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TRAILER_QUAL",
+      "label": "Trailer quality",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TRAILER_ASPECTO",
+      "label": "Trailer aspect",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TRAILER_FONTE",
+      "label": "Trailer source",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_EXPANDIR",
+      "label": "Expand poster on focus",
+      "device_status": "PASS actual focused portrait expansion Off/On; restored",
+      "evidence": "Off kept selected movie a portrait after dwell. On restored; newly focused Resident Evil initially portrait, later expanded to landscape with original 2 s delay. Explicit landscape rows unaffected."
+    },
+    {
+      "id": "AJ_EXPANDIR_ATRASO",
+      "label": "Expansion delay",
+      "device_status": "PARTIAL original 2 s actual dwell consumer; other values pending",
+      "evidence": "Original 2 s displayed and unchanged. Newly focused card remained portrait immediately, expanded after dwell. Exact timing and all 0–10 values not yet measured on device."
+    },
+    {
+      "id": "AJ_NAV_RAPIDA",
+      "label": "Fast horizontal navigation",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_BORDA_FOCO",
+      "label": "Border on the focused card",
+      "device_status": "PASS actual focused-card border Off/On; restored",
+      "evidence": "Off removed coloured ring while expanded size still indicated focus on Project Hail Mary; original On restored and saved in settings."
+    },
+    {
+      "id": "AJ_PROF",
+      "label": "Depth effect",
+      "device_status": "PARTIAL Android UI switch; full device rendering pending",
+      "initial": "On",
+      "tested": [
+        "Off",
+        "On"
+      ],
+      "restored": "On",
+      "evidence": "Individually switched Off and restored On; master Off disables children with prerequisite messages. Surface-specific preview content present. This does not certify actual media-surface effects on BlueStacks; local GL consumer tests remain separate."
+    },
+    {
+      "id": "AJ_PROF_BORDA",
+      "label": "Edge glow",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PROF_BRILHO",
+      "label": "Top sheen strength",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PROF_COBERTURA",
+      "label": "Edge coverage",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PROF_POSTERS",
+      "label": "Depth on posters",
+      "device_status": "PARTIAL Android UI switch; full device rendering pending",
+      "initial": "On",
+      "tested": [
+        "Off",
+        "On"
+      ],
+      "restored": "On",
+      "evidence": "Individually switched Off and restored On; master Off disables children with prerequisite messages. Surface-specific preview content present. This does not certify actual media-surface effects on BlueStacks; local GL consumer tests remain separate."
+    },
+    {
+      "id": "AJ_PROF_CW",
+      "label": "Depth on \"Continue\"",
+      "device_status": "PARTIAL Android UI switch; full device rendering pending",
+      "initial": "On",
+      "tested": [
+        "Off",
+        "On"
+      ],
+      "restored": "On",
+      "evidence": "Individually switched Off and restored On; master Off disables children with prerequisite messages. Surface-specific preview content present. This does not certify actual media-surface effects on BlueStacks; local GL consumer tests remain separate."
+    },
+    {
+      "id": "AJ_PROF_EPS",
+      "label": "Depth on episodes",
+      "device_status": "PARTIAL Android UI switch; full device rendering pending",
+      "initial": "On",
+      "tested": [
+        "Off",
+        "On"
+      ],
+      "restored": "On",
+      "evidence": "Individually switched Off and restored On; master Off disables children with prerequisite messages. Surface-specific preview content present. This does not certify actual media-surface effects on BlueStacks; local GL consumer tests remain separate."
+    },
+    {
+      "id": "AJ_PROF_ELENCO",
+      "label": "Depth on cast",
+      "device_status": "PARTIAL Android UI switch; full device rendering pending",
+      "initial": "On",
+      "tested": [
+        "Off",
+        "On"
+      ],
+      "restored": "On",
+      "evidence": "Individually switched Off and restored On; master Off disables children with prerequisite messages. Surface-specific preview content present. This does not certify actual media-surface effects on BlueStacks; local GL consumer tests remain separate."
+    },
+    {
+      "id": "AJ_PROF_TRAILERS",
+      "label": "Depth on trailers",
+      "device_status": "PARTIAL Android UI switch; full device rendering pending",
+      "initial": "On",
+      "tested": [
+        "Off",
+        "On"
+      ],
+      "restored": "On",
+      "evidence": "Individually switched Off and restored On; master Off disables children with prerequisite messages. Surface-specific preview content present. This does not certify actual media-surface effects on BlueStacks; local GL consumer tests remain separate."
+    },
+    {
+      "id": "AJ_LARGURA_DP",
+      "label": "Poster card width",
+      "device_status": "PASS Home geometry and corrected installed preview; preset range partial",
+      "initial": "Comfort (134 dp)",
+      "tested": [
+        "74 dp (intermediate)",
+        "Compact (104 dp)",
+        "Comfort (134 dp)"
+      ],
+      "restored": "Comfort (134 dp)",
+      "evidence": "Approved 197cc APK preview narrowed at 104 versus 134 dp. Restored original Comfort 134 dp. Previous actual Home geometry passed; not all widths/restart combinations certified."
+    },
+    {
+      "id": "AJ_RAIO_DP",
+      "label": "Poster corners",
+      "device_status": "PASS Home geometry and corrected sharp-corner preview; range partial",
+      "initial": "Rounded (12 dp)",
+      "tested": [
+        "Sharp (0 dp)",
+        "Rounded (12 dp)"
+      ],
+      "restored": "Rounded (12 dp)",
+      "evidence": "Approved 197cc APK actual preview corners changed from rounded 12 through 6 to sharp 0; restored original 12. Previous Home geometry passed; not all values certified."
+    },
+    {
+      "id": "AJ_QUALIDADE_IMG",
+      "label": "Image quality",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_IDIOMA",
+      "label": "App language",
+      "device_status": "PARTIAL — editor check",
+      "initial": "Automatic",
+      "tested": [
+        "English"
+      ],
+      "restored": "Automatic",
+      "evidence": "English row and EN preview updated; save feedback shown. Automatic restored. Other languages, whole-app translation and restart not certified."
+    },
+    {
+      "id": "AJ_ANIM",
+      "label": "Animations",
+      "device_status": "PARTIAL rendered preview / saved value",
+      "evidence": "Automatic → Reduced → Automatic; reduced sample became static. Full/reduced motion across all screens not certified."
+    },
+    {
+      "id": "AJ_RESOLUCAO",
+      "label": "Interface resolution",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TEMA",
+      "label": "Accent color",
+      "device_status": "PASS — observed render effect; restart pending",
+      "initial": "Petrol",
+      "tested": [
+        "Ocean"
+      ],
+      "restored": "Petrol",
+      "evidence": "Header icon, focused row and preview changed from petrol to blue after confirm; restored petrol visibly. Not every colour or dynamic mode tested. Further test: From the art exposes Art tone and renders red/rose dynamic colour; original Petrol restored; Art tone disappears. Other dynamic modes still pending."
+    },
+    {
+      "id": "AJ_COR_LOGO",
+      "label": "Logo color",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PERFIL_ATIVO",
+      "label": "Profile",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_SYNC",
+      "label": "Sync",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ADDONS",
+      "label": "Add-ons",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_STALKER_PORTAL",
+      "label": "MAC portal (Stalker)",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_STALKER_MAC",
+      "label": "Portal MAC",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_STALKER_LIMPAR",
+      "label": "Remove the Stalker portal",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_XTREAM_SERVIDOR",
+      "label": "Xtream server",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_XTREAM_USUARIO",
+      "label": "Xtream username",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_XTREAM_SENHA",
+      "label": "Xtream password",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_XTREAM_LIMPAR",
+      "label": "Remove Xtream",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_XTREAM_CONTA",
+      "label": "Xtream account",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_EPG_PAIS",
+      "label": "TV guide source",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_SALVOS_DEST",
+      "label": "Library source",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TRAKT",
+      "label": "Trakt",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_SIMKL",
+      "label": "Simkl",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_SAIR",
+      "label": "Sign out",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_VERSAO_I",
+      "label": "Version",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ATUALIZAR",
+      "label": "Check for updates",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ENVIAR_LOG",
+      "label": "Send log",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ENVIO_AUTO",
+      "label": "Send logs automatically",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ESPACO",
+      "label": "Images kept in memory",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TEX_MB",
+      "label": "Memory for images",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TMDB_LIGADO",
+      "label": "TMDB data",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TMDB_IDIOMA",
+      "label": "Language of title data",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TMDB_ARTE",
+      "label": "Localized artwork",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TMDB_BASICO",
+      "label": "Title and overview",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TMDB_FICHA",
+      "label": "Details",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TMDB_DATAS",
+      "label": "Release dates",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TMDB_ELENCO",
+      "label": "Cast and crew",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TMDB_PROD",
+      "label": "Production companies",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TMDB_REDES",
+      "label": "Networks and studios",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TMDB_EPS",
+      "label": "Episodes",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TMDB_TRAILERS",
+      "label": "Trailers",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TMDB_MAIS",
+      "label": "\"More like this\"",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TMDB_COL",
+      "label": "Collections and sagas",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TMDB_CW",
+      "label": "Enrich \"Continue Watching\"",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MDB_LIGADO",
+      "label": "MDBList ratings",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MDB_CHAVE",
+      "label": "MDBList key",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MDB_TRAKT",
+      "label": "Trakt ratings",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MDB_IMDB",
+      "label": "IMDb ratings",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MDB_TMDB",
+      "label": "TMDB ratings",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MDB_LETTER",
+      "label": "Letterboxd ratings",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MDB_TOMATES",
+      "label": "Rotten Tomatoes ratings",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MDB_AUDIENCIA",
+      "label": "Audience score",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MDB_META",
+      "label": "Metacritic ratings",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MDB_MAL",
+      "label": "MyAnimeList ratings",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FANART_CHAVE",
+      "label": "fanart.tv key",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DIAGNOSTICO",
+      "label": "Diagnostics and optimization",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_VELOCIDADE",
+      "label": "Speed test",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MENU_EXPLORAR",
+      "label": "Explore in the sidebar",
+      "device_status": "PASS actual menu membership and restoration",
+      "evidence": "Toggled this control alone, inspected actual Dynamic Home navigation for addition/removal, returned through Settings using the updated menu length. Restored Explore/Schedule/Profile & Stats On and TV Guide Off. This certifies visibility, not Live TV programme data."
+    },
+    {
+      "id": "AJ_MENU_GUIA",
+      "label": "TV Guide in the sidebar",
+      "device_status": "PASS actual menu membership and restoration",
+      "evidence": "Toggled this control alone, inspected actual Dynamic Home navigation for addition/removal, returned through Settings using the updated menu length. Restored Explore/Schedule/Profile & Stats On and TV Guide Off. This certifies visibility, not Live TV programme data."
+    },
+    {
+      "id": "AJ_MENU_AGENDA",
+      "label": "Schedule in the sidebar",
+      "device_status": "PASS actual menu membership and restoration",
+      "evidence": "Toggled this control alone, inspected actual Dynamic Home navigation for addition/removal, returned through Settings using the updated menu length. Restored Explore/Schedule/Profile & Stats On and TV Guide Off. This certifies visibility, not Live TV programme data."
+    },
+    {
+      "id": "AJ_MENU_PERFIL",
+      "label": "Profile & Stats in the sidebar",
+      "device_status": "PASS actual menu membership and restoration",
+      "evidence": "Toggled this control alone, inspected actual Dynamic Home navigation for addition/removal, returned through Settings using the updated menu length. Restored Explore/Schedule/Profile & Stats On and TV Guide Off. This certifies visibility, not Live TV programme data."
+    },
+    {
+      "id": "AJ_FOCO_TRAILER",
+      "label": "Trailer on the focused poster",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ITENS_FILEIRA",
+      "label": "Items per row",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_UI",
+      "label": "Interface font",
+      "device_status": "PASS actual UI appearance; subset of choices",
+      "evidence": "Inter → JetBrains Sans → Inter. Settings/sidebar typography changed visibly; remaining fonts/restart not certified."
+    },
+    {
+      "id": "AJ_GPU_EFEITOS",
+      "label": "Visual effects",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_VIDRO",
+      "label": "Glass UI",
+      "device_status": "PARTIAL rendering / dependency",
+      "evidence": "Automatic → On → Automatic; dependent outline control enabled, panel styling changes. No detailed artwork backdrop comparison."
+    },
+    {
+      "id": "AJ_P2P_LIGADO",
+      "label": "P2P server (experimental)",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_P2P_URL",
+      "label": "P2P server address",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_P2P_TESTAR",
+      "label": "Test P2P server",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_POSTER_PROV",
+      "label": "Custom posters",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_POSTER_INST",
+      "label": "SpatialPosters address",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_POSTER_TOKEN",
+      "label": "SpatialPosters token",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_POSTER_EXTRA",
+      "label": "SpatialPosters parameters",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_POSTER_CHAVE",
+      "label": "RPDB key",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_POSTER_MODELO",
+      "label": "Poster URL template",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_POSTER_TESTAR",
+      "label": "Test posters",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_HOME_LAYOUT",
+      "label": "Home layout",
+      "device_status": "PASS observed layout effects and Modern restart persistence; other cases pending",
+      "initial": "Dynamic",
+      "tested": [
+        "Default",
+        "Modern",
+        "Dynamic"
+      ],
+      "restored": "Dynamic",
+      "evidence": "Approved f0a8 APK installed and read back byte-for-byte. Modern + hero Off now starts Continue Watching near top; previously near bottom. Modern persisted across app exit/reopen. Original Dynamic restored visibly at end."
+    },
+    {
+      "id": "AJ_DEBRID_AD",
+      "label": "AllDebrid key",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DEBRID_AD_TESTAR",
+      "label": "Test AllDebrid key",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DEBRID_RD",
+      "label": "Real-Debrid key",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DEBRID_TB",
+      "label": "TorBox key",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DEBRID_PM",
+      "label": "Premiumize key",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DEBRID_RD_TESTAR",
+      "label": "Test Real-Debrid key",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DEBRID_TB_TESTAR",
+      "label": "Test TorBox key",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DEBRID_PM_TESTAR",
+      "label": "Test Premiumize key",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DET_SO_CINEMETA",
+      "label": "Always use the Nuvio catalog",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_NT_IMDB",
+      "label": "IMDb",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_NT_TOMATES",
+      "label": "Rotten Tomatoes (critics)",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_NT_AUDIENCIA",
+      "label": "Popcornmeter (audience)",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_NT_META",
+      "label": "Metacritic (critics)",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_NT_METAUSER",
+      "label": "Metacritic (users)",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_NT_TRAKT",
+      "label": "Trakt",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_NT_TMDB",
+      "label": "TMDB",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_NT_LETTER",
+      "label": "Letterboxd",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_NT_MAL",
+      "label": "MyAnimeList",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_NT_EBERT",
+      "label": "Roger Ebert (critic)",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_NT_SCORE",
+      "label": "MDBList score",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PERFIL_PESQ",
+      "label": "Searchable profile",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PERFIL_EDITAR",
+      "label": "My public profile",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_VIDRO_CONTORNO",
+      "label": "Glass outline",
+      "device_status": "PASS actual focused-row border",
+      "evidence": "On → Off → On while Glass enabled; actual focused-row cyan outline removed/restored."
+    },
+    {
+      "id": "AJ_HERO_TRAILER_SOM",
+      "label": "Trailer sound",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_HERO_TRAILER_ESPERA",
+      "label": "Hero trailer delay",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_CW_CONCLUIDO",
+      "label": "Watched percentage",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ADDONS_PRINCIPAL",
+      "label": "Use the primary profile's add-ons",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_HERO_TRANSICAO",
+      "label": "Hero transition",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ADDON_POSTER",
+      "label": "Addon posters",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ADDON_FUNDO",
+      "label": "Addon hero background",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ADDON_LOGO",
+      "label": "Addon logo",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_COL_ARTE_CONTA",
+      "label": "Account folder artwork",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_SELOS_CORES",
+      "label": "Colored badges",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DET_TRAILER_SOM",
+      "label": "Title page trailer sound",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LIVETV_RES",
+      "label": "Main resolution",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LIVETV_FORMATO",
+      "label": "Xtream format",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LIVETV_ESPERA",
+      "label": "Wait for a channel to open",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LIVETV_DIAG",
+      "label": "Live TV diagnostics",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LIVETV_MODO",
+      "label": "Channel player mode",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LIVETV_PROXY",
+      "label": "Relay the channel through the app (proxy)",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_RELOGIO",
+      "label": "Clock on screen",
+      "device_status": "PASS actual visibility",
+      "evidence": "On → Off → On; clock disappeared/reappeared."
+    },
+    {
+      "id": "AJ_RELOGIO_POS",
+      "label": "Clock position",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_SELO_VISTO",
+      "label": "Watched badge on posters",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_SEEKR_LIGADO",
+      "label": "Seek bar thumbnails",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_SEEKR_CHAVE",
+      "label": "Seekr key",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_SEEKR_TESTAR",
+      "label": "Test Seekr key",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_SEEKR_FITA",
+      "label": "Thumbnail strip",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_SEEKR_AJUSTE",
+      "label": "Thumbnail sync",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_SAIDA_PLAYER",
+      "label": "When leaving mid-movie",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_REACAO_CREDITOS",
+      "label": "Ask what you thought at the credits",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_PRAZO",
+      "label": "How long to wait for add-ons",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_VER_REGISTRO",
+      "label": "View the log on screen",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MEDIDOR",
+      "label": "Performance meter",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_GUIA",
+      "label": "User guide",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_SELOS_PACOTE",
+      "label": "Badge pack",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_SELOS_PACOTE_ADD",
+      "label": "Add badge pack",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_SELOS_PACOTE_REM",
+      "label": "Remove pack",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TAMANHO_UI",
+      "label": "Interface size",
+      "device_status": "PARTIAL preview and saved value",
+      "evidence": "Automatic → 115% → Automatic. Player/panel sample scales; actual player controls at 115% not yet measured."
+    },
+    {
+      "id": "AJ_FUNDO",
+      "label": "Background",
+      "device_status": "PARTIAL — editor/preview check",
+      "initial": "Frost",
+      "tested": [
+        "Blurred art"
+      ],
+      "restored": "Frost",
+      "evidence": "Selected preview, label and category summary updated; Frost restored. Real image-backed background effect not certified from settings screen."
+    },
+    {
+      "id": "AJ_VIDRO_OPAC",
+      "label": "Glass opacity",
+      "device_status": "UI / preview only; real-art comparison pending",
+      "evidence": "60% → 70% → 60%; editor and selected illustration update."
+    },
+    {
+      "id": "AJ_VIDRO_FOSCO",
+      "label": "Frosted glass",
+      "device_status": "UI / preview only; real-art comparison pending",
+      "evidence": "Automatic → Off → Automatic; existing no-art backdrop cannot certify blur changes."
+    },
+    {
+      "id": "AJ_ICONE_APP",
+      "label": "App Icon & Banner",
+      "device_status": "BLOCKED by existing supporter entitlement",
+      "evidence": "Opened existing informational gate. No purchase, entitlement change, launcher alias or banner mutation performed."
+    },
+    {
+      "id": "AJ_DISCORD",
+      "label": "Discord",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TAMANHO_AJUSTES",
+      "label": "Settings size",
+      "device_status": "PASS actual settings geometry; subset of choices",
+      "evidence": "100% → 90% → 100%; actual sidebar/header/rows shrink and restore."
+    },
+    {
+      "id": "AJ_LOGO_TRAILER",
+      "label": "Hide logo during trailer",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LEG_LINGUA2",
+      "label": "Second subtitle language",
+      "device_status": "PARTIAL saved-value/reload; not automatic secondary activation",
+      "evidence": "From account -> English -> Spanish saved and survived reopening settings, then restored. Code uses language for addon requests and candidate grouping/recommendations; no automatic secondary-selection call established. Manual secondary selection works independently."
+    },
+    {
+      "id": "AJ_LEG_SYNC_AUDIO",
+      "label": "Sync by audio",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_CACHE_SEEK",
+      "label": "Keep the downloaded part on disk",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TRAILER_ZOOM_TPK",
+      "label": "Trailer and player zoom (experimental)",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PLUGINS",
+      "label": "Plugins",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_JF_LIGADO",
+      "label": "Personal servers (experimental)",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_JF_SERVIDOR",
+      "label": "Jellyfin address",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_JF_ENTRAR",
+      "label": "Sign in to Jellyfin",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_JF_SAIR",
+      "label": "Sign out of Jellyfin",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_AVANCADAS",
+      "label": "Show advanced options",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LEG2_POS",
+      "label": "Second subtitle position",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LEG2_TAMANHO",
+      "label": "Size",
+      "device_status": "PARTIAL settings preview/save; secondary consumer pending",
+      "evidence": "Automatic -> 150% saved and preview changed; value survived settings reopening, restored Automatic. No selected secondary remained active across media session reset, so 150% actual playback is not certified."
+    },
+    {
+      "id": "AJ_LEG2_COR",
+      "label": "Color",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LEG2_FUNDO",
+      "label": "Background",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LEG2_BORDA",
+      "label": "Edge",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_EM_SERVIDOR",
+      "label": "Emby address",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_EM_ENTRAR",
+      "label": "Sign in to Emby",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_EM_SAIR",
+      "label": "Sign out of Emby",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PX_ENTRAR",
+      "label": "Sign in to Plex",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PX_SERVIDOR",
+      "label": "Plex server",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PX_SAIR",
+      "label": "Sign out of Plex",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_PRIORIDADE",
+      "label": "What Nuvio prioritizes",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_HDR",
+      "label": "Dolby Vision and HDR",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LOGO_APP",
+      "label": "App logo",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ABERTURA",
+      "label": "App opening",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ENQUETES",
+      "label": "Receive polls",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_BUSCA_CINEMETA",
+      "label": "Search Cinemeta",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ESMAECER",
+      "label": "Screensaver",
+      "device_status": "PASS selected idle activation; restoration pending during ongoing session",
+      "evidence": "2 min → 30 s; Clock/Dim/Showcase activate after idle, wake consumes first key. Original 2 min restored, then temporarily Off to prevent wake-input loss during ongoing testing. MUST restore 2 min before ending."
+    },
+    {
+      "id": "AJ_BRILHO_PLAYER",
+      "label": "Player interface brightness",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_NOVIDADES20",
+      "label": "What's new in 2.0",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MANTER_VIDEO",
+      "label": "Keep the video ready on exit",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DESCANSO_ESTILO",
+      "label": "Screensaver style",
+      "device_status": "PASS actual idle modes",
+      "evidence": "Showcase → Clock → Dim only → Showcase. Clock fills screen; Dim darkens screen; Showcase displays title art. Original Showcase restored."
+    },
+    {
+      "id": "AJ_DESCANSO_FONTE",
+      "label": "Showcase titles",
+      "device_status": "PARTIAL actual showcase plus verified fallback",
+      "evidence": "Catalog → My list and Continue → Catalog. Showcase used catalogue fallback; src/descanso.c: montarFila explicitly falls back below three eligible personal titles. No >=3 personal-title selection certification."
+    },
+    {
+      "id": "AJ_RELOGIO_12H",
+      "label": "Clock format",
+      "device_status": "PASS actual clock formatting",
+      "evidence": "24-hour → 12-hour → 24-hour; actual clock displayed AM, restored without AM."
+    },
+    {
+      "id": "AJ_TAM_MAX",
+      "label": "Maximum file size",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TAM_MIN",
+      "label": "Minimum file size",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_APOIAR",
+      "label": "Support the project",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LEG_FORCADA",
+      "label": "Only signs when the audio is already in your language",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PLR_CLASSIF",
+      "label": "Age rating in the player",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_ESCOPO",
+      "label": "Auto-play sources",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_ADDONS_PERM",
+      "label": "Allowed add-ons",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_PLUGINS_PERM",
+      "label": "Allowed plugins",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_OUTROS",
+      "label": "Use the others if there are none",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_REGEX",
+      "label": "Filter sources by name (regex)",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_REGEX_PADRAO",
+      "label": "Filter pattern",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_REGEX_MODELO",
+      "label": "Ready-made filter",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ESPACO_FILEIRAS",
+      "label": "Space between rows",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ESPACO_TITULOS",
+      "label": "Space between titles",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PROPORCAO_PADRAO",
+      "label": "Default aspect ratio",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_CW_RETIDO_TAMBEM",
+      "label": "Also in Continue watching",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PS_CONTINUAR",
+      "label": "Continue on profile picker",
+      "device_status": "PASS actual picker preview off/on",
+      "evidence": "Off removes Scrubs programme thumbnail and progress preview. On restores them. Original On restored; same Profile 1 selected throughout."
+    },
+    {
+      "id": "AJ_DTS_AC3",
+      "label": "Convert DTS so the TV can play it",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DV_MKV",
+      "label": "Dolby Vision in MKV (experimental)",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_HIST_CONTA",
+      "label": "Send history to the Nuvio account",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_SOCIAL",
+      "label": "Social features",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_ORDEM",
+      "label": "Add-on order",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_ORDEM_USO",
+      "label": "Use the order",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_TOCAR_CONFERINDO",
+      "label": "Play while checking the source",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_AQUECER",
+      "label": "Warm up connections when a title opens",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_CONFERIR_VARIAS",
+      "label": "Check several sources at once",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_PREPARAR",
+      "label": "Prepare the source when a title opens",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_CW_PROXIMO",
+      "label": "Next episode in Continue",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_BUSCA_NUVIO",
+      "label": "Nuvio catalog results in search",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_BUSCA_ORIGEM",
+      "label": "Show the source on search results",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LAYOUT_AJUSTES",
+      "label": "Settings layout",
+      "device_status": "PASS real Panel/List layout and remote category navigation; restored",
+      "evidence": "Header reached with Up from first row; Right selected List, inspector removed and rows widened. Back -> Playback retained List and prior row focus. Returned to first Content row/header, Left restored Panel and inspector. Pointer header clicks had no effect in this TV build; touch/mouse support not certified."
+    },
+    {
+      "id": "AJ_P2P_LIMITE",
+      "label": "P2P space limit",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_P2P_DESTINO",
+      "label": "P2P cache location",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_ORDEM_ADDON",
+      "label": "Source order",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LEG_SYNC_AUTO",
+      "label": "Automatic subtitle sync",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LEG_MOSTRAR",
+      "label": "Show in player",
+      "device_status": "UI / saved-value only; list content comparison pending",
+      "evidence": "Only my languages → All → Only my languages; actual per-language candidate filtering not certified in this round."
+    },
+    {
+      "id": "AJ_AVISO_LEGAL",
+      "label": "Legal notice",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_HDR_UI",
+      "label": "Interface brightness in HDR",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TELA_ABERTURA",
+      "label": "Video opening screen",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_CW_MINIMO",
+      "label": "Minimum to enter Continue",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_BUFFER",
+      "label": "Buffer size",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PULAR_ABERTURA",
+      "label": "Skip the intro automatically",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PULAR_RESUMO",
+      "label": "Skip the recap automatically",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PROXIMO_AUTO",
+      "label": "Play the next episode automatically",
+      "device_status": "UI / dependency only; playback boundary pending",
+      "evidence": "Off → On → Off. Countdown and still-watching controls enabled/disabled. No unattended episode advancement tested."
+    },
+    {
+      "id": "AJ_PULAR_CREDITOS",
+      "label": "Skip the credits automatically",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PROXIMO_CONTAGEM",
+      "label": "Next episode countdown",
+      "device_status": "UI / saved-value only; countdown playback pending",
+      "evidence": "5 s → 6 s → 5 s, parent description updated. No end-of-episode countdown observed."
+    },
+    {
+      "id": "AJ_INTERFACE_MODO",
+      "label": "Interface mode",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MIC_BUSCA",
+      "label": "Mic button in search",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MENU_TOPO",
+      "label": "Menu position",
+      "device_status": "PASS actual top menu and corrected Settings Up route",
+      "evidence": "In Modern with Modern sidebar Off, On the side -> At the top removes rail and provides horizontal Home/Explore/Library/Schedule/Profile/Settings/Search menu. Up from Settings Search category reaches top navigation. Down returns underlying Home (Settings is modal); Return Settings reopens it. Original On the side restored."
+    },
+    {
+      "id": "AJ_ABAS_ESTILO",
+      "label": "Tab style",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TECLADO_ANDROID",
+      "label": "Keyboard",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LEG_CONTORNO_COR",
+      "label": "Subtitle outline color",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FALHA_PROVEDORES",
+      "label": "Switch provider on failure",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FALHA_PROVEDOR_ORDEM",
+      "label": "Provider order and limits",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FALHA_RD_LIMITE",
+      "label": "Links on Real-Debrid",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FALHA_TB_LIMITE",
+      "label": "Links on TorBox",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FALHA_PM_LIMITE",
+      "label": "Links on Premiumize",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FALHA_AD_LIMITE",
+      "label": "Links on AllDebrid",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FALHA_ADDONS",
+      "label": "Switch add-on on failure",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FALHA_ADDON_ORDEM",
+      "label": "Add-on order and limits",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FALHA_ADDON_LIMITE",
+      "label": "Links in this add-on",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_RETOMADA_MORNA",
+      "label": "Quick resume on return",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MANTER_PRAZO",
+      "label": "Time to keep video ready",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ESTAT_TAMANHO",
+      "label": "Live statistics size",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_OCULTAR_FILMES_VISTOS",
+      "label": "Hide watched movies",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ESTAT_LADO",
+      "label": "Live statistics side",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DICASCONTROLE",
+      "label": "Remote tips",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_HERO_GENERO",
+      "label": "Show genre on hero",
+      "device_status": "PASS actual hero metadata",
+      "evidence": "On → Off → On; Scrubs hero TV Show/Comedy line removed/restored."
+    },
+    {
+      "id": "AJ_ABERTURA_ADDON",
+      "label": "Show add-on on opening",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_HERO_SINOPSE",
+      "label": "Show synopsis on hero",
+      "device_status": "PASS actual hero synopsis",
+      "evidence": "On → Off → On; Scrubs synopsis removed and setting restored."
+    },
+    {
+      "id": "AJ_HERO_NOTAS",
+      "label": "Show ratings on hero",
+      "device_status": "PASS actual Home rating visibility; restored",
+      "evidence": "On -> Off removed IMDb 8.2 on the same Abbott Elementary hero. On restored and IMDb 8.2 returned."
+    },
+    {
+      "id": "AJ_HERO_ANO",
+      "label": "Show year on hero",
+      "device_status": "PASS actual Home year visibility; restored",
+      "evidence": "Off -> On added 2021 on the same Abbott Elementary hero; Off restored, year removed."
+    },
+    {
+      "id": "AJ_HERO_DURACAO",
+      "label": "Show runtime on hero",
+      "device_status": "PASS actual Home runtime visibility; restored",
+      "evidence": "On -> Off removed 22 min on the same Abbott Elementary hero; On restored, 22 min returned."
+    },
+    {
+      "id": "AJ_CURADORIA_URL",
+      "label": "Curation address",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ABERTURA_FUNDO",
+      "label": "Opening screen backdrop",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_HERO_SINOPSE_TAM",
+      "label": "Synopsis size",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_EP_TAMANHO",
+      "label": "Episode card size",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_PRECARREGAR",
+      "label": "Preload video",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PROVEDORES_ESCOPO",
+      "label": "Provider setup",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MURAL_TITULOS",
+      "label": "Titles in Mural",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_AMIGOS_ESTILO",
+      "label": "Friends row style",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_IDIOMA_AUDIO",
+      "label": "Prefer audio language",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_AUD_LINGUA2",
+      "label": "Second audio language",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_BAIXAR_REGISTRO",
+      "label": "Download log",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FILTROS_FONTES",
+      "label": "Filters & Sorting",
+      "device_status": "PASS all 29 Android subeditors exercised; not live stream certification",
+      "initial": "0 active rules",
+      "tested": [
+        "All 228 checkboxes On/Off",
+        "Six sort choices",
+        "Five numeric rows",
+        "Two text rows"
+      ],
+      "restored": "0 active rules",
+      "evidence": "All 21 dimension/mode sheets reached exact selected counts (8,13,16,13,5,6,15), then None. Audio Required/Excluded rerun separately to avoid ambiguous transient screenshots. Final parent summary 0 active rules. Every checkbox individually actuated; full chosen-source consumer effects remain mocked."
+    },
+    {
+      "id": "AJ_FILTRO_TAM_MAX",
+      "label": "Maximum source size",
+      "device_status": "PASS Android editor/save/return/restoration; real source effects pending",
+      "initial": "0 / unrestricted",
+      "tested": [
+        "1",
+        "0"
+      ],
+      "restored": "0 / unrestricted",
+      "evidence": "Numeric confirmation returned to correct filter row, displayed 1 (or 1 GB), and restored 0. Parent active-rule counter returned to zero. Consumer behavior covered by isolated policy tests, not live stream selection here."
+    },
+    {
+      "id": "AJ_FILTRO_GRUPOS",
+      "label": "Excluded release groups",
+      "device_status": "PASS TV-keyboard save and empty restoration; live matching pending",
+      "initial": "Empty",
+      "tested": [
+        "0 (temporary literal group)",
+        "Empty"
+      ],
+      "restored": "Empty",
+      "evidence": "Entered one literal 0 via TV keyboard, confirmed Done and observed saved group/root counter. Reopened, cleared only temporary value, confirmed Done; original empty rule restored. Host text injection did not enter text, so that input path remains unverified."
+    },
+    {
+      "id": "AJ_LEG1_TAMANHO",
+      "label": "Size",
+      "device_status": "PASS global setting reaches player; subset of range",
+      "evidence": "Global Size 120 -> 130 saved; reopened Scrubs and actual style panel read 130 with enlarged rendered subtitles. Player size restored to 120; verify global restoration separately before session end. Global settings rechecked and also read 120% after restoration."
+    },
+    {
+      "id": "AJ_LEG1_FONTE",
+      "label": "Subtitle font",
+      "device_status": "PLAYER equivalent exercised; global settings persistence NOT certified",
+      "evidence": "Player Inter → JetBrains Sans → Inter; sample glyphs visibly changed/restored."
+    },
+    {
+      "id": "AJ_LEG1_COR",
+      "label": "Color",
+      "device_status": "PLAYER equivalent exercised; global settings persistence NOT certified",
+      "evidence": "Player White → Yellow → White; sample and actual embedded dialogue turned yellow. Restored White."
+    },
+    {
+      "id": "AJ_LEG1_OPACIDADE",
+      "label": "Opacity",
+      "device_status": "PLAYER equivalent exercised; global settings persistence NOT certified",
+      "evidence": "Player 100% → 50% → 100%; sample dimmed/restored."
+    },
+    {
+      "id": "AJ_LEG1_FUNDO",
+      "label": "Background",
+      "device_status": "PLAYER equivalent exercised; global settings persistence NOT certified",
+      "evidence": "Player None → Dark 25% → full cycle back to None; summary changes observed, contrast on black paused frame insufficient for actual backing-pixel certification."
+    },
+    {
+      "id": "AJ_LEG1_POSICAO",
+      "label": "Position",
+      "device_status": "PLAYER equivalent exercised; global settings persistence NOT certified",
+      "evidence": "Player 4 of 8 → 5 of 8 → 4 of 8; sample moved up/restored."
+    },
+    {
+      "id": "AJ_LEG1_BORDA",
+      "label": "Edge",
+      "device_status": "PLAYER equivalent exercised; global settings persistence NOT certified",
+      "evidence": "Player Outline → Shadow → None → Outline; summaries changed, black background limits edge contrast assessment."
+    },
+    {
+      "id": "AJ_LEG1_ATRASO",
+      "label": "Delay",
+      "device_status": "PLAYER equivalent exercised; global settings persistence NOT certified",
+      "evidence": "Player 0 → +0.10 s → 0; UI saved-value only, actual cue timing not measured."
+    },
+    {
+      "id": "AJ_LEG1_NEGRITO",
+      "label": "Bold",
+      "device_status": "PLAYER equivalent exercised; global settings persistence NOT certified",
+      "evidence": "Player Off → On → Off; sample boldness changed/restored."
+    },
+    {
+      "id": "AJ_LEG1_COR_BORDA",
+      "label": "Outline color",
+      "device_status": "PLAYER equivalent exercised; global settings persistence NOT certified",
+      "evidence": "Player Black → White → Black; outline changed the visible sample stroke. Restored."
+    },
+    {
+      "id": "AJ_LEG1_RESTAURAR",
+      "label": "Restore default",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LEG2_FONTE",
+      "label": "Subtitle font",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LEG2_OPACIDADE",
+      "label": "Opacity",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LEG2_POSICAO",
+      "label": "Position",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LEG2_ATRASO",
+      "label": "Delay",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LEG2_NEGRITO",
+      "label": "Bold",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LEG2_COR_BORDA",
+      "label": "Outline color",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LEG2_RESTAURAR",
+      "label": "Restore default",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_COLECAO_EXIBICAO",
+      "label": "Default collection view",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PLAYER_EXTERNO",
+      "label": "Player",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TRAILER_AUDIO",
+      "label": "Trailer audio",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PLAYER_ANIME",
+      "label": "Anime player",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ABERTURA_ESTILO",
+      "label": "Opening screen style",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MENU_CARTAZ",
+      "label": "Enriched context menu",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TITULO_FIL",
+      "label": "Row titles",
+      "device_status": "PASS actual four Home styles; Editorial translation fixed",
+      "evidence": "All four styles observed. Approved 197cc APK now displays Continue Watching and Family Watching in Editorial. Original Classic restored."
+    },
+    {
+      "id": "AJ_VIDRO_QUALIDADE",
+      "label": "Glass quality",
+      "device_status": "UI / preview only; GPU/blur comparison pending",
+      "evidence": "Automatic → Performance → Automatic; summary/illustration update. No real GPU cost measurement."
+    },
+    {
+      "id": "AJ_FUNDO_DIN",
+      "label": "Dynamic layout background",
+      "device_status": "PASS actual Home consumer for Color and Immersive; original restored",
+      "evidence": "Color/Ocean produced solid navy Home; Immersive produced artwork-toned brown gradient. Dark gray restored, saved confirmed. Gray option and individual colours not yet tested."
+    },
+    {
+      "id": "AJ_FUNDO_DIN_COR",
+      "label": "Background color",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ESCALA_TEXTO",
+      "label": "Text and component scale",
+      "device_status": "PASS actual UI geometry; subset of choices",
+      "evidence": "85% → 90% → 85%. Sidebar and settings geometry changed; remaining values/Home/restart not certified."
+    },
+    {
+      "id": "AJ_FONTE_GRUPO",
+      "label": "Prefer binge group",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FONTE_GRUPO_SESSOES",
+      "label": "Reuse binge group across sessions",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LINK_REUSAR",
+      "label": "Reuse last link",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LINK_PRAZO",
+      "label": "Last link cache duration",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DET_ESPACO",
+      "label": "Row spacing",
+      "device_status": "UI only; actual details geometry pending",
+      "evidence": "Normal → Compact → Normal; no details-page comparison yet."
+    },
+    {
+      "id": "AJ_FOCO_ACENTO",
+      "label": "Accent-colour focus",
+      "device_status": "PASS actual focused-row tint",
+      "evidence": "Off → On → Off; actual row changes from neutral fill to petrol accent fill."
+    },
+    {
+      "id": "AJ_NT_ORDEM",
+      "label": "Title line rating order",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_ARTE_TOM",
+      "label": "Art tone",
+      "device_status": "PASS conditional visibility and real Vivid/Light accent rendering; restored",
+      "evidence": "Unavailable with fixed Petrol; From the art exposes Art tone. Vivid red -> Light pastel rose changed actual header icon, text contrast and Home focus ring. Vivid restored before Petrol restoration. Automatic palette changes across all title/provider combinations remain outside this observation."
+    },
+    {
+      "id": "AJ_PALCO_FUNDO",
+      "label": "Stage background",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_URL_LISTA",
+      "label": "Lists and guides by URL",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_URL_M3U_ADD",
+      "label": "Add M3U list",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_URL_XMLTV_ADD",
+      "label": "Add XMLTV guide",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_URL_REM",
+      "label": "Remove the chosen one",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_NT_EP",
+      "label": "Episode rating",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LIVETV_SUGERIR",
+      "label": "Suggest channel categories",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_AUDIO_OFFSET",
+      "label": "Audio offset (ms)",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_XTREAM_CONEXOES",
+      "label": "Limited connections",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_AMPLIAR_UI",
+      "label": "Scale interface",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_GUIA_FONTE",
+      "label": "TV guide sources",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_GUIA_RECARREGAR",
+      "label": "Refresh channels and guide",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_M3U_URL",
+      "label": "M3U playlist URL",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_M3U_EPG",
+      "label": "XMLTV guide URL",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_M3U_LIMPAR",
+      "label": "Remove M3U playlist",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_IPTV_CONTA",
+      "label": "Live TV account",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_IPTV_ADD_XTREAM",
+      "label": "Add Xtream account",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_IPTV_ADD_M3U",
+      "label": "Add M3U list",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_IPTV_ADD_STALKER",
+      "label": "Add Stalker portal",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_IPTV_NOME",
+      "label": "Account name",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_IPTV_ATIVA",
+      "label": "Account enabled",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_IPTV_REMOVER",
+      "label": "Remove Live TV account",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_IPTV_LISTA_XTREAM",
+      "label": "Xtream",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_IPTV_LISTA_M3U",
+      "label": "M3U",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_IPTV_LISTA_STALKER",
+      "label": "Stalker",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_IPTV_ACOES",
+      "label": "",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_IPTV_EXCLUIR",
+      "label": "Remove Live TV account",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_IPTV_SALVAR",
+      "label": "Save",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_IPTV_CANCELAR",
+      "label": "Back",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_GUIA_ORDEM",
+      "label": "Sort order",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_IPTV_ORDEM",
+      "label": "Order",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_EPG_MEMORIA",
+      "label": "Guide memory",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_GUIA_CATEGORIAS",
+      "label": "Hide categories",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_BIB_HOME",
+      "label": "Library row",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_AMPLIACAO_ALGO",
+      "label": "Upscaling algorithm",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_AMPLIACAO_NITIDEZ",
+      "label": "Sharpness",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_HDR_INTERFACE",
+      "label": "HDR UI (test)",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LIMPAR_CACHE",
+      "label": "Clear cache",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_TUNNELING",
+      "label": "Tunneled Playback",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_DV7",
+      "label": "Dolby Vision P7 to P8.1 (experimental)",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_LOG_REDE",
+      "label": "Log on the local network",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PLR_FORMATO",
+      "label": "Format in the player",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PERFIL_INFANTIL",
+      "label": "Kids profile",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PAUSA_COMENTARIOS",
+      "label": "Trakt comments when paused",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PAUSA_NOTAS",
+      "label": "Ratings when paused",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PAUSA_ELENCO",
+      "label": "Cast when paused",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PLR_FORMATO_POS",
+      "label": "Format position in the player",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_PLR_CODEC",
+      "label": "Show the audio codec",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_SUAVIZAR_DEGRADES",
+      "label": "Smooth gradients",
+      "device_status": "PARTIAL preview / saved value",
+      "evidence": "Automatic → Strong → Automatic; preview grain changes; objective panel dithering pixel comparison pending."
+    },
+    {
+      "id": "AJ_HERO_TAMANHO",
+      "label": "Hero size",
+      "device_status": "PASS actual Home geometry for all three sizes; restored",
+      "evidence": "Extra large -> Normal -> Extra large -> Large -> Extra large. Actual logo and metadata scaled on Home. Extra large restored. Show hero Off restored afterwards."
+    },
+    {
+      "id": "AJ_HERO_PASTA_DETALHES",
+      "label": "Show folder details on hero",
+      "device_status": "PARTIAL saved/restored; eligible folder hero required",
+      "evidence": "On -> Off -> On persisted. Continue Watching episode hero remained unchanged; this is not a folder-group hero, so no consumer pass is claimed."
+    },
+    {
+      "id": "AJ_CW_DIAS",
+      "label": "Days in Trakt Continue Watching (0 = all)",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_RESOLVE_LINKS",
+      "label": "Resolve playable links",
+      "device_status": "BLOCKED for live functional test — no configured eligible provider",
+      "evidence": "UI shows Resolve Off, No eligible provider, cached additions/preparation disabled. No keys entered and no provider operations performed."
+    },
+    {
+      "id": "AJ_RESOLVE_PROVIDER",
+      "label": "Resolve with",
+      "device_status": "BLOCKED for live functional test — no configured eligible provider",
+      "evidence": "UI shows Resolve Off, No eligible provider, cached additions/preparation disabled. No keys entered and no provider operations performed."
+    },
+    {
+      "id": "AJ_RESOLVE_PREPARE",
+      "label": "Prepare links",
+      "device_status": "BLOCKED for live functional test — no configured eligible provider",
+      "evidence": "UI shows Resolve Off, No eligible provider, cached additions/preparation disabled. No keys entered and no provider operations performed."
+    },
+    {
+      "id": "AJ_RESOLVE_LIMIT",
+      "label": "Links to prepare",
+      "device_status": "BLOCKED for live functional test — no configured eligible provider",
+      "evidence": "UI shows Resolve Off, No eligible provider, cached additions/preparation disabled. No keys entered and no provider operations performed."
+    },
+    {
+      "id": "AJ_TB_CACHED_ADD",
+      "label": "Allow cached TorBox additions",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FAMILIA",
+      "label": "Family Watching",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_FAMILIA_PARTILHAR",
+      "label": "Share my watching activity",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_MENU_OCULTAR_PILULA",
+      "label": "Hide modern sidebar pill",
+      "device_status": "PASS Modern visibility, exit/reopen persistence and navigation recovery",
+      "initial": "Off",
+      "tested": [
+        "On",
+        "Off"
+      ],
+      "restored": "Off",
+      "evidence": "Closed rail disappears on actual Home; remains hidden after double-Back exit and relaunch/profile 1 selection. Edge still opens expanded navigation. Settings On persisted. Restored Off; closed rail visible. Dynamic hidden-state variant pending."
+    },
+    {
+      "id": "AJ_DET_TRAILER_ESPERA",
+      "label": "Detail trailer delay",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_POSPLAY_RECOM",
+      "label": "Post-play recommendations",
+      "device_status": "UI / dependency only; movie playback pending",
+      "evidence": "On → Off → On; percentage dependent row disabled/restored."
+    },
+    {
+      "id": "AJ_POSPLAY_PERCENT",
+      "label": "Show recommendations at",
+      "device_status": "UI / saved-value only; movie playback pending",
+      "evidence": "Automatic (0) → 1% → Automatic (0). Scrubs is an episode; no movie recommendation threshold pass claimed."
+    },
+    {
+      "id": "AJ_AINDA_EPISODIOS",
+      "label": "Are you still watching?",
+      "device_status": "UI / saved-value only; unattended playback pending",
+      "evidence": "Off (0) → 1 episode → Off. Enabled only while next-episode auto enabled; original auto Off restored. Installed build incorrectly pluralises 1 episodes; local correction awaiting updated APK."
+    },
+    {
+      "id": "AJ_LEG_AUTO_COMPLETA",
+      "label": "Automatically load full subtitles",
+      "device_status": "PASS actual automatic embedded selection; Off behaviour partly mocked",
+      "evidence": "Automatic English embedded subtitles observed previously; new 197cc playback also automatically selected an external English OpenSubtitles v3 SRT and rendered dialogue without manual track selection. Provider returned mixed S01E07/S02E07 filenames; semantic episode matching is not certified."
+    },
+    {
+      "id": "AJ_FILTRO_MIN_GB",
+      "label": "Minimum source size",
+      "device_status": "PASS Android editor/save/return/restoration; real source effects pending",
+      "initial": "0 / unrestricted",
+      "tested": [
+        "1",
+        "0"
+      ],
+      "restored": "0 / unrestricted",
+      "evidence": "Numeric confirmation returned to correct filter row, displayed 1 (or 1 GB), and restored 0. Parent active-rule counter returned to zero. Consumer behavior covered by isolated policy tests, not live stream selection here."
+    },
+    {
+      "id": "AJ_FILTRO_MAX_RESULT",
+      "label": "Maximum results",
+      "device_status": "PASS Android editor/save/return/restoration; real source effects pending",
+      "initial": "0 / unrestricted",
+      "tested": [
+        "1",
+        "0"
+      ],
+      "restored": "0 / unrestricted",
+      "evidence": "Numeric confirmation returned to correct filter row, displayed 1 (or 1 GB), and restored 0. Parent active-rule counter returned to zero. Consumer behavior covered by isolated policy tests, not live stream selection here."
+    },
+    {
+      "id": "AJ_FILTRO_POR_RES",
+      "label": "Per-resolution limit",
+      "device_status": "PASS Android editor/save/return/restoration; real source effects pending",
+      "initial": "0 / unrestricted",
+      "tested": [
+        "1",
+        "0"
+      ],
+      "restored": "0 / unrestricted",
+      "evidence": "Numeric confirmation returned to correct filter row, displayed 1 (or 1 GB), and restored 0. Parent active-rule counter returned to zero. Consumer behavior covered by isolated policy tests, not live stream selection here."
+    },
+    {
+      "id": "AJ_FILTRO_POR_QUAL",
+      "label": "Per-quality limit",
+      "device_status": "PASS Android editor/save/return/restoration; real source effects pending",
+      "initial": "0 / unrestricted",
+      "tested": [
+        "1",
+        "0"
+      ],
+      "restored": "0 / unrestricted",
+      "evidence": "Numeric confirmation returned to correct filter row, displayed 1 (or 1 GB), and restored 0. Parent active-rule counter returned to zero. Consumer behavior covered by isolated policy tests, not live stream selection here."
+    },
+    {
+      "id": "AJ_FILTRO_SORT",
+      "label": "Sort results",
+      "device_status": "PASS all six Android choices; real source ordering pending",
+      "initial": "Original order",
+      "tested": [
+        "Resolution",
+        "Quality",
+        "Size: smallest first",
+        "Size: largest first",
+        "Preferred tags",
+        "Original order"
+      ],
+      "restored": "Original order",
+      "evidence": "Each choice saved and appeared in root sheet; original order restored. No live streams fetched/played for this check."
+    },
+    {
+      "id": "AJ_FILTRO_REQUIRED_GROUPS",
+      "label": "Required release groups",
+      "device_status": "PASS TV-keyboard save and empty restoration; live matching pending",
+      "initial": "Empty",
+      "tested": [
+        "0 (temporary literal group)",
+        "Empty"
+      ],
+      "restored": "Empty",
+      "evidence": "Entered one literal 0 via TV keyboard, confirmed Done and observed saved group/root counter. Reopened, cleared only temporary value, confirmed Done; original empty rule restored. Host text injection did not enter text, so that input path remains unverified."
+    },
+    {
+      "id": "AJ_POSPLAY_TRAILER",
+      "label": "Post-play trailer preview",
+      "device_status": "NOT TESTED on BlueStacks"
+    },
+    {
+      "id": "AJ_POSPLAY_TRAILER_ESPERA",
+      "label": "Post-play trailer delay",
+      "device_status": "NOT TESTED on BlueStacks"
+    }
+  ],
+  "filter_subcontrols": [
+    {
+      "dimension": "resolutions",
+      "mode": "Preferred",
+      "choices": 8,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "resolutions",
+      "mode": "Required",
+      "choices": 8,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "resolutions",
+      "mode": "Excluded",
+      "choices": 8,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "qualities",
+      "mode": "Preferred",
+      "choices": 13,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "qualities",
+      "mode": "Required",
+      "choices": 13,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "qualities",
+      "mode": "Excluded",
+      "choices": 13,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "visual tags",
+      "mode": "Preferred",
+      "choices": 16,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "visual tags",
+      "mode": "Required",
+      "choices": 16,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "visual tags",
+      "mode": "Excluded",
+      "choices": 16,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "audio tags",
+      "mode": "Preferred",
+      "choices": 13,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "audio tags",
+      "mode": "Required",
+      "choices": 13,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "audio tags",
+      "mode": "Excluded",
+      "choices": 13,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "channels",
+      "mode": "Preferred",
+      "choices": 5,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "channels",
+      "mode": "Required",
+      "choices": 5,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "channels",
+      "mode": "Excluded",
+      "choices": 5,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "encodes",
+      "mode": "Preferred",
+      "choices": 6,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "encodes",
+      "mode": "Required",
+      "choices": 6,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "encodes",
+      "mode": "Excluded",
+      "choices": 6,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "languages",
+      "mode": "Preferred",
+      "choices": 15,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "languages",
+      "mode": "Required",
+      "choices": 15,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    },
+    {
+      "dimension": "languages",
+      "mode": "Excluded",
+      "choices": 15,
+      "status": "PASS checkbox UI toggles/counts/restoration; source effects mocked only"
+    }
+  ],
+  "issues": [
+    {
+      "setting": "AJ_HERO / Modern layout",
+      "status": "FIXED AND VERIFIED on BlueStacks",
+      "detail": "Removed blank reserved hero region when Off; persists after app reopen."
+    },
+    {
+      "setting": "AJ_RAIO_DP / AJ_LARGURA_DP",
+      "status": "FIXED AND VERIFIED in approved 197cc APK on BlueStacks",
+      "detail": "Poster illustration now uses selected width and explicit selected radius, including 0; no free-running width/corner animation. Actual Home was already responsive."
+    },
+    {
+      "setting": "Filters & Sorting summary",
+      "status": "FIXED LOCALLY; updated APK/device verification pending",
+      "detail": "Correct singular/plural filter-rule wording."
+    },
+    {
+      "setting": "Player font selector / still-watching interval",
+      "status": "Subtitle font label FIXED AND VERIFIED in installed 197cc APK; still-watching singular device check pending",
+      "detail": "Font selector uses existing Subtitle font translation instead of OpenSubtitles source; one-episode interval uses singular episode."
+    },
+    {
+      "setting": "AJ_TITULO_FIL Editorial",
+      "status": "FIXED AND VERIFIED in approved 197cc APK on BlueStacks",
+      "detail": "Translate row title before passing it to txt_tracking; regression fails before and passes after."
+    },
+    {
+      "setting": "AJ_MENU_TOPO settings Up navigation",
+      "status": "FIXED AND VERIFIED in installed 197cc APK and regression",
+      "detail": "Up from Search at top of Settings sidebar reaches the horizontal menu when top-menu mode is enabled. Broader regression now passes after giving its Search fixture a Nuvio source identity."
+    }
+  ],
+  "playback": {
+    "title": "Scrubs, selected from Continue Watching",
+    "result": "Video playback and automatic English embedded dialogue subtitles observed",
+    "progress": "Additional attempt resumed Scrubs at about 1:24; control navigation activated Play from beginning and a black frame at 0:00 followed. Playback collapsed into floating pill on Back. No exact progress restoration claimed; uploads blocked.",
+    "limitations": [
+      "Volume 100→90→100 and speed 1→1.25→1 observed in UI; no audio capture or objective speed measurement.",
+      "A player reprepare and E-AC-3→AAC metadata change were observed around speed testing. Subtitle/track retention after this transition needs a controlled reproduction; do not certify speed/fallback behaviour.",
+      "Some initial player keys only revealed controls or moved seek focus; intended actions were repeated with visible panel verification. No aspect-ratio pass claimed.",
+      "Paused Back/focus observations need controlled timing: pause overlay reappears after inactivity; Down before button actions was needed. No speculative navigation fix applied.",
+      "Control navigation is timing-sensitive with the idle pause overlay and pointer hovering controls. With Pause panel Off and pointer away from transport, subtitle focus/activation and paused hide-then-exit Back were observed working. Dedicated Pause keys cannot be emitted by this macOS CUA tool."
+    ],
+    "dual_subtitles": "Actual main and secondary English SRT text rendered simultaneously at bottom/top. Secondary track restoration pending. On subsequent reopened playback, actual Second slot shows No second subtitle checked again (session reset)."
+  },
+  "in_progress": {
+    "restore_before_end": {},
+    "new_apk_installation": "User approved; installed with data retained; installed base.apk SHA-256 verified. Native ARM64/ARMv7 addon caption and locked snapshot present; same package/signing certificate; read-only/login guards verified.",
+    "current_ui": "Profile 1 Home after clean app exit/reopen; no temporary preference edits pending.",
+    "completed_this_round": "Appearance modes/geometry and row titles, Landscape conditions, Dynamic hero/genre/synopsis. Still many unvisited controls; do not claim complete.",
+    "host_tests_running": "None: subtitle renderer, depth renderer and post-play suites completed successfully."
+  },
+  "host_consumer_checks_2026_11_08": {
+    "primary_subtitles": {
+      "status": "PASS",
+      "controls": 10,
+      "values": 1268,
+      "evidence": "build/settings-expansion/remaining-subtitle-border.log",
+      "scope": "Real Settings callback/player style consumer, save/reload and independent restoration for every ordinary choice/slider step; not font-face availability or device rendering."
+    },
+    "secondary_subtitles": {
+      "status": "PASS",
+      "style_choices": 76,
+      "pixel_controls": 10,
+      "evidence": "build/settings-expansion/remaining-secondary-renderer.log",
+      "scope": "Every style mapping; representative actual GL pixel effect/restoration for each of ten fields; actual secondary delay cue removal/restoration. Two host font faces unavailable."
+    },
+    "card_depth": {
+      "status": "PASS",
+      "surfaces": 5,
+      "evidence": "build/settings-expansion/remaining-depth-render.log",
+      "scope": "Actual GL framebuffer, independent five masks, master Off, three glow presets, three coverage modes and sheen strengths. Not five Android device surfaces."
+    },
+    "postplay": {
+      "status": "PASS",
+      "episode_intervals": 20,
+      "recommendation_percentages": 100,
+      "evidence": "build/settings-expansion/remaining-postplay.log",
+      "scope": "Actual post-play control flow with mocks; automatic session carry, manual stop/reset, autoplay Off, prompt acknowledgement, recommendation master Off."
+    },
+    "filter_policy": {
+      "status": "PASS",
+      "evidence": "build/settings-expansion/remaining-filter-policy.log",
+      "scope": "Every preferred/required/excluded option, sort/size/quota/eligibility and stable 20,000-source selection. Added realistic filename classification before each option match; explicit language-tag safeguards and Unknown cases."
+    },
+    "hero_art": {
+      "status": "PASS after fixture correction",
+      "evidence": "build/settings-expansion/remaining-hero-art.log",
+      "scope": "Native and Tizen policy under ASan/UBSan. Unchanged checkpoint fixture incorrectly assumed no virtual TMDB logo fallback; now tests both fallback and definitive failure without production policy changes."
+    },
+    "stream_filter_metadata": {
+      "status": "PASS",
+      "evidence": "build/settings-expansion/remaining-stream-filter-metadata.log",
+      "scope": "Real Stream filename/label/description/structured height/size -> filter consumer for all seven dimensions and release group; metadata unchanged, cached classification/live/Unknown/null preserved; URL is not tag metadata."
+    }
+  },
+  "validation_continuation_2026_11_08": {
+    "all_settings_certified": false,
+    "production_changes_this_continuation": false,
+    "temporary_preferences_remaining": [],
+    "passed_logs": [
+      "remaining-secondary-renderer.log",
+      "remaining-subtitle-border.log",
+      "remaining-depth-render.log",
+      "remaining-postplay.log",
+      "remaining-postplay-preview.log",
+      "remaining-filter-policy.log",
+      "remaining-stream-filter-metadata.log",
+      "remaining-audio-selection.log",
+      "remaining-secondary-session.log",
+      "remaining-subtitle-delay.log",
+      "remaining-trailer-source.log",
+      "remaining-hero-art.log",
+      "remaining-readonly-guard.log",
+      "remaining-settings-a-final.log",
+      "remaining-settings-b-final.log",
+      "remaining-settings-c-final.log",
+      "remaining-cw-final.log",
+      "remaining-preservation.log"
+    ],
+    "limitations": [
+      "Unvisited settings are still NOT TESTED; source references alone do not certify functionality.",
+      "Host font fallback does not verify missing LG Display or Droid Sans font faces.",
+      "Exact TV hardware/video/audio/provider behaviour needs supported hardware or approved provider fixtures.",
+      "Account/provider/credential/destructive operations remain excluded from live testing.",
+      "Trailer button consumer needs a known playable trailer; the inspected titles did not establish that prerequisite.",
+      "Folder hero details consumer needs a qualifying folder hero; ordinary episode hero is not equivalent.",
+      "Header pointer clicks did not activate in the TV build; remote Panel/List switching passed; mouse/touch behaviour is not certified."
+    ]
+  },
+  "focused_release_check_2026_11_08": {
+    "scope": "User approved replacing exhaustive manual certification with critical-flow smoke checks and automated regressions.",
+    "device": "BlueStacks, existing dedicated-test-account profile 1; installed approved read-only validation APK unchanged",
+    "observations": [
+      "Continue Watching Scrubs S2E7 opened details and resumed video; English dialogue subtitles loaded without manual track selection.",
+      "1080p/AAC displayed; playback position advanced, Pause changed to Continue at 9:29 / 21:35.",
+      "Keyboard Escape was timing-sensitive around paused overlays. Resumed playback then Back returned Home; Android toolbar Back exited app.",
+      "App reopened to existing profiles 1 and 2 without reauthentication. Profile 1 selected; Scrubs progress and Native Family Watching row remained.",
+      "Appearance reentry after restart retained Petrol accent, Frost background, Logo colour On and Automatic glass. No preference edits in this focused session.",
+      "Returned to profile 1 Home. No APK installation, account/provider write, sync arming, commit or push."
+    ],
+    "limitations": [
+      "Retained login is not a fresh sign-in test; no logout/account change attempted.",
+      "Provider safety, TorBox cached addition/autoplay and stream filtering tested with mocks, not live provider operations.",
+      "336 controls still have no individual BlueStacks observation; 98 observations include partial or blocked cases.",
+      "No full remote/hardware certification, objective audio/speed measurement or exhaustive choice-by-choice restart testing.",
+      "Local playback progress advanced during approved testing; exact original progress restoration not claimed.",
+      "Installed artifact is read-only validation, not a normal public release build."
+    ],
+    "automated_results": {
+      "status": "15 / 15 suites PASS; player persistence retried using SDL dummy driver after macOS sandbox display initialisation failure",
+      "manifest": "build/settings-expansion/focused-release/results.json",
+      "android_unit_existing_results": "64 tests / 6 suites / 0 failures or errors, unchanged successful APK build"
+    }
+  }
+}

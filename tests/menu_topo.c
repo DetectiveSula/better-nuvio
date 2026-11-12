@@ -10,6 +10,7 @@
 #include "busca.h"
 #include "buscasrec.h"
 #include "catalogo.h"
+#include "metaprov.h"
 #include "dados.h"
 #include "sistexto.h"
 #include <SDL2/SDL.h>
@@ -166,6 +167,9 @@ int main(void) {
       snprintf(itens[i].poster, sizeof itens[i].poster, "poster-%d", i);
     }
     snprintf(fil.chave, sizeof fil.chave, "menu-topo");
+    // Search intentionally accepts Nuvio sources only. Keep this navigation
+    // fixture eligible without making a network request.
+    snprintf(fil.base, sizeof fil.base, "%s", METAPROV_NUVIO_HOST);
     snprintf(fil.titulo, sizeof fil.titulo, "Populares");
     snprintf(fil.tipo, sizeof fil.tipo, "movie");
     fil.n = 3;

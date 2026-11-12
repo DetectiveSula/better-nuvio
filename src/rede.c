@@ -1,4 +1,5 @@
 #include "rede.h"
+#include "validation_readonly.h"
 #ifdef NV_ANDROID
 #include "android.h"
 #endif
@@ -2675,6 +2676,7 @@ char *rede_postar(const char *url, int segundos, const char *const *cab,
 // barra de retomada por DELETE /sync/playback/:id. Ver trakt_playback_remover.
 char *rede_apagar(const char *url, int segundos, const char *const *cab,
                   int *status) {
+  if (!nv_validation_http_method("DELETE", url)) { if (status) *status = NV_VALIDATION_DENIED_STATUS; return NULL; }
   Balde b = {0};
   void *c, *lista = NULL;
   int r;
@@ -2785,6 +2787,7 @@ void rede_discord_ca(const char *caminho) {
 static char *postarNativo(const char *url, int segundos, const char *const *cab,
                           const char *corpo, int *status, int seguro, int *retryAfter,
                           const char *verbo) {
+  if (!nv_validation_http_request(verbo ? verbo : "POST", url, corpo, corpo ? strlen(corpo) : 0)) { if (status) *status = NV_VALIDATION_DENIED_STATUS; return NULL; }
   Balde b = {0};
   CacaCab respostaCab = { NULL, 0, retryAfter };
   if (retryAfter) *retryAfter = 0;
@@ -2854,6 +2857,11 @@ char *rede_postar_st(const char *url, int segundos, const char *const *cab,
 // se ela nao respondeu). `verbo` NULL = POST.
 static char *enviarNativo(const char *verbo, const char *url, int segundos, const char *const *cab,
                           const char *corpo, int *status, int *retryAfter) {
+  if (!nv_validation_http_request(verbo ? verbo : "POST", url, corpo, corpo ? strlen(corpo) : 0)) {
+    if (status) *status = NV_VALIDATION_DENIED_STATUS;
+    if (retryAfter) *retryAfter = 0;
+    return NULL;
+  }
 #ifdef NV_ANDROID
   const char *v = verbo ? verbo : "POST";
   char *r;

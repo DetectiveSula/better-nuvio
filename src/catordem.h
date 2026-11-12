@@ -5,6 +5,8 @@
 // uma lista de chaves ordenada e um conjunto de chaves desligadas, que a
 // descoberta consome no mesmo ponto onde ja aplicava art/fileiras.txt.
 //
+// Stage G: regular Nuvio's synced order/visibility is authoritative (fileiras.c
+// contaOficial); Native-exclusive rows are anchored around it. Empty/failed pulls preserve the last valid TV snapshot.
 // SO LEITURA, de proposito. Nao existe tela de reordenar no nativo e, sem ela,
 // empurrar de volta mandaria a lista que o aparelho conseguiu montar — que e
 // menor que a real sempre que um addon demora a responder — e apagaria a
@@ -28,16 +30,44 @@
 #define CATORD_MAX   2048
 #define CATORD_CHAVE 192
 
+#include <ctype.h>
+#include <stddef.h>
+#include <string.h>
+// Regular Nuvio's catalogTypeKey (domain/model/CatalogReference.kt): movie,
+// series, channel and tv match case-insensitively and are written lowercase;
+// every other type keeps its trimmed manifest spelling. Row identities on both
+// sides of the sync use this, never a blanket lowercase.
+static inline void catordem_tipo_chave(const char *tipo, char *dst, size_t tam) {
+  static const char *const CONHECIDOS[] = { "movie", "series", "channel", "tv" };
+  size_t n, k;
+  if (!dst || !tam) return;
+  if (!tipo) { dst[0] = 0; return; }
+  // dst may alias tipo (callers normalise in place): read before writing.
+  while (*tipo && isspace((unsigned char)*tipo)) tipo++;
+  n = strlen(tipo);
+  while (n && isspace((unsigned char)tipo[n - 1])) n--;
+  if (n >= tam) n = tam - 1;
+  memmove(dst, tipo, n); dst[n] = 0;
+  for (k = 0; k < sizeof CONHECIDOS / sizeof *CONHECIDOS; k++) {
+    size_t i, m = strlen(CONHECIDOS[k]);
+    if (m != n) continue;
+    for (i = 0; i < n && tolower((unsigned char)dst[i]) == CONHECIDOS[k][i]; i++);
+    if (i == n) { memcpy(dst, CONHECIDOS[k], n + 1); return; }
+  }
+}
+
 // Le a resposta crua da RPC. Aceita `[{"settings_json":{...}}]`, o objeto
 // solto, e as duas formas do blob (moderna com `items[]`, legada com arrays de
 // chaves). Devolve 1 quando o que foi lido MUDA o que ja estava aplicado — e o
 // unico caso em que vale remontar a home; uma resposta igual a da volta
 // anterior nao pode custar uma remontagem a cada ciclo de sync.
 //
-// Missing configuration preserves the current state. Explicit empty items or
-// legacy arrays clear remote configuration while preserving local TV choices.
+// Missing configuration preserves the current state. Empty snapshots, like the pinned TV client, preserve the last valid
+// configuration; explicit logout/profile reset clears it.
 int catordem_ler(const char *respostaJson);
 unsigned catordem_revisao(void);
+// Read-only profile projection: -1 unknown, 0 disabled, 1 enabled.
+int catordem_estado(const char *chave);
 
 int         catordem_tem_ordem(void);
 int         catordem_n(void);

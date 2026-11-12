@@ -260,6 +260,24 @@ void addons_diferenca(const AddonRemoto *a, int na, const AddonRemoto *d, int nd
 void agenda_esquecer(void) {}
 void lembrete_esquecer_todos(void) {}
 int  ajustes_aplicar_blob(const char *j) { (void)j; blobsAplicados++; return 0; }
+// Stage I typed bridge (ajustes_shared.inc), faithful enough for the cycle:
+// accept the RPC envelope [{"settings_json":{...}}] and record what is applied.
+const char *js_fim(const char *p);
+int ajustes_compartilhados_resposta(const char *r, char **out) {
+  const char *p = r ? strstr(r, "\"settings_json\":") : NULL, *e;
+  *out = NULL;
+  if (!p) return 0;
+  p = strchr(p, ':') + 1;
+  while (*p == ' ') p++;
+  if (*p != '{' || !(e = js_fim(p))) return 0;
+  *out = strndup(p, (size_t)(e - p));
+  return *out != NULL;
+}
+int ajustes_compartilhados_aplicar(const char *j) {
+  blobsAplicados++;
+  snprintf(idiomasConta, sizeof idiomasConta, "%s", j ? j : "");
+  return 0;
+}
 void ajustes_idiomas_da_conta(const char *b) {
   idiomasChamadas++;
   snprintf(idiomasConta, sizeof idiomasConta, "%s", b ? b : "");
@@ -302,30 +320,62 @@ void perfilcont_esquecer(void) {}
 void recomenda_esquecer(void) {}
 void salvos_esquecer(void) {}
 void stalker_esquecer(void) {}
+#ifndef SYNC_FIXTURE_SESSAO
 int sessao_token_copiar(char *j, size_t nj) { snprintf(j, nj, "tok"); return 1; }
+#endif
+#ifndef SYNC_FIXTURE_SESSAO
 uint64_t perfis_sessao_geracao(void) { return 0; }
+#endif
+#ifndef SYNC_FIXTURE_SESSAO
 int perfis_sessao_atual(uint64_t g) { return !g; }
+#endif
+#ifndef SYNC_FIXTURE_SESSAO
 int perfis_sessao_travar(uint64_t g) { return !g; }
+#endif
+#ifndef SYNC_FIXTURE_SESSAO
 void perfis_sessao_destravar(void) {}
+#endif
 void perfis_invalidar_sessao(void) {}
+#ifndef SYNC_FIXTURE_SESSAO
 int perfis_puxar_sessao(uint64_t s, const char *u, const char *t) { (void)s;(void)u;(void)t; return perfis_puxar(); }
+#endif
+#ifndef SYNC_FIXTURE_SESSAO
 int sessao_identidade_local_copiar(char *u, size_t nu, char *j, size_t nj) {
   snprintf(u, nu, "%s", sessao_usuario()); return sessao_token_copiar(j, nj);
 }
+#endif
+#ifndef SYNC_FIXTURE_SESSAO
 void sessao_token_recusado(const char *t) { (void)t; }
+#endif
+#ifndef SYNC_FIXTURE_SESSAO
 char *nuvem_rpc_com(const char *f, const char *c, const char *b, int *s) { return sessao_rpc(f, c, s); }
+#endif
+#ifndef SYNC_FIXTURE_SESSAO
 char *nuvem_tabela(const char *f, const char *c, const char *b, int *s) { return sessao_tabela(f, c, s); }
-void debrid_conta_iniciar(void *p) { (void)p; }
-void debrid_conta_definir(const char *j) { (void)j; }
-void debrid_aplicar_chaves_conta(void) {}
+#endif
+// debrid_conta_* stand-ins: the weak, correctly typed ones in stub_contapend.c.
+#ifndef SYNC_FIXTURE_SESSAO
 void desc_abrir_sessao(void) {}
+#endif
+#ifndef SYNC_FIXTURE_SESSAO
 void desc_sessao_passo(void) {}
-int desc_sessao_preparada(void) { return 1; }
+#endif
+#ifndef SYNC_FIXTURE_SESSAO
+void desc_sessao_preparada(void) {}   /* descoberta.h: void */
+#endif
+#ifndef SYNC_FIXTURE_SESSAO
 void extras_abrir_sessao(void) {}
+#endif
+#ifndef SYNC_FIXTURE_SESSAO
 void ajustes_perfil_padrao(void) {}
+#endif
 void recomenda_esquecer_conta(void) {}
+#ifndef SYNC_FIXTURE_SESSAO
 int syncprog_puxar_sessao(int p, uint64_t s) { (void)p;(void)s; return 0; }
+#endif
+#ifndef SYNC_FIXTURE_SESSAO
 int syncprog_empurrar_sessao(int p, uint64_t s) { (void)p;(void)s; return 0; }
+#endif
 int  syncprog_aplicar(int *c) { (void)c; return 0; }
 int  syncprog_empurrar(void) { return 0; }
 void syncprog_esquecer(void) {}
@@ -405,24 +455,23 @@ int main(int argc, char **argv) {
     return falhas ? 1 : 0;
   }
   if (argc > 1 && !strcmp(argv[1], "legconta")) {
-    // #378: uma mudanca anterior em Ajustes deixou a protecao gravada. O blob
-    // nao e aplicado (certo), mas os idiomas da conta tem de chegar a
-    // linguas.c: e deles que "Da conta" vive, e eles nao sobrescrevem escolha
-    // local nenhuma.
-    printf("-- sessao: ajustes locais protegidos, conta com legenda en\n");
+    // #378, after Stage I: the old whole-blob protection marker no longer
+    // blocks the account. The profile's settings arrive through the typed
+    // bridge (ajustes_compartilhados_aplicar), which protects pending local
+    // fields one by one; the account's languages arrive with them.
+    printf("-- sessao: marcador antigo de protecao, conta com legenda en\n");
     dados_gravar("ajustes-locais.txt", "1\n");
     modoBlob = 1;
     escolher(1);
     ciclo();
-    confere("blob protegido nao aplicado", blobsAplicados == 0);
-    confere("idiomas da conta entregues mesmo protegido",
+    confere("marcador antigo nao bloqueia: ajustes da conta aplicados", blobsAplicados == 1);
+    confere("idiomas da conta entregues",
             strstr(idiomasConta, "subtitle_preferred_language") && strstr(idiomasConta, "\"en\""));
     // Revisao P2: troca de perfil solta o blob (sync_reaplicar_ajustes) e o
     // do perfil novo, do MESMO tamanho, tende a cair no mesmo endereco. A
     // deteccao de "blob novo" pelo ponteiro pulava os idiomas dele.
     { sync_reaplicar_ajustes();
-      confere("troca de perfil limpa os idiomas da conta", idiomasChamadas >= 2 && !idiomasConta[0]);
-      sync_proteger_ajustes_locais();
+      confere("troca de perfil limpa os idiomas da conta", idiomasChamadas >= 1 && !idiomasConta[0]);
       legContaValor = "pt";
       ciclo();
       confere("blob do perfil novo entrega os idiomas dele",
@@ -468,12 +517,14 @@ int main(int argc, char **argv) {
     pthread_mutex_lock(&trava);
     while (!puxandoCol) pthread_cond_wait(&sinal, &trava);
     pthread_mutex_unlock(&trava);
-    // Uma mudanca de ajuste feita NESTA TV no perfil 1, ainda sem subir.
+    // A settings change on this TV while profile 1's restore is still in
+    // flight. Stage I (sync_proteger_ajustes_locais): the account wins until
+    // the restore lands, so no pending marker is kept for either profile.
     sync_proteger_ajustes_locais();
     escolher(2);
     sync_trocar_perfil(1);             // app.c, ramo da escolha
     { char *p1 = dados_ler("ajustes-locais-p1.txt"), *g = dados_ler("ajustes-locais.txt");
-      confere("pendencia do perfil 1 guardada com ele, fora do 2", p1 && p1[0] == '1' && !g);
+      confere("restauro pendente: a conta vence, sem pendencia no 1 nem no 2", !p1 && !g);
       free(p1); free(g); }
     confere("home do 2 ainda nao pronta com o ciclo do 1 no ar", !sync_perfil_pronto());
     sync_iniciar();                    // app.c, ramo da escolha: fio vivo
@@ -493,7 +544,7 @@ int main(int argc, char **argv) {
     escolher(1);
     sync_trocar_perfil(2);
     { char *p1 = dados_ler("ajustes-locais-p1.txt"), *g = dados_ler("ajustes-locais.txt");
-      confere("de volta ao 1: a mudanca local dele continua protegida", g && g[0] == '1' && !p1);
+      confere("de volta ao 1: nada pendente reaparece (a conta venceu)", !p1 && !(g && g[0] == '1'));
       free(p1); free(g); }
     confere("perfil trocado de novo: nao pronta ate o ciclo do 1", !sync_perfil_pronto());
     printf("%s\n", falhas ? "FALHOU" : "PASSOU");

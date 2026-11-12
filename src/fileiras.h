@@ -1,3 +1,8 @@
+// Stage G: valid synced shared rows are a runtime-only hybrid projection.
+// Native-only rows retain local visibility/style/order anchors. Android ignores
+// the old small display quota (stored intact for recovery); structural and
+// emergency memory budgets remain. J5 syncs sparse portable presentation only;
+// the available catalogue list and original shared order are never uploaded.
 // Fileiras da home: a escolha que a pessoa faz NA TV.
 //
 // Ate agora a ordem e a ocultacao das fileiras so existiam vindas da CONTA
@@ -21,6 +26,7 @@
 // por uma perda de dados silenciosa nos outros aparelhos.
 #ifndef NV_FILEIRAS_H
 #define NV_FILEIRAS_H
+#include "bnsettings.h"
 
 // 64 como o PREF_MAX de descoberta.c e o CATORD_MAX de catordem.c. O Xperience
 // sozinho declara 605 catalogos: a tela de Ajustes lista os 64 PRIMEIROS na
@@ -227,6 +233,17 @@ void fil_confirmar_limite(void);
 // outro jeito — e e assim que a fila sobrevive byte a byte ao arquivo antigo.
 typedef enum { FIL_NA_HOME = 0, FIL_NA_FILA, FIL_FORA } FilEstado;
 int  fil_estado(int i);
+// Runtime-only selected-profile sync; never serialised over Native preferences.
+void fil_projecao_conta(const char *const *keys,const int *enabled,int n);
+int fil_tem_projecao(void);
+// Selected profile's official follow_addons_order; affects only the synced projection.
+void fil_definir_seguir_addons(int ligado);
+int fil_seguir_addons(void);
+// Account collection rows (collection_<id>) with pinToTop, in collection order.
+void fil_definir_colecoes_fixas(const char *const *chaves, int n);
+// 1 while a synced projection is active and regular Nuvio would show this row
+// (listed, account collection or account-addon catalogue).
+int fil_conta_compartilhada(const char *chave);
 // Reconcile the account collection identities immediately, including an empty
 // authoritative snapshot. Only removed collection rows are pruned; local
 // catalogue/app choices and styles on surviving collection IDs remain intact.
@@ -252,6 +269,8 @@ int  fil_n_capacidade(void); // catalogue slots used, excluding app/collections
 // escreve em `estado` onde ela caiu — NA_HOME quando coube, NA_FILA quando a
 // home estava cheia. Quem chama mostra "home cheia" nesse caso.
 int  fil_adicionar(int i, int *estado);
+// Stage H: unhide a row by key without moving it. 1 = it was hidden.
+int  fil_mostrar_chave(const char *chave);
 void fil_remover(int i);
 // Ligada alem do limite que NAO foi posta na fila pela pessoa vira "fora".
 // Chamar ao abrir a folha. Ver a definicao para a protecao da vaga garantida.
@@ -381,6 +400,9 @@ int         fil_linha_tam(int i);
 // devolve -1 quando a fileira ainda nao foi montada nesta sessao.
 int         fil_linha_origem(int i);
 const char *fil_linha_addon(int i);
+// Copy only the display name for this exact catalogue identity, under lock.
+// App/collection rows and unknown names stay empty; never fall back to URLs.
+void fil_catalogo_addon_copiar(const char *chave, char *nome, unsigned tam);
 const char *fil_linha_conteudo(int i);
 int         fil_linha_itens(int i);
 // `fil_linha_na_home`: a ultima home montada tinha esta fileira.
@@ -518,4 +540,11 @@ void fil_recarregar(void);
 // linhas mudaram.
 int fil_migrar_197(const char *const *contaLigadas, int n);
 
+/* J5 overlays never create catalogue rows or overwrite the Native fallback. */
+typedef int (*FilHomeObserver)(const char *,BnValue);
+void fil_home_observer(FilHomeObserver);
+void fil_home_scope(const char *owner,int profile);
+int fil_home_baseline(const char *owner,int profile,BnField *,size_t,size_t *);
+int fil_home_apply(const char *owner,int profile,const BnField *,size_t);
+int fil_home_identity(const char *local_key,char out[33]);
 #endif

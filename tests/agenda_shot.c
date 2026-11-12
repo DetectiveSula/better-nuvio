@@ -410,6 +410,45 @@ static void esperaFio(void) {
   printf("fio da agenda terminou: %d\n", !agenda_atualizando());
 }
 
+// A GRADE DO MES (vista Mes, NUVIO_SHOT_SO=calendario): o Cinemeta FALSO das
+// series do calendario, com episodios SEGUINTES ao proximo — e o que prova que
+// a grade pinta todos os dias de episodio, e nao so o proximo de cada serie.
+// Dia 24 tem TRES series (o "+N mais" da celula) e Andor estreia com tres
+// episodios no mesmo dia.
+static char *cinemetaCalendario(const char *url, int segundos, const char *const *cab, int *st) {
+  static const struct { const char *id, *json; } R[] = {
+    { "tt10255564", "{\"meta\":{\"name\":\"Foundation\",\"videos\":["
+      "{\"season\":3,\"episode\":8,\"name\":\"The Paths That Choose Us\",\"released\":\"2026-09-09T07:00:00.000Z\"},"
+      "{\"season\":3,\"episode\":9,\"name\":\"The Last Empress\",\"released\":\"2026-09-16T07:00:00.000Z\"},"
+      "{\"season\":3,\"episode\":10,\"name\":\"Psychohistory\",\"released\":\"2026-09-24T07:00:00.000Z\"}]}}" },
+    { "tt1520211", "{\"meta\":{\"name\":\"The Last of Us\",\"videos\":["
+      "{\"season\":2,\"episode\":4,\"name\":\"Day One\",\"released\":\"2026-09-17T01:00:00.000Z\"},"
+      "{\"season\":2,\"episode\":5,\"name\":\"Feel Her Love\",\"released\":\"2026-09-24T01:00:00.000Z\"},"
+      "{\"season\":2,\"episode\":6,\"name\":\"The Price\",\"released\":\"2026-10-01T01:00:00.000Z\"}]}}" },
+    { "tt2661044", "{\"meta\":{\"name\":\"Severance\",\"videos\":["
+      "{\"season\":3,\"episode\":1,\"name\":\"The Other Half\",\"released\":\"2026-09-19T07:00:00.000Z\"},"
+      "{\"season\":3,\"episode\":2,\"name\":\"Goodbye, Mrs. Selvig\",\"released\":\"2026-09-24T07:00:00.000Z\"},"
+      "{\"season\":3,\"episode\":3,\"name\":\"Who Is Alive?\",\"released\":\"2026-10-03T07:00:00.000Z\"}]}}" },
+    { "tt7366338", "{\"meta\":{\"name\":\"Andor\",\"videos\":["
+      "{\"season\":3,\"episode\":1,\"name\":\"One Year Later\",\"released\":\"2026-11-04T07:00:00.000Z\"},"
+      "{\"season\":3,\"episode\":2,\"name\":\"Sagrona Teema\",\"released\":\"2026-11-04T07:00:00.000Z\"},"
+      "{\"season\":3,\"episode\":3,\"name\":\"Harvest\",\"released\":\"2026-11-04T07:00:00.000Z\"}]}}" },
+  };
+  size_t i;
+  (void)segundos; (void)cab;
+  *st = 404;
+  if (!strstr(url, "v3-cinemeta.strem.io/meta/series/")) return NULL;
+  for (i = 0; i < sizeof R / sizeof R[0]; i++)
+    if (strstr(url, R[i].id)) { *st = 200; return strdup(R[i].json); }
+  return NULL;
+}
+
+// O fio da grade e assincrono: espera ele trazer a serie (ate 5 s), sem rede.
+static void esperaGrade(const char *imdb) {
+  int t;
+  for (t = 0; t < 500 && !agenda_grade_tem(imdb); t++) SDL_Delay(10);
+}
+
 int main(int argc, char **argv) {
   const char *saida = argc > 1 ? argv[1] : nvt("/nuvio-agenda");
   char nome[600];
@@ -553,10 +592,12 @@ int main(int argc, char **argv) {
   }
   if (getenv("NUVIO_SHOT_SO") && !strcmp(getenv("NUVIO_SHOT_SO"), "calendario")) {
     // O FOCO NO SEGMENTADO da ilha (C1): "Mes" focado, "Lista" ainda ativa.
+    agenda_rede_teste(cinemetaCalendario);
     tecla(SDLK_UP); tecla(SDLK_RIGHT);
     snprintf(nome, sizeof nome, "%s-cabecalho.bmp", saida);
     captura(nome, w);
     tecla(SDLK_RETURN);
+    esperaGrade("tt7366338"); esperaGrade("tt2661044");
     snprintf(nome, sizeof nome, "%s-calendario.bmp", saida);
     captura(nome, w);
     tecla(SDLK_RETURN); tecla(SDLK_RETURN);
@@ -569,7 +610,11 @@ int main(int argc, char **argv) {
     tecla(SDLK_RIGHT); tecla(SDLK_RETURN);
     snprintf(nome, sizeof nome, "%s-calendario-proximo-mes.bmp", saida);
     captura(nome, w);
+    agenda_rede_teste(NULL);
     tecla(SDLK_UP); tecla(SDLK_UP); tecla(SDLK_UP);
+    // O foco no cabecalho com a vista Mes: o dia escolhido fica so MARCADO.
+    snprintf(nome, sizeof nome, "%s-calendario-cabecalho.bmp", saida);
+    captura(nome, w);
     tecla(SDLK_RIGHT); tecla(SDLK_RIGHT); tecla(SDLK_RETURN);
     snprintf(nome, sizeof nome, "%s-calendario-lista.bmp", saida);
     captura(nome, w);

@@ -1,4 +1,6 @@
 #include "deeplink.h"
+#include "j0sonda.h"
+#include "j7arme.h"
 #include <pthread.h>
 #include <string.h>
 
@@ -97,6 +99,52 @@ static int segmentos(const char *path, size_t pn, const char **seg, size_t *len,
   return n;
 }
 
+#ifdef NV_J0_SONDA
+// nuvio-legacy://debug/j0-probe[/write|/clean][?token=XXXXXXXX] (STAGE-J.md 8.2).
+static int sondaJ0(const char **seg, const size_t *len, int n, const char *query, DeepLink *o) {
+  if (n < 2 || n > 3 || len[0] != 5 || strncmp(seg[0], "debug", 5) ||
+      len[1] != 8 || strncmp(seg[1], "j0-probe", 8)) return 0;
+  if (n == 2) { o->sondaFase = J0_LER; o->tipo = DL_SONDA_J0; return 1; }
+  if (len[2] == 5 && !strncmp(seg[2], "write", 5)) o->sondaFase = J0_GRAVAR;
+  else if (len[2] == 5 && !strncmp(seg[2], "clean", 5)) o->sondaFase = J0_LIMPAR;
+  else return 0;
+  if (strncmp(query, "token=", 6)) return 0;
+  for (int i = 0; i < 8; i++) {
+    char c = query[6 + i];
+    if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F'))) return 0;
+  }
+  if (query[14] && query[14] != '&' && query[14] != '#') return 0;
+  memcpy(o->sondaToken, query + 6, 8); o->sondaToken[8] = 0;
+  o->tipo = DL_SONDA_J0;
+  return 1;
+}
+#endif
+#ifdef NV_J7_ARME
+// nuvio-legacy://debug/j7/(arm|arm-j6)[?token=XXXXXXXX] | disarm | snapshot (STAGE-J.md 15, 17).
+static int armeJ7(const char **seg, const size_t *len, int n, const char *query, DeepLink *o) {
+  if (n != 3 || len[0] != 5 || strncmp(seg[0], "debug", 5) || len[1] != 2 || strncmp(seg[1], "j7", 2)) return 0;
+  if (len[2] == 6 && !strncmp(seg[2], "disarm", 6)) o->sondaFase = J7_DESARMAR;
+  else if (len[2] == 8 && !strncmp(seg[2], "snapshot", 8)) o->sondaFase = J7_FOTO;
+  else if ((len[2] == 3 && !strncmp(seg[2], "arm", 3)) || (len[2] == 6 && !strncmp(seg[2], "arm-j6", 6))) {
+    int j6 = len[2] == 6;   // J6 official "tv" writes: separate code, never implied by arm
+    if (!*query) o->sondaFase = j6 ? J7_CODIGO_J6 : J7_CODIGO;
+    else {
+      if (strncmp(query, "token=", 6)) return 0;
+      for (int i = 0; i < 8; i++) {
+        char c = query[6 + i];
+        if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F'))) return 0;
+      }
+      if (query[14]) return 0;   // nothing may follow the token (no scope by query)
+      memcpy(o->sondaToken, query + 6, 8); o->sondaToken[8] = 0;
+      o->sondaFase = j6 ? J7_ARMAR_J6 : J7_ARMAR;
+    }
+  } else return 0;
+  if (o->sondaFase != J7_ARMAR && o->sondaFase != J7_ARMAR_J6 && *query) return 0;
+  o->tipo = DL_J7;
+  return 1;
+}
+#endif
+
 int deeplink_parse(const char *url, DeepLink *o) {
   const char *seg[6], *query, *fim, *p;
   size_t len[6], pn;
@@ -125,6 +173,18 @@ int deeplink_parse(const char *url, DeepLink *o) {
     o->tipo = DL_TITULO;
     return 1;
   }
+#if defined(NV_J0_SONDA) || defined(NV_J7_ARME)
+  if (nativo && len[0] == 5 && !strncmp(seg[0], "debug", 5)) {
+#ifdef NV_J0_SONDA
+    if (sondaJ0(seg, len, n, query, o)) return 1;
+#endif
+#ifdef NV_J7_ARME
+    if (armeJ7(seg, len, n, query, o)) return 1;
+#endif
+    memset(o, 0, sizeof *o);
+    return 0;
+  }
+#endif
   if (nativo && len[0] == 6 && !strncmp(seg[0], "search", 6)) {
     if (n != 1 || !consultaDe(query, o)) goto lixo;
     o->tipo = DL_BUSCA;
@@ -166,6 +226,17 @@ int deeplink_pegar(DeepLink *out) {
   ok = pendente.tipo != DL_NENHUM;
   if (ok) { *out = pendente; memset(&pendente, 0, sizeof pendente); }
   pthread_mutex_unlock(&trava);
+  return ok;
+}
+
+int deeplink_desarmar_pendente(void) {
+  int ok = 0;
+#ifdef NV_J7_ARME
+  pthread_mutex_lock(&trava);
+  ok = pendente.tipo == DL_J7 && pendente.sondaFase == J7_DESARMAR;
+  if (ok) memset(&pendente, 0, sizeof pendente);
+  pthread_mutex_unlock(&trava);
+#endif
   return ok;
 }
 

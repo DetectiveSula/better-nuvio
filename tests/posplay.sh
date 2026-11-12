@@ -5,14 +5,14 @@ set -eu
 cd "$(dirname "$0")/.."
 sources=()
 for source in src/*.c src/dts/*.c; do
-  if [ "$source" != src/main.c ] && [ "$source" != src/posplay.c ]; then sources+=("$source"); fi
+  if [ "$source" != src/main.c ] && [ "$source" != src/posplay.c ] && [ "$source" != src/rede.c ]; then sources+=("$source"); fi
 done
 flags=(-DNV_SHOT_HOOKS)
 if [ "${SANITIZE:-0}" = 1 ]; then flags+=(-fsanitize=address,undefined -fno-omit-frame-pointer); fi
 # Liga o app inteiro menos o main, como tests/player.sh: posplay.c fala com
 # catalogo, extras e video. Nenhuma janela e aberta — posplay_atualizar nao
 # desenha, e e so ele e posplay_evento que este teste exercita.
-cc ${flags[@]+"${flags[@]}"} "${sources[@]}" tests/posplay.c -Isrc -o ${TMPDIR:-/tmp}/nuvio-posplay-tests \
+cc ${flags[@]+"${flags[@]}"} "${sources[@]}" tests/posplay_offline_transport.c tests/posplay.c -Isrc -o ${TMPDIR:-/tmp}/nuvio-posplay-tests \
   -O1 -g -I/opt/homebrew/include -I/opt/homebrew/include/SDL2 \
   -L/opt/homebrew/lib -lSDL2 -lSDL2_image -lSDL2_ttf -lz -framework OpenGL \
   -Wno-deprecated-declarations -Wno-macro-redefined

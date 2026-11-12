@@ -1,5 +1,7 @@
 /* #497: real sync.c must publish progress and Home structure independently.
  * Reuse syncordem.c offline neighbours; do not replace the production cycle. */
+// This fixture defines its own session/RPC stand-ins (below).
+#define SYNC_FIXTURE_SESSAO
 #define main syncordem_original_main
 #define sessao_rpc fixture_rpc
 #define syncprog_aplicar fixture_syncprog_aplicar
@@ -96,6 +98,11 @@ int syncprog_empurrar_sessao(int p, uint64_t s) {
 }
 void desc_refazer_continuar(void) { atomic_fetch_add(&refreshes, 1); }
 void colfileiras_sincronizar(void) { atomic_fetch_add(&structureApplied, 1); }
+static atomic_int cachedRowRepublishes;
+void sync_teste_colfileiras(const char *caller) {
+  if (!strcmp(caller, "restaurarOrdemLocal")) atomic_fetch_add(&cachedRowRepublishes, 1);
+  else colfileiras_sincronizar();
+}
 int nuvem_freio_ativo(void) { return atomic_load(&blockSync); }
 void debrid_conta_iniciar(DebridConta *d) { memset(d, 0, sizeof *d); }
 void debrid_conta_definir(DebridConta *d, const char *s, const char *k) { (void)d; (void)s; (void)k; }

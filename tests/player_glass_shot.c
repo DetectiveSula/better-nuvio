@@ -330,6 +330,35 @@ static void cartaoVivo(void) {
   ilha_cartao(ILHA_VIVO, &v);
 }
 
+static void relacionadosShot(void) {
+  static const char *t[8] = { "The Martian", "Interstellar", "Arrival", "Gravity",
+                              "Ad Astra", "Moon", "Sunshine", "Contact" };
+  static const char *an[8] = { "2015", "2014", "2016", "2013", "2019", "2009", "2007", "1997" };
+  static const char *po[8] = { "img/po/12.jpg", "img/po/10.jpg", "img/po/16.jpg", "img/po/14.jpg",
+                               "img/po/32.jpg", "img/po/03.jpg", "img/po/36.jpg", "img/po/02.jpg" };
+  const char *pc[8];
+  int i;
+  for (i = 0; i < 8; i++) pc[i] = img(po[i]);
+  extras_shot_relacionados(t, an, pc, 8);
+  // Post-play page data (backdrop, synopsis, genres, rating, runtime).
+  { static const char *bd[8] = { "img/bd/12.jpg", "img/bd/10.jpg", "img/bd/16.jpg", "img/bd/14.jpg",
+                                 "img/bd/32.jpg", "img/bd/03.jpg", "img/bd/36.jpg", "img/bd/02.jpg" };
+    static const char *sin[8] = {
+      "An astronaut becomes stranded on Mars after his team assume him dead, and must rely on his ingenuity to find a way to signal to Earth that he is alive and can survive until a potential rescue.",
+      "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
+      "A linguist works with the military to communicate with alien lifeforms after twelve mysterious spacecraft appear around the world.",
+      "Two astronauts work together to survive after an accident leaves them stranded in space.",
+      "An astronaut travels to the outer edges of the solar system to find his father and unravel a mystery that threatens our planet.",
+      "Astronaut Sam Bell has a quintessentially personal encounter toward the end of his three-year stint on the Moon.",
+      "A team of international astronauts is sent on a dangerous mission to reignite the dying Sun.",
+      "Dr. Ellie Arroway, after years of searching, finds conclusive radio proof of extraterrestrial intelligence." };
+    static const char *gen[8] = { "Drama, Adventure", "Adventure, Drama", "Drama, Science Fiction", "Science Fiction, Thriller",
+                                  "Science Fiction, Drama", "Science Fiction, Drama", "Science Fiction, Thriller", "Drama, Mystery" };
+    static const int nota[8] = { 77, 84, 76, 72, 59, 77, 68, 74 }, dur[8] = { 144, 169, 116, 91, 123, 97, 107, 150 };
+    for (i = 0; i < 8; i++)
+      extras_shot_relacionado_extra(i, img(bd[i]), "", sin[i], gen[i], nota[i], i % 3 == 2 ? EX_TRAKT : EX_TMDB, dur[i]); }
+}
+
 static int quer(int argc, char **argv, const char *id) {
   int i;
   if (argc < 3) return 1;
@@ -359,7 +388,8 @@ int main(int argc, char **argv) {
   { char caminho[700]; FILE *f;
     snprintf(caminho, sizeof caminho, "%s/ajustes.txt", getenv("NUVIO_DADOS"));
     f = fopen(caminho, "w"); assert(f);
-    fprintf(f, "idioma 0\nselected_theme 2\n");
+    { const char *id = getenv("NUVIO_SHOT_IDIOMA");   // 1 = English, as on the owner's TV
+      fprintf(f, "idioma %d\nselected_theme 2\n", id && *id ? atoi(id) : 0); }
     { const char *fo = getenv("NUVIO_SHOT_FONTE");   // 3 = Montserrat, a da TV do dono
       if (fo && *fo) fprintf(f, "fonteInterface %d\n", atoi(fo)); }
     fclose(f);
@@ -370,16 +400,9 @@ int main(int argc, char **argv) {
   { struct tm lt; time_t t = time(NULL);
     localtime_r(&t, &lt); lt.tm_hour = 20; lt.tm_min = 19; lt.tm_sec = 0;
     plrilha_shot_hora(mktime(&lt)); }
+  extras_carregar("deploy/app/art");   // rating marks (art/marcas)
   titulos();
-  { static const char *t[8] = { "The Martian", "Interstellar", "Arrival", "Gravity",
-                                "Ad Astra", "Moon", "Sunshine", "Contact" };
-    static const char *an[8] = { "2015", "2014", "2016", "2013", "2019", "2009", "2007", "1997" };
-    static const char *po[8] = { "img/po/12.jpg", "img/po/10.jpg", "img/po/16.jpg", "img/po/14.jpg",
-                                 "img/po/32.jpg", "img/po/03.jpg", "img/po/36.jpg", "img/po/02.jpg" };
-    const char *pc[8];
-    int i;
-    for (i = 0; i < 8; i++) pc[i] = img(po[i]);
-    extras_shot_relacionados(t, an, pc, 8); }
+  relacionadosShot();
 
   if (quer(argc, argv, "osd")) {
     abrir(&filme); simular(3840, 1606, "", 1, 1);
@@ -912,10 +935,17 @@ int main(int argc, char **argv) {
     posplay_shot(0, 1, 1, 4, relogio + 8000u + 120u * 16u);
     quadros(120);
     salvar("proximo");
+    posplay_shot_estado(1, 0); quadros(30);
+    salvar("proximo-cena");
+    posplay_shot_estado(0, 1); quadros(30);
+    salvar("proximo-ainda");
+    posplay_shot_estado(0, 0);
     posplay_fechar(); player_shot_video(0); quadros(30);
   }
-  if (quer(argc, argv, "mais-como-este")) {
+  if (quer(argc, argv, "mais-como-este") || quer(argc, argv, "mais-como-este-foco")) {
     abrir(&filme);
+    // Opening the player re-requests the film's metadata, which resets the list.
+    relacionadosShot();
     { VideoSimulacao v; memset(&v, 0, sizeof v);
       v.largura = 3840; v.altura = 2160; v.pronto = 1; v.duracao = 9420; v.pos = 9300;
       video_simular(&v); }
@@ -923,7 +953,18 @@ int main(int argc, char **argv) {
     quadros(5);
     posplay_shot(0, 0, 0, 0, 0);
     quadros(120);
-    salvar("mais-como-este");
+    if (quer(argc, argv, "mais-como-este")) salvar("mais-como-este");
+    if (quer(argc, argv, "mais-como-este-foco")) {
+      SDL_Event k; int i;
+      memset(&k, 0, sizeof k); k.type = SDL_KEYDOWN; k.key.keysym.sym = SDLK_RIGHT;
+      posplay_evento(&k); quadros(4);                 // focus the next arrow
+      k.key.keysym.sym = SDLK_RETURN;
+      for (i = 0; i < 2; i++) { posplay_evento(&k); quadros(30); }   // third recommendation
+      quadros(60);
+      salvar("mais-como-este-foco");
+      k.key.keysym.sym = SDLK_UP; posplay_evento(&k); quadros(30);
+      salvar("mais-como-este-janela");
+    }
     posplay_fechar(); player_shot_video(0); quadros(30);
   }
   if (quer(argc, argv, "reacao")) {

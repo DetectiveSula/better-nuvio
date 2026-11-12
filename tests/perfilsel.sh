@@ -51,4 +51,6 @@ cc ${flags[@]+"${flags[@]}"} src/perfis.c src/js.c src/jsw.c tests/perfilsel.c \
 DIR=$(mktemp -d); trap 'rm -rf "$DIR"' EXIT
 NUVIO_TESTE_DIR="$DIR" ${TMPDIR:-/tmp}/nuvio-perfilsel-tests
 NUVIO_TESTE_DIR="$DIR" ${TMPDIR:-/tmp}/nuvio-perfilsel-tests dois
+DIR2=$(mktemp -d); trap 'rm -rf "$DIR" "$DIR2"' EXIT
+NUVIO_TESTE_DIR="$DIR2" ${TMPDIR:-/tmp}/nuvio-perfilsel-tests remocao
 echo "perfilsel: tudo ok"

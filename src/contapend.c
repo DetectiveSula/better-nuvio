@@ -54,6 +54,13 @@ typedef struct {
   char poster[NV_ARTE_URL_MAX];   // o de CatItem.poster (#433); o arquivo e texto com TAB
 } Ent;
 
+// Stage E: bumped by every WATCHED gesture made on this TV (not by sync
+// reconciliation), so the Home can refresh "Continue Watching" right away —
+// regular Nuvio recomputes it from its local watched history on every change.
+static unsigned revGestos;
+unsigned contapend_revisao_gestos(void) { return __atomic_load_n(&revGestos, __ATOMIC_ACQUIRE); }
+static void gestoFeito(void) { __atomic_add_fetch(&revGestos, 1, __ATOMIC_ACQ_REL); }
+
 static pthread_mutex_t trava = PTHREAD_MUTEX_INITIALIZER;
 static Ent *ents;
 static int nEnt, capEnt, carregado;
@@ -305,6 +312,7 @@ int contapend_episodios(const char *imdb, const char *tipo,
     if (k) gravar();
   }
   pthread_mutex_unlock(&trava);
+  if (k) gestoFeito();
   return k;
 }
 
@@ -320,7 +328,31 @@ int contapend_titulo(const char *imdb, const char *tipo, int visto) {
     if (k) gravar();
   }
   pthread_mutex_unlock(&trava);
+  if (k) gestoFeito();
   return k;
+}
+
+// Stage E: this profile's episode-level WATCHED intents still in the journal
+// (the latest gesture per episode; a newer remote row already replaced its
+// entry via contapend_estado). Copied under the lock, reported outside it.
+int contapend_vistos_marcados(int (*cb)(const char *id, int t, int e, long long ms, void *u),
+                              void *u) {
+  int i, n = 0, perfil = perfis_ativo();
+  Ent *copia = NULL;
+  if (!cb) return 0;
+  pthread_mutex_lock(&trava);
+  if (garantir() && nEnt) {
+    copia = (Ent *)malloc(sizeof *copia * (size_t)nEnt);
+    if (copia)
+      for (i = 0; i < nEnt; i++)
+        if (ents[i].sup == 'V' && ents[i].perfil == perfil && ents[i].op == '+' &&
+            ents[i].ep > 0 && ents[i].temp >= 0)
+          copia[n++] = ents[i];
+  }
+  pthread_mutex_unlock(&trava);
+  for (i = 0; i < n; i++) cb(copia[i].id, copia[i].temp, copia[i].ep, copia[i].ms, u);
+  free(copia);
+  return n;
 }
 
 int contapend_lista(const char *imdb, const char *tipo, const char *nome,
@@ -374,6 +406,7 @@ long long contapend_gesto_alvos(const char *imdb, const char *tipo,
   }
   if (k) gravar();
   pthread_mutex_unlock(&trava);
+  if (k) gestoFeito();
   return k ? ms : 0;
 }
 

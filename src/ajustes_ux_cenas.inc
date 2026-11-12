@@ -203,7 +203,7 @@ static void ajcCenaHome(int op) {
     case AJ_HERO_CATALOGOS: case AJ_HERO_TRANSICAO: o.marca = AJC_M_HERO; break;
     case AJ_LANDSCAPE: o.paisagem = ajcLig(op); break;
     case AJ_FIL_ORDEM: case AJ_FIL_LIMITE: case AJ_ITENS_FILEIRA: case AJ_OCULTAR_NLANC:
-    case AJ_OCULTAR_FILMES_VISTOS: case AJ_BIB_HOME:
+    case AJ_OCULTAR_FILMES_VISTOS: case AJ_BIB_HOME: case AJ_FAMILIA: case AJ_FAMILIA_PARTILHAR:
       o.hero = 0.0f; o.marca = AJC_M_FILEIRAS; break;
     case AJ_ROTULOS: case AJ_NOME_ADDON: case AJ_SUFIXO_TIPO: o.hero = 0; o.marca = AJC_M_TITULOS; break;
     case AJ_NOTAS_HOME: case AJ_SELO_VISTO: o.hero = 0; break;
@@ -312,15 +312,12 @@ static void ajcCenaTitulo(int op) {
 }
 // Cartazes e arte: uma fileira grande com o cartaz em foco.
 static void ajcCenaCartazes(int op) {
-  float lw = 64 + 40 * ajcValor(AJ_LARGURA_DP) / 40.0f, raio = 2 + ajcValor(AJ_RAIO_DP) * 0.6f;
-  float w, h = 150, gap = 18, x0 = 30, y0 = 130, exp = 0, prof = 0;
+  // Same scale for the selected width and corner radius. Do not animate these
+  // values: the illustration must reflect the editor, including sharp corners.
+  float w = ajcValor(AJ_LARGURA_DP) * (100.0f / 120.0f);
+  float raio = ajcValor(AJ_RAIO_DP) * (100.0f / 120.0f);
+  float h = 150, gap = 18, x0 = 30, y0 = 130, exp = 0, prof = 0;
   int i, f = 1;
-  if (lw < 60) lw = 60;
-  if (lw > 130) lw = 130;
-  w = op == AJ_LARGURA_DP ? 70 + 40 * ajc_onda(3.0f) : 100;
-  if (op == AJ_RAIO_DP) raio = 2 + 16 * ajc_onda(3.0f);
-  else if (raio > 18) raio = 18;
-  (void)lw;
   if (op == AJ_EXPANDIR || op == AJ_EXPANDIR_ATRASO) exp = ajcLig(AJ_EXPANDIR) * ajc_passo_t(3.0f) * (ajc_passo(3.0f, 2) ? 1.0f : 0.0f);
   if (op == AJ_EXPANDIR_ATRASO) {   // a espera antes de abrir: o anel enche, depois abre
     float fr = ajc_fase(3.0f) * 2.0f;
@@ -335,9 +332,9 @@ static void ajcCenaCartazes(int op) {
     float yy = y0 - (i == f ? prof * 10 : 0);
     if (i == f && prof > 0.01f) ajc_ret(x + 6, yy + 14, ww - 12, h, raio, 0, 0, 0, 0.5f * prof);
     if (i == f && exp > 0.01f) {
-      ajc_cartaz(x, yy, ww, h, i, 1);
+      ajc_cartaz_raio(x, yy, ww, h, i, 1, raio);
     }
-    ajc_cartaz(x, yy, ww, h, i + (i == f && exp > 0.5f ? 4 : 0), 1);
+    ajc_cartaz_raio(x, yy, ww, h, i + (i == f && exp > 0.5f ? 4 : 0), 1, raio);
     if (i == f && prof > 0.01f) ajc_luz(x, yy, ww, h, raio, ww * 0.3f, -20, h * 0.8f, 1, 1, 1, 0.25f * prof);
     if (i == f && (op != AJ_BORDA_FOCO || ajcLig(AJ_BORDA_FOCO) > 0.5f)) ajc_foco(x, yy, ww, h, raio, op == AJ_BORDA_FOCO ? ajcLig(op) : 1);
   }

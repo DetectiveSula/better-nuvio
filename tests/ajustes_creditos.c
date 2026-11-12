@@ -32,25 +32,27 @@ int main(int argc, char **argv) {
   dados_iniciar(argv[1]);
   snprintf(dirAjustes, sizeof dirAjustes, "%s", argv[1]);
   assert(!ajustes_pular_creditos() && valorPadrao[AJ_PULAR_CREDITOS] == 1);
-  assert(somenteDesteAparelho(AJ_PULAR_CREDITOS) && !dePerfil(AJ_PULAR_CREDITOS));
-  assert(!strcmp(uxEscopo(AJ_PULAR_CREDITOS), "Só nesta TV"));
+  // Owner decision (12 Nov 2026): skip credits is PER PROFILE on this TV
+  // (ESC_PERFIL_LOCAL): each profile keeps its own choice, never via account.
+  assert(somenteDesteAparelho(AJ_PULAR_CREDITOS) && dePerfil(AJ_PULAR_CREDITOS));
+  assert(!strcmp(uxEscopo(AJ_PULAR_CREDITOS), "Só este perfil, nesta TV"));
   for (int i = 0; i < AJ_N; i++) assert(strcmp(CHAVE[i], "autoCreditosLocal"));
 
-  valor[AJ_PULAR_CREDITOS] = 0;
+  valor[AJ_PULAR_CREDITOS] = 0;   // 0 = on
   valor[AJ_HERO] = 1;
   ajustes_perfil_guardar(1);
   char *snapshot = dados_ler("ajustes-p1.txt");
-  assert(snapshot && !strstr(snapshot, "pularCreditosLocal") && !strstr(snapshot, "autoCreditosLocal"));
+  assert(snapshot && strstr(snapshot, "pularCreditosLocal 0") && !strstr(snapshot, "autoCreditosLocal"));
   free(snapshot);
+  valor[AJ_PULAR_CREDITOS] = 1;   // off for profile 2
   valor[AJ_HERO] = 0;
   ajustes_perfil_guardar(2);
   assert(ajustes_perfil_restaurar(1) && ajustes_pular_creditos());
   assert(valor[AJ_HERO] == 1);
-  assert(ajustes_perfil_restaurar(2) && ajustes_pular_creditos());
+  assert(ajustes_perfil_restaurar(2) && !ajustes_pular_creditos());
   assert(valor[AJ_HERO] == 0);
-  assert(dados_gravar("ajustes-p4.txt", "heroSectionEnabled 1\npularCreditosLocal 1\nautoCreditosLocal 1\n"));
+  assert(dados_gravar("ajustes-p4.txt", "heroSectionEnabled 1\npularCreditosLocal 0\nautoCreditosLocal 1\n"));
   assert(ajustes_perfil_restaurar(4) && ajustes_pular_creditos());
-  assert(!ajustes_perfil_restaurar(5) && ajustes_pular_creditos());
   assert(gravar());
   snapshot = dados_ler("ajustes.txt");
   assert(snapshot && strstr(snapshot, "pularCreditosLocal 0") && !strstr(snapshot, "autoCreditosLocal"));
@@ -73,6 +75,6 @@ int main(int argc, char **argv) {
 
   ajustes_perfil_esquecer();
   assert(ajustes_pular_creditos() && !dados_ler("ajustes-p1.txt"));
-  puts("ajustes_creditos: one device-local preference, default off, persistence and account/profile isolation passed");
+  puts("ajustes_creditos: one per-profile preference on this TV, default off, persistence and account/profile isolation passed");
   return 0;
 }

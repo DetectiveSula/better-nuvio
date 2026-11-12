@@ -23,6 +23,7 @@
 #define NV_TXT_TELA   // NV_TELA_W/H = tela virtual da escala de texto (escala.h)
 #include "escala.h"
 #include "detail.h"
+#include "epdata.h"
 #include "biblioteca.h"
 #include "detail_acoes.h"
 #include "focoprof.h"
@@ -1437,12 +1438,10 @@ static const char *arteDeViva(int i) {
   // isso a 1920 amplia 1,5x. artehero_url sobe para a versao grande da mesma
   // arte e, quando nao ha fundo nenhum e o titulo tem id do IMDb, monta a url
   // do metahub — que e fundo de verdade em vez do cartaz esticado.
-  // A FONTE E A REGRA DO DESTAQUE (artehero_url_destaque): com "Destaque com
-  // outra arte" desligado e a foto do card; ligado, a mesma que o destaque da
-  // home mostrava — abrir o titulo nao troca a foto em nenhum dos dois.
+  // Detail artwork uses its own automatic card/backdrop policy. Home hero
+  // source/different-art preferences must not alter this screen.
   if (c && (c->backdrop[0] || c->imdb[0])) {
-    const char *grande = artehero_url_destaque(c, ajustes_hero_fonte(),
-                                               ajustes_hero_arte_diferente());
+    const char *grande = artehero_url_destaque(c, 0, 0);
     if (grande) return grande;
   }
   // Poster do próprio título é a reserva segura. O desenho trata-o como arte
@@ -2695,6 +2694,7 @@ static void tocarTrailerCheio(int k) {
   if (u) {
     GfxRect tela = { 0, 0, NV_TELA_W, NV_TELA_H };
     trailerEtapa = 0; trailerPrazo = 0;   // tela cheia: so o teclado fecha
+    trailer_idioma_original(extras_idioma_original());   // Stage H: subtitle-safe crop
     trailer_abrir(u, tela, ajustes_trailer_som(), 1);
 #ifdef __EMSCRIPTEN__
     // Same deadline/fallback ladder as autoplay (trailerEscada), fullscreen.
@@ -2714,6 +2714,7 @@ static void tocarTrailerCheio(int k) {
            extras_trailer_yt(k)[0]) {
     GfxRect tela = { 0, 0, NV_TELA_W, NV_TELA_H };
     trailerEtapa = 0; trailerPrazo = 0;
+    trailer_idioma_original(extras_idioma_original());   // Stage H: subtitle-safe crop
     trailer_abrir(extras_trailer_yt(k), tela, ajustes_trailer_som(), 1);
   }
 #else
@@ -2753,6 +2754,7 @@ static void trailerEscada(Uint32 agora, int topo) {
       if (trailer_aberto()) trailer_fechar();
       if (seg) {
         GfxRect tela = { 0, 0, NV_TELA_W, NV_TELA_H };
+        trailer_idioma_original(extras_idioma_original());   // Stage H: subtitle-safe crop
         trailer_abrir(seg, tela, ajustes_trailer_som(), trailerEtapaCheia);
         trailerEtapa = prox;
         trailerPrazo = agora + NV_TRAILER_PREPARA_MS;
@@ -3777,13 +3779,14 @@ static void detail_atualizar_(float dt, Uint32 agora) {
     if (trailer_aberto() && !trailer_cheia() && !topo) trailer_fechar();
     if (saindo && trailer_aberto()) trailer_fechar();
     if (!trailer_aberto() && !trailerTentado && trailerDesde && topo &&
-        agora - trailerDesde >= NV_TRAILER_ESPERA_MS &&
+        agora - trailerDesde >= ajustes_trailer_detalhe_espera_ms() &&
         ajustes_trailer_auto()) {
       int qual = 0;
       const char *u = trailerFonte(0, &qual, 0);
       if (u) {
         GfxRect tela = { 0, 0, NV_TELA_W, NV_TELA_H };
         trailerTentado = 1;
+        trailer_idioma_original(extras_idioma_original());   // Stage H: subtitle-safe crop
         trailer_abrir(u, tela, ajustes_trailer_som(), 0);
 #ifdef __EMSCRIPTEN__
         // A etapa e a FONTE aberta (TRF_*), para o prazo saber qual e a
@@ -4789,7 +4792,9 @@ static void heroWeb(float a, float desloc) {
   { const CatItem *ciAg = cat_item(idx);
     if (ehSerie() && ciAg && ciAg->imdb[0])
       agenda_frase(ciAg->imdb, agLinha, sizeof agLinha);
-    else if (ciAg && !strcmp(ciAg->tipo, "movie") && temLembrar())
+    // Owner (7 Nov 2026): no "Notify when available" tag on the carousel
+    // cards; the full details page keeps it (and its reminder button).
+    else if (!carro && ciAg && !strcmp(ciAg->tipo, "movie") && temLembrar())
       snprintf(agLinha, sizeof agLinha, "%s", rotuloLembrar()); }
   float yEstado = yAcoes - NV_DETW_GAP_RETOM;
   float yRetom = yEstado, yAgenda = yEstado;
@@ -5669,6 +5674,17 @@ static void desenhaEpisodio(GfxRect r, int c, float f, float a, Uint32 agora) {
   desenhaEpisodioCorpo(r,c,f,a,agora);
   gfx_sem_transformar();
 }
+// STAGE E: the show's LANDSCAPE art for an episode card, from the selected
+// artwork provider (the same rule as Home's landscape cards, arte_por_formato):
+// the provider's card art; if that is a portrait image, the IMDb/metahub
+// landscape backdrop; then the catalog backdrop. NULL = no landscape art.
+static const char *epPaisagemSerie(const CatItem *s) {
+  const char *b, *m;
+  if (!s) return NULL;
+  b = artehero_url_card_fonte(s, 0, 0);
+  m = artehero_url_metahub_fundo(s);
+  return ep_arte_paisagem(b, tex_aspecto(b), m, s->backdrop);
+}
 static void desenhaEpisodioCorpo(GfxRect r, int c, float f, float a, Uint32 agora) {
   const CatEp *ep = cat_episodio(idx, epAbsoluto(c));
   GfxRect th = { r.x, r.y, r.w, epThumbH() };
@@ -5676,8 +5692,10 @@ static void desenhaEpisodioCorpo(GfxRect r, int c, float f, float a, Uint32 agor
 
   const float ft = anim_clamp(f, 0.0f, 1.0f);
   const CatItem *serie = cat_item(idx);
-  const char *arte = (ep && ep->thumb[0]) ? ep->thumb
-                     : (serie && serie->backdrop[0] ? serie->backdrop : NULL);
+  // Episode cards use landscape series artwork independently of Home hero
+  // preferences. A valid episode still keeps its existing priority.
+  const char *paisagem = epPaisagemSerie(serie);
+  const char *arte = (ep && ep->thumb[0]) ? ep->thumb : paisagem;
   // Extend behind the image's bottom corners: no gap or separator at the join.
   const GfxRect epTile = { r.x, r.y + th.h - NV_DETP_EP_RAIO, r.w,
                            r.h - th.h + NV_DETP_EP_RAIO };
@@ -5689,10 +5707,23 @@ static void desenhaEpisodioCorpo(GfxRect r, int c, float f, float a, Uint32 agor
   // — o numero e o nome do episodio ja estao no texto por cima. O still
   // continua sendo pedido acima, para o recuo do tex_cache tentar de novo.
   if (!t2 && ep && ep->thumb[0] && arte == ep->thumb && tex_falhou(arte) && serie) {
-    const char *reserva = serie->backdrop[0] ? serie->backdrop
-                        : (serie->poster[0] ? serie->poster : NULL);
+    // Same hierarchy as before (show landscape art, then its poster), with the
+    // landscape art now from the selected provider.
+    const char *reserva = paisagem ? paisagem : (serie->poster[0] ? serie->poster : NULL);
     GLuint t3 = reserva ? tex_obter_larg(reserva, texW) : 0;
     if (t3) { arte = reserva; t2 = t3; }
+  }
+  // UNAIRED EPISODE, LANDSCAPE ART (owner request, Stage E). Before an episode
+  // airs the add-ons send the show's PORTRAIT poster as its thumbnail, and the
+  // card pillarboxed it. The title's landscape backdrop is used instead; a real
+  // landscape still is kept (ep_arte_usa_fundo, epdata.h).
+  // The show's art is the selected provider's (paisagem), not Cinemeta's.
+  if (ep && serie && paisagem && arte != paisagem &&
+      ep_arte_usa_fundo(epNaoExibido(ep) || ep_ja_saiu(ep->dataIso, (long long)time(NULL) * 1000LL) == 0,
+                        ep->thumb, serie->poster, paisagem,
+                        arte == ep->thumb ? tex_aspecto(arte) : (arte == serie->poster ? 0.5f : 0.0f))) {
+    arte = paisagem;
+    t2 = tex_obter_larg(arte, texW);
   }
   float aArte = (c >= 0 && c < DET_REV_EP) ? revela_arte(&revEp[c], t2 != 0, agora) : 1.0f;
   // Approved Modern material C: page background at rest, quiet panel on focus.
@@ -5727,11 +5758,15 @@ static void desenhaEpisodioCorpo(GfxRect r, int c, float f, float a, Uint32 agor
   if (t2) {
     if (!mergedVeil && aArte < 0.999f) gfx_cor(th, raioTh, 0.133f, 0.133f, 0.133f, a);
     gfx_tex_aspect_atual = tex_aspecto(arte);
+    // A portrait image left in this landscape card fills it (cropped, like
+    // regular Nuvio's ContentScale.Crop) instead of sitting between bars.
+    gfx_card_forcar_cover_atual = ep_arte_cobrir(gfx_tex_aspect_atual) ? 1.0f : 0.0f;
     gfx_varre_atual = foco.fileira==SEC_EPISODIOS && c==foco.coluna ? epSheen : 0;
-    gfx_rect(th, t2, GFX_CARD, f, 0, 0, raioTh,
+    gfx_card_para(NV_CARD_EPISODES, th, t2, GFX_CARD, f, 0, 0, raioTh,
              0, 0, 0, mergedVeil ? a : a * aArte);
     gfx_varre_atual = 0;
     gfx_tex_aspect_atual = 0.0f;
+    gfx_card_forcar_cover_atual = 0.0f;
   } else if (arte && !tex_falhou(arte))
     gfx_esqueleto(th, raioTh, 0.133f, 0.133f, 0.133f, a);
   else gfx_cor(th, raioTh, 0.133f, 0.133f, 0.133f, a);
@@ -6056,7 +6091,7 @@ static void desenhaTrailer(float x, float y, int c, float f, float a) {
 
   if (tex) {
     gfx_tex_aspect_atual = tex_aspecto(mini);
-    gfx_rect(v, tex, GFX_CARD, f, 0, 0, raio, 1, 1, 1, a);
+    gfx_card_para(NV_CARD_TRAILERS, v, tex, GFX_CARD, f, 0, 0, raio, 1, 1, 1, a);
     gfx_tex_aspect_atual = 0.0f;
   } else {
     gfx_cor(v, raio, 0.13f, 0.13f, 0.13f, a);
@@ -6160,7 +6195,7 @@ static void desenhaElenco(float x, float y, int c, float f, float a) {
     // GFX_AVATAR faz o cover e a mascara radial no mesmo passe. GFX_CARD
     // arredondava o retangulo, mas preservava a logica de enquadramento de
     // cartaz — sobravam faixas e a foto nao ocupava o circulo inteiro.
-    gfx_rect(av, t2, GFX_AVATAR, 0, 0, 0, 0.0f, 0, 0, 0, a);
+    gfx_card_para(NV_CARD_CAST, av, t2, GFX_AVATAR, f, 0, 0, 0.0f, 0, 0, 0, a);
     gfx_tex_aspect_atual = 0.0f;
   } else {
     // Sem foto, a inicial sobre #222 (#303030 com foco) — e o que o web faz
@@ -6379,7 +6414,7 @@ static void desenhaNotasEpisodio(float x, float y, float a) {
     float bx = x + (t - primeira) * (58.0f + RAT_TEMP_GAP);
     GfxRect r = { bx, y, 58.0f, RAT_TEMP_H };
     int sel = (t == ratTemp);
-    snprintf(rot, sizeof rot, "T%d", extras_temporada_numero(t));
+    snprintf(rot, sizeof rot, i18n("T%d"), extras_temporada_numero(t));
     gfx_cor(r, 0.5f, 1, 1, 1, (sel ? 0.28f : 0.14f) * a);
     { TxtLinha l = txt_linha(TXT_DET_META2, rot, 241, 247, 254, 255);
       txt_desenhar_alpha(l, bx + (58.0f - l.w) * 0.5f,
@@ -7723,7 +7758,7 @@ static void desenhaPessoa(float a) {
     GfxRect r = { ANC(NV_DETP_X), 96.0f, PES_FOTO_W, PES_FOTO_H };
     if (t) {
       gfx_tex_aspect_atual = tex_aspecto(pessoa_foto());
-      gfx_rect(r, t, GFX_CARD, 0, 0, 0, raioCartaz(PES_FOTO_W, PES_FOTO_H), 0, 0, 0, a);
+      gfx_card_para(NV_CARD_CAST, r, t, GFX_CARD, 0, 0, 0, raioCartaz(PES_FOTO_W, PES_FOTO_H), 0, 0, 0, a);
       gfx_tex_aspect_atual = 0.0f;
     } else {
       gfx_cor(r, raioCartaz(PES_FOTO_W, PES_FOTO_H), 0.13f, 0.13f, 0.13f, a);
@@ -7790,7 +7825,7 @@ static void desenhaPessoa(float a) {
         r = foco_zoom(r, fp); }
       if (t) {
         gfx_tex_aspect_atual = tex_aspecto(po);
-        gfx_rect(r, t, GFX_CARD, i == pessoaFoco ? 1.0f : 0.0f, 0, 0,
+        gfx_card_para(NV_CARD_POSTERS, r, t, GFX_CARD, i == pessoaFoco ? 1.0f : 0.0f, 0, 0,
                  raioCartaz(PES_CARD_W, PES_CARD_H), 0, 0, 0, a);
         gfx_tex_aspect_atual = 0.0f;
       } else {

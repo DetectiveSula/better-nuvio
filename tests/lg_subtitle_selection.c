@@ -36,3 +36,5 @@ int main(int argc, char **argv) {
   puts("Subtitle selection: PASS");
   return 0;
 }
+
+int xtream_url_limitada(const char *url){(void)url;return 0;} /* Fixture is ordinary VOD. */

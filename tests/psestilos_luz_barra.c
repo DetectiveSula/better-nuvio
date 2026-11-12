@@ -13,7 +13,7 @@
 #include <string.h>
 
 // --- DUBLES ------------------------------------------------------------------
-typedef struct { GfxRect r; GfxModo m; } RectChamado;
+typedef struct { GfxRect r; GfxModo m; GLuint tex; } RectChamado;
 static RectChamado rects[256];
 static int nRects;
 static GfxRect cores[64];
@@ -24,7 +24,7 @@ void gfx_rect(GfxRect r, GLuint tex, GfxModo m, float foco, float parx, float pa
   (void)tex; (void)foco; (void)parx; (void)pary; (void)raio;
   (void)cr; (void)cg; (void)cb; (void)ca;
   assert(nRects < 256);
-  rects[nRects].r = r; rects[nRects].m = m; nRects++;
+  rects[nRects].r = r; rects[nRects].m = m; rects[nRects].tex = tex; nRects++;
 }
 void gfx_cor(GfxRect r, float raio, float cr, float cg, float cb, float ca) {
   (void)raio; (void)cr; (void)cg; (void)cb; (void)ca;
@@ -37,8 +37,10 @@ int  gfx_efeitos_leves(void)  { return 0; }
 int  gfx_efeitos_minimos(void) { return 0; }
 float gfx_tex_aspect_atual, gfx_card_forcar_cover_atual, gfx_card_veu_tela_atual;
 
-int psparede_n(int i) { (void)i; return 0; }
-const char *psparede_url(int i, int k) { (void)i; (void)k; return 0; }
+static int savedWallCount, savedWallReads;
+static const char *savedWallUrls[PSEST_PAREDE_MAX];
+int psparede_n(int i) { (void)i; savedWallReads++; return savedWallCount; }
+const char *psparede_url(int i, int k) { (void)i; return savedWallUrls[k]; }
 void tex_cache_marcar_larg(int grupo, const char *u, float l, int e, int u2) {
   (void)grupo; (void)u; (void)l; (void)e; (void)u2;
 }

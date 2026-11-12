@@ -10,9 +10,14 @@ assert actual[413:417]==[
  ('AJ_RESOLVE_PROVIDER','preferredResolverProviderLocal'),
  ('AJ_RESOLVE_PREPARE','-preparePlayableLinks'),
  ('AJ_RESOLVE_LIMIT','playableLinkPreparationLimitLocal')]
-assert actual[417:]==[('AJ_TB_CACHED_ADD','torboxCachedAddLocal')]
+assert actual[417:418]==[('AJ_TB_CACHED_ADD','torboxCachedAddLocal')]
+# Stage H appends after Stage D (tests/settings_stage_h_familia.sh owns them).
+assert actual[418:420]==[('AJ_FAMILIA','familyWatchingLocal'),('AJ_FAMILIA_PARTILHAR','familyShareActivityLocal')]
 defaults=(ROOT/'src/ajustes_ux_padrao.inc').read_text().split('// Stage C appended defaults (original binding prefix ends above).')[1]
 old,added=defaults.split('// Stage D cached-addition opt-in (after all Stage C defaults).')
+added,familia=added.split('// Stage H Family Watching (after Stage D).')
+familia=familia.split('// Local expansion:')[0]
+assert re.sub(r'\s+|/\*.*?\*/','',familia,flags=re.S)=='1,1,'
 assert re.sub(r'\s+|/\*.*?\*/','',old,flags=re.S)=='1,0,1,0,'
 assert re.sub(r'\s+|/\*.*?\*/','',added,flags=re.S)=='1,'
 s=(ROOT/'src/streams.c').read_text()

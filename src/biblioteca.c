@@ -1772,6 +1772,16 @@ static void desenhaVazio(void) {
           ? "Os filmes e séries da sua coleção no Trakt ficam reunidos nesta aba."
           : "Abra um filme ou série e escolha Adicionar à lista para guardar.";
   }
+  if (bibRetrato()) {
+    float x = bibX(), w = bibW(), y = gradeY() + 170;
+    gfx_icone((GfxRect){x + (w - 64) / 2, y - 100, 64, 64},
+      "menu_library", .70f, .70f, .72f, 1);
+    float height = txt_bloco_corta(TXT_TITULO3, l1, 245, 245, 247,
+      x, y, w, 58, .96f, 3);
+    txt_bloco_corta(TXT_BODY, l2, 170, 173, 182, x, y + height + 24,
+      w, 44, .9f, 5);
+    return;
+  }
   { TxtLinha t1 = txt_linha(TXT_TITULO2, l1, 255, 255, 255, 255);
     TxtLinha t2 = txt_linha_corta(TXT_CALLOUT, l2, 150, 153, 162, 255, bibW());
     float cx = bibX() + bibW() * 0.5f;

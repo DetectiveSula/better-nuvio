@@ -3,6 +3,8 @@
 // Inclui atualizacao.c com NV_ANDROID definido aqui (acharApk e estatica); o resto do
 // nucleo compila sem a flag, e a ponte JNI e substituida pelo stub abaixo.
 #define NV_VERSAO "1.0.53"
+// Existing production/Lite selection contract, distinct from strictdebug.
+#define NDEBUG 1
 #define NV_ANDROID 1
 #include <stdint.h>
 #ifdef TEST_ARMV7

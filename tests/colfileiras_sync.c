@@ -89,10 +89,17 @@ int main(void) {
   assert(col_revisao() == c && fil_revisao() == f);
   assert(catordem_ler("{\"items\":[{\"is_collection\":true,\"collection_id\":\"c2\",\"order\":0,\"enabled\":false},{\"is_collection\":true,\"collection_id\":\"c1\",\"order\":1},{\"addon_id\":\"addon.demo\",\"type\":\"movie\",\"catalog_id\":\"s2\",\"enabled\":false,\"order\":2}]}"));
   colfileiras_sincronizar();
-  assert(idx("collection_c2") < idx("collection_c1"));
+  { const char *keys[FIL_MAX];int order[FIL_MAX],a=-1,b=-1;
+    int count=fil_n();for(int i=0;i<count;i++)keys[i]=fil_chave(i);
+    count=fil_unir(keys,count,order,FIL_MAX);
+    for(int i=0;i<count;i++){if(!strcmp(keys[order[i]],"collection_c2"))a=i;if(!strcmp(keys[order[i]],"collection_c1"))b=i;}
+    assert(a>=0&&b>=0&&a<b); // runtime order, not a rewrite of Native storage
+  }
   assert(fil_estado_chave("collection_c2") == FIL_FORA && fil_estado_chave("addon.demo_movie_s2") == FIL_FORA);
   assert(fil_n_na_home() == 5 && fil_n_capacidade() == 2);
   catordem_ler("{\"items\":[]}"); colfileiras_sincronizar();
+  assert(fil_estado_chave("collection_c2") == FIL_FORA); // empty pull preserves valid TV state
+  catordem_esquecer();colfileiras_sincronizar(); // explicit fixture reset, not a transport failure
   assert(fil_estado_chave("collection_c2") == FIL_NA_HOME);
   assert(fil_n_capacidade() == 3);
 

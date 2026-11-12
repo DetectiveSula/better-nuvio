@@ -58,6 +58,8 @@ int dados_gravar(const char *nome, const char *conteudo) {
 }
 // fileiras.c nao entra neste teste; o perfil so avisa a troca.
 void fil_definir_perfil(int p) { (void)p; }
+static int homeProjection;
+int fil_tem_projecao(void) { return homeProjection; }
 // fontepref.c idem: a fonte lembrada tambem e por perfil, e perfis.c so avisa.
 void fontepref_definir_perfil(int p) { (void)p; }
 void legmem_definir_perfil(int p) { (void)p; }
@@ -255,6 +257,13 @@ static void etapaUm(void) {
   assert(perfis_ativo_addons() == 3);
   addonsDoPrincipal = 1;
   assert(perfis_ativo_addons() == 1);
+  // A valid Stage G projection owns its catalogue scope. Keep the legacy
+  // fallback above, but do not let it override a synced profile's own addons.
+  homeProjection = 1;
+  assert(perfis_home_config() == 3 && perfis_ativo_addons() == 3);
+  perfis_definir_ativo(2);
+  assert(perfis_home_config() == 1 && perfis_ativo_addons() == 1);
+  homeProjection = 0;
   perfis_definir_ativo(1);
   assert(perfis_ativo_addons() == 1);
   perfis_definir_ativo(2);
@@ -266,6 +275,38 @@ static void etapaUm(void) {
     assert(!strstr(c, pinBom));
     free(c); }
 
+  { ContaPerfil before=*perfis_item(1),other=*perfis_item(0);int active=perfis_ativo();
+    uint64_t generation=perfis_sessao_geracao();assert(perfis_sessao_travar(generation));
+    assert(perfis_aplicar_edicao(2,"Renamed","https://example.invalid/photo.jpg"));
+    assert(!strcmp(perfis_item(1)->nome,"Renamed"));assert(perfis_ativo()==active);
+    assert(perfis_item(1)->usaAddonsDoPrimario==before.usaAddonsDoPrimario);
+    assert(perfis_item(1)->temPin==before.temPin && !strcmp(perfis_item(1)->fundoUrl,before.fundoUrl));
+    assert(!memcmp(&other,perfis_item(0),sizeof other));
+    assert(!perfis_aplicar_edicao(99,"Missing",""));assert(!perfis_aplicar_edicao(2,"",""));
+    assert(perfis_aplicar_edicao(2,before.nome,before.avatarUrl));
+    // Colour/background: NULL keeps the field, "" is the standard background.
+    assert(perfis_aplicar_aparencia(2,"#E53935",NULL));
+    assert(!strcmp(perfis_item(1)->corHex,"#E53935") && !strcmp(perfis_item(1)->fundoUrl,before.fundoUrl));
+    assert(perfis_aplicar_aparencia(2,NULL,"https://example.invalid/wall.jpg"));
+    assert(!strcmp(perfis_item(1)->corHex,"#E53935") && !strcmp(perfis_item(1)->fundoUrl,"https://example.invalid/wall.jpg"));
+    assert(!perfis_aplicar_aparencia(2,"red",NULL) && !perfis_aplicar_aparencia(2,"#12345G",NULL));
+    assert(!perfis_aplicar_aparencia(99,"#E53935",NULL));
+    { char *c=dados_ler("perfis.txt");assert(c && strstr(c,"#E53935") && strstr(c,"wall.jpg"));free(c); }
+    assert(perfis_aplicar_aparencia(2,before.corHex,before.fundoUrl));
+    // PIN state follows the editor; the PIN itself never reaches this module.
+    assert(perfis_aplicar_pin(2,!before.temPin) && perfis_item(1)->temPin==!before.temPin);
+    assert(perfis_aplicar_pin(2,before.temPin) && perfis_item(1)->temPin==before.temPin);
+    { const ContaPerfil *q=perfis_item(1);
+      assert(q->indice==before.indice && q->temPin==before.temPin && q->primario==before.primario &&
+             q->usaAddonsDoPrimario==before.usaAddonsDoPrimario && !strcmp(q->nome,before.nome) &&
+             !strcmp(q->corHex,before.corHex) && !strcmp(q->avatarUrl,before.avatarUrl) && !strcmp(q->fundoUrl,before.fundoUrl)); }
+    assert(!memcmp(&other,perfis_item(0),sizeof other));
+    // Never delete profile 1, the primary or the active profile.
+    { int count=perfis_n();
+      assert(!perfis_aplicar_remocao(1) && !perfis_aplicar_remocao(active) && !perfis_aplicar_remocao(99));
+      assert(perfis_n()==count); }
+    perfis_sessao_destravar();
+  }
   puts("etapa 1 (a conta chega pela rede): OK");
 }
 
@@ -316,8 +357,26 @@ static void etapaDois(void) {
   puts("etapa 2 (o segundo arranque, sem rede): OK");
 }
 
+// A profile deleted in the editor leaves the list and the disk cache at once;
+// the others keep their order and fields. Separate process: it rewrites the cache.
+static void etapaRemocao(void) {
+  respPerfis = PERFIS_JSON; respLocks = LOCKS_JSON;
+  assert(perfis_puxar() == 3);
+  perfis_definir_ativo(1);
+  ContaPerfil um = *perfis_item(0), tres = *perfis_item(2);
+  uint64_t g = perfis_sessao_geracao(); assert(perfis_sessao_travar(g));
+  assert(!perfis_aplicar_remocao(1));
+  assert(perfis_aplicar_remocao(2));
+  assert(perfis_n() == 2 && !memcmp(&um, perfis_item(0), sizeof um) && !memcmp(&tres, perfis_item(1), sizeof tres));
+  assert(!perfis_aplicar_remocao(2));
+  perfis_sessao_destravar();
+  { char *c = dados_ler("perfis.txt"); assert(c && !strstr(c, "\u00c1lvaro") && !strstr(c, "Álvaro") && strstr(c, "Infantil")); free(c); }
+  puts("remocao (perfil apagado no editor): OK");
+}
+
 int main(int argc, char **argv) {
   if (argc > 1 && !strcmp(argv[1], "dois")) { etapaDois(); return 0; }
+  if (argc > 1 && !strcmp(argv[1], "remocao")) { etapaRemocao(); return 0; }
   etapaUm();
   return 0;
 }

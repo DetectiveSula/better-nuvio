@@ -1,0 +1,687 @@
+{
+  "stage": "J6",
+  "date": "2026-11-05",
+  "official_commit": "99fbd65d8c16928d1fe11bf3f9812c4b5aaaca8f",
+  "summary": {
+    "J1 candidates": 57,
+    "J1 unresolved": 26,
+    "mapped": 40,
+    "mapped_from_candidates": 38,
+    "mapped_from_unresolved": 2,
+    "rejected": 26,
+    "local": 16,
+    "device-local": 1
+  },
+  "policy": [
+    "One owner per Native setting and per official key; Stage I, Stage G and J4 owners win.",
+    "Uncertain mappings stay local; absent or unknown remote values never reset a preference.",
+    "Account writes for J6 fields are Off by default (ajustes_oficiais_permitir_escritas), never inherited across contexts."
+  ],
+  "j1_corrections": [
+    "AJ_TRAILER_QUAL is not a candidate: trailer_allow_4k is device-local in regular Nuvio.",
+    "AJ_FUNDO, AJ_TELA_ABERTURA, AJ_PLR_FORMATO, AJ_LAYOUT_AJUSTES, AJ_PULAR_ABERTURA, AJ_PAUSA_COMENTARIOS and AJ_HERO_NOTAS had matching words but different meaning."
+  ],
+  "rows": [
+    {
+      "native_id": "AJ_LEG_LINGUA",
+      "label": "Subtitle language",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "rejected",
+      "reason": "owned by Stage I read-only account import (subtitle_preferred_language)"
+    },
+    {
+      "native_id": "AJ_AUD_LINGUA",
+      "label": "Audio language",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "rejected",
+      "reason": "owned by Stage I read-only account import (preferred_audio_language -> account slot); explicit Native choice wins; mapping caused the earlier audio-language regression"
+    },
+    {
+      "native_id": "AJ_RAIL_BLUR",
+      "label": "Modern sidebar blur",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "device-local",
+      "reason": "modern_sidebar_blur_enabled exists, but Native treats the blur as GPU/device (explicit device list)"
+    },
+    {
+      "native_id": "AJ_DESCOBRIR",
+      "label": "Discover location",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.discover_location",
+      "codec": "CHOICE",
+      "evidence": "Native options map 1:1 to official enum names; unknown official values kept local; IN_SEARCH, IN_SIDEBAR, OFF"
+    },
+    {
+      "native_id": "AJ_NOME_ADDON",
+      "label": "Addon name in catalog",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.catalog_addon_name_enabled",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true; mapping exact; Stage I noted no Native runtime consumer outside settings"
+    },
+    {
+      "native_id": "AJ_OCULTAR_NLANC",
+      "label": "Hide unreleased",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "rejected",
+      "reason": "second owner: Stage G already applies hide_unreleased_content from home_catalog_shared (also written by the mobile client)"
+    },
+    {
+      "native_id": "AJ_NOTAS_HOME",
+      "label": "Overall ratings",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.home_imdb_ratings_visibility",
+      "codec": "CHOICE",
+      "evidence": "Native options map 1:1 to official enum names; unknown official values kept local"
+    },
+    {
+      "native_id": "AJ_GRAD_CLASSICO",
+      "label": "Classic focus gradient",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.classic_focus_gradient_enabled",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true; mapping exact; Stage I noted no Native runtime consumer outside settings"
+    },
+    {
+      "native_id": "AJ_CW_FONTE",
+      "label": "Source for \"Continue Watching\"",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "trakt_settings.watch_progress_source",
+      "codec": "CHOICE",
+      "evidence": "Native options map 1:1 to official enum names; unknown official values kept local; Native Automatic and official MDBLIST held local"
+    },
+    {
+      "native_id": "AJ_CW_ESTILO",
+      "label": "\"Continue Watching\" style",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.continue_watching_card_style",
+      "codec": "CHOICE",
+      "evidence": "Native options map 1:1 to official enum names; unknown official values kept local"
+    },
+    {
+      "native_id": "AJ_CW_ORDEM",
+      "label": "Sort order",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.continue_watching_sort_mode",
+      "codec": "CHOICE",
+      "evidence": "Native options map 1:1 to official enum names; unknown official values kept local"
+    },
+    {
+      "native_id": "AJ_DET_TRAILER",
+      "label": "Trailer button",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.detail_page_trailer_button_enabled",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true; mapping exact; Stage I noted no Native runtime consumer outside settings"
+    },
+    {
+      "native_id": "AJ_DET_TRAILER_AUTO",
+      "label": "Auto-play trailer",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "local (uncertain)",
+      "reason": "trailer_enabled governs all trailers in regular Nuvio; Native switch is title-page auto-play"
+    },
+    {
+      "native_id": "AJ_TRAILER_QUAL",
+      "label": "Trailer quality",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "rejected",
+      "reason": "J1 correction: trailer_allow_4k is device-local in regular Nuvio (localOnlyTrailerProfileSettingsKeys)"
+    },
+    {
+      "native_id": "AJ_EXPANDIR_ATRASO",
+      "label": "Expansion delay",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.focused_poster_backdrop_expand_delay_seconds",
+      "codec": "INT",
+      "evidence": "identical key; Native range inside official range; out-of-range remote values kept local"
+    },
+    {
+      "native_id": "AJ_PROF",
+      "label": "Depth effect",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.card_depth_enabled",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_PROF_BORDA",
+      "label": "Edge glow",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.card_depth_edge_strength",
+      "codec": "INT",
+      "evidence": "identical key; Native range inside official range; out-of-range remote values kept local"
+    },
+    {
+      "native_id": "AJ_PROF_BRILHO",
+      "label": "Sheen",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.card_depth_sheen_strength",
+      "codec": "INT",
+      "evidence": "identical key; Native range inside official range; out-of-range remote values kept local"
+    },
+    {
+      "native_id": "AJ_PROF_COBERTURA",
+      "label": "Edge coverage",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.card_depth_edge_coverage",
+      "codec": "INT",
+      "evidence": "identical key; Native range inside official range; out-of-range remote values kept local"
+    },
+    {
+      "native_id": "AJ_PROF_POSTERS",
+      "label": "Depth on posters",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.card_depth_posters_enabled",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_PROF_CW",
+      "label": "Depth on \"Continue\"",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.card_depth_continue_watching_enabled",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_PROF_EPS",
+      "label": "Depth on episodes",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.card_depth_episode_cards_enabled",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_PROF_ELENCO",
+      "label": "Depth on cast",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.card_depth_cast_enabled",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_PROF_TRAILERS",
+      "label": "Depth on trailers",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.card_depth_trailers_enabled",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_LARGURA_DP",
+      "label": "Item width",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.poster_card_width_dp",
+      "codec": "INT",
+      "evidence": "identical key; Native range inside official range; out-of-range remote values kept local"
+    },
+    {
+      "native_id": "AJ_RAIO_DP",
+      "label": "Corner radius",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "layout_settings.poster_card_corner_radius_dp",
+      "codec": "INT",
+      "evidence": "identical key; Native range inside official range; out-of-range remote values kept local"
+    },
+    {
+      "native_id": "AJ_TEMA",
+      "label": "Accent color",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "theme_settings.selected_theme",
+      "codec": "CHOICE",
+      "evidence": "Native options map 1:1 to official enum names; unknown official values kept local; 12 fixed themes only; CUSTOM and Native-only themes held local"
+    },
+    {
+      "native_id": "AJ_SALVOS_DEST",
+      "label": "Library source",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "local (uncertain)",
+      "reason": "Native \"Nuvio list\" not proven equal to official LOCAL; official MDBLIST unrepresentable"
+    },
+    {
+      "native_id": "AJ_TMDB_IDIOMA",
+      "label": "Metadata language",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "rejected",
+      "reason": "owned by Stage I read-only account import (tmdb_language); Native index list vs locale code"
+    },
+    {
+      "native_id": "AJ_MDB_LIGADO",
+      "label": "MDBList",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "mdblist_settings.mdblist_enabled",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_MDB_TRAKT",
+      "label": "Trakt ratings",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "mdblist_settings.mdblist_show_trakt",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_MDB_IMDB",
+      "label": "IMDb ratings",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "mdblist_settings.mdblist_show_imdb",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_MDB_TMDB",
+      "label": "TMDB ratings",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "mdblist_settings.mdblist_show_tmdb",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_MDB_LETTER",
+      "label": "Letterboxd ratings",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "mdblist_settings.mdblist_show_letterboxd",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_MDB_TOMATES",
+      "label": "Rotten Tomatoes ratings",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "mdblist_settings.mdblist_show_tomatoes",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_MDB_AUDIENCIA",
+      "label": "Audience score",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "mdblist_settings.mdblist_show_audience",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_MDB_META",
+      "label": "Metacritic ratings",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "mdblist_settings.mdblist_show_metacritic",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_MDB_MAL",
+      "label": "MyAnimeList ratings",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "mdblist_settings.mdblist_show_mal",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_MENU_EXPLORAR",
+      "label": "Explore in the sidebar",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "rejected",
+      "reason": "legacy search_discover_enabled (official local-only, migrated); discover_location is owned by AJ_DESCOBRIR"
+    },
+    {
+      "native_id": "AJ_FOCO_TRAILER",
+      "label": "Trailer on the focused poster",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "mapped",
+      "official": "layout_settings.focused_poster_backdrop_trailer_enabled",
+      "codec": "FOCUS",
+      "evidence": "Off / Full screen / In the card = enabled + playback target (absent target = HERO_MEDIA); promoted from J1 unresolved: compound key pair"
+    },
+    {
+      "native_id": "AJ_HOME_LAYOUT",
+      "label": "Home layout",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "better_nuvio only (reviewed follow-up)",
+      "reason": "No lossless official conversion. Explicit follow-up approval routes Native Modern/Default/Dynamic through better_nuvio homeLayoutLocal; never exported to tv."
+    },
+    {
+      "native_id": "AJ_NT_IMDB",
+      "label": "IMDb",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "rejected",
+      "reason": "second owner: the matching mdblist_show_* key is already owned by the AJ_MDB_* mapping"
+    },
+    {
+      "native_id": "AJ_NT_TOMATES",
+      "label": "Rotten Tomatoes (critics)",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "rejected",
+      "reason": "second owner: the matching mdblist_show_* key is already owned by the AJ_MDB_* mapping"
+    },
+    {
+      "native_id": "AJ_NT_AUDIENCIA",
+      "label": "Popcornmeter (audience)",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "rejected",
+      "reason": "second owner: the matching mdblist_show_* key is already owned by the AJ_MDB_* mapping"
+    },
+    {
+      "native_id": "AJ_NT_META",
+      "label": "Metacritic (critics)",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "rejected",
+      "reason": "second owner: the matching mdblist_show_* key is already owned by the AJ_MDB_* mapping"
+    },
+    {
+      "native_id": "AJ_NT_TRAKT",
+      "label": "Trakt",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "rejected",
+      "reason": "second owner: the matching mdblist_show_* key is already owned by the AJ_MDB_* mapping"
+    },
+    {
+      "native_id": "AJ_NT_TMDB",
+      "label": "TMDB",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "rejected",
+      "reason": "second owner: the matching mdblist_show_* key is already owned by the AJ_MDB_* mapping"
+    },
+    {
+      "native_id": "AJ_NT_LETTER",
+      "label": "Letterboxd",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "rejected",
+      "reason": "second owner: the matching mdblist_show_* key is already owned by the AJ_MDB_* mapping"
+    },
+    {
+      "native_id": "AJ_NT_MAL",
+      "label": "MyAnimeList",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "rejected",
+      "reason": "second owner: the matching mdblist_show_* key is already owned by the AJ_MDB_* mapping"
+    },
+    {
+      "native_id": "AJ_HERO_TRAILER_SOM",
+      "label": "Trailer sound",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "local (uncertain)",
+      "reason": "focused_poster_backdrop_trailer_muted is the focused-poster trailer, inverted; Native switch is the hero trailer"
+    },
+    {
+      "native_id": "AJ_HERO_TRAILER_ESPERA",
+      "label": "Hero trailer delay",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "local (uncertain)",
+      "reason": "unit unverified: Native default 22 vs official trailer_delay_seconds default 7"
+    },
+    {
+      "native_id": "AJ_CW_CONCLUIDO",
+      "label": "Watched percentage",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "local (uncertain)",
+      "reason": "official value is a half-step float that depends on a separate threshold-mode key; not lossless"
+    },
+    {
+      "native_id": "AJ_FUNDO",
+      "label": "Background",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "rejected",
+      "reason": "different meaning: Native Art / Blurred art / Frost vs amoled_mode boolean"
+    },
+    {
+      "native_id": "AJ_TAM_MAX",
+      "label": "Maximum size",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "local",
+      "reason": "value lives inside the composite debrid stream_preferences JSON"
+    },
+    {
+      "native_id": "AJ_TAM_MIN",
+      "label": "Minimum size",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "local",
+      "reason": "value lives inside the composite debrid stream_preferences JSON"
+    },
+    {
+      "native_id": "AJ_LEG_FORCADA",
+      "label": "Forced subtitles when the audio is in your language",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "local (uncertain)",
+      "reason": "official effective value also turns on via subtitle language \"forced\" (Stage I import); raw key alone is not the same behaviour"
+    },
+    {
+      "native_id": "AJ_PLR_CLASSIF",
+      "label": "Content rating in the player",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "player_settings.parental_guide_enabled",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_FONTE_ESCOPO",
+      "label": "Auto-play sources",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "player_settings.stream_auto_play_source",
+      "codec": "CHOICE",
+      "evidence": "Native options map 1:1 to official enum names; unknown official values kept local"
+    },
+    {
+      "native_id": "AJ_FONTE_PREPARAR",
+      "label": "Prepare the source when a title opens",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "rejected",
+      "reason": "different behaviour from instant_playback_preparation_limit (owned by AJ_RESOLVE_LIMIT)"
+    },
+    {
+      "native_id": "AJ_LAYOUT_AJUSTES",
+      "label": "Settings layout",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "rejected",
+      "reason": "different values: Panel / List vs CLASSIC / ZEN / HORIZON"
+    },
+    {
+      "native_id": "AJ_FONTE_ORDEM_ADDON",
+      "label": "Source order",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "local",
+      "reason": "value lives inside the composite debrid stream_preferences JSON"
+    },
+    {
+      "native_id": "AJ_LEG_MOSTRAR",
+      "label": "Show in player",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "mapped",
+      "official": "player_settings.subtitle_show_only_preferred_languages",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true; promoted from J1 unresolved: Native \"Only my languages / All\" = official show-only-preferred boolean"
+    },
+    {
+      "native_id": "AJ_TELA_ABERTURA",
+      "label": "Video opening screen",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "rejected",
+      "reason": "different meaning: Native Cinema / Detailed style vs loading_overlay_enabled"
+    },
+    {
+      "native_id": "AJ_PULAR_ABERTURA",
+      "label": "Skip the intro automatically",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "rejected",
+      "reason": "different behaviour: Native auto-skips; skip_intro_enabled only fetches intervals for the Skip button"
+    },
+    {
+      "native_id": "AJ_PULAR_RESUMO",
+      "label": "Skip the recap automatically",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "local",
+      "reason": "no official recap auto-skip key (animeskip_enabled is a provider toggle)"
+    },
+    {
+      "native_id": "AJ_PROXIMO_AUTO",
+      "label": "Play the next episode automatically",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "player_settings.stream_auto_play_next_episode_enabled",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_PULAR_CREDITOS",
+      "label": "Skip the credits automatically",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "local",
+      "reason": "no official credits auto-skip key"
+    },
+    {
+      "native_id": "AJ_LEG_CONTORNO_COR",
+      "label": "Subtitle outline color",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "local (uncertain)",
+      "reason": "7 named Native colours vs arbitrary ARGB; palette equality unverified"
+    },
+    {
+      "native_id": "AJ_HERO_NOTAS",
+      "label": "Show ratings on hero",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "rejected",
+      "reason": "different data: Native shows the IMDb rating on the hero; mdblist_show_on_hero shows MDBList ratings"
+    },
+    {
+      "native_id": "AJ_FONTE_PRECARREGAR",
+      "label": "Preload video",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "rejected",
+      "reason": "different behaviour: video preload vs preload_next_episode_sources"
+    },
+    {
+      "native_id": "AJ_AUD_LINGUA2",
+      "label": "Second audio language",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "rejected",
+      "reason": "owned by Stage I read-only account import (secondary_preferred_audio_language)"
+    },
+    {
+      "native_id": "AJ_MENU_CARTAZ",
+      "label": "Enriched context menu",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "rejected",
+      "reason": "different meaning: On/Off vs episode_options_overlay_style enum"
+    },
+    {
+      "native_id": "AJ_FONTE_GRUPO",
+      "label": "Prefer binge group",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "local (uncertain)",
+      "reason": "Native preference also drives general source memory and is gated by source priority; official key is next-episode only"
+    },
+    {
+      "native_id": "AJ_FONTE_GRUPO_SESSOES",
+      "label": "Reuse binge group across sessions",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "local (uncertain)",
+      "reason": "depends on AJ_FONTE_GRUPO, which stays local"
+    },
+    {
+      "native_id": "AJ_LINK_REUSAR",
+      "label": "Reuse last link",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "player_settings.stream_reuse_last_link_enabled",
+      "codec": "BOOL",
+      "evidence": "identical official key; Native index 0 = On matches true"
+    },
+    {
+      "native_id": "AJ_LINK_PRAZO",
+      "label": "Last link cache duration",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "player_settings.stream_reuse_last_link_cache_hours",
+      "codec": "HOURS",
+      "evidence": "Native presets 1,2,3,6,12,24,48,72,168 h; other official hours kept local"
+    },
+    {
+      "native_id": "AJ_NT_EP",
+      "label": "Episode rating",
+      "j1_tier": "official tier: key unresolved",
+      "decision": "local (uncertain)",
+      "reason": "5 Native choices vs DetailImdbRatingsVisibility (4 values, episode projection)"
+    },
+    {
+      "native_id": "AJ_PLR_FORMATO",
+      "label": "Format in the player",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "rejected",
+      "reason": "different meaning: 5 badge styles vs show_badges_in_player boolean"
+    },
+    {
+      "native_id": "AJ_PAUSA_COMENTARIOS",
+      "label": "Trakt comments when paused",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "rejected",
+      "reason": "different surface: comments while paused vs show_meta_comments on the title page"
+    },
+    {
+      "native_id": "AJ_CW_DIAS",
+      "label": "Days in Trakt Continue Watching (0 = all)",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "trakt_settings.continue_watching_days_cap",
+      "codec": "INT",
+      "evidence": "identical key; Native range inside official range; out-of-range remote values kept local; 0 or 7\u2013365 both sides"
+    },
+    {
+      "native_id": "AJ_RESOLVE_PROVIDER",
+      "label": "Resolve with",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "debrid_settings.preferred_resolver_provider_id",
+      "codec": "CHOICE",
+      "evidence": "Native options map 1:1 to official enum names; unknown official values kept local; \"\" automatic, torbox, premiumize; realdebrid kept local"
+    },
+    {
+      "native_id": "AJ_RESOLVE_PREPARE",
+      "label": "Prepare instant playback",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "rejected",
+      "reason": "derived from the preparation limit; the limit is the single wire owner"
+    },
+    {
+      "native_id": "AJ_RESOLVE_LIMIT",
+      "label": "Preparation limit",
+      "j1_tier": "official tier: J6 candidate",
+      "decision": "mapped",
+      "official": "debrid_settings.instant_playback_preparation_limit",
+      "codec": "INT",
+      "evidence": "identical key; Native range inside official range; out-of-range remote values kept local; 0\u20135 both sides; Native prepare switch is derived (one wire owner)"
+    }
+  ]
+}

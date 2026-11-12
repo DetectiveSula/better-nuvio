@@ -53,6 +53,8 @@
 #include "spotpessoa.h"
 #include "spotlight.h"
 #include "ctxlista.h"
+#include "anos.h"
+#include "metaprov.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -102,11 +104,18 @@ static float buResY(void);
 // pilula vem em px REAIS e esta tela mede pela virtual (real / escala de
 // texto): sem a conversao o campo colava na pilula com texto menor que 100%.
 #define BU_TOPO_VAO 28.0f
-static float buTopoEsq(void) {
+static float buTopoBase(void) {
   float px, py, pw, ph;
   if (menu_pilula_rect(&px, &py, &pw, &ph)) return ANC(fmaxf(64.0f, py + ph + BU_TOPO_VAO));
   return ANC(64.0f);
 }
+// SEARCH PAGE (owner mock-up, 7 Nov 2026): on TV a "Search" title sits above
+// the field; the results column keeps its top, so recent searches / the filter
+// tabs line up with the title. Phones keep their layout.
+#define BU_TITULO_H (buTelefone() ? 0.0f : 74.0f)
+static float buTopoEsq(void) { return buTopoBase() + BU_TITULO_H; }
+// TV keys are short rectangles (mock-up); phones keep square 66 keys.
+static float buTeclaH(void) { return buTelefone() ? 66.0f : 50.0f; }
 
 // --- Teclado -----------------------------------------------------------------
 #define BU_TECLA_W     66.0f
@@ -139,13 +148,15 @@ static float buTopoEsq(void) {
 #define BU_CARTAZ_H    (270.0f * gfx_poster_k())
 #define BU_NOME_ALT     (buTecladoNativo() ? 50.0f : 30.0f)
 #define BU_SECAO_GAP    34.0f
+#define BU_ABA_H        50.0f
 
 // --- Buscas recentes (campo vazio; regras em buscasrec.h) ---------------------
 // Chips de 56 (o .chip do mockup) a partir de BU_RES_Y + 34, em LINHAS que
 // quebram na borda direita, porque dez termos de tamanho livre nao cabem numa
 // fileira rolavel sem esconder o "Limpar" no fim.
 #define BU_REC_Y       (BU_RES_Y + BU_KICK_H)
-#define BU_REC_H       56.0f
+#define BU_REC_H       (buTelefone() ? 56.0f : 48.0f)
+#define BU_REC_ICONE   20.0f   // TV chips: clock (term) / clear-list (Clear) icon
 #define BU_REC_PADX    22.0f
 #define BU_REC_GAP     14.0f
 #define BU_REC_LINHA   (BU_REC_H + 16.0f)
@@ -168,7 +179,13 @@ static struct {
   int n;
   int melhor;              // 1 = a entrada do MELHOR RESULTADO (1 item, tile grande)
   int pessoas;             // 1 = fileira de PESSOAS: itens[] indexa pess[], nao o catalogo
+  int abas;                // 1 = the filter tabs (All / Movies / TV Shows / People)
 } fil[BU_MAX_FILEIRAS];
+// FILTER TABS (owner mock-up, 7 Nov 2026): the first results entry on TV. The
+// counts are of the UNFILTERED results; OK on a tab filters the rows below.
+enum { BU_ABA_TODOS, BU_ABA_FILMES, BU_ABA_SERIES, BU_ABA_PESSOAS, BU_N_ABAS };
+static int filtro = BU_ABA_TODOS, focoAba = -1;
+static int contaAba[BU_N_ABAS];
 // PESSOAS: atores e diretores que casam com a consulta. O elenco dos titulos ja
 // carregados entra primeiro; o TMDB (spotpessoa.h, a mesma busca do Spotlight)
 // completa quando a resposta chega. Abrir uma pessoa devolve o MESMO pedido que
@@ -392,8 +409,50 @@ static void montarPessoas(const char *alvo) {
 // fileiras de filme/serie que o catalogo ja tem (as mesmas da home), com a
 // mesma maquina dos resultados — foco, rolagem, abrir. A primeira leva o rotulo
 // "Populares"; a segunda, o nome do proprio catalogo.
+// Fallbacks for subset-linked tests that leave descoberta.c out.
+__attribute__((weak)) void desc_tendencias_pedir(void) {}
+__attribute__((weak)) int desc_tendencias(int s, CatItem *o, int m) { (void)s; (void)o; (void)m; return 0; }
+__attribute__((weak)) unsigned desc_tendencias_revisao(void) { return 0; }
+
+// SEARCH LANDING (owner, 7 Nov 2026): "Trending Movies" and "Trending Shows"
+// from Nuvio's own trending catalogues. Titles not yet in the shared catalogue
+// enter it in one batch (the screen opens titles by catalogue index, as the
+// remote search rows do). 0 = not fetched yet: the Home-row fallback runs.
+static int montarTendencias(void) {
+  static const char *const rot[2] = { "Filmes em alta", "Séries em alta" };
+  int feitas = 0;
+  desc_tendencias_pedir();
+  for (int t = 0; t < 2 && nFil < BU_MAX_FILEIRAS; t++) {
+    CatItem rec[BU_MAX_POR_FIL], novos[BU_MAX_POR_FIL];
+    int pos[BU_MAX_POR_FIL], idxNovos[BU_MAX_POR_FIL], n = desc_tendencias(t, rec, BU_MAX_POR_FIL), nNovos = 0, k = 0;
+    if (n <= 0) continue;
+    for (int i = 0; i < n; i++) {
+      int idx;
+      if (!rec[i].imdb[0] || (!rec[i].poster[0] && !rec[i].backdrop[0])) continue;
+      idx = cat_indice_por_imdb(rec[i].imdb);
+      if (idx >= 0) fil[nFil].itens[k++] = idx;
+      else { novos[nNovos] = rec[i]; pos[nNovos++] = k; fil[nFil].itens[k++] = -1; }
+    }
+    if (nNovos > 0) {
+      int entraram = cat_acrescentar_lote(novos, nNovos, idxNovos);
+      for (int i = 0; i < nNovos; i++) fil[nFil].itens[pos[i]] = i < entraram ? idxNovos[i] : -1;
+      { int w = 0;
+        for (int i = 0; i < k; i++) if (fil[nFil].itens[i] >= 0) fil[nFil].itens[w++] = fil[nFil].itens[i];
+        k = w; }
+    }
+    if (k < 3) continue;
+    fil[nFil].titulo = i18n(rot[t]);
+    fil[nFil].origem = NULL;
+    fil[nFil].n = k;
+    fil[nFil].melhor = 0; fil[nFil].pessoas = 0; fil[nFil].abas = 0;
+    nFil++; feitas++;
+  }
+  return feitas;
+}
+
 static void montarSugestoes(void) {
   int nCat = cat_n_fileiras(), r;
+  if (montarTendencias() > 0) return;
   for (r = 0; r < nCat && nFil < 2; r++) {
     const CatFileira *cf = cat_fileira(r);
     int achou = 0, i;
@@ -448,7 +507,7 @@ static void refiltrar(void) {
   char alvo[BU_MAX_CONSULTA * 2];
   int anterior = -1, mesmaConsulta = !strcmp(consultaFiltrada, consulta);
   if (mesmaConsulta && painel == 1 && focoRes.fileira < nFil && !fil[focoRes.fileira].pessoas &&
-      focoRes.coluna < fil[focoRes.fileira].n)
+      !fil[focoRes.fileira].abas && focoRes.coluna < fil[focoRes.fileira].n)
     anterior = fil[focoRes.fileira].itens[focoRes.coluna];
   snprintf(consultaFiltrada, sizeof consultaFiltrada, "%s", consulta);
   normalizar(consulta, alvo, sizeof alvo);
@@ -460,6 +519,7 @@ static void refiltrar(void) {
   if (busca_codepoints(alvo) < 2) {
     if (painel == 1 && !sugestao) painel = 0;
     sugestao = 1;
+    filtro = BU_ABA_TODOS;
     redePend = 0; nVelho = 0; redeDisparado[0] = 0;
     montarSugestoes();
     goto montado;
@@ -523,6 +583,9 @@ static void refiltrar(void) {
       int nRem = desc_busca_alvo_n(alvoIdx, consulta), i, achou = 0;
       if (nRem <= 0) continue;
       if (nuvioDepois && (desc_busca_alvo_nuvio(alvoIdx) != 0) != (passo == 1)) continue;
+      // Owner (7 Nov 2026): search results come from Nuvio only — no rows
+      // from other add-ons' search catalogues.
+      if (!desc_busca_alvo_nuvio(alvoIdx)) continue;
       for (i = 0; i < nRem && achou < BU_MAX_POR_FIL; i++) {
         CatItem it;
         int idx;
@@ -594,6 +657,8 @@ static void refiltrar(void) {
     const CatFileira *cf = cat_fileira(r);
     if (!cf) break;
     if (desc_busca_base_oculta(cf->base)) continue;   // "Buscar no Cinemeta" desligado
+    // Nuvio only (owner): Home rows from other add-ons are not searched.
+    if (strncmp(cf->base, METAPROV_NUVIO_HOST, strlen(METAPROV_NUVIO_HOST))) continue;
     int achou = 0;
     for (int i = 0; i < cf->n && achou < BU_MAX_POR_FIL; i++) {
       const CatItem *ci = cat_item(cf->ini + i);
@@ -615,10 +680,80 @@ static void refiltrar(void) {
     nFil++;
   }
 
+  for (int i = 0; i < nFil; i++) { fil[i].melhor = 0; fil[i].pessoas = 0; fil[i].abas = 0; }
+  // RELEVANCE (owner, 7 Nov 2026: "if I type rocky it should show the Rocky
+  // films first"; then: exact-name obscure titles must not bury the series).
+  // Add-ons return titles in their own order, and the top
+  // result used to be simply the first title of the first catalogue. Now each
+  // row is sorted by how its titles match the typed words (buscanorm.h:
+  // exact, starts with, word start, contains, other) — stable, so the add-on's
+  // order still decides ties — and rows are ordered by their best match, so
+  // the top result is the best-matching title overall.
+  { int melhorFil[BU_MAX_FILEIRAS];
+    for (int r = 0; r < nFil; r++) {
+      int nota[BU_MAX_POR_FIL], melhorNota = 99;
+      for (int c = 0; c < fil[r].n; c++) {
+        const CatItem *ci = cat_item(fil[r].itens[c]);
+        char t[320];
+        if (ci) normalizar(ci->titulo, t, sizeof t); else t[0] = 0;
+        // Exact and starts-with-the-words share one tier: an obscure film
+        // titled exactly "Rocky" must not push Rocky II-V and Balboa down.
+        // Inside the tier the add-on's own (popularity) order decides, after
+        // one split: titles known to IMDb (a tt id or a rating) come before
+        // obscure ones with neither (measured: catalog.nuvio.tv returns ten
+        // tmdb-only "Rocky"s after the series). Doubled so tiers stay apart.
+        { int r = ci ? busca_relevancia(t, alvo) : 7;
+          int conhecido = ci && (!strncmp(ci->imdb, "tt", 2) || ci->nota > 0);
+          if (r == 0) r = 1;
+          nota[c] = r * 2 + (r == 1 && !conhecido ? 1 : 0); }
+      }
+      for (int c = 1; c < fil[r].n; c++) {     // stable insertion sort
+        int v = fil[r].itens[c], nv = nota[c], k = c;
+        while (k > 0 && nota[k - 1] > nv) { fil[r].itens[k] = fil[r].itens[k - 1]; nota[k] = nota[k - 1]; k--; }
+        fil[r].itens[k] = v; nota[k] = nv;
+      }
+      if (fil[r].n > 0) melhorNota = nota[0];
+      melhorFil[r] = melhorNota;
+    }
+    for (int r = 1; r < nFil; r++) {            // stable: rows by best match
+      __typeof__(fil[0]) v = fil[r];
+      int nv = melhorFil[r], k = r;
+      while (k > 0 && melhorFil[k - 1] > nv) { fil[k] = fil[k - 1]; melhorFil[k] = melhorFil[k - 1]; k--; }
+      fil[k] = v; melhorFil[k] = nv;
+    } }
+  // TAB COUNTS (unique titles across rows) and the type filter.
+  { int vistos[BU_MAX_FILEIRAS * BU_MAX_POR_FIL], nv = 0;
+    memset(contaAba, 0, sizeof contaAba);
+    for (int r = 0; r < nFil; r++)
+      for (int c = 0; c < fil[r].n; c++) {
+        int idx = fil[r].itens[c], ja = 0;
+        for (int v = 0; v < nv; v++) if (vistos[v] == idx) { ja = 1; break; }
+        if (ja || nv >= (int)(sizeof vistos / sizeof *vistos)) continue;
+        vistos[nv++] = idx;
+        { const CatItem *ci = cat_item(idx);
+          contaAba[BU_ABA_TODOS]++;
+          if (ci && !strcmp(ci->tipo, "movie")) contaAba[BU_ABA_FILMES]++;
+          else if (ci && !strcmp(ci->tipo, "series")) contaAba[BU_ABA_SERIES]++; }
+      }
+    if (!buTelefone() && filtro != BU_ABA_TODOS) {
+      int w = 0;
+      for (int r = 0; r < nFil; r++) {
+        int k = 0;
+        if (filtro != BU_ABA_PESSOAS)
+          for (int c = 0; c < fil[r].n; c++) {
+            const CatItem *ci = cat_item(fil[r].itens[c]);
+            if (ci && !strcmp(ci->tipo, filtro == BU_ABA_FILMES ? "movie" : "series"))
+              fil[r].itens[k++] = fil[r].itens[c];
+          }
+        fil[r].n = k;
+        if (k > 0) { if (w != r) fil[w] = fil[r]; w++; }
+      }
+      nFil = w;
+    } }
+
   // O MELHOR RESULTADO (mockup): o primeiro titulo da primeira fileira sai dela
   // e vira uma entrada propria, de um item, desenhada como o tile grande. Foco,
   // abertura e onda tratam essa entrada como qualquer fileira.
-  for (int i = 0; i < nFil; i++) { fil[i].melhor = 0; fil[i].pessoas = 0; }
   if (nFil > 0 && nFil < BU_MAX_FILEIRAS && fil[0].n > 0) {
     int melhorIdx = fil[0].itens[0];
     memmove(&fil[1], &fil[0], (size_t)nFil * sizeof fil[0]);
@@ -631,7 +766,9 @@ static void refiltrar(void) {
 
   // PESSOAS (mockup): a fileira entra logo depois da primeira de titulos.
   montarPessoas(alvo);
-  if (nPess > 0 && nFil < BU_MAX_FILEIRAS) {
+  contaAba[BU_ABA_TODOS] += nPess; contaAba[BU_ABA_PESSOAS] = nPess;
+  if (nPess > 0 && nFil < BU_MAX_FILEIRAS &&
+      (buTelefone() || filtro == BU_ABA_TODOS || filtro == BU_ABA_PESSOAS)) {
     int pos = nFil < (fil[0].melhor ? 2 : 1) ? nFil : (fil[0].melhor ? 2 : 1);
     if (nFil == 0) pos = 0;
     memmove(&fil[pos + 1], &fil[pos], (size_t)(nFil - pos) * sizeof fil[0]);
@@ -641,6 +778,14 @@ static void refiltrar(void) {
     fil[pos].pessoas = 1;
     fil[pos].n = nPess;
     for (int i = 0; i < nPess; i++) fil[pos].itens[i] = i;
+  }
+  // The tabs row leads the results on TV whenever there is anything to count.
+  if (!buTelefone() && contaAba[BU_ABA_TODOS] > 0 && nFil < BU_MAX_FILEIRAS) {
+    memmove(&fil[1], &fil[0], (size_t)nFil * sizeof fil[0]);
+    nFil++;
+    memset(&fil[0], 0, sizeof fil[0]);
+    fil[0].abas = 1; fil[0].n = BU_N_ABAS;
+    for (int i = 0; i < BU_N_ABAS; i++) fil[0].itens[i] = i;
   }
 montado:
   // Quem ja estava na tela herda o estado da onda; quem nao estava e nova.
@@ -689,6 +834,13 @@ montado:
           encontrado = 1; break;
         }
   }
+  // Entering the results lands on the first title, not on the tabs; after OK
+  // on a tab the focus stays on that tab.
+  if (nFil > 0 && fil[0].abas) {
+    if (focoAba >= 0) { focoRes.fileira = 0; focoRes.coluna = focoAba; focoRes.colunaLembrada[0] = focoAba; }
+    else if (anterior < 0 && nFil > 1) focoRes.fileira = 1;
+  }
+  focoAba = -1;
   if (nFil == 0 && painel == 1) painel = 0;
   memset(animRes, 0, sizeof animRes); memset(revRes, 0, sizeof revRes);
   if (!mesmaConsulta) {
@@ -729,7 +881,7 @@ static void recentesAjustarFoco(void) {
 // da tecla em foco — a mesma continuidade que a ponte teclado->resultados tem.
 // Sem geometria ainda (primeiro quadro), a primeira pilula.
 static void recentesEntrar(void) {
-  float ky = BU_KB_Y + BU_KB_PAD + focoKb.fileira * BU_KB_PASSO + BU_TECLA_W * 0.5f;
+  float ky = BU_KB_Y + BU_KB_PAD + focoKb.fileira * (buTeclaH() + BU_TECLA_GAP) + buTeclaH() * 0.5f;
   float melhor = 1e9f;
   int i;
   painel = 2;
@@ -904,8 +1056,8 @@ static GfxRect retanguloTecla(int fileira, int coluna) {
   // A grade de teclas fica centrada na ilha (o justify-content:center do mockup).
   float fit = fminf(1.0f, (BU_COL_W - 2.0f * BU_KB_PAD) / BU_KB_W);
   float gx = BU_KB_X + (BU_COL_W - BU_KB_W * fit) * 0.5f;
-  r.y = BU_KB_Y + BU_KB_PAD + fileira * BU_KB_PASSO;
-  r.h = BU_TECLA_W;
+  r.y = BU_KB_Y + BU_KB_PAD + fileira * (buTeclaH() + BU_TECLA_GAP);
+  r.h = buTeclaH();
   if (fileira < kbFil) {
     r.x = gx + coluna * BU_KB_PASSO;
     r.w = BU_TECLA_W;
@@ -942,6 +1094,7 @@ int busca_iniciar(void) {
   toqueBuscaLimpar();
 #endif
   layoutCir = pagSim = 0;
+  filtro = BU_ABA_TODOS; focoAba = -1;
   kbMontar();
   focus_iniciar(&focoKb, kbFil + 1, KB_COLUNAS);
   painel = 0; sair = 0; pediuRelogio = 0; pedido = -1; pedidoPessoa = 0;
@@ -1001,7 +1154,7 @@ int busca_pediu_pessoa(SpotPedido *p) {
 
 int busca_item_focado(HomeItem *out) {
   if (!out || painel != 1 || focoRes.fileira < 0 || focoRes.fileira >= nFil ||
-      fil[focoRes.fileira].pessoas || focoRes.coluna < 0 ||
+      fil[focoRes.fileira].pessoas || fil[focoRes.fileira].abas || focoRes.coluna < 0 ||
       focoRes.coluna >= fil[focoRes.fileira].n) return 0;
   int i = fil[focoRes.fileira].itens[focoRes.coluna];
   const CatItem *ci = cat_item(i);
@@ -1020,6 +1173,14 @@ int busca_item_focado(HomeItem *out) {
 // O OK num resultado (toque curto). Titulo: o pedido do indice; pessoa: a
 // filmografia dela, que app.c abre.
 static void abrirResultado(void) {
+  if (focoRes.fileira < nFil && fil[focoRes.fileira].abas) {
+    if (focoRes.coluna >= 0 && focoRes.coluna < BU_N_ABAS) {
+      filtro = focoRes.coluna; focoAba = focoRes.coluna;
+      consultaFiltrada[0] = 0;   // rebuild even though the text is the same
+      refiltrar();
+    }
+    return;
+  }
   if (focoRes.fileira < nFil && focoRes.coluna < fil[focoRes.fileira].n) {
     registrarConsulta();
     if (fil[focoRes.fileira].pessoas) {
@@ -1038,7 +1199,7 @@ static void abrirResultado(void) {
 // O resultado em foco aceita o menu do cartaz?
 static int resultadoAceitaMenu(void) {
   return painel == 1 && temItemFoco && focoRes.fileira >= 0 && focoRes.fileira < nFil &&
-         !fil[focoRes.fileira].pessoas && focoRes.coluna < fil[focoRes.fileira].n &&
+         !fil[focoRes.fileira].pessoas && !fil[focoRes.fileira].abas && focoRes.coluna < fil[focoRes.fileira].n &&
          itemFoco.indice >= 0 && itemFoco.indice < cat_n();
 }
 static int menuNoResultado(void) {
@@ -1272,8 +1433,22 @@ static void busca_evento_(const SDL_Event *e) {
 
 // --- Geometria das entradas da direita ---------------------------------------
 // Five columns at 100%; scaled text keeps enough stride for preserved artwork.
+// LANDING POSTERS (owner, 7 Nov 2026: "make the posters bigger so no space at
+// the bottom"). TV with the field empty: the poster height is what fills the
+// column below the recent-search chips across the suggestion rows, clamped
+// between the normal size and 1.6x. 0 = not the landing (normal size).
+static float buCartazLanding(void) {
+  if (buTelefone() || !sugestao || nFil <= 0) return 0.0f;
+  float topo = recentesVisiveis() ? sugDesloc : 0.0f;
+  float livre = BU_RES_AREA_H - topo - (float)(nFil - 1) * BU_SECAO_GAP - (float)nFil * (BU_KICK_H + BU_NOME_ALT);
+  float w = livre / (float)nFil / 1.5f;
+  if (w < BU_CARTAZ_W) w = BU_CARTAZ_W;
+  if (w > BU_CARTAZ_W * 1.6f) w = BU_CARTAZ_W * 1.6f;
+  return w;
+}
 static float buPasso(void) {
   float larg = BU_DIR - BU_RES_X;
+  { float wl = buCartazLanding(); if (wl > 0.0f) return wl + 28.0f; }
   if (buTelefone()) {
     if (buTecladoNativo()) {
       int cols = buRetrato() ? 3 : (int)((larg + 22.0f) / 270.0f);
@@ -1291,6 +1466,7 @@ static float buPasso(void) {
   }
 }
 static float buCartazW(void) {
+  { float wl = buCartazLanding(); if (wl > 0.0f) return wl; }
   if (gfx_escala_txt() != 1.0f) {
     if (!buTelefone()) return BU_CARTAZ_W;
     float old = gfx_escala();
@@ -1317,11 +1493,14 @@ static float filKickH(int r) {
       return buTecladoNativo() ? 78.0f : 58.0f;
     if (buTecladoNativo()) return 46.0f;
   }
+  // TV: the tabs and the top-result banner carry no label (mock-up).
+  if (fil[r].abas || fil[r].melhor) return 0.0f;
   return BU_KICK_H;
 }
 static float filAlt(int r) {
   // O alvo e a pilula de foco chegam 8px abaixo do avatar no telefone.
   if (fil[r].pessoas) return filKickH(r) + BU_PESS_AV + (buTelefone() ? 8.0f : 0.0f);
+  if (fil[r].abas) return BU_ABA_H;
   if (fil[r].melhor) return filKickH(r) + BU_MELHOR_H;
   return filKickH(r) + buCartazW() * 1.5f + BU_NOME_ALT;
 }
@@ -1437,7 +1616,11 @@ static void busca_atualizar_(float dt, Uint32 agora) {
   { static int ultimoCat = -1;
     spotpessoa_atualizar(agora);
     if (!sugestao && spotpessoa_geracao() != gerPessoa) refiltrar();
-    if (sugestao && cat_n() != ultimoCat) { ultimoCat = cat_n(); refiltrar(); } }
+    if (sugestao && cat_n() != ultimoCat) { ultimoCat = cat_n(); refiltrar(); }
+    // The trending rows arrived (or refreshed) while the field is empty.
+    { static unsigned tendVisto;
+      unsigned tr = desc_tendencias_revisao();
+      if (sugestao && tr != tendVisto) { tendVisto = tr; refiltrar(); } } }
   { char alvo[BU_MAX_CONSULTA * 2];
     static int ultimoRemoto = -1, ultimoChegou = -1;
     normalizar(consulta, alvo, sizeof alvo);
@@ -1546,6 +1729,8 @@ static void busca_atualizar_(float dt, Uint32 agora) {
 // Sem contorno em lugar nenhum: foco = superficie mais clara (campo, tile) ou
 // pilula no acento (tecla, chip). O corpo do texto e o #F3F2EF do mockup.
 #define BU_TX 243, 242, 239, 255
+#define BU_TX_RGB 243, 242, 239
+static float buSecao(const char *t, float x, float y);
 
 static void buAlvoResultado(GfxRect r, PonteiroFn focar, int a, int b) {
   if (buTelefone()) {
@@ -1584,7 +1769,8 @@ static void buCabecalho(int r, float y, float larg) {
   }
 #endif
   {
-  float kw = ajustes_ui_kicker(titulo, BU_RES_X, y, 1.0f);
+  if (fil[r].abas || fil[r].melhor) return;   // no label on TV (mock-up)
+  float kw = buSecao(titulo, BU_RES_X, y - 4.0f);
   if (!fil[r].melhor && fil[r].origem) {
     char org[96];
     snprintf(org, sizeof org, i18n("de %s"), fil[r].origem);
@@ -1601,6 +1787,32 @@ static void buPilulaAcento(GfxRect r, float raioPx, float a) {
   gfx_rect((GfxRect){ r.x - 14, r.y - 2, r.w + 28, r.h + 30 }, 0, GFX_SOMBRA, 1.0f, 0, 0, 0.5f,
            ar, ag, ab, 0.32f * a);
   gfx_cor(r, raioPx / r.h, ar, ag, ab, a);
+}
+
+// TV FOCUS (mock-up): an accent-tinted surface with an accent outline, the
+// label stays white. Phones keep the solid accent pill.
+static void buFocoAnel(GfxRect r, float raioPx, float a) {
+  float ar, ag, ab;
+  if (a <= 0.003f) return;
+  ajustes_acento(&ar, &ag, &ab);
+  gfx_rect((GfxRect){ r.x - 10, r.y - 2, r.w + 20, r.h + 20 }, 0, GFX_SOMBRA, 1.0f, 0, 0, 0.5f,
+           ar, ag, ab, 0.28f * a);
+  gfx_cor(r, raioPx / r.h, ar * 0.35f, ag * 0.35f, ab * 0.35f, 0.85f * a);
+  gfx_anel(r, raioPx / r.h, 2.5f, ar, ag, ab, a);
+}
+// Section heading in title case (mock-up), instead of the spaced caps kicker.
+static float buSecao(const char *t, float x, float y) {
+  TxtLinha l = txt_linha(TXT_ILHA_SECAO, t, 246, 247, 249, 255);
+  txt_desenhar(l, x, y);
+  return (float)l.w;
+}
+static void limparCampoPonteiro(int a, int b) {
+  (void)a; (void)b;
+  if (!nConsulta) return;
+  registrarConsulta();
+  campoDefinir("", 0);
+  painel = 0; campoFoco = 0;
+  refiltrar();
 }
 
 // Neutro da tecla/chip em repouso: branco 7-8% no vidro, #202127/#24262C no solido.
@@ -1667,6 +1879,15 @@ static void desenhaCampo(Uint32 agora) {
     { float ci = 0.62f + 0.30f * animCampo;
       gfx_icone((GfxRect){ c.x + BU_CAMPO_PADX, c.y + (c.h - 28.0f) * 0.5f, 28.0f, 28.0f },
                 "menu_search", ci, ci, ci + 0.01f, 1.0f); }
+    // The clear "x" inside the field on TV (mock-up); the keyboard's "clear"
+    // key does the same with the remote.
+    if (!buTelefone() && nConsulta > 0) {
+      float d = 26.0f;
+      GfxRect xr = { fim - 18.0f - d, c.y + (c.h - d) * 0.5f, d, d };
+      gfx_icone(xr, "aj_x", 0.80f, 0.81f, 0.84f, 0.9f);
+      if (ponteiro_ativo()) ponteiro_alvo(xr.x - 10, c.y, d + 20, c.h, limparCampoPonteiro, NULL, 0, 0);
+      fim = xr.x - 6.0f;
+    }
     { float tx = c.x + BU_CAMPO_PADX + 28.0f + 16.0f;
       float maxW = fim - tx - 14.0f;
       if (buUmaColuna()) gfx_recorte(tx - 8.0f, c.y + 4.0f, fim - tx, c.h - 8.0f);
@@ -1694,15 +1915,16 @@ static void desenhaTeclado(void) {
   char rotulo[8];
   int linhas = kbFil + 1;
   GfxRect ilha = { BU_KB_X, BU_KB_Y, BU_COL_W,
-                   2.0f * BU_KB_PAD + linhas * BU_TECLA_W + (linhas - 1) * BU_TECLA_GAP };
+                   2.0f * BU_KB_PAD + linhas * buTeclaH() + (linhas - 1) * BU_TECLA_GAP };
   ajustes_ui_ilha(ilha, 32.0f, 0);
   for (int f = 0; f <= kbFil; f++) {
     for (int c = 0; c < KB_COLUNAS[f]; c++) {
       float k = animTecla[f][c];
       GfxRect t = retanguloTecla(f, c);
       ponteiro_alvo(t.x, t.y, t.w, t.h, ponteiroTecla, NULL, f, c);
-      buNeutro(t, BU_TECLA_RAIO, 0.07f, 1.0f - k);
-      buPilulaAcento(t, BU_TECLA_RAIO, k);
+      buNeutro(t, BU_TECLA_RAIO, 0.07f, buTelefone() ? 1.0f - k : 1.0f);
+      if (buTelefone()) buPilulaAcento(t, BU_TECLA_RAIO, k);
+      else buFocoAnel(t, BU_TECLA_RAIO * 0.8f, k);
       const char *s;
       if (f < kbFil) {
         snprintf(rotulo, sizeof rotulo, "%s", kbTeclas[f * BU_KB_COLS + c]);
@@ -1712,14 +1934,15 @@ static void desenhaTeclado(void) {
                : (layoutCir ? "ABC" : "\xd0\x90\xd0\x91\xd0\x92")));
       // The tone eases every frame while focus moves: tint the cached white
       // line at draw time instead of rasterizing one line per tone.
-      float tom = anim_mistura(243.0f, (float)ajustes_tinta_foco(), k) / 255.0f;
-      TxtLinha l = f < kbFil ? txt_linha(TXT_G26B, s, 255, 255, 255, 255)
+      float tom = (buTelefone() ? anim_mistura(243.0f, (float)ajustes_tinta_foco(), k) : 243.0f) / 255.0f;
+      TxtLinha l = f < kbFil ? txt_linha(buTelefone() ? TXT_G26B : TXT_AJ_SEG, s, 255, 255, 255, 255)
                              : txt_linha_corta(TXT_AJ_SEG, s, 255, 255, 255, 255, t.w - 8.0f);
       txt_desenhar_tom(l, t.x + (t.w - l.w) * 0.5f, t.y + (t.h - l.h) * 0.5f, tom, tom, tom, 1.0f);
     }
   }
   // Dicas do controle, 16 px a 16 abaixo da ilha (o texto mudo do mockup).
-  { float y = ilha.y + ilha.h + 16.0f;
+  // TV: none (owner mock-up); phones keep them.
+  if (buTelefone()) { float y = ilha.y + ilha.h + 16.0f;
     const char *d1 = campoFoco == 1 ? i18n("OK   Teclado da TV")
                    : campoFoco == 2 ? i18n("OK   Falar")
                    : campoFoco == 3 ? i18n("OK   Digitar pelo celular")
@@ -1770,7 +1993,7 @@ static void desenhaRecentes(Uint32 agora, float dy) {
     txt_desenhar_alpha(t, BU_RES_X, BU_RES_Y + dy, 0.45f);
   } else
 #endif
-  ajustes_ui_kicker(i18n("Buscas recentes"), BU_RES_X, BU_RES_Y + dy, 1.0f);
+  buSecao(i18n("Buscas recentes"), BU_RES_X, BU_RES_Y + dy - 4.0f);
   nRecLayout = 0;
   for (i = 0; i <= n && i < BU_REC_ITENS; i++) {
     float f = animRec[i];
@@ -1781,6 +2004,7 @@ static void desenhaRecentes(Uint32 agora, float dy) {
       : buTelefone() ? txt_linha_corta(TXT_AJ_SEG, limpar, tinta, tinta, tinta, 255, maxW - 2.0f * BU_REC_PADX)
                      : txt_linha(TXT_AJ_SEG, limpar, tinta, tinta, tinta, 255);
     w = (float)l.w + 2.0f * BU_REC_PADX;
+    if (!buTelefone()) w += BU_REC_ICONE + 10.0f;
     if (buTelefone()) w = fminf(w, maxW);
     if (x > BU_RES_X && x + w > BU_DIR) { x = BU_RES_X; y += BU_REC_LINHA; lin++; }
     recRect[i] = (GfxRect){ x, y, w, BU_REC_H };
@@ -1789,9 +2013,22 @@ static void desenhaRecentes(Uint32 agora, float dy) {
 #ifdef NV_TOUCH_UI
     if (buTelefone()) buAlvoResultado(recRect[i], ponteiroRecente, i, 0);
 #endif
-    buNeutro(recRect[i], 28.0f, 0.08f, 1.0f - f);
-    buPilulaAcento(recRect[i], 28.0f, f);
-    txt_desenhar_alpha(l, x + BU_REC_PADX, y + (BU_REC_H - l.h) * 0.5f, i < n || f > 0.5f ? 1.0f : 0.85f);
+    if (buTelefone()) {
+      buNeutro(recRect[i], 28.0f, 0.08f, 1.0f - f);
+      buPilulaAcento(recRect[i], 28.0f, f);
+      txt_desenhar_alpha(l, x + BU_REC_PADX, y + (BU_REC_H - l.h) * 0.5f, i < n || f > 0.5f ? 1.0f : 0.85f);
+    } else {
+      // TV chip (mock-up): clock + term, clear-list + "Clear"; ring focus.
+      float ix = x + BU_REC_PADX - 4.0f, iy = y + (BU_REC_H - BU_REC_ICONE) * 0.5f;
+      buNeutro(recRect[i], BU_REC_H * 0.5f, 0.08f, 1.0f);
+      buFocoAnel(recRect[i], BU_REC_H * 0.5f, f);
+      gfx_icone((GfxRect){ ix, iy, BU_REC_ICONE, BU_REC_ICONE }, i < n ? "aj_clock" : "aj_list-x",
+                0.88f, 0.89f, 0.91f, 1.0f);
+      { TxtLinha lb = i < n ? txt_linha_corta(TXT_AJ_SEG, buscasrec_termo(i), 240, 241, 243, 255,
+                                              maxW - 2.0f * BU_REC_PADX)
+                            : txt_linha(TXT_AJ_SEG, limpar, 240, 241, 243, 255);
+        txt_desenhar(lb, ix + BU_REC_ICONE + 10.0f, y + (BU_REC_H - lb.h) * 0.5f); }
+    }
     if (painel == 2 && i == focoRec && okPress && !okLongo) {
       float p = anim_clamp((agora - okDesde) / (float)NV_HOLD_MS, 0.0f, 1.0f);
       int t = ajustes_tinta_foco();
@@ -1800,12 +2037,15 @@ static void desenhaRecentes(Uint32 agora, float dy) {
     }
     x += w + BU_REC_GAP;
   }
-  {
-    TxtLinha d = buTelefone() ? txt_linha_corta(TXT_ILHA_APOIO, i18n("OK   Buscar de novo      Segure OK   Remover"), BU_TX, maxW)
-                             : txt_linha(TXT_ILHA_APOIO, i18n("OK   Buscar de novo      Segure OK   Remover"), BU_TX);
+  if (buTelefone()) {
+    TxtLinha d = txt_linha_corta(TXT_ILHA_APOIO, i18n("OK   Buscar de novo      Segure OK   Remover"), BU_TX, maxW);
     txt_desenhar_alpha(d, BU_RES_X, y + BU_REC_H + 22.0f, 0.42f);
     // Onde as sugestoes comecam (relativo ao topo da coluna, sem a rolagem).
-    sugDesloc = (y - dy) + BU_REC_H + 22.0f + d.h + BU_SECAO_GAP - BU_RES_Y; }
+    sugDesloc = (y - dy) + BU_REC_H + 22.0f + d.h + BU_SECAO_GAP - BU_RES_Y;
+  } else {
+    // TV: no hint line (mock-up); Popular follows the chips.
+    sugDesloc = (y - dy) + BU_REC_H + BU_SECAO_GAP + 8.0f - BU_RES_Y;
+  }
 }
 
 static void desenhaResultados(Uint32 agora) {
@@ -1901,6 +2141,89 @@ static void desenhaResultados(Uint32 agora) {
         txt_desenhar_alpha(nm, av.x + BU_PESS_AV + 14.0f, av.y + (BU_PESS_AV - nm.h) * 0.5f,
                            anim_mistura(0.75f, 1.0f, f));
       }
+      gfx_opacidade_grupo = grupo;
+      continue;
+    }
+
+    if (fil[r].abas) {
+      // FILTER TABS (mock-up): "All (26)", "Movies (14)"... The active filter
+      // is the filled accent pill; the focused tab gets the accent outline.
+      static const char *const nomes[BU_N_ABAS] = { "Todos", "Filmes", "Séries", "Pessoas" };
+      static const char *const icones[BU_N_ABAS] = { NULL, "aj_film", "aj_tv-minimal-play", "aj_users" };
+      float x = BU_RES_X, ar, ag, ab;
+      ajustes_acento(&ar, &ag, &ab);
+      for (int c = 0; c < BU_N_ABAS; c++) {
+        char rot[64];
+        float f = animRes[r][c];
+        int ativo = filtro == c;
+        snprintf(rot, sizeof rot, "%s  (%d)", i18n(nomes[c]), contaAba[c]);
+        TxtLinha l = txt_linha(TXT_AJ_SEG, rot, 255, 255, 255, 255);
+        float iw = icones[c] ? 22.0f + 10.0f : 0.0f;
+        GfxRect t = { x, cy, (float)l.w + iw + 44.0f, BU_ABA_H };
+        buAlvoResultado(t, ponteiroResultado, r, c);
+        if (ativo) gfx_cor(t, 0.5f, ar, ag, ab, 1.0f);
+        else buNeutro(t, BU_ABA_H * 0.5f, 0.08f, 1.0f);
+        if (f > 0.01f) {
+          if (ativo) gfx_anel((GfxRect){ t.x - 4, t.y - 4, t.w + 8, t.h + 8 }, 0.5f, 2.5f, 1, 1, 1, f);
+          else buFocoAnel(t, BU_ABA_H * 0.5f, f);
+        }
+        { int tin = ativo ? ajustes_tinta_foco() : 240;
+          float tf = tin / 255.0f;
+          if (icones[c]) gfx_icone((GfxRect){ t.x + 22.0f, t.y + (t.h - 22.0f) * 0.5f, 22.0f, 22.0f },
+                                   icones[c], tf, tf, tf, 1.0f);
+          txt_desenhar_tom(l, t.x + 22.0f + iw, t.y + (t.h - l.h) * 0.5f, tf, tf, tf, 1.0f); }
+        x += t.w + 18.0f;
+      }
+      continue;
+    }
+
+    if (fil[r].melhor && !buTelefone()) {
+      // TOP RESULT BANNER (mock-up): backdrop on the right fading into the
+      // panel, title, "1976 · Movie · Drama" and two lines of synopsis.
+      const CatItem *ci = cat_item(fil[r].itens[0]);
+      float f = animRes[r][0];
+      float entra = filEntraEm[r] ? revela_entra(filEntraEm[r], 0.0f, agora) : 1.0f;
+      if (!ci) continue;
+      GfxRect t = { BU_RES_X, cy + (1.0f - entra) * NV_ENTRA_DY, larg, BU_MELHOR_H };
+      buAlvoResultado((GfxRect){BU_RES_X, cy, larg, BU_MELHOR_H}, ponteiroResultado, r, 0);
+      gfx_opacidade_grupo = grupo * entra;
+      ajustes_ui_ilha(t, 22.0f, 0);
+      { const char *url = ci->backdrop[0] ? ci->backdrop : ci->poster;
+        // Art across the whole banner; the left fade carries the text, so
+        // there is no seam where a half-width image would start.
+        GfxRect art = t;
+        gfx_card_forcar_cover_atual = 1.0f;   // fill the banner, no contain bars
+        buArte(art, posterprov_card_formato(ci->origem, ci->imdb, ci->tmdb, ci->tipo, url, ci->backdrop[0] != 0),
+               22.0f, 1.0f);
+        gfx_card_forcar_cover_atual = 0.0f;
+        gfx_veu_css(art, 2, 0.0f, 0.78f, 0.97f);
+        if (f > 0.01f) {
+          gfx_opacidade_grupo = grupo * entra * f;
+          ajustes_ui_foco_linha(t, 22.0f);
+          gfx_opacidade_grupo = grupo * entra;
+        }
+        { float tx = t.x + 40.0f, tw = t.w * 0.46f, ty;
+          char meta[200], ano[16] = "";
+          int a = nv_ano_meta(ci->meta);
+          if (a > 0) snprintf(ano, sizeof ano, "%d", a);
+          snprintf(meta, sizeof meta, "%s%s%s", ano, ano[0] && ci->genero[0] ? "  ·  " : "", ci->genero);
+          TxtLinha nome = txt_linha_corta(TXT_TITULO2, ci->titulo, BU_TX, tw);
+          TxtLinha lm = txt_linha_corta(TXT_ILHA_META, meta, BU_TX, tw);
+          float hSin = ci->sinopse[0] ? txt_bloco_corta(TXT_ILHA_GENERO, ci->sinopse, BU_TX_RGB, tx, 0, tw, 24.0f, 0.0f, 2) : 0.0f;
+          float bloco = nome.h + 8.0f + (meta[0] ? lm.h + 12.0f : 0.0f) + hSin;
+          ty = t.y + (t.h - bloco) * 0.5f;
+          txt_desenhar(nome, tx, ty); ty += nome.h + 8.0f;
+          if (meta[0]) { txt_desenhar_alpha(lm, tx, ty, 0.78f); ty += lm.h + 12.0f; }
+          if (hSin > 0.0f) txt_bloco_corta(TXT_ILHA_GENERO, ci->sinopse, BU_TX_RGB, tx, ty, tw, 24.0f, 0.80f, 2); }
+        if (painel == 1 && focus_indice(&focoRes, r, 0)) {
+          itemFoco.indice = fil[r].itens[0];
+          itemFoco.rect   = art;
+          itemFoco.arte   = url;
+          itemFoco.titulo = ci->titulo;
+          itemFoco.genero = ci->genero;
+          itemFoco.meta   = ci->meta;
+          temItemFoco = 1;
+        } }
       gfx_opacidade_grupo = grupo;
       continue;
     }
@@ -2031,6 +2354,11 @@ static void busca_desenhar_(Uint32 agora) {
   { GfxRect tela = { 0, 0, NV_TELA_W, NV_TELA_H };
     gfx_cor(tela, 0, 0, 0, 0, 0.45f);
     gfx_veu_css(tela, 0, 1.0f, 1.0f, 0.60f); }
+  // "Search" title above the field on TV (mock-up).
+  if (!buTelefone()) {
+    TxtLinha t = txt_linha(TXT_TITULO2, i18n("Buscar"), 248, 248, 250, 255);
+    txt_desenhar(t, buX() + 4.0f, buTopoBase() + (BU_TITULO_H - 18.0f - t.h) * 0.5f);
+  }
   desenhaCampo(agora);
   desenhaTeclado();
   desenhaResultados(agora);
@@ -2040,11 +2368,30 @@ void busca_evento(const SDL_Event *e) { TXT_INI(); busca_evento_(e); TXT_FIM(); 
 void busca_atualizar(float dt, Uint32 agora) { TXT_INI(); busca_atualizar_(dt, agora); TXT_FIM(); }
 void busca_desenhar(Uint32 agora) { TXT_INI(); busca_desenhar_(agora); TXT_FIM(); }
 
+// Test hook (tests/busca_shot.c): titles now listed, by type, plus people and
+// the active filter tab. Cheap and read-only.
+void busca_teste_tipos(int *filmes, int *series, int *pessoas, int *aba) {
+  int f = 0, sr = 0, p = 0;
+  for (int r = 0; r < nFil; r++) {
+    if (fil[r].abas) continue;
+    if (fil[r].pessoas) { p += fil[r].n; continue; }
+    for (int c = 0; c < fil[r].n; c++) {
+      const CatItem *ci = cat_item(fil[r].itens[c]);
+      if (ci && !strcmp(ci->tipo, "movie")) f++;
+      else if (ci && !strcmp(ci->tipo, "series")) sr++;
+    }
+  }
+  if (filmes) *filmes = f;
+  if (series) *series = sr;
+  if (pessoas) *pessoas = p;
+  if (aba) *aba = filtro;
+}
+
 #ifdef NV_BUSCA_TESTE
 // Gancho de teste (tests/busca_debounce.sh): soma dos itens das fileiras de titulos.
 int busca_teste_itens(void) {
   int i, t = 0;
-  for (i = 0; i < nFil; i++) if (!fil[i].pessoas) t += fil[i].n;
+  for (i = 0; i < nFil; i++) if (!fil[i].pessoas && !fil[i].abas) t += fil[i].n;
   return t;
 }
 #endif

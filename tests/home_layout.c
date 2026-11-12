@@ -7,11 +7,17 @@
 static int testeDeitados;
 static int teste_posteres_deitados(void) { return testeDeitados; }
 #define ajustes_home_layout teste_home_layout
+#define ajustes_titulo_fil teste_titulo_fil
+static int testeTituloFil;
+static int teste_titulo_fil(void) { return testeTituloFil; }
 #define ajustes_hero_ligado teste_hero_ligado
 #define ajustes_espaco_titulos teste_espaco_titulos
 #define ajustes_hero_genero teste_hero_genero
 #define txt_desenhar teste_txt_desenhar
-static int testeGenero = 1, nTxtDesenhado = 0, nBadge = 0, testeImdb = 0;
+static int testeNotas = 1;
+#define ajustes_notas_home teste_notas_home
+static int teste_notas_home(void) { return testeNotas; }
+static int testeGenero = 1, nTxtDesenhado = 0, nBadge = 0, nImdbBadge = 0, testeImdb = 0;
 static int teste_hero_genero(void) { return testeGenero; }
 #define ajustes_espaco_fileiras teste_espaco_fileiras
 #define ajustes_ocultar_filmes_vistos teste_ocultar_vistos
@@ -27,6 +33,11 @@ static int testeFundoDin = 0;
 static float testeFundoCor[3] = { 0.07f, 0.46f, 0.81f };
 static int teste_fundo_din(void) { return testeFundoDin; }
 static void teste_fundo_din_cor(float rgb[3]) { memcpy(rgb, testeFundoCor, sizeof(float) * 3); }
+#define ajustes_largura_poster_dp expansionWidth
+#define ajustes_raio_poster_px expansionRadius
+static int widthDp=126;static float radiusPx=16;
+static int expansionWidth(void){return widthDp;}
+static float expansionRadius(void){return radiusPx;}
 #define NV_TESTE_HOME 1
 #include "../src/home.c"
 void desc_sinopse_hero(const int *idx, int n) { (void)idx; (void)n; }
@@ -109,7 +120,13 @@ GLuint tex_obter_logo_larg_qualquer(const char *c, float l) { (void)c; (void)l; 
 void tex_publicar_paleta(const char *c) { (void)c; }
 const char *logotitulo_url(const CatItem *ci, float w) { (void)ci; (void)w; return NULL; }
 int  tex_marca_escura(const char *c) { (void)c; return 0; }
+static char addonCaption[96];
+static int addonCaptionDraws;
 TxtLinha txt_linha_corta(TxtEstilo e, const char *s, int r, int g, int b, int a, float w) {
+  if (!strncmp(s,"from ",5)) {
+    snprintf(addonCaption,sizeof addonCaption,"%s",s);
+    return (TxtLinha){77,10,10,0,0};
+  }
   (void)e; (void)s; (void)r; (void)g; (void)b; (void)a; (void)w; return (TxtLinha){ 1, 10, 10, 0, 0 }; }
 float badge_desenhar(float x, float y, const char *t, BadgeEstilo e, float a) { nBadge++; (void)x; (void)y; (void)t; (void)e; (void)a; return 0; }
 // Exercise the real IMDb measurement/drawing code in this scene.
@@ -119,7 +136,7 @@ float badge_desenhar(float x, float y, const char *t, BadgeEstilo e, float a) { 
 #undef badge_desenhar
 #undef badge_imdb
 float badge_imdb(float x, float y, int n, int e, float a) {
-  nBadge++; return stage_real_badge_imdb(x, y, n, e, a);
+  nBadge++; if(n>0)nImdbBadge++; return stage_real_badge_imdb(x, y, n, e, a);
 }
 TxtLinha txt_linha(TxtEstilo e, const char *s, int r, int g, int b, int a) {
   (void)e; (void)r; (void)g; (void)b; (void)a;
@@ -141,8 +158,29 @@ float sinopse_bloco_corta(TxtEstilo e, const char *s, int r, int g, int b,
   return txt_bloco_corta(e, s, r, g, b, x, y, w, leading, a, max);
 }
 int  imdbnota_obter(const char *i, int c, int s) { (void)i; (void)c; (void)s; return testeImdb; }
-const char *i18n(const char *s) { return s; }
+const char *i18n(const char *s) {
+  if (!strcmp(s,"Continuar assistindo")) return "Continue Watching";
+  if (!strcmp(s,"Família assistindo")) return "Family Watching";
+  if (!strcmp(s,"Do addon %s")) return "from %s";
+  return s;
+}
+static char trackingTitle[128];
+float txt_tracking(TxtEstilo e,const char *s,int r,int g,int b,float x,float y,float a,float tracking) {
+  (void)r;(void)g;(void)b;(void)x;(void)y;(void)a;(void)tracking;
+  if(e==TXT_ROW_TITULO)snprintf(trackingTitle,sizeof trackingTitle,"%s",s);
+  return 128;
+}
+void gfx_anel(GfxRect q,float radius,float width,float r,float g,float b,float a) {
+  (void)q;(void)radius;(void)width;(void)r;(void)g;(void)b;(void)a;
+}
+void gfx_icone(GfxRect q,const char *name,float r,float g,float b,float a) {
+  (void)q;(void)name;(void)r;(void)g;(void)b;(void)a;
+}
+void gfx_vidro_chip(GfxRect q,float radius,float background,float a) {
+  (void)q;(void)radius;(void)background;(void)a;
+}
 void txt_desenhar_alpha(TxtLinha l, float x, float y, float a) {
+  if (l.tex == 77 && a > 0) addonCaptionDraws++;
   if (a > 0 && stageTextDraws++ == 0) stageGenreRect = (GfxRect){x, y, l.w, l.h};
 }
 float sinopse_bloco(TxtEstilo o, const char *t, int r, int g, int b, float x, float y, float l, float d, float a, int m) {
@@ -150,6 +188,68 @@ float sinopse_bloco(TxtEstilo o, const char *t, int r, int g, int b, float x, fl
 static void homeCom(int layout, int heroLigado) { testeLayout = layout; testeHero = heroLigado; }
 
 int main(void) {
+  // The tracking renderer does not translate strings as txt_linha does.
+  // Verify the actual Editorial header sends English to that consumer.
+  testeTituloFil=2;
+  const char *rowNames[]={"Continuar assistindo","Família assistindo"};
+  const char *englishNames[]={"Continue Watching","Family Watching"};
+  for(int j=0;j<2;j++){
+    memset(&fileiras[0],0,sizeof fileiras[0]);
+    fileiras[0].tipo=j?FILEIRA_FAMILIA:FILEIRA_CONTINUE;
+    TxtLinha title;
+    desenhaTituloFil(0,200,rowNames[j],255,255,255,1,1200,1,&title);
+    assert(!strcmp(trackingTitle,englishNames[j]));
+  }
+  testeTituloFil=0;
+  // The old setting persisted but had no Home consumer. Exercise the actual
+  // heading renderer for every style without changing row IDs or titles.
+  for(int style=0;style<4;style++) {
+    testeTituloFil=style;
+    memset(&fileiras[0],0,sizeof fileiras[0]);
+    snprintf(fileiras[0].titulo,sizeof fileiras[0].titulo,"Popular");
+    snprintf(fileiras[0].chave,sizeof fileiras[0].chave,"fixture_movie_top");
+    snprintf(fileiras[0].addonNome,sizeof fileiras[0].addonNome,"Fixture Addon");
+    Fileira before=fileiras[0];TxtLinha title;
+    assert(ajustes_shot_valor("catalogAddonNameEnabled",1)); // Off
+    addonCaptionDraws=0;addonCaption[0]=0;
+    desenhaTituloAddonFil(0,200,"Popular",255,255,255,1,1200,1,&title);
+    assert(!addonCaptionDraws&&!addonCaption[0]);
+    assert(ajustes_shot_valor("catalogAddonNameEnabled",0)); // On
+    desenhaTituloAddonFil(0,200,"Popular",255,255,255,1,1200,1,&title);
+    assert(addonCaptionDraws==1&&!strcmp(addonCaption,"from Fixture Addon"));
+    assert(!memcmp(&fileiras[0],&before,sizeof before));
+    fileiras[0].addonNome[0]=0;addonCaptionDraws=0;
+    desenhaTituloAddonFil(0,200,"Popular",255,255,255,1,1200,1,&title);
+    assert(!addonCaptionDraws); // Unknown name never falls back to a URL/key.
+  }
+  testeTituloFil=0;
+  assert(ajustes_shot_valor("catalogAddonNameEnabled",1));
+  puts("PASS addon-name setting reaches actual heading draw in all four styles; Off/unknown hide it, identity unchanged");
+  // BlueStacks reproduction: Modern + Show hero Off left an empty hero band.
+  // Check the actual row anchor, clip and reserved hero distance, including
+  // a text-scaled layer. Enabling hero must retain the original geometry.
+  for(int scale=0;scale<2;scale++) {
+    testeTxt=testeAtiva=scale?1.25f:1.0f;
+    for(int layout=HOME_LAYOUT_MODERNA;layout<=HOME_LAYOUT_DINAMICA;layout++) {
+      homeCom(layout,0);
+      assert(topoFileiras() <= ANC(NV_DIN_TOPO_FIL));
+      assert(corteFileiras()==0);
+      assert(empurraHero()==0);
+    }
+    homeCom(HOME_LAYOUT_MODERNA,1);
+    assert(topoFileiras()==ANC(NV_SHELF_TOP));
+    assert(corteFileiras()==ANC(NV_SHELF_TOP-96.0f));
+    assert(empurraHero()==empurraHeroModerna());
+  }
+  testeTxt=testeAtiva=1;homeCom(HOME_LAYOUT_MODERNA,1);
+  puts("PASS hero Off: all three layouts release blank hero space; hero On geometry and text scaling preserved");
+
+  { int widths[]={104,112,120,126,134,140},radii[]={0,4,8,12,16};float last=0;
+    for(int i=0;i<6;i++){widthDp=widths[i];float width=larguraDe(FILEIRA_NORMAL);assert(width>last);last=width;assert(fabsf(escalaDoAjuste()-(float)widthDp/126)<.0001f);}
+    for(int i=0;i<5;i++){radiusPx=(float)radii[i]*2;assert(fabsf(raioDe(200,300)-radiusPx/300)<.0001f);}
+    widthDp=126;radiusPx=16;
+    puts("PASS expansion: six width presets change real Home geometry and five corner presets change real card radius");
+  }
   // HEROI DIVIDIDO: painel deitado a esquerda (~45% da largura util), a fila de
   // cartazes a direita dele, e o painel segue o foco da fileira.
   {
@@ -529,24 +629,13 @@ int main(void) {
   snprintf(fils[15].titulo, sizeof fils[15].titulo, "Oscar - Filme");
   cat_definir_tudo(itensTeste, 48, fils, 16);
   sincronizarFileiras();
-  // A INTENCAO ORIGINAL, mantida de proposito: 16 catalogos entram, mais
-  // "Amigos assistindo" e o destaque, e NENHUM catalogo se perde (o laco logo
-  // abaixo cobra isso).
-  //
-  // ESTA ASSERCAO FALHA HOJE, e a falha e informacao, nao ruido. O teto de
-  // fileiras (FIL_LIMITE_MAX, 16) conta as fileiras INSERIDAS junto com as de
-  // catalogo, entao a composicao de 18 vagas e cortada em 16 e dois catalogos
-  // somem. E exatamente a contabilidade que o relator do issue #18 descreve:
-  // "they still take up the 16-row limit and push other collections".
-  //
-  // NAO AJUSTE O NUMERO PARA FICAR VERDE. Trocar 17 por 16 aqui gravaria como
-  // correto o comportamento que o #18 questiona, e o laco de "nenhum catalogo
-  // removido" teria de ser afrouxado junto — que e a asserção que da valor ao
-  // arquivo. Quando o #18 for decidido, esta linha vira a prova da decisao.
-  assert(nFileiras == 17);
-  assert(foco.nFileiras == 17);
-  assert(fileiras[1].tipo == FILEIRA_SOCIAL && fileiras[1].ini == -1 && fileiras[1].n == 1);
-  assert(fileiras[2].tipo == FILEIRA_DESTAQUE);
+  // Stage H removed the synthetic empty Friends invite. With no Family
+  // catalogue in this fixture, keep all 16 real catalogue rows and no invite.
+  // The per-catalogue identity loop below still proves no truncation/duplicates.
+  assert(nFileiras == 16);
+  assert(foco.nFileiras == 16);
+  for(int r=0;r<nFileiras;r++)assert(fileiras[r].tipo!=FILEIRA_SOCIAL);
+  assert(fileiras[1].tipo == FILEIRA_DESTAQUE);
   for (int i = 0; i < 16; i++) {
     int achou = 0;
     for (int r = 0; r < nFileiras; r++)
@@ -560,23 +649,23 @@ int main(void) {
     for (lay = 0; lay < HOME_LAYOUT_N; lay++) {
       homeCom(lay, 1);
       sincronizarFileiras();
-      assert(!strcmp(fileiras[2].chave, "catalogo_1"));
+      assert(!strcmp(fileiras[1].chave, "catalogo_1"));
       for (r = 0, destaques = 0; r < nFileiras; r++)
         destaques += fileiras[r].tipo == FILEIRA_DESTAQUE;
       if (lay == HOME_LAYOUT_DINAMICA) {
-        assert(fileiras[2].tipo == FILEIRA_DESTAQUE && destaques == 1);
+        assert(fileiras[1].tipo == FILEIRA_DESTAQUE && destaques == 1);
       } else {
-        assert(fileiras[2].tipo == FILEIRA_NORMAL && destaques == 0);
-        assert(fileiras[2].tipo == fileiras[3].tipo);   // igual a seguinte
+        assert(fileiras[1].tipo == FILEIRA_NORMAL && destaques == 0);
+        assert(fileiras[1].tipo == fileiras[2].tipo);   // igual a seguinte
       }
     }
     homeCom(HOME_LAYOUT_MODERNA, 0);
     sincronizarFileiras();
-    assert(fileiras[2].tipo == FILEIRA_DESTAQUE);
+    assert(fileiras[1].tipo == FILEIRA_DESTAQUE);
   }
   foco.fileira = 0; foco.coluna = 0;
-  for (int i = 0; i < 16; i++) assert(focus_mover(&foco, 0, 1));
-  assert(foco.fileira == 16);
+  for (int i = 0; i < 15; i++) assert(focus_mover(&foco, 0, 1));
+  assert(foco.fileira == 15);
   assert(!focus_mover(&foco, 0, 1));
   // Mesma contagem, ordem diferente: manter chave, coluna e scroll.
   foco.fileira = 5; foco.coluna = 2; scrollX[5] = 123;
@@ -601,16 +690,13 @@ int main(void) {
   cat_definir_tudo(itensTeste,48,fils,16);filsAplicadas=-1;sincronizarFileiras();
   // SEM TABELA DE CURADORIA: a ordem e a da conta (catordem) ou a local
   // (fil_unir) — a montagem nao renomeia nem reordena por cima da escolha.
-  // O que a home acrescenta sozinha entra nos lugares fixos dela: "Entre
-  // amigos" em segundo, grupos de colecao no FIM, na ordem declarada.
+  // Collection groups remain at the end; no synthetic empty Friends invite.
   assert(nFileiras>=11);
-  assert(fileiras[1].tipo==FILEIRA_SOCIAL);
+  for(int r=0;r<nFileiras;r++)assert(fileiras[r].tipo!=FILEIRA_SOCIAL);
   // O primeiro catalogo com conteudo vira o destaque (destaque desligado, ver
-  // homeCom); o resto segue a ordem. "Continuar assistindo" fica em [0] e
-  // "Entre amigos" em [1], entao o destaque e o [2] — a assercao antiga pedia
-  // o [0] e abortava aqui antes do #201 tambem.
-  assert(fileiras[2].tipo==FILEIRA_DESTAQUE);
-  assert(!strcmp(fileiras[2].chave,"catalogo_1"));
+  // homeCom); Continue Watching stays at [0], and the first catalogue at [1].
+  assert(fileiras[1].tipo==FILEIRA_DESTAQUE);
+  assert(!strcmp(fileiras[1].chave,"catalogo_1"));
   assert(fileiras[nFileiras-2].tipo==FILEIRA_CATALOGOS);
   assert(!strcmp(fileiras[nFileiras-2].titulo,"Streaming"));
   assert(!strcmp(col_folder(fileiras[nFileiras-2].folders[0])->title,"Netflix"));
@@ -661,11 +747,12 @@ int main(void) {
   }
   fileiras[9].n=3;fileiras[9].stackN=0;fileiras[9].verTudo=1;
   for(int i=0;i<nFileiras;i++)assert(strcmp(fileiras[i].titulo,"Seus catálogos"));
+  assert(ajustes_shot_valor("familyWatchingLocal",0));
   snprintf(fils[15].chave,sizeof fils[15].chave,"social_activity");
   fils[15].base[0]=fils[15].catId[0]=0;
   cat_definir_tudo(itensTeste,48,fils,16);sincronizarFileiras();
   int sociais=0;
-  for(int i=0;i<nFileiras;i++)if(fileiras[i].tipo==FILEIRA_SOCIAL){
+  for(int i=0;i<nFileiras;i++)if(fileiras[i].tipo==FILEIRA_FAMILIA){
     sociais++;assert(fileiras[i].ini==45 && fileiras[i].n==3);
   }
   assert(sociais==1); // dados reais substituem vazio, nunca duplicam a fileira
@@ -825,8 +912,7 @@ int main(void) {
                     + (ajustes_borda_foco() ? NV_ANEL_FOCO : 0.0f))) < 0.01f);
   }
 
-  // "Mostrar genero no destaque": o card editorial sem logo desenha nome +
-  // genero; desligado, so o nome (a arte e o logo ficam, o genero sai).
+  // Hero genre visibility must not change editorial row metadata.
   { CatItem it = {0}; int ligado, desligado;
     snprintf(it.titulo, sizeof it.titulo, "Titulo");
     snprintf(it.genero, sizeof it.genero, "Terror");
@@ -837,22 +923,28 @@ int main(void) {
     nTxtDesenhado = 0; testeGenero = 0;
     desenhaEditorialCard(&it, FILEIRA_DESTAQUE, 0, 0, 640, 360, 8);
     desligado = nTxtDesenhado;
-    assert(ligado == desligado + 1);
-    // Desligado tira a linha de baixo INTEIRA do destaque: classificacao
-    // (Moderna) e selo IMDb (Padrao/Dinamica) tambem saem.
+    assert(ligado == desligado);
+    // Classification and poster ratings remain independent too.
     snprintf(it.classificacao, sizeof it.classificacao, "16");
     nBadge = 0; desenhaEditorialCard(&it, FILEIRA_DESTAQUE, 0, 0, 640, 360, 8);
-    assert(nBadge == 0);
+    assert(nBadge == 1);
     testeImdb = 75;
     for (int lay = HOME_LAYOUT_PADRAO; lay <= HOME_LAYOUT_DINAMICA; lay++) {
       homeCom(lay, 1);
       nBadge = 0; desenhaEditorialCard(&it, FILEIRA_DESTAQUE, 0, 0, 640, 360, 8);
-      assert(nBadge == 0);
+      assert(nBadge == 1);
       testeGenero = 1;
       nBadge = 0; desenhaEditorialCard(&it, FILEIRA_DESTAQUE, 0, 0, 640, 360, 8);
       assert(nBadge == 1);
       testeGenero = 0;
     }
+    // Rating Off suppresses the actual editorial poster badge, even though
+    // the hero ratings setting remains independent.
+    testeNotas = 0; nBadge = 0; nImdbBadge = 0;
+    desenhaEditorialCard(&it, FILEIRA_DESTAQUE, 0, 0, 640, 360, 8);
+    assert(nBadge == 1 && nImdbBadge == 0); // age classification remains; IMDb is suppressed
+    assert(homeNotaPoster(it.imdb, 75, 0) == 0);
+    testeNotas = 1; assert(homeNotaPoster(it.imdb,75,0) == 75);
     testeImdb = 0; homeCom(HOME_LAYOUT_MODERNA, 1);
     // So o destaque: COLECAO/SERVICO/SOCIAL mantem genero e selo.
     TipoFileira outras[] = { FILEIRA_COLECAO, FILEIRA_SERVICO, FILEIRA_SOCIAL };
@@ -868,8 +960,7 @@ int main(void) {
     }
     testeGenero = 1; }
 
-  // O mesmo ajuste no POSTER P/M/G: desligado, sem sinopse nem linha de
-  // genero (so arte e logo/nome); ligado, tudo como sempre.
+  // All poster sizes retain their genre/synopsis with hero genre Off.
   { CatItem it = {0}; float fatores[3] = { 0.8f, 1.0f, 1.25f };
     snprintf(it.titulo, sizeof it.titulo, "Titulo");
     snprintf(it.genero, sizeof it.genero, "Terror");
@@ -882,7 +973,7 @@ int main(void) {
       testeGenero = 0; stageTextDraws = 0; nSinopse = 0;
       desenhaPosterGrande(&it, NULL, 0, 0, 480, 640, 8, 1.0f, fatores[k]);
       off = stageTextDraws; offS = nSinopse;
-      assert(onS == 1 && offS == 0 && on == off + 1);
+      assert(onS == 1 && offS == 1 && on == off);
     }
     testeGenero = 1; }
 

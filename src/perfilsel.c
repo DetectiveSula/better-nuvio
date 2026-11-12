@@ -19,6 +19,7 @@
 #include "perfilcont.h"
 #include "psparede.h"
 #include "psestilos.h"
+#include "profile_editor.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,7 +81,7 @@
 // mesmo tex_cache, no mesmo bucket de largura do cartaz vertical da Home.
 // Catalogo vazio deixa os pontos e o fundo aparecerem imediatamente; as capas
 // entram so quando o catalogo e a textura compartilhada estiverem prontos.
-#define PS_MURAL_MAX       9
+#define PS_MURAL_MAX      36
 #define PS_MURAL_CARD_W_A 216.0f
 #define PS_MURAL_CARD_H_A 324.0f
 #define PS_MURAL_CARD_W_B 240.0f
@@ -167,6 +168,9 @@ static int concluido, sair, repetir;
 // monta a home nova por tras. Ver perfilsel_preparar.
 static int preparando;
 static int pinDe = -1;
+static int editAfterPin=-1, profileOkDown, profileOkSlot;
+static Uint32 profileOkSince;
+static void perfilEditar(int slot);
 #ifdef NV_TOUCH_UI
 static float psToqueX, psToqueMaximo, psToquePasso;
 static int psToqueLivre;
@@ -422,7 +426,9 @@ static void muralDesenharFaixa(float alfa, int reduzida, float y, int sentido,
   int i;
   // As duas faixas repetem as MESMAS capas, em sentidos opostos. O limite
   // fixo cobre 1920 sem criar um vetor novo ou pedir outro item ao catalogo.
-  for (i = -2; i < 16; i++) {
+  int first = (int)floorf(deslocamento / passo) - 2;
+  int end = first + (int)ceilf(NV_TELA_W / passo) + 5;
+  for (i = first; i < end; i++) {
     int pos = i % muralN;
     float x, yy;
     GLuint tex;
@@ -800,6 +806,7 @@ void perfilsel_iniciar(void) {
   concluido = sair = repetir = 0;
   preparando = 0;
   pinDe = -1;
+  profile_editor_close();editAfterPin=-1;profileOkDown=0;
   pin[0] = 0;
   pinFoco = PS_PIN_INICIO;
   pinErrado = 0;
@@ -904,7 +911,7 @@ static void eventoPin(SDL_Keycode k) {
   }
   if (k == SDLK_AC_BACK || k == SDLK_ESCAPE) {
     if (pin[0]) { pin[strlen(pin) - 1] = 0; pinErrado = pinRede = 0; }
-    else pinDe = -1;
+    else {pinDe = -1;editAfterPin=-1;}
     return;
   }
   // The remote's number keys type straight in, wherever the focus is.
@@ -945,8 +952,20 @@ static void perfilAtivar(int slot, int indice) {
   const ContaPerfil *p = perfis_item(slot);
   if (!preparando && pinDe < 0 && p && p->indice == indice) {
     foco = slot;
-    escolher(slot);
+    if(ponteiro_ok_longo())perfilEditar(slot);
+    else escolher(slot);
   }
+}
+static void perfilEditar(int slot) {
+#if defined(NV_ANDROID) || defined(NV_PROFILE_EDIT_TEST)
+  const ContaPerfil *p=perfis_item(slot);
+  if(!p || preparando || profile_editor_active())return;
+  profileOkDown=0;
+  if(p->temPin){editAfterPin=slot;escolher(slot);return;}
+  profile_editor_open(slot,NULL);
+#else
+  (void)slot;
+#endif
 }
 static void pinFocar(int tecla, int b) {
   (void)b;
@@ -962,6 +981,14 @@ static void perfisRetentar(int a, int b) {
 void perfilsel_evento(const SDL_Event *e) {
   SDL_Keycode k;
   int m = perfis_n();
+  if(e->type==SDL_WINDOWEVENT && e->window.event==SDL_WINDOWEVENT_FOCUS_LOST)profileOkDown=0;
+  if(profile_editor_active())return;
+#if defined(NV_ANDROID) || defined(NV_PROFILE_EDIT_TEST)
+  if(e->type==SDL_KEYUP && (e->key.keysym.sym==SDLK_RETURN || e->key.keysym.sym==SDLK_KP_ENTER)){
+    int choose=profileOkDown && profileOkSlot==foco;
+    profileOkDown=0;if(choose && pinDe<0 && !preparando)escolher(foco);return;
+  }
+#endif
   if (e->type != SDL_KEYDOWN) return;
 #ifdef NV_TOUCH_UI
   if (psToqueLivre && psToquePasso > 0.0f && m > 0) {
@@ -975,6 +1002,14 @@ void perfilsel_evento(const SDL_Event *e) {
   if (preparando) return;
   k = e->key.keysym.sym;
   if (pinDe >= 0) { eventoPin(k); return; }
+#if defined(NV_ANDROID) || defined(NV_PROFILE_EDIT_TEST)
+  if(m>0 && (k==SDLK_RETURN || k==SDLK_KP_ENTER)){
+    if(ponteiro_ok_longo()){perfilEditar(foco);return;}
+    if(!e->key.repeat && !profileOkDown){profileOkDown=1;profileOkSlot=foco;profileOkSince=SDL_GetTicks();}
+    return;
+  }
+  profileOkDown=0;
+#endif
 
   if (k == SDLK_ESCAPE || k == SDLK_AC_BACK || k == SDLK_BACKSPACE) { sair = 1; return; }
   // Com a lista na tela, o OK escolhe. Sem ela (rede caida), o OK e a unica
@@ -990,6 +1025,11 @@ void perfilsel_atualizar(float dt, Uint32 agora) {
   int i, reduzida = ajustes_animacoes_reduzidas();
   float dtCru = dt;
   (void)agora;
+  profile_editor_update();
+#if defined(NV_ANDROID) || defined(NV_PROFILE_EDIT_TEST)
+  if(profileOkDown && pinDe<0 && !preparando && !profile_editor_active() &&
+     profileOkSlot==foco && agora-profileOkSince>=NV_HOLD_MS)perfilEditar(foco);
+#endif
 
   // Medir antes do limite para detectar lentidao real. Um intervalo longo e
   // uma pausa/resume, nao pressao sustentada; ele limpa o acumulador.
@@ -1096,12 +1136,17 @@ void perfilsel_atualizar(float dt, Uint32 agora) {
     verificando = 0;
     if (resultado == 1) {
       const ContaPerfil *p = perfis_item(pinDe);
+      if(editAfterPin==pinDe){
+        int slot=pinDe;pinDe=-1;editAfterPin=-1;
+        profile_editor_open(slot,pin);memset(pin,0,sizeof pin);
+      } else {
       // Gravar o perfil ativo e do fio de desenho, nunca do fio da rede: e ele
       // que escreve em disco e que o resto do app le todo quadro.
       if (p) perfis_definir_ativo(p->indice);
       memset(pin, 0, sizeof pin);
       pinDe = -1;
       concluido = 1;
+      }
     } else if (resultado == -2) {
       pinRede = 1;
       memset(pin, 0, sizeof pin);
@@ -1434,6 +1479,22 @@ void perfilsel_desenhar(Uint32 agora) {
                        PS_SUB_Y + subida + 3.0f, a * 0.78f);
     txt_desenhar_alpha(s, (NV_TELA_W - s.w) * 0.5f, PS_SUB_Y + subida, a); }
 
+#if defined(NV_ANDROID) || defined(NV_PERFILSEL_TEST)
+  // Holding OK is the only way into the profile editor and nothing else on the
+  // screen says so (official Nuvio shows the same hint). Hidden behind the PIN
+  // pad and while the chosen profile is being prepared.
+  if (pinDe < 0 && !preparando) {
+    const char *dica = ajustes_interface_mobile()
+      ? "Toque e segure um perfil para editá-lo, mudar o PIN ou apagá-lo"
+      : "Segure OK em um perfil para editá-lo, mudar o PIN ou apagá-lo";
+    TxtLinha h = txt_linha(TXT_CALLOUT, dica, 150, 153, 164, 255);
+    TxtLinha sh = txt_linha(TXT_CALLOUT, dica, 0, 0, 0, 230);
+    float hy = NV_TELA_H - 96.0f + subida;
+    txt_desenhar_alpha(sh, (NV_TELA_W - sh.w) * 0.5f + 2.0f, hy + 3.0f, a * 0.7f);
+    txt_desenhar_alpha(h, (NV_TELA_W - h.w) * 0.5f, hy, a * 0.9f);
+  }
+#endif
+
   d = diametro(m);
   vao = vaoDe(m, d);
   largura = (float)m * d + (float)(m - 1) * vao;
@@ -1485,10 +1546,12 @@ void perfilsel_desenhar(Uint32 agora) {
     c = 176 + (int)(79.0f * f);
     nome = txt_linha_corta(d >= 230.0f ? TXT_TITULO3 : TXT_HEADLINE, p->nome,
                            c, c, c + 6 > 255 ? 255 : c + 6, 255, d + vao * 0.9f);
-    if (!preparando && pinDe < 0)
+    if (!preparando && pinDe < 0) {
       ponteiro_alvo(av.x, av.y, av.w,
                     av.h + PS_NOME_GAP + (float)nome.h + PS_CONT_NOME_GAP + contAltura(),
                     perfilFocar, perfilAtivar, i, p->indice);
+      ponteiro_alvo_segurar(perfilFocar);
+    }
     sombra = txt_linha_corta(d >= 230.0f ? TXT_TITULO3 : TXT_HEADLINE, p->nome,
                              0, 0, 0, 220, d + vao * 0.9f);
     txt_desenhar_alpha(sombra, px + (d - sombra.w) * 0.5f + 2.0f,

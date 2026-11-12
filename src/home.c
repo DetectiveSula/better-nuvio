@@ -28,6 +28,7 @@
 #include "fileiras.h"
 #include "curadoria.h"
 #include "continuar.h"
+#include "epdata.h"
 #include "proximo.h"
 #include "vertudo.h"
 #include "ctxmenu.h"
@@ -101,6 +102,14 @@ int video_registro_negado(void); /* video.h: motivo do trailer bloqueado */
 #include "trailerfonte.h"
 #include "ponteiro.h"
 #include "amigosfil.h"
+#include "familia.h"
+#include "perfilinfantil.h"
+#include "familia_ui.h"
+// Stage H: fallback for subset-linked tests that leave familia*.c out; the app links the real one.
+__attribute__((weak)) int familia_linha_visivel(int l, int c) { return l && !c; }
+__attribute__((weak)) int ajustes_familia(void) { return 0; }
+__attribute__((weak)) int perfil_infantil_ativo(void) { return 0; }
+__attribute__((weak)) void familia_desenhar_cartao(const CatItem *ci, GfxRect r, float raio, float foco) { (void)ci; (void)r; (void)raio; (void)foco; }
 #include "socialvis.h"
 #include "anos.h"
 #include "detail.h"   /* partirMeta: o `meta` do catalogo e "ANO  ·  DURACAO" */
@@ -136,6 +145,7 @@ _Static_assert(DESC_ITENS_POR_FILEIRA <= MAX_CARDS - 1, "itens por fileira + Ver
 
 typedef struct {
   char titulo[96];
+  char addonNome[48]; // Runtime display metadata; not a key or persisted row field.
   TipoFileira tipo;
   int n;
   // Primeiro item DESTA fileira no catalogo. Antes o desenho fazia `r * 8 + c`,
@@ -343,7 +353,7 @@ static TipoFileira perfilCatalogo(const char *nome) {
 static int editorial(TipoFileira t) {
   return t == FILEIRA_DESTAQUE || t == FILEIRA_DESTAQUE_QUADRADO
       || t == FILEIRA_COLECAO || t == FILEIRA_SERVICO
-      || t == FILEIRA_SOCIAL;
+      || t == FILEIRA_SOCIAL || t == FILEIRA_FAMILIA;
 }
 
 
@@ -858,6 +868,8 @@ static float heroVisivelToque(void) {
 
 // Onde a fileira EM FOCO ancora o titulo dela. E tambem a referencia do
 // esvanecer das de cima (o `fade` de home_desenhar).
+// Show hero Off releases both the row anchor and hero scroll/clip reservation,
+// including Modern TV layout (not just portrait/mobile and Dynamic).
 static float topoFileiras(void) {
   int heroOn = ajustes_hero_ligado();
   if (homeRetratoTelefone() && !heroOn) return ANC(NV_DIN_TOPO_FIL);
@@ -865,7 +877,7 @@ static float topoFileiras(void) {
     case HOME_LAYOUT_PADRAO:
       return ANC(heroOn ? NV_PAD_TOPO_FIL : NV_DIN_TOPO_FIL - 10.0f);
     case HOME_LAYOUT_DINAMICA: return ANC(NV_DIN_TOPO_FIL);
-    default:                   return ANC(NV_SHELF_TOP);
+    default:                   return ANC(heroOn ? NV_SHELF_TOP : NV_DIN_TOPO_FIL);
   }
 }
 // Acima disto nada de fileira se desenha (o gfx_recorte): a Moderna deixa as
@@ -887,7 +899,7 @@ static float corteFileiras(void) {
     case HOME_LAYOUT_PADRAO:
       return ajustes_hero_ligado() ? ANC(NV_PAD_BANNER_Y + NV_PAD_BANNER_H + 8.0f) : 0.0f;
     case HOME_LAYOUT_DINAMICA: return 0.0f;
-    default:                   return ANC(NV_SHELF_TOP - (heroCompactoTelefone() ? 0.0f : 96.0f));
+    default:                   return ajustes_hero_ligado() ? ANC(NV_SHELF_TOP - (heroCompactoTelefone() ? 0.0f : 96.0f)) : 0.0f;
   }
 }
 // Quanto as fileiras DESCEM com o foco no destaque (a rolagem vale menos isto).
@@ -900,7 +912,7 @@ static float empurraHero(void) {
   switch (layoutHome()) {
     case HOME_LAYOUT_PADRAO:   return 0.0f;
     case HOME_LAYOUT_DINAMICA: return heroOn ? repousoFileirasDin() - ANC(NV_DIN_TOPO_FIL) : 0.0f;
-    default:                   return empurraHeroModerna();
+    default:                   return heroOn ? empurraHeroModerna() : 0.0f;
   }
 }
 // Rolagem em que o destaque da Dinamica esta TODO na tela: y do topo dele.
@@ -1012,6 +1024,7 @@ static float larguraDe(TipoFileira t) {
     case FILEIRA_COLECAO: return 480.0f * gfx_poster_k();
     case FILEIRA_SERVICO: return 360.0f * gfx_poster_k();
     case FILEIRA_SOCIAL: return 540.0f * gfx_poster_k();
+    case FILEIRA_FAMILIA: return familia_estilo_largura(ajustes_amigos_estilo()) * gfx_poster_k();
     case FILEIRA_TOP10: return 212.0f * gfx_poster_k();
     case FILEIRA_RETORNO: return 680.0f * gfx_poster_k();
     case FILEIRA_CATALOGOS: return 360.0f * gfx_poster_k();
@@ -1321,6 +1334,12 @@ static void desenhaCarregando(GfxRect r, float raio, const CatItem *item) {
   }
 }
 
+// One policy for all app-drawn Home poster ratings. Ratings baked into a
+// third-party poster image cannot be removed by an overlay preference.
+static int homeNotaPoster(const char *imdb, int nota, int serie) {
+  return ajustes_notas_home() ? imdbnota_obter(imdb, nota, serie) : 0;
+}
+
 // Escolha de formato para cards. O helper arteDoItem acima informa se precisou
 // usar poster como fallback; aqui a ordem visual do card continua explicita.
 // ARTE DO CARD. A url que o catalogo guarda ja foi dimensionada para ele —
@@ -1330,12 +1349,9 @@ static const char *arte_por_formato(const CatItem *item, int deitado) {
   // Deitado e a url guardada (w1280 no TMDB, 1920 no metahub) — o MESMO
   // arquivo que o heroi e o detalhe vao promover (artehero_url): um download
   // por titulo. O decode escalado (jpegrapido.c) faz o card custar pouco.
-  // A FONTE ESCOLHIDA NOS AJUSTES VALE AQUI TAMBEM (22/09): antes o card lia
-  // item->backdrop cru e "Background do hero" nunca chegava nele. Lido a cada
-  // quadro, entao trocar o ajuste muda o card na volta a home, sem reiniciar.
+  // Hero artwork preferences belong to the hero, not ordinary row cards.
   if (deitado) {
-    const char *b = artehero_url_card_fonte(item, ajustes_hero_fonte(),
-                                            ajustes_hero_arte_diferente());
+    const char *b = artehero_url_card_fonte(item, 0, 0);
     // ARTE EM PE NUM CARD DEITADO: alguns addons (a "AI for you" na C9,
     // 29/09) mandam o cartaz no lugar do fundo, e ele saia como uma faixa
     // estreita no meio do card escuro. Medido pelo arquivo ja decodificado:
@@ -1343,6 +1359,10 @@ static const char *arte_por_formato(const CatItem *item, int deitado) {
     if (b) { float ap = tex_aspecto(b);
       if (ap > 0.0f && ap < 1.0f) { const char *m = artehero_url_metahub_fundo(item);
         if (m) return m; } }
+    // Nothing landscape from the provider: the IMDb/metahub landscape
+    // backdrop before the poster (Stage E: no portrait in a wide card when a
+    // landscape image exists).
+    if (!b) b = artehero_url_metahub_fundo(item);
     return posterprov_card_formato(item->origem, item->imdb, item->tmdb, item->tipo,
                                    b ? b : (item->poster[0] ? item->poster : NULL), 1);
   }
@@ -1380,7 +1400,11 @@ static const char *arte_hero_do_item(const CatItem *item) {
   // em alguns titulos de Continuar assistindo"). O metahub serve o still no
   // tamanho que a fonte tiver, e para varios episodios isso e 400 px — a
   // 1920 vira mosaico. Abaixo de 900 px de origem, o fundo do titulo.
-  if (ep && !tex_falhou(ep)) {
+  // STAGE E: an UNAIRED next-up has no still worth showing (add-ons send the
+  // show's poster as its "thumbnail" before it airs): the hero shows the show's
+  // art, like the card (arte_card_retomada) and the episode list.
+  if (ep && !tex_falhou(ep) &&
+      !continuar_proximo_inedito(item, (long long)time(NULL) * 1000LL)) {
     int w = tex_largura_fonte(ep);
     if (w == 0 || w >= 900) return ep;
   }
@@ -1405,7 +1429,23 @@ static const CatItem *cat_item_exato(int i) {
 // relato da Shield (teste 318.3): o ajuste existia sem nenhum chamador e o
 // card mostrava sempre o fundo da serie. Still que o cache sabe que nao vem
 // (404 do metahub) cai na arte do titulo, como no destaque.
+// Subset-linked builds without continuar.c: fail closed to "aired", which is
+// the pre-Stage E artwork order (the real rule lives in continuar.c).
+// (A test that includes this file may supply its own: NV_TESTE_INEDITO.)
+#ifndef NV_TESTE_INEDITO
+__attribute__((weak)) int continuar_proximo_inedito(const CatItem *ci, long long agoraMs) {
+  (void)ci; (void)agoraMs; return 0;
+}
+#endif
 static const char *arte_card_retomada(const CatItem *item) {
+  // STAGE E (continueWatchingImageModel, card style): an UNAIRED next-up shows
+  // the title's landscape art first — custom landscape, backdrop, poster — and
+  // its episode still only as the last resort. Aired next-ups and episodes in
+  // progress keep the still first when "Episode thumbnail" is on.
+  if (item && continuar_proximo_inedito(item, (long long)time(NULL) * 1000LL)) {
+    const char *titulo = arte_por_formato(item, 1);
+    if (titulo || !ajustes_cw_thumb_episodio()) return titulo;
+  }
   if (item && ajustes_cw_thumb_episodio() && !strcmp(item->tipo, "series")) {
     CatItem copia = *item;
     ProxSugestao prox;
@@ -1505,7 +1545,7 @@ static int foco_pode_pressao_longa(void) {
   if (foco.fileira < 0 || foco.fileira >= nFileiras) return 0;
   const Fileira *s = &fileiras[foco.fileira];
   // Pasta de colecao: o menu e so o do estilo da fileira (ctx_abrir_fileira).
-  if (s->tipo == FILEIRA_SOCIAL) return 0;
+  if (s->tipo == FILEIRA_SOCIAL || s->tipo == FILEIRA_FAMILIA) return 0;
   // Pilha fechada: so o estilo da fileira, entao so quando ela aceita forma.
   if (s->tipo == FILEIRA_TOP10 && s->stackN)
     return fil_estilos(s->chave, NULL, NULL, FIL_TIPO_N) > 0;
@@ -1545,6 +1585,7 @@ static float alturaDe(TipoFileira t) {
         case 4: return 376.0f * gfx_poster_k();
         default: return 240.0f * gfx_poster_k();
       }
+    case FILEIRA_FAMILIA: return familia_estilo_altura(ajustes_amigos_estilo()) * gfx_poster_k();
     case FILEIRA_RETORNO: return 178.0f * gfx_poster_k();
     case FILEIRA_TOP10: return 320.0f * gfx_poster_k();
     case FILEIRA_CATALOGOS: return 203.0f * gfx_poster_k();
@@ -1689,7 +1730,7 @@ static void desenhaFaixaAberta(const CatItem *ci, int r, float px, float py,
   // Sem ID nao ha como atribuir a nota ao IMDb; em itens `tmdb:` a nota pode
   // ser do TMDB e o rotulo amarelo seria enganoso. O restante da faixa segue
   // independente e continua aparecendo quando existe.
-  int imdbRating = imdbnota_obter(ci->imdb, ci->nota, !strcmp(ci->tipo,"series"));
+  int imdbRating = homeNotaPoster(ci->imdb, ci->nota, !strcmp(ci->tipo,"series"));
   if (imdbRating > 0) {
     float bw = badge_imdb_largura(imdbRating);
     float xMin = px + pad + (ci->logo[0] ? w * 0.34f : 0.0f);
@@ -2813,7 +2854,9 @@ static int assinaturaPrefs(void) {
        // (vitrineNaPrimeira).
        | (ajustes_hero_ligado() ? 1 << 12 : 0)
        | (ajustes_ocultar_filmes_vistos() ? 1 << 13 : 0)
-       | (ajustes_bib_home() ? 1 << 14 : 0);
+       | (ajustes_bib_home() ? 1 << 14 : 0)
+       // Stage H: Family Watching on/off (or a child viewer) adds/removes a row.
+       | (familia_linha_visivel(ajustes_familia(), perfil_infantil_ativo()) ? 1 << 15 : 0);
 }
 
 // A PRIMEIRA FILEIRA DE CATALOGO VIRA VITRINE (cartoes 16:9 grandes) so quando
@@ -3079,8 +3122,13 @@ static void sincronizarFileiras(void) {
     // esvazia, tira. E o que renderModernHomeLayout faz quando
     // computeContinueWatchingRenderState devolve a fileira desligada.
     if (!strcmp(cf->chave, "continue_watching") && !ajustes_cw_ligado()) continue;
-    // "Recursos sociais" desligado: a fileira de amigos nao existe.
-    if (!strcmp(cf->chave, "social_activity") && !ajustes_social()) continue;
+    // Stage H: this slot is Family Watching now. It exists only while the
+    // row is on for this profile and the viewer is not a child profile —
+    // read from the setting itself, so switching it off hides the row on the
+    // next Home layout pass (assinaturaPrefs), without waiting for the
+    // catalogue cycle. The old "Social features" switch no longer gates it.
+    if (!strcmp(cf->chave, "social_activity") &&
+        !familia_linha_visivel(ajustes_familia(), perfil_infantil_ativo())) continue;
     // A fileira pode ser republicada depois de uma montagem em que o destaque
     // usou índices compostos. Limpar a marca evita que uma linha comum herde
     // silenciosamente os índices daquela montagem anterior.
@@ -3126,7 +3174,9 @@ static void sincronizarFileiras(void) {
     snprintf(fileiras[destino].catTipo, sizeof fileiras[destino].catTipo, "%s", cf->tipo);
     fileiras[destino].ini = cf->ini;
     filtrarFilmesVistos(&fileiras[destino], cf);
-    if(!strcmp(cf->chave,"social_activity"))fileiras[destino].tipo=FILEIRA_SOCIAL;
+    // Stage H: the slot keeps its key (Home order/visibility and the synced
+    // layout follow it) but now holds Family Watching, not Friends Watching.
+    if(!strcmp(cf->chave,"social_activity"))fileiras[destino].tipo=FILEIRA_FAMILIA;
     // UM TITULO, UM LUGAR (cwretido.h): o que o cartao da ilha ou a faixa
     // "Retomar agora" segura nao entra aqui. So a lista desenhada muda; o
     // catalogo continua com o item. Passa pela janela INTEIRA (cf->n), nao so
@@ -3290,9 +3340,11 @@ static void sincronizarFileiras(void) {
       s->usaItens = 1;
     }
   }
+  // Stage H: Family Watching replaced the Friends row. Its empty invite is no
+  // longer injected: a Family row with no cards is simply not shown.
   int socialExiste=0;
   for(int i=0;i<destino;i++)if(fileiras[i].tipo==FILEIRA_SOCIAL)socialExiste=1;
-  if(!socialExiste && destino<MAX_FIL && ajustes_social()) {
+  if(0 && !socialExiste && destino<MAX_FIL && ajustes_social()) {
     int pos=destino>0?1:0;
     memmove(fileiras+pos+1,fileiras+pos,(destino-pos)*sizeof *fileiras);
     Fileira *s=&fileiras[pos];memset(s,0,sizeof *s);
@@ -3343,7 +3395,8 @@ static void sincronizarFileiras(void) {
         if (fileiras[q].tipo == FILEIRA_CATALOGOS || fileiras[q].base[0]) {
           slots[nr] = q; rem[nr++] = fileiras[q].chave;
         }
-      int n = catordem_unir(rem, nr, ordenados, MAX_FIL);
+      // A synced projection is ordered completely by fil_unir (official order).
+      int n = fil_tem_projecao() ? 0 : catordem_unir(rem, nr, ordenados, MAX_FIL);
       memcpy(arranjo, fileiras, sizeof(Fileira) * (size_t)destino);
       for (q = 0; q < n; q++) arranjo[slots[q]] = fileiras[slots[ordenados[q]]];
       memcpy(fileiras, arranjo, sizeof(Fileira) * (size_t)destino);
@@ -3372,6 +3425,10 @@ static void sincronizarFileiras(void) {
       }
       ch[q] = fileiras[q].chave;
       ti[q] = fileiras[q].titulo;
+      fileiras[q].addonNome[0] = 0;
+      if (fileiras[q].base[0] && fileiras[q].catId[0])
+        fil_catalogo_addon_copiar(fileiras[q].chave, fileiras[q].addonNome,
+                                  sizeof fileiras[q].addonNome);
     }
     fil_gravar_registro();
     // A lista de Ajustes passa a espelhar ESTA ordem enquanto ninguem tiver
@@ -3385,7 +3442,8 @@ static void sincronizarFileiras(void) {
     int temCw = 0;
     for (int i = 0; i < destino; i++)
       if (!strcmp(fileiras[i].chave, "continue_watching")) temCw = 1;
-    if (reservaEstado != 2 && temCw && fil_tem_ordem() && !fil_oculta("continue_watching")) {
+    // Projected order puts Continue Watching first: nothing precedes it to reserve.
+    if (reservaEstado != 2 && temCw && fil_tem_ordem() && !fil_tem_projecao() && !fil_oculta("continue_watching")) {
       int cw = -1;
       for (int i = 0; i < fil_n(); i++)
         if (!strcmp(fil_chave(i), "continue_watching")) { cw = i; break; }
@@ -4577,15 +4635,14 @@ static float desenhaCopiaHero(const CatItem *ci, int principal, float x,
   if (contHero) snprintf(destaque, sizeof destaque, i18n("CONTINUAR DE ONDE PAROU  \xc2\xb7  %d MIN"),
                          ci->restanteMin);
   else if (seguirHero) {
-    // O FUTURO DIZ QUANDO (issue #127): "ESTREIA 21 OUT", nao o "A SEGUIR" do
-    // episodio que ja pode tocar. Mesma decisao e mesma data do card
-    // (continuar.c), para os dois nao discordarem.
-    char quando[32];
-    if (cwo_e_futuro(ci->imdb) &&
-        cwo_data_curta(cwo_estreia(ci->imdb), (long long)time(NULL) * 1000LL,
-                       ajustes_idioma(), 1, quando, sizeof quando))
-      snprintf(destaque, sizeof destaque, i18n("ESTREIA %s"), quando);
-    else snprintf(destaque, sizeof destaque, "%s", i18n("A SEGUIR"));
+    // STAGE E: the same next-up label as the card (continuar_selo), uppercased,
+    // as regular Nuvio's Modern hero does (ModernHomeModels: NEW SEASON / NEW
+    // EPISODE / the air-date countdown / UPCOMING / NEXT UP). One decision for
+    // both, so the hero and the card never disagree.
+    char rot[64];
+    continuar_selo(ci, 0, (long long)time(NULL) * 1000LL, rot, sizeof rot, NULL);
+    idioma_maiusc_em(ajustes_idioma(), destaque, sizeof destaque,
+                     rot[0] ? rot : i18n("Próximo a assistir"));
   }
   const char *selo = (ci && ci->classificacao[0] && !contHero && !seguirHero) ? ci->classificacao : NULL;
   char nota[8];
@@ -6357,6 +6414,8 @@ static void home_trailer_passo_(int topo, float dt, Uint32 agora) {
       // (.wgt) trailer_abrir forca mudo de qualquer jeito.
       heroTrailerNoCartao = destCartao;
       trailer_no_cartao(destCartao);
+      // Stage H: likely burned-in subtitles -> the crop keeps the bottom band.
+      { char iso[8]; extras_idioma_original_de(ci->imdb, iso, sizeof iso); trailer_idioma_original(iso); }
       trailer_abrir(u, destCartao ? cartaoVideoRect(cartaoTrailerRect) : heroArteRect,
                     ajustes_trailer_som(), 0);
       trailer_marcar_dono(TRAILER_DONO_HOME, ci->imdb);
@@ -6597,7 +6656,7 @@ static void palcoTexto(int r, int c, GfxRect p, float a) {
   y += txt_bloco_corta(TXT_TITULO3, it->titulo, 243, 242, 239,
                        x, y, p.w, 52, a, 3) + 16;
   {
-    int nota = imdbnota_obter(it->imdb, it->nota, !strcmp(it->tipo, "series"));
+    int nota = homeNotaPoster(it->imdb, it->nota, !strcmp(it->tipo, "series"));
     float bw = badge_imdb_largura(nota), gap = it->meta[0] && nota > 0 ? 30 : 0;
     char metaTexto[sizeof it->meta + 4];
     snprintf(metaTexto, sizeof metaTexto, "%s%s", it->meta, gap ? " |" : "");
@@ -6682,7 +6741,7 @@ static void desenhaFicha(const CatItem *it, float px, float py, float w, float h
                      txt_desenhar_alpha(m, tx, y, 0.78f * a); y += m.h + 4.0f; }
   if (it->genero[0]) { TxtLinha g = txt_linha_corta(TXT_ILHA_GENERO, it->genero, 243, 242, 239, 255, tw);
                        txt_desenhar_alpha(g, tx, y, 0.52f * a); y += g.h + 10.0f; }
-  { int nota = imdbnota_obter(it->imdb, it->nota, !strcmp(it->tipo, "series"));
+  { int nota = homeNotaPoster(it->imdb, it->nota, !strcmp(it->tipo, "series"));
     if (nota > 0) { badge_imdb(tx, y, nota, 0, a); y += BADGE_H + 12.0f; } }
   if (it->sinopse[0]) {
     int linhas = (int)((ilha.y + ilha.h - 20.0f - y) / 28.0f);
@@ -6715,9 +6774,8 @@ static void desenhaPosterGrande(const CatItem *ci, const char *caminho,
   CorvivaTokens tk;
   int tem, tr, tg, tb, sr, sg, sb, linhas = fator < 0.9f ? 1 : fator > 1.1f ? 3 : 2;
   float cr, cg, cb, pad = fator < 0.9f ? 26.0f : 34.0f, veuTopo, veuF, y, logoMaxH, yLogo;
-  // "Mostrar genero no destaque" desligado: so arte e logo, sem sinopse nem
-  // linha de genero/classificacao (dono: TV Samsung, interface limpa).
-  const int semMeta = !ajustes_hero_genero();
+  // Poster metadata is independent of the Home hero visibility controls.
+  const int semMeta = 0; // Hero metadata switches never alter poster cards.
   if (!ci) return;
   veuF = NV_POSTER_G_VEU_F;
   if (linhas != 2) {
@@ -6871,7 +6929,7 @@ static void desenhaPilha(const Fileira *f, int coluna, int stackN, float px, flo
     GfxRect pr={px+(20+k*78)*s,py+18*s,178*s,h-72*s};
     const char *pa=arte_por_formato(it,0);
     GLuint tx=pa?tex_obter_larg(pa,178*s):0;
-    if(tx){gfx_tex_aspect_atual=tex_aspecto(pa);gfx_rect(pr,tx,GFX_CARD,0,0,0,.055f,1,1,1,1);gfx_tex_aspect_atual=0;}
+    if(tx){gfx_tex_aspect_atual=tex_aspecto(pa);gfx_card_para((f->tipo==FILEIRA_CONTINUE||f->tipo==FILEIRA_RETORNO)?NV_CARD_CONTINUE:NV_CARD_POSTERS, pr,tx,GFX_CARD,0,0,0,.055f,1,1,1,1);gfx_tex_aspect_atual=0;}
     else desenhaArteAusente(pr,.055f,it,1);
   }
   // O numero e o da fileira (issue #201): "primeiros 10" mentia
@@ -6911,10 +6969,14 @@ static void desenhaArteCard(GfxRect card, TipoFileira tipo, const char *caminho,
     // GFX_CARD dispara com a moldura 25% fora da arte, e qualquer arte (fundo
     // 16:9 ou cartaz) ficava no meio do card com faixas cinza dos lados (dono,
     // 03/10: "tem que colocar uma imagem cropada para preencher tudo").
+    // STAGE E: "Continue Watching" crops a portrait image to fill its wide
+    // card (regular Nuvio's ContentScale.Crop) instead of the contain bars.
     gfx_card_forcar_cover_atual = (tipo == FILEIRA_DESTAQUE_QUADRADO ||
                                    tipo == FILEIRA_RETORNO ||
                                    tipo == FILEIRA_HEROI ||
-                                   tipo == FILEIRA_POSTER_GRANDE) ? 1.0f : 0.0f;
+                                   tipo == FILEIRA_POSTER_GRANDE ||
+                                   (tipo == FILEIRA_CONTINUE &&
+                                    ep_arte_cobrir(tex_aspecto(caminho)))) ? 1.0f : 0.0f;
     gfx_tex_aspect_atual = tex_aspecto(caminho);
     // O esqueleto fica por baixo so enquanto a arte esvanece: um
     // desenho do tamanho do card por ~220 ms, e depois nenhum.
@@ -6922,7 +6984,7 @@ static void desenhaArteCard(GfxRect card, TipoFileira tipo, const char *caminho,
       gfx_cor(card, raio, NV_COR_ESQUELETO_R, NV_COR_ESQUELETO_G,
               NV_COR_ESQUELETO_B, 1.0f);
     gfx_varre_atual = varre;
-    gfx_rect(card, t, GFX_CARD, f, 0.0f, 0.0f,
+    gfx_card_para((tipo==FILEIRA_CONTINUE||tipo==FILEIRA_RETORNO)?NV_CARD_CONTINUE:NV_CARD_POSTERS, card, t, GFX_CARD, f, 0.0f, 0.0f,
              raio, 0, 0, 0, aArte);
     // Cartaz assentado e opaco: o fundo adiado nao precisa ser pintado
     // embaixo dele (gfx_mascara_opaca; no-op fora do regime).
@@ -6980,7 +7042,9 @@ static void veusDoCard(const CatItem *cItem, TipoFileira tipo, int deitado, floa
   if (comCw && (tipo == FILEIRA_CONTINUE || tipo == FILEIRA_RETORNO) && cItem)
     gfx_veu_card_por(NV_CW_VEU_F, NV_CW_VEU_A);
   if (abre > 0.01f && cItem) gfx_veu_card_por(NV_ABERTA_VEU_F, NV_ABERTA_VEU_A * abre);
-  if (editorial(tipo)) gfx_veu_card_por(NV_EDITORIAL_VEU_F, NV_EDITORIAL_VEU_A);
+  // Family cards carry the Continue Watching veil (familia_ui.c draws the same).
+  if (tipo == FILEIRA_FAMILIA) { if (cItem) gfx_veu_card_por(NV_CW_VEU_F, NV_CW_VEU_A); }
+  else if (editorial(tipo)) gfx_veu_card_por(NV_EDITORIAL_VEU_F, NV_EDITORIAL_VEU_A);
 }
 
 // A legenda do cartaz (dentro do deitado, abaixo do cartaz em pe).
@@ -7024,7 +7088,7 @@ static void desenhaRotuloCard(const CatItem *cItem, TipoFileira tipo, int deitad
       }
     } else if (tipo == FILEIRA_HEROI_DIVIDIDO) {
       char l[64]; const char *e = strstr(cItem->meta, " \xc2\xb7 ");
-      int nota = imdbnota_obter(cItem->imdb, cItem->nota, !strcmp(cItem->tipo, "series"));
+      int nota = homeNotaPoster(cItem->imdb, cItem->nota, !strcmp(cItem->tipo, "series"));
       size_t n = e ? (size_t)(e - cItem->meta) : strlen(cItem->meta);
       if (n > 12) n = 12;
       snprintf(l, sizeof l, "%.*s%s", (int)n, cItem->meta, n && nota > 0 ? " · " : "");
@@ -7079,11 +7143,8 @@ static void desenhaEditorialCard(const CatItem *cItem, TipoFileira tipo, float p
   // Sem dado, sem texto — nao a lista de demonstracao que ficava
   // aqui e carimbava nome e genero de outro titulo no card.
   const char *nome   = (ci && ci->titulo[0]) ? ci->titulo : NULL;
-  // "Mostrar genero no destaque" desligado: so arte e logo no DESTAQUE —
-  // a linha de baixo inteira (genero, IMDb, classificacao) sai. As
-  // fileiras COLECAO/SERVICO/SOCIAL nao sao destaque e ficam como estao.
-  const int semMeta = (tipo == FILEIRA_DESTAQUE || tipo == FILEIRA_DESTAQUE_QUADRADO)
-                    && !ajustes_hero_genero();
+  // Every editorial row keeps its own metadata, independent of hero controls.
+  const int semMeta = 0; // Editorial row cards are not the Home hero.
   const char *genero = semMeta ? NULL
                       : (ci && ci->genero[0]) ? ci->genero
                       : ci ? i18n(!strcmp(ci->tipo, "series") ? "Série" : "Filme") : NULL;
@@ -7129,7 +7190,7 @@ static void desenhaEditorialCard(const CatItem *cItem, TipoFileira tipo, float p
   // da linha (a referencia nao a tem); sem nota atribuivel ao IMDb
   // (sem ID, ou `tmdb:` sem vínculo IMDb verificado), a classificacao volta como antes.
   int notaFeita = 0;
-  int imdbRating = orig && ci && !semMeta ? imdbnota_obter(ci->imdb, ci->nota, !strcmp(ci->tipo,"series")) : 0;
+  int imdbRating = orig && ci && !semMeta ? homeNotaPoster(ci->imdb, ci->nota, !strcmp(ci->tipo,"series")) : 0;
   if (imdbRating > 0) {
     float bx = px + pad + tg.w + (genero ? 14.0f : 0.0f);
     if (bx + badge_imdb_largura(imdbRating) < px + w - pad) {
@@ -7306,7 +7367,7 @@ static void desenhaRedonda(const CatItem *ci, GLuint t, const char *caminho,
 static float heroiMeta(const CatItem *ci, float x, float y, float w) {
   char linha[256];
   if (!ci) return BADGE_H;
-  int nota = imdbnota_obter(ci->imdb, ci->nota, !strcmp(ci->tipo, "series"));
+  int nota = homeNotaPoster(ci->imdb, ci->nota, !strcmp(ci->tipo, "series"));
   float bw = badge_imdb_largura(nota);
   snprintf(linha, sizeof linha, "%s%s%s%s", ci->meta,
            ci->meta[0] && ci->genero[0] ? " · " : "", ci->genero,
@@ -7580,11 +7641,11 @@ static void pintarCartao(const CartaoFoco *k, float raio) {
           // ganhava o selo. Leitura O(1) por cartaz (hash em catalogo.c),
           // sem pedido de rede: o mapa ja veio no ciclo da descoberta.
           float limiteSelo = px + w;
-          if (cItem && tipo != FILEIRA_CONTINUE && tipo != FILEIRA_RETORNO &&
+          if (cItem && tipo != FILEIRA_CONTINUE && tipo != FILEIRA_RETORNO && tipo != FILEIRA_FAMILIA &&
               ajustes_selo_visto() && cat_visto(cItem)) {
             limiteSelo = badges_selo_visto(px, py, w, 1.0f);
           }
-          if (cItem && tipo != FILEIRA_CONTINUE && tipo != FILEIRA_RETORNO)
+          if (cItem && tipo != FILEIRA_CONTINUE && tipo != FILEIRA_RETORNO && tipo != FILEIRA_FAMILIA)
             desenhaChipAmigos(cItem, px, py, w, limiteSelo, aArte);
 
           // --- posterLabelsEnabled ---------------------------------------
@@ -7604,6 +7665,21 @@ static void pintarCartao(const CartaoFoco *k, float raio) {
 
           if (tipo == FILEIRA_CONTINUE)
             continuar_desenhar(cItem, (GfxRect){px, py, w, h}, raio);
+          else if (tipo == FILEIRA_FAMILIA)
+            familia_desenhar_cartao(cItem, (GfxRect){px, py, w, h}, raio, f);
+          // STAGE E: Poster-style "Continue Watching" (a 2:3 row, no overlay)
+          // still shows regular Nuvio's next-up badge, short form, top right;
+          // progress labels stay hidden in this style, as in the original.
+          else if (cItem && continuar_e_a_seguir(cItem) &&
+                   (!strcmp(fileiras[r].chave, "continue_watching") ||
+                    !strcmp(fileiras[r].chave, "upcoming_section"))) {
+            char selo[64];
+            BadgeEstilo est = BADGE_NEUTRO;
+            continuar_selo(cItem, 1, (long long)time(NULL) * 1000LL, selo, sizeof selo, &est);
+            float pad = NV_CW_PAD * (w / NV_DESTAQUE_W);
+            if (selo[0] && badge_largura(selo) <= w - pad * 2)
+              badge_desenhar(px + w - pad - badge_largura(selo), py + pad, selo, est, 1.0f);
+          }
           if (tipo == FILEIRA_RETORNO)
             continuar_desenhar(cItem, (GfxRect){px, py, w, h}, raio);
 
@@ -7670,7 +7746,7 @@ static void pintarCartao(const CartaoFoco *k, float raio) {
             }
           }
   gfx_opacidade_grupo = ogCartao * (1.0f - k->trailer);
-  if (editorial(tipo)) desenhaEditorialCard(cItem, tipo, px, py, w, h, raio);
+  if (editorial(tipo) && tipo != FILEIRA_FAMILIA) desenhaEditorialCard(cItem, tipo, px, py, w, h, raio);
   gfx_opacidade_grupo = ogCartao;
   gfx_veu_card_limpar();
 }
@@ -7711,7 +7787,7 @@ static const char *tfIcone(const Fileira *f) {
   switch (f->tipo) {
     case FILEIRA_CONTINUE: case FILEIRA_RETORNO: return "aj_circle-play";
     case FILEIRA_TOP10: case FILEIRA_TOP10_NUM: return "aj_star";
-    case FILEIRA_SOCIAL: return "aj_users";
+    case FILEIRA_SOCIAL: case FILEIRA_FAMILIA: return "aj_users";
     case FILEIRA_COLECAO: case FILEIRA_CATALOGOS: return "aj_layout-list";
     case FILEIRA_SERVICO: return "aj_tv-minimal-play";
     default: break;
@@ -7726,6 +7802,7 @@ static const char *tfKicker(const Fileira *f) {
     case FILEIRA_CONTINUE: case FILEIRA_RETORNO: return "Retomar";
     case FILEIRA_TOP10: case FILEIRA_TOP10_NUM: return "Ranking";
     case FILEIRA_SOCIAL: return "Amigos";
+    case FILEIRA_FAMILIA: return "Família";
     case FILEIRA_COLECAO: return "Coleção";
     case FILEIRA_CATALOGOS: return "Catálogos";
     case FILEIRA_DESTAQUE: case FILEIRA_DESTAQUE_QUADRADO: return "Destaque";
@@ -7768,15 +7845,16 @@ static float desenhaTituloFil(int r, float y, const char *rot, int cr, int cg, i
   }
   if (est == 2) {   // EDITORIAL
     char up[96];
+    const char *title = i18n(rot); // txt_tracking bypasses txt_linha's translation.
     idioma_maiusc_em(ajustes_idioma(), up, sizeof up, i18n(tfKicker(f)));
     const float trk = 1.0f;
-    float tw = txt_tracking(TXT_ROW_TITULO, rot, cr, cg, cb, -1, 0, 1, trk);
+    float tw = txt_tracking(TXT_ROW_TITULO, title, cr, cg, cb, -1, 0, 1, trk);
     *tl = txt_linha_corta(TXT_ROW_TITULO, rot, cr, cg, cb, 255, maxW);
     if (tw > 0 && tw <= maxW) {
       const float ky = y - 12.0f, ty = y + 14.0f;
       txt_tracking(TXT_HERO_META, up, (int)(ar * 255), (int)(ag * 255), (int)(ab * 255),
                    x0, ky, 0.78f + 0.22f * k, 3.0f);
-      txt_tracking(TXT_ROW_TITULO, rot, cr, cg, cb, x0, ty, 1, trk);
+      txt_tracking(TXT_ROW_TITULO, title, cr, cg, cb, x0, ty, 1, trk);
       tl->w = (int)tw;
       return x0 + tw;
     }
@@ -7800,6 +7878,24 @@ static float desenhaTituloFil(int r, float y, const char *rot, int cr, int cg, i
     return bx + 54.0f;
   }
   return x0 + tl->w;
+}
+
+// Original catalogAddonNameEnabled: display provenance without changing titles,
+// stable row identities, header height, catalogue requests or remote focus.
+static float desenhaTituloAddonFil(int r, float y, const char *rot,
+                                  int cr, int cg, int cb, float k, float maxW,
+                                  int desenhar, TxtLinha *tl) {
+  const Fileira *f = &fileiras[r];
+  if (!desenhar || !ajustes_nome_addon() || !f->addonNome[0])
+    return desenhaTituloFil(r, y, rot, cr, cg, cb, k, maxW, desenhar, tl);
+  char label[96];
+  snprintf(label, sizeof label, i18n("Do addon %s"), f->addonNome);
+  TxtLinha source = txt_linha_corta(TXT_CW_META, label, 168, 173, 181, 255, maxW * .35f);
+  float end = desenhaTituloFil(r, y, rot, cr, cg, cb, k,
+                              maxW - source.w - 18.0f, desenhar, tl);
+  txt_desenhar_alpha(source, end + 18.0f, y + (tl->h - source.h) * .5f,
+                     .65f + .35f * k);
+  return end + 18.0f + source.w;
 }
 
 // Register cached horizontal slices before draw can admit new requests.
@@ -7996,7 +8092,7 @@ static void home_desenhar_(Uint32 agora) {
         const int mudo = tipo == FILEIRA_SOCIAL && ajustes_amigos_estilo() == 3 && !amigosfil_convite();
         const float og = gfx_opacidade_grupo;
         if (tipo == FILEIRA_HEROI_DIVIDIDO) gfx_opacidade_grupo = og * divididoRotuloAlfa(k);
-        fimTit = desenhaTituloFil(r, y, rotFil, cr, cg, cb, k, maxW, !mudo, &tl);
+        fimTit = desenhaTituloAddonFil(r, y, rotFil, cr, cg, cb, k, maxW, !mudo, &tl);
         gfx_opacidade_grupo = og; }
       // A FONTE (Trakt, Simkl...) NAO APARECE NA FILEIRA DE AMIGOS: a pessoa
       // quer saber quem viu e o que achou, nao de onde veio o dado. Ela fica
@@ -8341,7 +8437,7 @@ static void home_desenhar_(Uint32 agora) {
           float trailerCard = 0.0f;
           if (!focoHero && focus_indice(&foco, r, c) && cItem &&
               tipo != FILEIRA_CONTINUE && tipo != FILEIRA_RETORNO &&
-              tipo != FILEIRA_SOCIAL && tipo != FILEIRA_CATALOGOS &&
+              tipo != FILEIRA_SOCIAL && tipo != FILEIRA_CATALOGOS && tipo != FILEIRA_FAMILIA &&
               tipo != FILEIRA_HEROI) {
             int expande = ajustes_expandir_poster() && podeExpandir(r) &&
                           r == expFileira && c == expColuna;

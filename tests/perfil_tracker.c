@@ -8,6 +8,7 @@
 #define sessao_logada teste_sessao_logada
 #define sessao_usuario teste_sessao_usuario
 #define perfis_ativo teste_perfis_ativo
+#define metaprov_meta teste_metaprov_meta
 #include "../src/app.c"
 #include "stub_m3u.h"
 #include <assert.h>
@@ -28,6 +29,14 @@ int teste_trakt_perfil(PerfilDados *d) {
   snprintf(d->nome, sizeof d->nome, "Trakt");
   return tkOk;
 }
+static int metaChamadas;
+char *teste_metaprov_meta(const char *tipo, const char *id, int seg, int *prov) {
+  (void)tipo; (void)seg; if (prov) *prov = 0;
+  metaChamadas++;
+  char *c = malloc(256);
+  snprintf(c, 256, "{\"meta\":{\"name\":\"Titulo %s\",\"genres\":[\"Drama\"],\"runtime\":\"50 min\"}}", id);
+  return c;
+}
 int teste_simkl_perfil(PerfilDados *d) {
   skChamadas++;
   snprintf(d->nome, sizeof d->nome, "Simkl");
@@ -44,6 +53,34 @@ static void consultar(int tk, int sk, int okTk, int okSk, int antigo) {
   snprintf(p->conta, sizeof p->conta, "conta-teste");
   memset(&perfilPendente, 0, sizeof perfilPendente);
   perfilSucesso=0;
+  atomic_store(&perfilCarga, 1);
+  carregarPerfil(p);
+}
+
+// Pedido de Nuvio sync: o que pedirPerfil copia do fio principal, sem rede.
+static void consultarNuvio(int antigo) {
+  PerfilPedido *p = calloc(1, sizeof *p);
+  assert(p);
+  tkLigado = skLigado = 1; tkOk = skOk = 1;
+  tkChamadas = skChamadas = 0;
+  p->geracao = atomic_load(&perfilGeracao) - (unsigned)antigo;
+  p->perfil = 1;
+  snprintf(p->conta, sizeof p->conta, "conta-teste");
+  p->nuvio = 1;
+  p->agoraMs = 1794000000000LL;
+  snprintf(p->nome, sizeof p->nome, "Sam");
+  p->vistos = calloc(2, sizeof *p->vistos);
+  p->prog = calloc(1, sizeof *p->prog);
+  snprintf(p->vistos[0].id, sizeof p->vistos[0].id, "tt7000");
+  snprintf(p->vistos[0].tipo, sizeof p->vistos[0].tipo, "series");
+  p->vistos[0].temporada = 1; p->vistos[0].episodio = 1;
+  p->vistos[0].vistoMs = p->agoraMs - 3600000LL;
+  p->nVistos = 1;
+  p->nMetas = 1;
+  snprintf(p->metas[0].id, sizeof p->metas[0].id, "tt7000");
+  snprintf(p->tipos[0], sizeof p->tipos[0], "series");
+  memset(&perfilPendente, 0, sizeof perfilPendente);
+  perfilSucesso = 0;
   atomic_store(&perfilCarga, 1);
   carregarPerfil(p);
 }
@@ -70,6 +107,19 @@ int main(void) {
   perfilAtual=1; contaAtual="outra-conta";
   consultar(0, 1, 0, 1, 0);
   assert(!perfilSucesso && !perfilPendente.nome[0]);
+  perfilAtual=1; contaAtual="conta-teste";
+  consultarNuvio(0);
+  assert(!tkChamadas && !skChamadas && metaChamadas == 1);
+  assert(perfilSucesso && !strcmp(perfilPendente.nome, "Sam"));
+  assert(perfilPendente.cobertura & PF_COB_NUVIO);
+  assert(perfilPendente.episodios == 1 && perfilPendente.minutos == 50);
+  assert(perfilPendente.nTopo == 1 && !strcmp(perfilPendente.obras[0].titulo, "Titulo tt7000"));
+  consultarNuvio(0);
+  assert(metaChamadas == 1);          // segunda carga sai do cache
+  assert(perfilSucesso && perfilPendente.minutos == 50);
+  consultarNuvio(1);
+  assert(!perfilSucesso && !perfilPendente.nome[0]);
+  puts("PASS: perfil_tracker (Nuvio sync primeiro; meta em cache; resposta obsoleta)");
   puts("PASS: perfil_tracker (prioridade, fallback, falhas e resposta obsoleta)");
   return 0;
 }

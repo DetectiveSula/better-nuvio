@@ -1,0 +1,7 @@
+{
+  "src/perfis.c": {
+    "before": "e2d53a24f3c63efd2e516b48f36147660acf2ae3f9ef556a12583aca32aff148",
+    "after": "a5028f4b9e5f1d1e53a9db0d60fdddb0c189688324bc6619bf8479568ca3900b",
+    "reason": "Stage G home scope follows the account primary-addon inheritance flag. While a valid profile row projection is active, its actual addon scope wins the device override; the stored Native override remains for fallback. No login/profile storage/progress/RPC format changed. Real helper exercised by home_rows_stage_g.sh."
+  }
+}

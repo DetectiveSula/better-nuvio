@@ -34,7 +34,10 @@ typedef enum {
   // 16/10: o painel deitado do foco a esquerda (arte, logo e ficha) e a fila
   // de cartazes a direita; o painel segue o foco da fileira.
   FILEIRA_HEROI_DIVIDIDO,
-  FILEIRA_POSTER       // Explicit portrait row style, independent of global landscape.
+  FILEIRA_POSTER,      // Explicit portrait row style, independent of global landscape.
+  // Stage H: Family Watching (familia.h), the "social_activity" slot. A plain
+  // landscape details row; the card overlay is familia_ui.c.
+  FILEIRA_FAMILIA
 } TipoFileira;
 
 // O item sob o foco, com o retangulo que ele ocupa na tela NESTE quadro. A

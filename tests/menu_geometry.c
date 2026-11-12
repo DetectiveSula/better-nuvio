@@ -4,8 +4,11 @@
 #include <stdio.h>
 
 static int layoutTeste = HOME_LAYOUT_MODERNA;
+int gfx_vidro_camada;
 float gfx_tex_aspect_atual;
 float gfx_card_forcar_cover_atual;
+int ajustes_menu_ocultar_pilula(void){return 0;}
+int ajustes_rail_moderna(void){return 1;}
 int ajustes_home_layout(void) { return layoutTeste; }
 int ajustes_menu_explorar(void) { return 1; }
 int ajustes_menu_guia(void) { return 1; }
@@ -15,6 +18,8 @@ int ajustes_rail_recolhida(void) { return 0; }
 int ajustes_menu_topo(void) { return 0; }
 static float escalaTeste = 1.0f;
 float gfx_escala_ui(void) { return escalaTeste; }
+float gfx_escala_ui_base(void) { return escalaTeste; }
+float gfx_escala_txt(void) { return 1.0f; }
 static float relogioW;
 float ilha_relogio_largura(void) { return relogioW; }
 

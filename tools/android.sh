@@ -29,6 +29,13 @@ fi
 RELEASE_ONLY=0
 DEBUG_ONLY=0
 case "${1:-}" in "") ;; --release-only) RELEASE_ONLY=1;; --debug-only) DEBUG_ONLY=1;; *) echo "opcao desconhecida: $1" >&2; exit 2;; esac
+# Explicit opt-in, debug-only account transport validation artifact.
+if [ "${NUVIO_VALIDATION_READONLY:-0}" = 1 ] && [ "$DEBUG_ONLY" != 1 ]; then
+  echo "Read-only validation requires --debug-only" >&2; exit 2
+fi
+if [ "${NUVIO_VALIDATION_LOGIN:-0}" = 1 ] && { [ "$DEBUG_ONLY" != 1 ] || [ "${NUVIO_VALIDATION_READONLY:-0}" != 1 ]; }; then
+  echo "Validation login requires read-only --debug-only" >&2; exit 2
+fi
 CACHE="${NUVIO_ANDROID_CACHE:-$HOME/.cache/nuvio-android}"
 EST="$RAIZ/build/android"
 
@@ -124,6 +131,7 @@ fi
 [ "$DEBUG_ONLY" = 0 ] && [ -n "${NUVIO_KEYSTORE:-}" ] && TAREFAS+=(assembleRelease)
 [ "${#TAREFAS[@]}" -gt 0 ] || { echo "android.sh: release-only exige chave" >&2; exit 1; }
 [ -z "${NUVIO_BUILD_JOBS:-}" ] || GR+=(--max-workers="$NUVIO_BUILD_JOBS")
+GR+=(-Pnuvio.validationReadonly="${NUVIO_VALIDATION_READONLY:-0}" -Pnuvio.validationLogin="${NUVIO_VALIDATION_LOGIN:-0}")
 GR_FULL=("${GR[@]}")
 [ -z "$NV_P2P_DIR" ] || GR_FULL+=(-Pnuvio.p2pMotor="$NV_P2P_DIR")
 "${GR_FULL[@]}" "${TAREFAS[@]}"

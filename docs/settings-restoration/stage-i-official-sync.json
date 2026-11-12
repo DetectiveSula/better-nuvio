@@ -1,0 +1,139 @@
+{
+  "official_commit": "99fbd65d8c16928d1fe11bf3f9812c4b5aaaca8f",
+  "source": "app/src/main/java/com/nuvio/tv/core/sync/ProfileSettingsSyncService.kt",
+  "scope": "selected profile; p_platform tv",
+  "features": [
+    "theme_settings",
+    "layout_settings",
+    "experience_settings",
+    "player_settings",
+    "stream_badge_settings",
+    "plugin_settings",
+    "trailer_settings",
+    "tmdb_settings",
+    "mdblist_settings",
+    "trakt_settings",
+    "debrid_settings",
+    "animeskip_settings",
+    "track_preference"
+  ],
+  "export_rule": "Every stored preference in these features except the exclusions below; export only stored values, not inferred defaults. Plugin feature exports only group_streams_by_repository.",
+  "exclusion_sets": {
+    "catalogKeysExcludedFromProfileSettingsBlob": [
+      "home_catalog_order_keys",
+      "disabled_home_catalog_keys",
+      "custom_catalog_titles"
+    ],
+    "localOnlyLayoutProfileSettingsKeys": [
+      "last_non_off_discover_location"
+    ],
+    "localOnlyPlayerProfileSettingsKeys": [
+      "player_preference",
+      "internal_player_engine",
+      "auto_switch_internal_player_on_error",
+      "use_libass",
+      "libass_render_type",
+      "decoder_priority",
+      "downmix_enabled",
+      "audio_output_channels",
+      "maintain_original_audio_on_downmix",
+      "downmix_lfe_level",
+      "downmix_normalization_enabled",
+      "tunneling_enabled",
+      "force_optical_passthrough",
+      "audio_amplification_db",
+      "center_mix_level_db",
+      "night_mode",
+      "persist_audio_amplification",
+      "remember_audio_delay_per_device",
+      "experimental_dv5_to_dv81_enabled",
+      "experimental_dv7_to_dv81_preserve_mapping_enabled",
+      "dv7_handling_mode",
+      "map_dv7_to_hevc",
+      "dv7_libdovi_mode_override",
+      "strip_hdr10plus_sei",
+      "exo_chapters_enabled",
+      "mpv_hardware_decode_mode",
+      "frame_rate_matching",
+      "frame_rate_matching_mode",
+      "resolution_matching_enabled",
+      "external_player_forward_subtitles",
+      "external_player_send_skip_segments",
+      "vod_cache_enabled",
+      "vod_cache_size_mode",
+      "vod_cache_size_mb",
+      "use_parallel_connections",
+      "buffer_engine_enabled",
+      "parallel_network_enabled",
+      "allow_large_target_buffer",
+      "buffer_budget_managed",
+      "parallel_connection_count",
+      "parallel_chunk_size_mb",
+      "parallel_chunk_size_kb",
+      "enable_http2",
+      "last_playback_diagnostics_json",
+      "enable_buffer_logs",
+      "resize_mode",
+      "min_buffer_ms",
+      "max_buffer_ms",
+      "buffer_for_playback_ms",
+      "buffer_for_playback_after_rebuffer_ms",
+      "target_buffer_size_mb",
+      "back_buffer_duration_ms",
+      "retain_back_buffer_from_keyframe",
+      "migration_load_control_defaults_aligned_done",
+      "migration_load_control_defaults_retuned_done",
+      "migration_load_control_min_buffer_retuned_done",
+      "migration_vod_cache_split_done",
+      "migration_back_buffer_duration_bumped_done",
+      "migration_max_buffer_bumped_done",
+      "migration_target_buffer_size_bumped_done",
+      "migration_after_rebuffer_lowered_done",
+      "migration_back_buffer_duration_reduced_done",
+      "migration_target_buffer_size_reduced_done",
+      "migration_allow_large_target_buffer_off_done",
+      "migration_buffer_budget_managed_exo_done",
+      "migration_vod_cache_back_buffer_zeroed_done",
+      "nuvio_performance_mode_enabled"
+    ],
+    "localOnlyTrailerProfileSettingsKeys": [
+      "trailer_allow_4k"
+    ]
+  },
+  "additional_layout_exclusion": [
+    "search_discover_enabled"
+  ],
+  "separate_credential_protocol_exclusions": {
+    "debrid_settings": [
+      "torbox_api_key",
+      "premiumize_api_key",
+      "real_debrid_api_key"
+    ],
+    "mdblist_settings": [
+      "mdblist_api_key"
+    ],
+    "animeskip_settings": [
+      "animeskip_client_id"
+    ]
+  },
+  "profile_factory": "app/src/main/java/com/nuvio/tv/data/local/ProfileDataStoreFactory.kt",
+  "standalone_device_stores": [
+    "app_onboarding",
+    "auth_session_notice_store",
+    "debug_settings",
+    "device_local_player_prefs",
+    "profile_lock_state",
+    "profile_settings",
+    "sentry_settings",
+    "torrent_settings",
+    "tv_channel_prefs"
+  ],
+  "plugin_inheritance": "When usesPrimaryPlugins is true on a secondary profile, original pulls primary profile plugin grouping into its primary plugin store. Not a new account-wide preference blob.",
+  "push_parameters": [
+    "p_profile_id",
+    "p_platform",
+    "p_settings_json",
+    "p_origin_client_id"
+  ],
+  "origin_identity_source": "core/sync/SyncClientIdentity.kt; Native reuses existing dados_cliente_id() / cliente.txt"
+}

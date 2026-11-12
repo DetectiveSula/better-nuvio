@@ -19,5 +19,6 @@ cc src/catalogo.c src/cwordem.c tests/posteraddon.c src/cotacat.c \
   src/js.c src/metaprov.c src/colecoes.c src/redeurl.c src/catordem.c src/artefontes.c \
   -Isrc -Itests -I/opt/homebrew/include -I/opt/homebrew/include/SDL2 \
   -o ${TMPDIR:-/tmp}/nuvio-posteraddon-tests -O1 -g \
+  -ffunction-sections -fdata-sections -Wl,-dead_strip \
   -Wall -Wno-deprecated-declarations -Wno-macro-redefined
 ${TMPDIR:-/tmp}/nuvio-posteraddon-tests

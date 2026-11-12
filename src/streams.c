@@ -1384,6 +1384,56 @@ static long pontosDoAlvo(const Stream *s, const char *alvo) {
 }
 static long pontos(const Stream *s) { return pontosDoAlvo(s, NULL); }
 
+static int streamUserConfigured(const FonteFiltroConfig *c) {
+  if(c->maxResultados||c->porResolucao||c->porQualidade||c->ordenar)return 1;
+  for(int k=0;k<FONTEFILTRO_N;k++)if(c->preferir[k])return 1;
+  return 0;
+}
+/* All candidate vectors travel together: First in list must follow the same
+ * custom ordering as the sheet without changing stable source indices. */
+static void streamUserRestrict(const Stream *src,int *order,unsigned char *excluded,
+    long *points,int total,const FonteFiltroConfig *cfg,unsigned char *above,
+    signed char *groups,int *ranks,int *preferred) {
+  if(!streamUserConfigured(cfg)||total<=0)return;
+  FonteFiltroDados *data=calloc((size_t)total,sizeof *data);
+  int *selected=malloc((size_t)total*sizeof *selected);
+  unsigned char *eligible=calloc((size_t)total,1),*keep=calloc((size_t)total,1);
+  if(!data||!selected||!eligible||!keep)goto done;
+  for(int q=0;q<total;q++){
+    int i=order?order[q]:q;
+    stream_filtro_dados(&src[i],&data[q]);
+    eligible[q]=!excluded[q]&&!cacheOcultarConfirmada(&src[i]);
+  }
+  int count=fontefiltro_selecionar(cfg,data,total,eligible,selected);
+  for(int q=0;q<count;q++)keep[selected[q]]=1;
+  for(int q=0;q<total;q++){
+    if(!keep[q])excluded[q]=1;
+    /* Soft preference never replaces decoder/provider/cache eligibility. */
+    if(points&&!excluded[q])points[q]+=1000L*fontefiltro_pontuacao(cfg,&data[q]);
+  }
+  if(order&&ajustes_fonte_primeira()){
+    typedef struct {int source,rank;long points;unsigned char above,excluded;signed char group;} Row;
+    Row *rows=malloc((size_t)total*sizeof *rows);
+    if(rows){
+      for(int q=0;q<total;q++)rows[q]=(Row){order[q],ranks?ranks[q]:0,points?points[q]:0,
+          above?above[q]:0,excluded[q],groups?groups[q]:0};
+      int used=count,oldPreferred=preferred?*preferred:-1;
+      for(int q=0;q<total;q++)if(!keep[q])selected[used++]=q;
+      for(int q=0;q<total;q++){
+        int old=selected[q];order[q]=rows[old].source;excluded[q]=rows[old].excluded;
+        if(points)points[q]=rows[old].points;if(above)above[q]=rows[old].above;
+        if(groups)groups[q]=rows[old].group;if(ranks)ranks[q]=rows[old].rank;
+        if(preferred&&old==oldPreferred)*preferred=q;
+      }
+      free(rows);
+    }
+  }
+ done:
+  free(data);free(selected);free(eligible);free(keep);
+}
+
+
+
 long stream_pontos(const Stream *s) { return s ? pontos(s) : 0; }
 
 // LG, AUTO-PLAY: MP4 PRIMEIRO NA MESMA FAIXA DE RESOLUCAO (pedido do dono,
@@ -2207,6 +2257,7 @@ static int falhaCandidatas(unsigned geracao, int escolhida, int primeira, FonteF
     rk[q] = fonteregra_ordem_rank(s->provedor);
     if (!excl[q]) livres++;
   }
+  { FonteFiltroConfig user;fontefalha_filtro(&user);streamUserRestrict(lista,ordem,excl,pts,total,&user,acima,grp,rk,&pref); }
   if (lgMp4Primeiro()) mp4PrimeiroNaFaixa(ordem, pts, grp, excl, total);
   nf = fonteauto_fila_o(ajustes_fonte_primeira() ? FONTEAUTO_PRIMEIRA : FONTEAUTO_MELHOR,
                        total, pref, pts, acima, excl, grp, rk,
@@ -2526,6 +2577,7 @@ StreamPreparo *stream_preparo_criar_alvo(const Stream *fontes, int total, int pr
     grupo[q] = grupoDaFonte(&escopo, s); rank[q] = fonteregra_ordem_rank(s->provedor);
     if (i == preferidaNext && fonteregra_no_escopo(&escopo, ehPlugin(s))) pref = q;
   }
+  streamUserRestrict(fontes,ordem,excl,pts,total,&p->filtro,acima,grupo,rank,&pref);
   if (lgMp4Primeiro()) mp4PrimeiroNasFontes(fontes, alvo ? alvo : "", ordem, pts, grupo, excl, total);
   int nc = fonteauto_fila_o(ajustes_fonte_primeira() ? FONTEAUTO_PRIMEIRA : FONTEAUTO_MELHOR,
             total, pref, pts, acima, excl, grupo, rank, ajustes_fonte_ordem_uso(), total, fila);
@@ -2729,7 +2781,8 @@ int stream_primeira_boa_sessao(int tentativas, uint64_t sessao) {
       if (!excl[q]) livres++;
     }
     // LG: o MP4 da mesma faixa na frente, a mesma regra do automatico.
-    if (lgMp4Primeiro()) mp4PrimeiroNaFaixa(ordem, pts, grp, excl, total);
+    { FonteFiltroConfig user;fontefalha_filtro(&user);streamUserRestrict(lista,ordem,excl,pts,total,&user,acima,grp,rk,&posPref); }
+  if (lgMp4Primeiro()) mp4PrimeiroNaFaixa(ordem, pts, grp, excl, total);
     pthread_mutex_unlock(&verTrava);
     nf = fonteauto_fila_o(modo, total, posPref, pts, acima, excl, grp, rk, ordemUso, tentativas, fila);
     for (q = 0; q < nf; q++) fila[q] = ordem[fila[q]];
@@ -3343,6 +3396,7 @@ static int automaticoPrimeira(void) {
       grp[q] = (signed char)grupoDe(i);
       rk[q] = fonteregra_ordem_rank(lista[i].provedor);
     }
+    { FonteFiltroConfig user;fontefalha_filtro(&user);streamUserRestrict(lista,ordem,excl,pts,total,&user,acima,grp,rk,NULL); }
     nf = fonteauto_fila_o(FONTEAUTO_PRIMEIRA, total, -1, pts, acima, excl, grp, rk,
                           ajustes_fonte_ordem_uso(), 1, fila);
     if (nf > 0) r = ordem[fila[0]];
@@ -3445,6 +3499,7 @@ static int chipsOk(int i) {
 }
 static int passaChips(int i) {
   if (!canalFolha && !stream_filtro_permite(&lista[i])) return 0;
+  if (!canalFolha && cacheOcultarConfirmada(&lista[i])) return 0;
   return chipsOk(i);
 }
 // QUANTAS FONTES OS FILTROS RAPIDOS ESCONDEM na aba em vista, e quais. Sem isso
@@ -4330,6 +4385,19 @@ static void montarBase(int automatica) {
     alturaTotal = y;
     return;
   }
+  FonteFiltroConfig user;fontefalha_filtro(&user);
+  if(!canalFolha&&streamUserConfigured(&user)) {
+    FonteFiltroDados *data=calloc((size_t)n,sizeof *data);int *selected=malloc((size_t)n*sizeof *selected);
+    unsigned char *eligible=calloc((size_t)n,1);
+    if(data&&selected&&eligible) {
+      for(int q=0;q<n;q++){int i=ORD(q);stream_filtro_dados(&lista[i],&data[q]);eligible[q]=(unsigned char)passaFiltro(i);}
+      int count=fontefiltro_selecionar(&user,data,n,eligible,selected);
+      memset(secN,0,sizeof secN);nOrdem=0;fitAtualizar();
+      for(int q=0;q<count;q++)porLinha(ORD(selected[q]),&y,automatica);
+      alturaTotal=y+medirDicaTorrents();free(data);free(selected);free(eligible);return;
+    }
+    free(data);free(selected);free(eligible);
+  }
   // #400/#402: ordem do addon, com negativas de cache conhecidas no fim.
   // Rebuilt only when the source data or settings change.
   if (ordemDoAddon() || ajustes_fonte_ordem_addon()) {
@@ -4409,6 +4477,9 @@ static void folhaDados(void) {
   static int busy, valid;
   static struct FolhaChave {
     unsigned revisao, regras, mortas, abas;
+    unsigned cacheGeracao;
+    uint64_t cacheSessao;
+    int resolverAtivo, resolverProvedor;
     int valores[29];
     char audio[96], qualidade[32];
     FonteFalhaConfig falhas;
@@ -4417,6 +4488,10 @@ static void folhaDados(void) {
   if (busy) return;
   struct FolhaChave key = {0};
   key.revisao = atomic_load(&folhaRevisao);
+  key.cacheGeracao = debrid_cache_geracao();
+  key.cacheSessao = nv_perfil_sessao_ler();
+  key.resolverAtivo = ajustes_resolver_ativo();
+  key.resolverProvedor = ajustes_resolver_provedor();
   key.regras = fonteregra_versao();
   key.mortas = fontesmortas_versao();
   // Addon/plugin que terminou sem fontes ou falhou nao publica Chegada:
@@ -4446,8 +4521,22 @@ static void folhaDados(void) {
       folhaContagens[0]++;
       for (int p = 1; p < nProvedores; p++)
         if (doProvedor(&lista[i], p)) { folhaContagens[p]++; break; }
-    } else if ((canalFolha || stream_filtro_permite(&lista[i])) && !chipsOk(i) &&
+    } else if ((canalFolha || (stream_filtro_permite(&lista[i]) && !cacheOcultarConfirmada(&lista[i]))) && !chipsOk(i) &&
         (filtro <= 0 || filtro >= nProvedores || doProvedor(&lista[i], filtro))) folhaOcultos++;
+  }
+  /* Counts use the same batch policy as the rendered list, including quotas. */
+  if(!canalFolha && streamUserConfigured(&key.falhas.filtro) && n>0){
+    FonteFiltroDados *data=calloc((size_t)n,sizeof *data);
+    int *selected=malloc((size_t)n*sizeof *selected);
+    unsigned char *eligible=calloc((size_t)n,1);
+    if(data&&selected&&eligible){
+      for(int q=0;q<n;q++)stream_filtro_dados(&lista[ORD(q)],&data[q]);
+      for(int p=0;p<nProvedores;p++){
+        for(int q=0;q<n;q++){int i=ORD(q);eligible[q]=passaChips(i)&&(!p||doProvedor(&lista[i],p));}
+        folhaContagens[p]=fontefiltro_selecionar(&key.falhas.filtro,data,n,eligible,selected);
+      }
+    }
+    free(data);free(selected);free(eligible);
   }
   folhaBloqueada = stream_filtro_bloqueou();
   folhaVisiveis = filtrosVisiveisCalcular();

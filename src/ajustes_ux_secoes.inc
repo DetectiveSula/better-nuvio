@@ -182,6 +182,7 @@ static int ajCenaSecao(int op) {
     case AJ_FIL_ORDEM: case AJ_FIL_LIMITE: case AJ_ITENS_FILEIRA: case AJ_ESPACO_FILEIRAS: case AJ_ESPACO_TITULOS: case AJ_OCULTAR_NLANC: case AJ_NOTAS_HOME:
     case AJ_ROTULOS: case AJ_NOME_ADDON: case AJ_SUFIXO_TIPO: case AJ_SELO_VISTO: case AJ_ABAS_ESTILO:
     case AJ_OCULTAR_FILMES_VISTOS: case AJ_BIB_HOME: case AJ_AMIGOS_ESTILO:
+    case AJ_FAMILIA: case AJ_FAMILIA_PARTILHAR:
       return AJC_HOME_FILEIRAS;
     case AJ_TITULO_FIL: case AJ_PALCO_FUNDO:
       return AJC_APA_FILEIRAS;
@@ -196,7 +197,7 @@ static int ajCenaSecao(int op) {
     case AJ_MDB_TOMATES: case AJ_MDB_AUDIENCIA: case AJ_MDB_META: case AJ_MDB_MAL:
     case AJ_MDB_CHAVE:   // a chave abre o bloco Notas: e ela que libera as notas do MDBList
       return AJC_TIT_NOTAS;
-    case AJ_TMDB_LIGADO: case AJ_TMDB_ARTE: case AJ_TMDB_BASICO: case AJ_TMDB_FICHA: case AJ_TMDB_DATAS:
+    case AJ_TMDB_CHAVE_LOCAL: case AJ_TMDB_LIGADO: case AJ_TMDB_ARTE: case AJ_TMDB_BASICO: case AJ_TMDB_FICHA: case AJ_TMDB_DATAS:
     case AJ_TMDB_ELENCO: case AJ_TMDB_PROD: case AJ_TMDB_REDES: case AJ_TMDB_EPS: case AJ_TMDB_TRAILERS:
     case AJ_TMDB_MAIS: case AJ_TMDB_COL: case AJ_TMDB_CW: case AJ_DET_META_EXT: case AJ_DET_SO_CINEMETA:
       return AJC_TIT_DADOS;
@@ -648,7 +649,7 @@ static void ajcCarForma(int A) {
   ajcFoco(AJ_PROF_BRILHO, 48, 36, 180, 120, 16);
   for (i = 0; i < 5; i++) {
     float bx = 268 + (i % 2) * 174, by = 36 + (i / 2) * 98, cw = i == 0 ? 56 : i == 3 ? 72 : 150, ch = i == 0 ? 84 : 72;
-    float al = prof ? 1.0f : 0.45f;
+    float al = prof && ajcLig(OP[i]) ? 1.0f : 0.45f;
     GfxRect r;
     if (i == 3) { snprintf(c, sizeof c, "%s", ajcElenco(A, 0)); r = CR(bx + 39, by + 6, 72, 72); ajImg(c, r, 36 * ajc.s, 1); }
     else if (i == 2) { snprintf(c, sizeof c, "%s", ajcEp(A, 1)); r = CR(bx, by + 6, cw, ch); ajImg(c, r, 10 * ajc.s, 1); }

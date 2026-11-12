@@ -2,6 +2,8 @@
 // Frost must preserve broad contrast while removing the sharp stripe edges.
 #ifndef MENU_FROST_PROBE_H
 #define MENU_FROST_PROBE_H
+#include "menu.h"
+#include <math.h>
 static void menu_probe_draw(void) {
   static GLuint tex;
   if (!getenv("NUVIO_SHOT_MENU_PROBE")) return;
@@ -24,14 +26,17 @@ static void menu_probe_draw(void) {
 static void menu_probe_check(const unsigned char *pix) {
   double edge = 0, top = 0, bottom = 0;
   int n = 0;
-  for (int y = 175; y < 780; y++) for (int x = 330; x < 410; x++) {
+  int right=(int)floorf(menu_barra_borda())-24;
+  if(right<100)right=386;
+  int left=right-20;
+  for (int y = 250; y < 750; y++) for (int x = left; x < right; x++) {
     const unsigned char *a = pix + ((1079-y)*1920+x)*4, *b = a+4;
     edge += abs((a[0]+a[1]+a[2])-(b[0]+b[1]+b[2])) / 3 > 6;
     n++;
     if (y >= 250 && y < 350) top += (a[0]+a[1]+a[2])/3.0;
     if (y >= 650 && y < 750) bottom += (a[0]+a[1]+a[2])/3.0;
   }
-  edge /= n; top /= 8000; bottom /= 8000;
+  edge /= n; top /= 2000; bottom /= 2000;
   printf("menu-frost edge=%.5f response=%.2f\n", edge, fabs(bottom-top));
   if (edge > .003 || (getenv("NUVIO_SHOT_MENU_PROBE") && fabs(bottom-top) < 5)) {
     printf("FAIL menu-frost: sharp edges or opaque backing\n"); exit(1);

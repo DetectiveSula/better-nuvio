@@ -245,6 +245,9 @@ int rede_pedir(const RedePedido *p, RedeResposta *r) {
   c.p = p; c.r = r;
   if (!p) { r->erro = REDE_ENTRADA; return 0; }
   metodo = p->metodo ? p->metodo : "GET";
+  if (!nv_validation_http_request(metodo, p->url, p->corpo, p->n_corpo)) {
+    r->status = NV_VALIDATION_DENIED_STATUS; r->erro = REDE_INDISPONIVEL; return 0;
+  }
   c.head = !strcmp(metodo, "HEAD");
   c.tetoCorpo = p->max_bytes ? p->max_bytes : REDE_CORPO_PADRAO;
   c.tetoCab = p->max_cabecalhos ? p->max_cabecalhos : REDE_CAB_PADRAO;

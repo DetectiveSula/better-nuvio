@@ -182,6 +182,17 @@ static void zerar(void) {
 }
 
 // ---------------------------------------------------------------- casos
+static struct { char id[24]; int t, e; } marcados[8];
+static int marcadosN;
+static int coletaMarcado(const char *id, int t, int e, long long ms, void *u) {
+  (void)ms; (void)u;
+  if (marcadosN < 8) {
+    snprintf(marcados[marcadosN].id, sizeof marcados[0].id, "%s", id);
+    marcados[marcadosN].t = t; marcados[marcadosN].e = e; marcadosN++;
+  }
+  return 1;
+}
+
 int main(int argc, char **argv) {
   if (argc > 1) {
     VistoPar pair = {1, 1};
@@ -427,6 +438,29 @@ int main(int argc, char **argv) {
   perfil = 1;
   assert(contapend_lista_oculta("tt5555555", agora + 1) == 0);
   OK("confirmed library tombstone survives stale sync and reload; newer save wins");
+
+  // Stage E: each watched gesture bumps the revision the Home watches, and the
+  // episode-level WATCHED intents are reported for the next-up seeds.
+  zerar();
+  { unsigned r0 = contapend_revisao_gestos();
+    VistoPar par = { 6, 5 };
+    marcadosN = 0;
+    assert(contapend_gesto("tt7777777", "series", &par, 1, 1, VISTO_CONTA, NULL, 0) > 0);
+    assert(contapend_revisao_gestos() != r0);
+    assert(contapend_vistos_marcados(coletaMarcado, NULL) == 1 && marcadosN == 1 &&
+           !strcmp(marcados[0].id, "tt7777777") && marcados[0].t == 6 && marcados[0].e == 5);
+    r0 = contapend_revisao_gestos();
+    assert(contapend_gesto("tt7777777", "series", &par, 1, 0, VISTO_CONTA, NULL, 0) > 0);
+    assert(contapend_revisao_gestos() != r0);             /* unmark refreshes too */
+    marcadosN = 0;
+    assert(contapend_vistos_marcados(coletaMarcado, NULL) == 0 && marcadosN == 0);
+    r0 = contapend_revisao_gestos();
+    assert(contapend_titulo("tt8888888", "movie", 1) == 1 && contapend_revisao_gestos() != r0);
+    r0 = contapend_revisao_gestos();
+    logada = 0;
+    assert(contapend_titulo("tt8888889", "movie", 1) == 0 && contapend_revisao_gestos() == r0);
+    logada = 1; }
+  OK("Stage E: watched gestures bump the Home revision; watched intents enumerated");
 
   // 9. Sem conta, nada entra.
   zerar();

@@ -65,5 +65,22 @@ int main(void) {
     assert(n == 0 && s[0] == 0); }
   puts("ok  contagem por caractere e apagar tira um caractere inteiro");
   puts("buscanorm: tudo ok");
+  // RELEVANCE: "rocky" puts the Rocky films first, Creed last.
+  { static const struct { const char *t; int r; } c[] = {
+      { "rocky", 0 }, { "rocky ii", 1 }, { "rocky balboa", 1 }, { "rocky iv", 1 },
+      { "rockyfeller", 3 }, { "the rocky horror picture show", 2 },
+      { "a rocky road", 2 }, { "rocky's way", 1 }, { "meet rocky", 4 },
+      { "barockyard", 5 }, { "creed", 6 }, { "", 6 } };
+    for (size_t i = 0; i < sizeof c / sizeof *c; i++)
+      if (busca_relevancia(c[i].t, "rocky") != c[i].r) {
+        printf("FALHOU relevancia \"%s\": %d (esperado %d)\n", c[i].t, busca_relevancia(c[i].t, "rocky"), c[i].r);
+        assert(0);
+      }
+    assert(busca_relevancia("the matrix", "matrix") == 0);       /* leading article */
+    assert(busca_relevancia("the matrix reloaded", "the matrix") == 1);
+    assert(busca_relevancia("rocky", " rocky ") == 0);           /* stray spaces */
+    assert(busca_relevancia("rocky", "") == 6 && busca_relevancia(NULL, "x") == 6);
+    assert(busca_relevancia("star wars", "star w") == 3);        /* typing mid-word */
+    puts("ok  relevancia: exato, comeca com, palavra, contem, fora"); }
   return 0;
 }

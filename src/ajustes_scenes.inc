@@ -3,9 +3,17 @@ enum { AJS_REPRODUCAO, AJS_IDIOMAS, AJS_FONTES, AJS_TVAOVIVO, AJS_HOME, AJS_APAR
 static const int ajCategoryScene[] = { AJS_CONTAS, AJS_CONTAS, AJS_APARENCIA, AJS_HOME, AJS_FONTES, AJS_REPRODUCAO, AJS_TITULO, AJS_CONTAS, AJS_CONTAS, AJS_DESEMPENHO, AJS_SOBRE };
 static int ajSceneForCategory(int category) { return category >= 0 && category < (int)(sizeof ajCategoryScene / sizeof *ajCategoryScene) ? ajCategoryScene[category] : AJS_CONTAS; }
 static int ajSceneForOption(int op) {
+if(op==AJ_TMDB_CHAVE_LOCAL)return AJS_TITULO;
+if(op==AJ_FAMILIA||op==AJ_FAMILIA_PARTILHAR)return AJS_HOME;
 if(op==AJ_TB_CACHED_ADD)return AJS_FONTES;
 if(op>=AJ_RESOLVE_LINKS&&op<=AJ_RESOLVE_LIMIT)return AJS_FONTES;
 switch (op) {
+case AJ_MENU_OCULTAR_PILULA: return AJS_HOME;
+case AJ_POSPLAY_TRAILER: case AJ_POSPLAY_TRAILER_ESPERA: case AJ_DET_TRAILER_ESPERA: return AJS_TITULO;
+case AJ_POSPLAY_RECOM: case AJ_POSPLAY_PERCENT: case AJ_AINDA_EPISODIOS: return AJS_REPRODUCAO;
+case AJ_LEG_AUTO_COMPLETA: return AJS_IDIOMAS;
+case AJ_FILTRO_MIN_GB: case AJ_FILTRO_MAX_RESULT: case AJ_FILTRO_POR_RES:
+case AJ_FILTRO_POR_QUAL: case AJ_FILTRO_SORT: case AJ_FILTRO_REQUIRED_GROUPS: return AJS_FONTES;
 case AJ_QUALIDADE: return AJS_REPRODUCAO;
 case AJ_FONTE_HDR: return AJS_REPRODUCAO;
 case AJ_DV: return AJS_REPRODUCAO;
@@ -438,9 +446,17 @@ case AJ_BAIXAR_REGISTRO: return AJS_SOBRE;
 #endif
 default: return AJS_CONTAS; } }
 static int ajArtBlockForOption(int op) {
+if(op==AJ_TMDB_CHAVE_LOCAL)return 3;
+if(op==AJ_FAMILIA||op==AJ_FAMILIA_PARTILHAR)return 1;
 if(op==AJ_TB_CACHED_ADD)return 0;
 if(op>=AJ_RESOLVE_LINKS&&op<=AJ_RESOLVE_LIMIT)return 0;
 switch (op) {
+case AJ_MENU_OCULTAR_PILULA: return 4;
+case AJ_POSPLAY_TRAILER: case AJ_POSPLAY_TRAILER_ESPERA: case AJ_DET_TRAILER_ESPERA: return 3;
+case AJ_POSPLAY_RECOM: case AJ_POSPLAY_PERCENT: case AJ_AINDA_EPISODIOS: return 2;
+case AJ_LEG_AUTO_COMPLETA: return 0;
+case AJ_FILTRO_MIN_GB: case AJ_FILTRO_MAX_RESULT: case AJ_FILTRO_POR_RES:
+case AJ_FILTRO_POR_QUAL: case AJ_FILTRO_SORT: case AJ_FILTRO_REQUIRED_GROUPS: return 1;
 case AJ_QUALIDADE: return 0;
 case AJ_FONTE_HDR: return 0;
 case AJ_DV: return 0;

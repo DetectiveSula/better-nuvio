@@ -182,6 +182,15 @@ typedef struct {
 #define CONTALIB_VISTOS_VALIDADE_S (24 * 3600)
 // Devolve -1 quando os vistos nao foram puxados ou estao velhos.
 int contalib_sementes_a_seguir(ContaSemente *saida, int max, int doMaisAlto);
+// Stage E: this TV's watched intents join the seeds (contapend_vistos_marcados).
+void contalib_gestos_locais(int (*f)(int (*cb)(const char *id, int t, int e, long long ms, void *u),
+                                     void *u));
+// The merge, pure, for tests: snapshot rows minus those `oculto` (unmarked here
+// later), plus `locais` watched intents (latest time wins). Returns the count.
+int contalib_vistos_com_locais(const ContaVisto *v, int n, ContaVisto *saida, int cap,
+                               int (*oculto)(const char *id, int t, int e, long long ms),
+                               int (*locais)(int (*cb)(const char *, int, int, long long, void *),
+                                             void *u));
 // Sobe quando contalib_ler_vistos trouxe vistos DIFERENTES dos guardados. O
 // sync refaz o "Continuar assistindo" so entao: o "a seguir" da conta depende
 // deles, e os vistos costumam chegar depois da primeira montagem da fileira.

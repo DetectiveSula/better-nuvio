@@ -100,6 +100,11 @@ int  contapend_aplicar_local(void);
 void contapend_podar(long long desdeMs);
 
 // ---- estado -------------------------------------------------------------------
+// Stage E ("Continue Watching" refresh): bumped by each watched/unwatched
+// gesture on this TV; and this profile's episode-level "watched" intents.
+unsigned contapend_revisao_gestos(void);
+int contapend_vistos_marcados(int (*cb)(const char *id, int t, int e, long long ms, void *u),
+                              void *u);
 int  contapend_pendentes(void);      // nao confirmadas, todos os perfis
 void contapend_esquecer(void);       // logout: larga a memoria, arquivo fica
 // Teste: relogio em ms e o "fio" (0 = chutar roda sincrono).

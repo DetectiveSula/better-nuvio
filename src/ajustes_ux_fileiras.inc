@@ -299,7 +299,8 @@ static void desenhaFileiras(void) {
       }
 #endif
       segL = bx; } }
-  { TxtLinha s = ajTxtC(TXT_AJ_ESTADO, filAba == 0 ? "Vale só nesta TV e neste perfil · não altera a Home dos outros aparelhos"
+  { TxtLinha s = ajTxtC(TXT_AJ_ESTADO, filAba == 0 ? (ajustes_better_envia() ? "Vale neste perfil · a sincronização do Better Nuvio está ligada: seus outros aparelhos acompanham"
+                                                                             : "Vale só nesta TV e neste perfil · não altera a Home dos outros aparelhos")
                                                    : "OK adiciona: entra na Home se couber, senão entra na fila", ajRetrato() ? cw - 28.0f : segL - hx - 24);
     txt_desenhar_alpha(s, hx, ilha.y + 36 + 22 + 46 + 8 + (ajRetrato() ? 92.0f : 0.0f), 0.55f); }
   topo = ilha.y + 36 + 22 + 46 + 8 + 24 + 22 + (ajRetrato() ? 92.0f : 0.0f);

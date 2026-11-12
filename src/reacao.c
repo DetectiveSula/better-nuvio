@@ -871,7 +871,8 @@ static void ilhaNotaDesenhar(float baseY, float a) {
   char title[220];
   int t, e;
   if (ep && sscanf(strchr(c.alvo, ':'), ":%d:%d", &t, &e) == 2)
-    snprintf(title, sizeof title, "%s · T%d:E%d", c.titulo, t, e);
+    { char te[32]; snprintf(te, sizeof te, i18n("T%d:E%d"), t, e);
+    snprintf(title, sizeof title, "%s · %s", c.titulo, te); }
   else snprintf(title, sizeof title, "%s", c.titulo);
   TxtLinha name = txt_linha_corta(TXT_ILHA_SUB, title, 182, 178, 174, 255, 545);
   txt_desenhar_alpha(name, tx + 83, ty + 76, a);
@@ -1124,7 +1125,11 @@ void reacao_detalhe_dica(const CatItem *ci, float a) {
     return;
   }
   if (!ci || strncmp(ci->imdb, "tt", 2)) return;
-  snprintf(perg, sizeof perg, "%s", i18n("↑ nota em estrelas"));
+  // The up-arrow icon is drawn beside the text, so drop the "↑" the
+  // translations carry; with it the hint read "↑ ↑ star rating".
+  { const char *t = i18n("↑ nota em estrelas");
+    if (!strncmp(t, "\xe2\x86\x91", 3)) { t += 3; while (*t == ' ') t++; }
+    snprintf(perg, sizeof perg, "%s", t); }
   // DISCRETA: texto pequeno e cinza, sem caixa de foco — ela nao e um botao,
   // e um lembrete de que CIMA abre a pergunta.
   l = txt_linha_corta(TXT_G18M, perg, 176, 180, 190, 255, 620.0f);

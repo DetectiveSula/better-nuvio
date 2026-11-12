@@ -36,6 +36,13 @@ void contalib_filtros(int (*lista)(const char *id, long long ms),
   vistoOculto = visto;
 }
 
+// Stage E: this TV's watched intents (contapend_vistos_marcados), wired by app.c.
+static int (*gestosLocais)(int (*cb)(const char *id, int t, int e, long long ms, void *u), void *u);
+void contalib_gestos_locais(int (*f)(int (*cb)(const char *id, int t, int e, long long ms, void *u),
+                                     void *u)) {
+  gestosLocais = f;
+}
+
 static ContaLibItem *itens;
 static int nItens;
 static ContaVisto *vistos;
@@ -636,8 +643,51 @@ int contalib_sementes_de(const ContaVisto *v, int n, ContaSemente *saida, int ma
   return nS;
 }
 
+// STAGE E: THE LOCAL WATCHED HISTORY FIRST, like regular Nuvio (its next-up
+// is recomputed from the local watched store on every change). The server
+// snapshot alone only moved on the next account pull — which is why "Continue
+// Watching" only caught up after a profile switch. Seeds now come from that
+// snapshot WITH this TV's gestures: a row unmarked here after it was pulled
+// drops out (the same journal gate contalib_aplicar_vistos uses), and a
+// watched intent from the journal joins (the latest gesture time wins).
+#define CL_LOCAIS_MAX 1024
+typedef struct { ContaVisto *v; int n, cap; } ClJunta;
+static int clJuntarLocal(const char *id, int t, int e, long long ms, void *u) {
+  ClJunta *j = (ClJunta *)u;
+  int i;
+  for (i = 0; i < j->n; i++)
+    if (j->v[i].temporada == t && j->v[i].episodio == e && !strcmp(j->v[i].id, id)) {
+      if (ms > j->v[i].vistoMs) j->v[i].vistoMs = ms;
+      return 0;
+    }
+  if (j->n >= j->cap) return 0;
+  memset(&j->v[j->n], 0, sizeof j->v[j->n]);
+  snprintf(j->v[j->n].id, sizeof j->v[j->n].id, "%s", id);
+  snprintf(j->v[j->n].tipo, sizeof j->v[j->n].tipo, "series");
+  j->v[j->n].temporada = t; j->v[j->n].episodio = e; j->v[j->n].vistoMs = ms;
+  j->n++;
+  return 1;
+}
+
+int contalib_vistos_com_locais(const ContaVisto *v, int n, ContaVisto *saida, int cap,
+                               int (*oculto)(const char *id, int t, int e, long long ms),
+                               int (*locais)(int (*cb)(const char *, int, int, long long, void *),
+                                             void *u)) {
+  ClJunta j = { saida, 0, cap };
+  int i;
+  if (!saida || cap < 1) return 0;
+  for (i = 0; v && i < n && j.n < cap; i++) {
+    if (!v[i].id[0]) continue;
+    if (oculto && oculto(v[i].id, v[i].temporada, v[i].episodio, v[i].vistoMs)) continue;
+    saida[j.n++] = v[i];
+  }
+  if (locais) locais(clJuntarLocal, &j);
+  return j.n;
+}
+
 int contalib_sementes_a_seguir(ContaSemente *saida, int max, int doMaisAlto) {
-  int n;
+  int n, nv;
+  ContaVisto *copia, *junto;
   pthread_mutex_lock(&vistosTrava);
   // -1: vistos nunca puxados nesta sessao, ou o ultimo pull bom e velho. "Sem
   // semente" (0) e "nao sei" (-1) sao coisas diferentes: com outra fonte
@@ -647,7 +697,17 @@ int contalib_sementes_a_seguir(ContaSemente *saida, int max, int doMaisAlto) {
     pthread_mutex_unlock(&vistosTrava);
     return -1;
   }
-  n = contalib_sementes_de(vistos, nVistos, saida, max, doMaisAlto);
+  nv = nVistos;
+  copia = (ContaVisto *)malloc(sizeof *copia * (size_t)(nv ? nv : 1));
+  if (!copia) { pthread_mutex_unlock(&vistosTrava); return -1; }
+  memcpy(copia, vistos, sizeof *copia * (size_t)nv);
   pthread_mutex_unlock(&vistosTrava);
+  // Journal callbacks take their own lock: called outside vistosTrava.
+  junto = (ContaVisto *)malloc(sizeof *junto * (size_t)(nv + CL_LOCAIS_MAX));
+  if (!junto) { free(copia); return -1; }
+  n = contalib_vistos_com_locais(copia, nv, junto, nv + CL_LOCAIS_MAX, vistoOculto, gestosLocais);
+  n = contalib_sementes_de(junto, n, saida, max, doMaisAlto);
+  free(junto);
+  free(copia);
   return n;
 }

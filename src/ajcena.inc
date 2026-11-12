@@ -145,11 +145,12 @@ static void ajc_veu(float x, float y, float w, float h, int borda, float a) {
 }
 // Cartaz abstrato: o bloco no matiz, a luz clara de cima, o pe escuro e duas
 // barras no lugar do titulo.
-static void ajc_cartaz(float x, float y, float w, float h, int matiz, float a) {
-  float r, g, b, raio = w < h ? w * 0.09f : h * 0.09f;
+static void ajc_cartaz_raio(float x, float y, float w, float h, int matiz, float a, float raio) {
+  float r, g, b;
   GfxRect q = ajc_r(x, y, w, h);
   ajc_matiz(matiz, &r, &g, &b);
-  if (raio > 10) raio = 10;
+  if (raio < 0) raio = 0;
+  if (raio > fminf(w, h) * 0.5f) raio = fminf(w, h) * 0.5f;
   ajc_ret(x, y, w, h, raio, r * 0.75f, g * 0.75f, b * 0.75f, a);
   gfx_luz_canto(q, raio * C.s / q.h, q.w * 0.25f, -q.h * 0.15f, q.h * 0.95f,
                 r + (1 - r) * 0.35f, g + (1 - g) * 0.35f, b + (1 - b) * 0.35f, 0.55f * a * C.a);
@@ -158,6 +159,10 @@ static void ajc_cartaz(float x, float y, float w, float h, int matiz, float a) {
     ajc_ret(x + w * 0.12f, y + h - (h > 90 ? 26 : 18), w * 0.62f, h > 90 ? 6 : 4, 2, 1, 1, 1, 0.75f * a);
     if (h > 90) ajc_ret(x + w * 0.12f, y + h - 15, w * 0.38f, 4, 2, 1, 1, 1, 0.40f * a);
   }
+}
+static void ajc_cartaz(float x, float y, float w, float h, int matiz, float a) {
+  float raio = fminf(w, h) * 0.09f;
+  ajc_cartaz_raio(x, y, w, h, matiz, a, fminf(raio, 10));
 }
 static void ajc_foco(float x, float y, float w, float h, float raio, float a) {
   GfxRect q = ajc_r(x, y, w, h);

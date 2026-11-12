@@ -8,7 +8,9 @@
 
 #define DL_URL_MAX 512
 
-typedef enum { DL_NENHUM = 0, DL_TITULO, DL_TOCAR, DL_BUSCA } DlTipo;
+// DL_SONDA_J0 only parses in Android debug builds (j0sonda.h).
+// DL_J7 only parses in Android debug builds (j7arme.h).
+typedef enum { DL_NENHUM = 0, DL_TITULO, DL_TOCAR, DL_BUSCA, DL_SONDA_J0, DL_J7 } DlTipo;
 
 typedef struct {
   DlTipo tipo;
@@ -17,6 +19,8 @@ typedef struct {
   int serie;            // 1 = series, 0 = movie
   int temporada, episodio;  // so em DL_TOCAR; 0 = nao pedido
   char consulta[96];    // so em DL_BUSCA (UTF-8, sem controles)
+  int sondaFase;        // so em DL_SONDA_J0: J0_LER/J0_GRAVAR/J0_LIMPAR
+  char sondaToken[17];  // so em DL_SONDA_J0 gravar/limpar: 8 hex
 } DeepLink;
 
 // 1 = URL valida e `out` preenchido; 0 = lixo (out zerado). Nunca escreve
@@ -27,4 +31,6 @@ int  deeplink_parse(const char *url, DeepLink *out);
 void deeplink_postar(const char *url);
 // Laco principal: 1 e entrega o pedido pendente, uma vez so.
 int  deeplink_pegar(DeepLink *out);
+// Revocation only: may run before login/profile selection. Other links remain queued.
+int  deeplink_desarmar_pendente(void);
 #endif

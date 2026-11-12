@@ -96,6 +96,7 @@ class NuvioActivity : SDLActivity() {
     private var touchInsetTop = 0
     private var touchInsetRight = 0
     @Volatile private var interfaceMobile = false
+    private var detectedMobile = false
     @Volatile private var playerTelaCheiaTouch = false
     private var superficieTvW = 0
     private var superficieTvH = 0
@@ -165,6 +166,14 @@ class NuvioActivity : SDLActivity() {
 
     private val registroDownload by lazy { RegistroDownload(this) }
     private val fontImport by lazy { FontImport(this) }
+    private val profileEditor by lazy { ProfileEditor(this) }
+    fun editarPerfil(payload: String): Boolean = try {
+        require(payload.length % 2 == 0 && payload.length <= 65536)
+        val bytes = ByteArray(payload.length / 2) { payload.substring(it * 2, it * 2 + 2).toInt(16).toByte() }
+        profileEditor.open(String(bytes, Charsets.UTF_8))
+    } catch (_: Exception) { false }
+    fun proximoPerfilEditado(): String? = profileEditor.next()
+    fun fecharEditorPerfil(): Boolean = profileEditor.close()
     fun importarFonte(): Boolean = fontImport.abrir()
     fun proximaFonteImportada(): String? = fontImport.proximo()
 
@@ -235,8 +244,10 @@ class NuvioActivity : SDLActivity() {
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         mSurface.setZOrderMediaOverlay(true)
         mSurface.holder.setFormat(PixelFormat.TRANSLUCENT)
+        postPlayPreview = PostPlayPreview(this, camada)
         NvPlayer.iniciar(this, camada)
         NvPlayer.interfaceModo(interfaceMobile)
+        if (!mBrokenLibraries) PhoneLayoutSetup.showIfNeeded(this, detectedMobile, interfaceMobile)
     }
 
     // SDL and video fill the window, including the camera cutout edges. Keeping
@@ -544,6 +555,9 @@ class NuvioActivity : SDLActivity() {
         return try {
             val arq = File(caminho)
             if (!arq.isFile) return 0
+            // Validate before requesting install permission or opening Android's
+            // installer. The platform also enforces signatures at installation.
+            if (!apkCompativel(arq)) return 0
             if (Build.VERSION.SDK_INT >= 26 && !packageManager.canRequestPackageInstalls()) {
                 startActivity(
                     Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName"))
@@ -563,6 +577,27 @@ class NuvioActivity : SDLActivity() {
             instalando = false
             0
         }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun apkCompativel(file: File): Boolean {
+        val flags = if (Build.VERSION.SDK_INT >= 28)
+            android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES
+        else android.content.pm.PackageManager.GET_SIGNATURES
+        val incoming = packageManager.getPackageArchiveInfo(file.path, flags) ?: return false
+        val installed = packageManager.getPackageInfo(packageName, flags)
+        fun version(info: android.content.pm.PackageInfo): Long =
+            if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong()
+        fun signers(info: android.content.pm.PackageInfo): Set<String> {
+            val signatures = if (Build.VERSION.SDK_INT >= 28)
+                info.signingInfo?.apkContentsSigners else info.signatures
+            return signatures?.map { signature ->
+                java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(signature.toByteArray()).joinToString("") { "%02x".format(it) }
+            }?.toSet() ?: emptySet()
+        }
+        return ApkUpdatePolicy.compatible(packageName, version(installed), signers(installed),
+            incoming.packageName, version(incoming), signers(incoming))
     }
 
     // HTTP PELA PILHA DO ANDROID (#266/#332, src/android.c android_http).
@@ -729,6 +764,7 @@ class NuvioActivity : SDLActivity() {
     }
 
     override fun onResume() {
+        postPlayPreview?.foreground(true)
         trimResumida = true
         super.onResume()
         aplicarOrientacaoTouch()
@@ -744,7 +780,16 @@ class NuvioActivity : SDLActivity() {
     // [android] pausa / parada: quanto o fio da interface ficou em cada passo
     // do ciclo de vida (ANR ao apertar a tecla de ajustes da TV tocando, TCL,
     // 2.0.3). Direto no logcat: o printf do C passa por um pipe e pode esperar.
+    private var postPlayPreview: PostPlayPreview? = null
+    @androidx.annotation.Keep fun postPlayPreviewSupported(): Boolean = postPlayPreview?.supported() == true
+    @androidx.annotation.Keep fun postPlayPreviewState(): Int = postPlayPreview?.state ?: 0
+    @androidx.annotation.Keep fun postPlayPreviewClose() { postPlayPreview?.close() }
+    @androidx.annotation.Keep fun postPlayPreviewOpen(url: String, x: Float, y: Float, w: Float, h: Float) {
+        postPlayPreview?.open(url, x, y, w, h)
+    }
+
     override fun onPause() {
+        postPlayPreview?.foreground(false)
         trimResumida = false
         checkpoint()
         val ini = SystemClock.elapsedRealtime()
@@ -756,8 +801,10 @@ class NuvioActivity : SDLActivity() {
     }
 
     override fun onDestroy() {
+        postPlayPreview?.close()
         registroDownload.fechar()
         fontImport.fechar()
+        profileEditor.destroy()
         vigia?.parar()
         fecharRede()
         NvPlayer.encerrar()
@@ -788,6 +835,7 @@ class NuvioActivity : SDLActivity() {
             uiMode == Configuration.UI_MODE_TYPE_TELEVISION,
             packageManager.hasSystemFeature(PackageManager.FEATURE_TELEVISION),
             packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK))
+        detectedMobile = automaticMobile
         val preferencia = InterfaceMode.readPreference(File(dados, "ajustes.txt"))
         interfaceMobile = InterfaceMode.resolve(preferencia, automaticMobile)
         val res = File(filesDir, "res")
@@ -1297,6 +1345,7 @@ class NuvioActivity : SDLActivity() {
 
     @Deprecated("startActivityForResult e o que o SDLActivity (Activity) oferece")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (profileEditor.result(requestCode, resultCode, data)) return
         if (registroDownload.resultado(requestCode, resultCode, data)) return
         if (fontImport.resultado(requestCode, resultCode, data)) return
         if (requestCode == PEDIDO_DITADO) esperandoTela = false

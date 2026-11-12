@@ -40,7 +40,7 @@ typedef struct {
   char tipo[8];         // "movie" | "series"
   char titulo[120];
   char poster[NV_ARTE_URL_MAX];     // URL pronta
-  char fundo[200];      // backdrop, URL pronta
+  char fundo[512];      // backdrop, URL pronta (as do catalogo passam de 200)
   char sinopse[300];
   int  ano;             // 0 = desconhecido
   int  nota;            // 0..100 (vote_average * 10)
@@ -196,6 +196,8 @@ int  mapa_obra_do_catalogo(int indice, MapaObra *o);
 typedef struct {
   int id;               // posicao na tabela editorial (mapa_clima_nome)
   int total, vistos;    // titulos no clima / quantos a pessoa ja viu
+  int filmes, series;   // por tipo: o catalogo + o que o /discover ja trouxe
+                        // (total ainda soma o total_results do TMDB)
   int afinidade;        // 0..100: parte do que ela viu que cai neste clima
   int remoto;           // 1 = o /discover ja entrou
   int carregando;

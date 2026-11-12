@@ -133,6 +133,8 @@ void desc_tmdb(const char *dirArte);
 // campo `api_key`. Enquanto a chave sair do arquivo, ela vai dentro do .ipk e
 // e a chave de quem montou o pacote — cota dele, para todo mundo que instalar.
 void desc_tmdb_definir(const char *chave);
+// Private, device-local override loaded for the selected account/profile; empty removes it.
+void desc_tmdb_local_definir(const char *key);
 // Keywords anexadas ao detalhe do TMDB: 179430/179431 sinalizam cena extra.
 int desc_tmdb_pos_creditos(const char *json);
 // "pt-BR" ou "en-US", conforme o idioma da interface: sinopse, biografia e nome
@@ -215,6 +217,11 @@ void desc_alvos_busca_zerar(void);
 // 1 quando "Buscar no Cinemeta" esta desligado e `base` e a de um addon
 // Cinemeta: a busca nao pode mostrar nada dela (alvos de rede e fileiras locais).
 int  desc_busca_base_oculta(const char *base);
+// Search landing: Nuvio's trending catalogues (cached 30 min, fetched on a
+// worker). pedir is cheap to call every frame; series 0 = movies, 1 = shows.
+void     desc_tendencias_pedir(void);
+int      desc_tendencias(int series, CatItem *saida, int max);
+unsigned desc_tendencias_revisao(void);
 // A primeira volta espera os addons da conta em vez de montar a Home com a
 // lista vazia. `f` devolve 0 (nao espere: sem conta), 1 (espere: perfil ainda
 // nao escolhido) ou 2 (espere ate 10 s). Sem gancho, nao ha espera.
@@ -354,6 +361,17 @@ int  desc_meta_tipos(const char *tipo, const char *saida[2]);
 void desc_meta_chave(char *dst, size_t n, const char *tipo, const char *id);
 int  desc_meta_tem_temporadas(const char *corpo);
 int  desc_meta_n_episodios(const char *corpo);
+// Stage E: episode air dates come from the user's metadata add-on, chosen as
+// regular Nuvio does (installed order; "meta" for this type and id prefix or no
+// prefixes; first usable answer). desc_lancamento_addon: 1 = date in dst,
+// 0 = the add-on lists the episode without a date (no countdown; counts as
+// aired), -1 = no add-on answers or it does not list the episode.
+int  desc_lancamento_addon(const char *tipo, const char *id, int t, int e, char *dst, size_t n);
+// The pure parts, for tests: candidate rule, one body's date for SxE, and the
+// per-episode date overlay (returns how many episodes changed).
+int  desc_meta_addon_candidato(int ativo, int sondado, int fornece, int aceita);
+int  desc_lancamento_do_corpo(const char *corpo, int t, int e, char *dst, size_t n);
+int  desc_datas_do_addon(CatEp *eps, int n, const CatEp *addon, int na);
 
 // Busca o meta de um titulo que o catalogo NAO tem e o acrescenta ao fim.
 // Nao bloqueia. Serve ao credito de um ator e ao item de "Mais como este":

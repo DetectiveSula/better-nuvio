@@ -130,6 +130,9 @@ static void drawLabels(const char *output) {
       snprintf(rows[i].rotulo,sizeof rows[i].rotulo,"Fixture source 1080p");snprintf(rows[i].provedor,sizeof rows[i].provedor,"Fixture addon");
       snprintf(rows[i].descricao,sizeof rows[i].descricao,"Show.S01E01.1080p.WEB-DL.mkv | Original addon information");
       snprintf(rows[i].infoHash,sizeof rows[i].infoHash,"%040d",i+1);rows[i].altura=1080;rows[i].fileIdx=0;
+      // A ready HTTP source stays visible even when its hash is not cached.
+      // Verified uncached raw torrents are separately tested as hidden.
+      if(i==2)snprintf(rows[i].url,sizeof rows[i].url,"https://fixture.invalid/direct.mkv");
       rows[i].cacheConsulta=i;rows[i].cacheConsultaServico=DEBRID_TB+1;rows[i].cacheConsultaGeracao=debrid_cache_geracao();rows[i].cacheConsultaSessao=nv_perfil_sessao_ler();rows[i].cacheConsultaQuando=SDL_GetTicks();
     }
     stream_definir_lista(rows,4);stream_folha_nome("Stage D cache status");stream_folha_contexto("S01:E01 · Offline fixture");stream_folha_abrir();

@@ -136,6 +136,22 @@ static void lerArquivo(const char *arquivo, FonteFalhaConfig *saida) {
       if (sscanf(linha, "%39s", k) == 1 && !strncmp(k, "filtro_", 7)) {
         int categoria = -1;
         for (int i = 0; i < FONTEFILTRO_N; i++) if (!strcmp(k, filtroChaves[i])) categoria = i;
+        int mode=-1,category=-1;unsigned *number=NULL;
+        if(sscanf(k,"filtro_pref_%d",&category)==1)mode=0;
+        else if(sscanf(k,"filtro_req_%d",&category)==1)mode=1;
+        if(!strcmp(k,"filtro_mingb"))number=&c.filtro.minGB;
+        else if(!strcmp(k,"filtro_maxresult"))number=&c.filtro.maxResultados;
+        else if(!strcmp(k,"filtro_perres"))number=&c.filtro.porResolucao;
+        else if(!strcmp(k,"filtro_perquality"))number=&c.filtro.porQualidade;
+        else if(!strcmp(k,"filtro_sort"))number=&c.filtro.ordenar;
+        if(mode>=0||number||!strcmp(k,"filtro_required_groups")) {
+          int ok=sscanf(linha,"%39s %1099s %c",k,valor,&extra)==2;
+          if(ok&&mode>=0)ok=category>=0&&category<FONTEFILTRO_N&&filtroMascara(valor,mode?&c.filtro.exigir[category]:&c.filtro.preferir[category]);
+          else if(ok&&number){uint64_t v=0;ok=filtroMascara(valor,&v)&&v<=10000;if(ok)*number=(unsigned)v;}
+          else if(ok)ok=filtroGruposLer(valor,c.filtro.gruposObrigatorios,sizeof c.filtro.gruposObrigatorios);
+          if(!ok)filtroInvalido=1;
+          continue;
+        }
         if (categoria >= 0 || !strcmp(k, "filtro_maxgb") || !strcmp(k, "filtro_grupos")) {
           int ok = sscanf(linha, "%39s %1099s %c", k, valor, &extra) == 2;
           if (ok && categoria >= 0) ok = filtroMascara(valor, &c.filtro.excluir[categoria]);
@@ -188,6 +204,11 @@ static int gravarArquivo(const FonteFalhaConfig *c, const char *arquivo) {
     if (c->addon[i].aoVivo) ok = fprintf(f, "addon_live %s 1\n", c->addon[i].chave) >= 0;
   for (int i = 0; i < FONTEFILTRO_N && ok; i++)
     ok = fprintf(f, "%s %016" PRIx64 "\n", filtroChaves[i], c->filtro.excluir[i]) >= 0;
+  for(int i=0;i<FONTEFILTRO_N&&ok;i++)ok=fprintf(f,"filtro_pref_%d %016" PRIx64 "\nfiltro_req_%d %016" PRIx64 "\n",i,c->filtro.preferir[i],i,c->filtro.exigir[i])>=0;
+  if(ok)ok=fprintf(f,"filtro_mingb %x\nfiltro_maxresult %x\nfiltro_perres %x\nfiltro_perquality %x\nfiltro_sort %x\nfiltro_required_groups ",c->filtro.minGB,c->filtro.maxResultados,c->filtro.porResolucao,c->filtro.porQualidade,c->filtro.ordenar)>=0;
+  if(ok&&!c->filtro.gruposObrigatorios[0])ok=fputc('-',f)!=EOF;
+  for(const unsigned char *p=(const unsigned char*)c->filtro.gruposObrigatorios;ok&&*p;p++)ok=fprintf(f,"%02x",*p)>=0;
+  if(ok)ok=fputc('\n',f)!=EOF;
   if (ok) ok = fprintf(f, "filtro_maxgb %u\nfiltro_grupos ", c->filtro.maxGB) >= 0;
   if (ok && !c->filtro.grupos[0]) ok = fputc('-', f) != EOF;
   for (const unsigned char *p = (const unsigned char *)c->filtro.grupos; ok && *p; p++)
@@ -242,14 +263,14 @@ void fontefalha_filtro(FonteFiltroConfig *c) {
 int fontefalha_filtro_ativo(void) {
   FonteFiltroConfig filtro;
   fontefalha_filtro(&filtro);
-  for (int i = 0; i < FONTEFILTRO_N; i++) if (filtro.excluir[i]) return 1;
-  return filtro.maxGB != 0 || filtro.grupos[0] != 0;
+  for (int i = 0; i < FONTEFILTRO_N; i++) if (filtro.excluir[i] || filtro.preferir[i] || filtro.exigir[i]) return 1;
+  return filtro.maxGB || filtro.minGB || filtro.maxResultados || filtro.porResolucao || filtro.porQualidade || filtro.ordenar || filtro.grupos[0] || filtro.gruposObrigatorios[0];
 }
 int fontefalha_filtro_definir(const FonteFiltroConfig *filtro) {
   iniciar();
   if (!filtro || !memchr(filtro->grupos, 0, sizeof filtro->grupos)) return 0;
-  FonteFiltroConfig novo = {0};
-  memcpy(novo.excluir, filtro->excluir, sizeof novo.excluir); novo.maxGB = filtro->maxGB;
+  FonteFiltroConfig novo = *filtro;
+  if (!memchr(novo.gruposObrigatorios,0,sizeof novo.gruposObrigatorios) || !fontefiltro_grupos_normalizar(filtro->gruposObrigatorios,novo.gruposObrigatorios,sizeof novo.gruposObrigatorios)) return 0;
   if (!fontefiltro_grupos_normalizar(filtro->grupos, novo.grupos, sizeof novo.grupos) ||
       !fontefiltro_config_validar(&novo)) return 0;
   FonteFalhaConfig c; fontefalha_config(&c); c.filtro = novo;

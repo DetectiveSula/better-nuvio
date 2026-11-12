@@ -609,6 +609,9 @@ static int lerColecaoWeb(const char *c, const char *ce) {
   js_texto_raiz_em(c, ce, "title", group, sizeof group);
   js_texto_raiz_em(c, ce, "id", groupId, sizeof groupId);
   js_texto_raiz_em(c, ce, "backdropImageUrl", fundo, sizeof fundo);
+  // pinToTop so existe na raiz da colecao (CollectionFolder nao tem o campo).
+  char fixa[16] = "";
+  int fixada = js_bruto(c, ce, "pinToTop", fixa, sizeof fixa) && !strcmp(fixa, "true");
   if (!group[0]) return 1;
   for (const char *p = js_array(c, ce, "folders"), *pe = NULL; p; p = js_prox(pe)) {
     if (!vagaPasta(count)) return 0;
@@ -616,6 +619,7 @@ static int lerColecaoWeb(const char *c, const char *ce) {
     if (!(v->sources = vagaFontes())) return 0;
     snprintf(v->group, sizeof v->group, "%s", group);
     snprintf(v->groupId, sizeof v->groupId, "%s", groupId);
+    v->fixa = fixada;
     js_texto_raiz_em(p, pe, "id", v->id, sizeof v->id); js_texto_raiz_em(p, pe, "title", v->title, sizeof v->title);
     js_texto(p, pe, "coverImageUrl", v->cover, sizeof v->cover);
     js_texto(p, pe, "heroBackdropUrl", v->hero, sizeof v->hero);
@@ -1051,6 +1055,7 @@ static int definirJson(const char *json) {
       ColFolder v = antigas[j];
       snprintf(v.group, sizeof v.group, "%s", PASTA(i).group);
       snprintf(v.groupId, sizeof v.groupId, "%s", PASTA(i).groupId);
+      v.fixa = PASTA(i).fixa;
       snprintf(v.title, sizeof v.title, "%s", PASTA(i).title);
       // A FORMA E DA CONTA: e escolha feita no editor do web, e o pacote nem
       // tem o campo.

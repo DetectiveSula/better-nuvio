@@ -48,6 +48,14 @@ int           perfis_n(void);
 const ContaPerfil *perfis_item(int i);
 // O perfil em vigor, ou NULL quando a lista ainda nao chegou.
 const ContaPerfil *perfis_item_ativo(void);
+// Apply only a server-acknowledged name/photo edit; caller holds session lock.
+int perfis_aplicar_edicao(int indice,const char *nome,const char *foto);
+// Colour/background (NULL = unchanged; background "" = standard), PIN state and
+// deletion confirmed by the profile editor. Same session lock as above.
+int perfis_aplicar_aparencia(int indice, const char *cor, const char *fundo);
+int perfis_aplicar_pin(int indice, int ligado);
+// Refuses profile 1, the primary profile and the active one.
+int perfis_aplicar_remocao(int indice);
 const char   *perfis_dono(void);        // uuid de get_sync_owner; "" se nao veio
 
 // ContaPerfil ativo. Persistido em disco: reescolher a cada arranque seria uma
@@ -59,6 +67,8 @@ int  perfis_principal(void);
 // O perfil de onde SAEM OS ADDONS: igual a perfis_ativo(), exceto quando o
 // perfil herda os do primario (uses_primary_plugins), e ai e 1.
 int  perfis_ativo_addons(void);
+// Official home-row scope follows the account inheritance flag, not a device override.
+int perfis_home_config(void);
 void perfis_definir_ativo(int indice);
 // A confirmed opening starts a new live session, including reopening the same
 // profile. Saved data belongs to the profile; asynchronous results also belong

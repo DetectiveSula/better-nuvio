@@ -1,5 +1,6 @@
 #include "nuvem.h"
 #include "rede.h"
+#include "validation_readonly.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,6 +50,10 @@ static void tiraFim(char *s) {
 }
 
 int nuvem_configurar(const char *dirArte) {
+  if (NV_VALIDATION_LOGIN_ENABLED)
+    printf("[j7] LOGIN VALIDATION: sign-in permitted; account settings and provider mutations blocked\n");
+  else if (NV_VALIDATION_READONLY_ENABLED)
+    printf("[j7] READ-ONLY VALIDATION: Nuvio account mutations and session refresh blocked\n");
   char caminho[600], linha[1200];
   FILE *f;
   if (dirArte && *dirArte) {
@@ -97,6 +102,10 @@ char *nuvem_post(const char *caminho, const char *corpoJson,
   const char *cab[3];
   if (status) *status = 0;
   if (!nuvem_pronta() || !caminho) return NULL;
+  if (!nv_validation_account_request("POST", caminho, corpoJson, corpoJson ? strlen(corpoJson) : 0)) {
+    if (status) *status = NV_VALIDATION_DENIED_STATUS;
+    return NULL;
+  }
 
   snprintf(completo, sizeof completo, "%s%s%s", url,
            caminho[0] == '/' ? "" : "/", caminho);
@@ -147,6 +156,10 @@ char *nuvem_tabela(const char *tabela, const char *consulta,
   const char *cab[3];
   if (status) *status = 0;
   if (!nuvem_pronta() || !tabela) return NULL;
+  if (!nv_validation_table_read(tabela)) {
+    if (status) *status = NV_VALIDATION_DENIED_STATUS;
+    return NULL;
+  }
   snprintf(completo, sizeof completo, "%s/rest/v1/%s%s%s", url, tabela,
            (consulta && *consulta) ? "?" : "", (consulta && *consulta) ? consulta : "");
   snprintf(cabApi, sizeof cabApi, "apikey: %s", anon);
@@ -168,6 +181,10 @@ char *nuvem_addon_alternar(const char *consulta, int ativo, const char *bearer, 
 #endif
   if (status) *status = 0;
   if (!nuvem_pronta() || !bearer || !*bearer) return NULL;
+  if (!nv_validation_account_read("PATCH", "/rest/v1/addons")) {
+    if (status) *status = NV_VALIDATION_DENIED_STATUS;
+    return NULL;
+  }
   snprintf(completo, sizeof completo, "%s/rest/v1/addons?%s", url, consulta);
   snprintf(cabApi, sizeof cabApi, "apikey: %s", anon);
   snprintf(cabAut, sizeof cabAut, "Authorization: Bearer %s", bearer);

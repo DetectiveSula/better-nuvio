@@ -63,6 +63,15 @@ int main(void) {
     fontefalha_addon_chave(addon[i].base, esperado[i], sizeof esperado[i]);
   }
   assert(strcmp(esperado[0], esperado[1]));
+  // Catalogue identities retain type/id and full configured instance parameters.
+  strcpy(addon[0].id,"fixture.same");strcpy(addon[1].id,"fixture.same");
+  char catalogues[2][192],again[192],other[192];
+  for(int i=0;i<2;i++)addons_catalogo_chave("fixture.same",addon[i].base,"movie","trending",catalogues[i],sizeof catalogues[i]);
+  assert(strcmp(catalogues[0],catalogues[1]));
+  addons_catalogo_chave("fixture.same",addon[1].base,"movie","trending",again,sizeof again);assert(!strcmp(again,catalogues[1]));
+  addons_catalogo_chave("fixture.same",addon[1].base,"series","trending",other,sizeof other);assert(strcmp(other,catalogues[1]));
+  addons_catalogo_chave("fixture.same",addon[1].base,"movie","popular",other,sizeof other);assert(strcmp(other,catalogues[1]));
+
   resp[0] = "{\"streams\":[{\"url\":\"https://x/a.mp4\"}]}";
   pthread_mutex_init(&c.trava, NULL);
   progLigado = 1;

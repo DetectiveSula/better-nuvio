@@ -42,7 +42,7 @@ int teste_desc_busca_alvo_item(int a, int i, CatItem *d) {
 }
 const char *teste_desc_busca_alvo_titulo(int a) { (void)a; return "Filmes"; }
 const char *teste_desc_busca_alvo_addon(int a) { (void)a; return "Addon"; }
-int teste_desc_busca_alvo_nuvio(int a) { (void)a; return 0; }
+int teste_desc_busca_alvo_nuvio(int a) { (void)a; return 1; }   /* search is Nuvio-only */
 int teste_desc_busca_n_fontes(void) { return 2; }
 int teste_desc_busca_base_oculta(const char *b) { (void)b; return 0; }
 int teste_desc_busca_n(const char *t) {

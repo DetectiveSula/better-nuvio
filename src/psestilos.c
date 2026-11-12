@@ -32,7 +32,8 @@ typedef struct {
 static ParSet parAtual, parAnt;
 static int    parTemAnt;
 static float  parTroca = 1.0f;     // 0..1 da parede anterior para a atual
-static float  tempo;
+static double tempo;   // retain subpixel motion during long profile-selection sessions
+static int parFonteMuralN, parFonteParedeN, parFonteSemParede;
 
 // --- LUZ ---------------------------------------------------------------------
 static float  luzX = -1.0f;
@@ -58,6 +59,7 @@ void psestilos_iniciar(void) {
   int i;
   tempo = 0.0f;
   parAtual.n = 0; parAtual.perfil = -1; parTemAnt = 0; parTroca = 1.0f;
+  parFonteMuralN = parFonteParedeN = parFonteSemParede = -1;
   luzX = -1.0f;
   for (i = 0; i < PJ_POEIRA; i++) {
     poeira[i].x = aleat(); poeira[i].y = aleat(); poeira[i].z = aleat(); poeira[i].f = aleat() * 6.0f;
@@ -94,6 +96,12 @@ static void graoDesenhar(float alfa) {
 }
 
 // A lista de URLs que a parede do perfil em foco deve mostrar.
+static void parAdicionar(ParSet *s,const char *url) {
+  if(!url || !url[0] || strlen(url)>=PSPAREDE_URL || s->n>=PSEST_PAREDE_MAX)return;
+  for(int i=0;i<s->n;i++)if(!strcmp(s->url[i],url))return;
+  snprintf(s->url[s->n++],PSPAREDE_URL,"%s",url);
+}
+
 static void parMontar(ParSet *s, const PSCena *c) {
   int i, n = c->semParede ? 0 : psparede_n(c->perfil);
   s->n = 0;
@@ -101,12 +109,15 @@ static void parMontar(ParSet *s, const PSCena *c) {
   if (n >= 4) {
     for (i = 0; i < n && s->n < PSEST_PAREDE_MAX; i++) {
       const char *u = psparede_url(c->perfil, i);
-      if (u) snprintf(s->url[s->n++], PSPAREDE_URL, "%s", u);
+      parAdicionar(s,u);
     }
-  } else {
-    for (i = 0; i < c->muralN && s->n < PSEST_PAREDE_MAX; i++)
-      if (c->mural[i] && c->mural[i][0]) snprintf(s->url[s->n++], PSPAREDE_URL, "%s", c->mural[i]);
   }
+  // Older profiles may still have a 12-poster cache; new profiles have none.
+  // Keep their own titles first, then fill the decorative wall from the same
+  // catalog fallback already used for new/PIN profiles. Never copy another
+  // profile's history into their saved wall or change the active profile.
+  for (i = 0; i < c->muralN && s->n < PSEST_PAREDE_MAX; i++)
+    parAdicionar(s,c->mural[i]);
   for (i = 0; i < s->n; i++) {
     s->tex[i] = 0;
     tex_cache_marcar_larg(NV_CACHE_ARTE_GRUPO_PERFIL, s->url[i], PAR_LARG_TEX, 1, 0);
@@ -125,15 +136,21 @@ void psestilos_atualizar(float dt, const PSCena *c, int modo) {
   graoDx = anda ? aleat() * 120.0f : 0.0f;
   graoDy = anda ? aleat() * 68.0f : 0.0f;
   if (modo == PS_FUNDO_FILMES) {
+    int stored = c->semParede ? 0 : psparede_n(c->perfil);
     // Foco mudou de pessoa (ou o mural chegou e a parede estava vazia): a
     // parede atual vira a anterior e sai num cross-fade.
-    if (c->perfil != parAtual.perfil || parAtual.n == 0) {
+    if (c->perfil != parAtual.perfil || parAtual.n == 0 ||
+        parFonteMuralN != c->muralN || parFonteParedeN != stored ||
+        parFonteSemParede != c->semParede) {
       ParSet novo;
       parMontar(&novo, c);
-      if (novo.n > 0 && (c->perfil != parAtual.perfil || novo.n != parAtual.n)) {
-        if (parAtual.n > 0 && c->perfil != parAtual.perfil) {
+      parFonteMuralN=c->muralN;parFonteParedeN=stored;parFonteSemParede=c->semParede;
+      int changed=c->perfil!=parAtual.perfil || novo.n!=parAtual.n;
+      for(int i=0;!changed && i<novo.n;i++)changed=strcmp(novo.url[i],parAtual.url[i])!=0;
+      if (changed) {
+        if (parAtual.n > 0 && novo.n > 0) {
           parAnt = parAtual; parTemAnt = 1; parTroca = c->reduzida ? 1.0f : 0.0f;
-        }
+        } else parTemAnt=0;
         parAtual = novo;
       }
     }
@@ -183,18 +200,29 @@ static void parDesenhar(const ParSet *s, float alfa) {
   gfx_girar(PAR_GIRO, NV_TELA_W * 0.5f, NV_TELA_H * 0.5f);
   for (col = 0; col < PAR_COLS; col++) {
     int dir = col % 2 ? 1 : -1;
+    // Disjoint, interleaved title pools: independently moving neighbours must
+    // never meet on the same title. With fewer titles than columns, reuse is
+    // unavoidable; spread those titles across the wall instead of clustering.
+    int stride = s->n < PAR_COLS ? s->n : PAR_COLS;
+    int first = col % stride;
+    int count = 1 + (s->n - 1 - first) / stride;
     float vel = 20.0f + (float)(col % 3) * 8.0f;
-    float off = fmodf(tempo * vel * (float)dir, passoY);
+    // Wrap the complete artwork sequence, not just one card's position.
+    // Each crossed row changes the artwork index as well, so the same poster
+    // keeps moving across the seam instead of being replaced in place.
+    double travel = fmod(tempo * vel * dir, (double)passoY * count);
+    int row = (int)floor(travel / passoY);
+    float off = (float)(travel - (double)row * passoY);
     float x = NV_TELA_W * 0.5f + ((float)col - PAR_COLS * 0.5f) * (PAR_CW + PAR_GAP);
     float dist = fabsf((float)col - (PAR_COLS - 1) * 0.5f) / ((PAR_COLS - 1) * 0.5f);
     // As colunas das pontas apagam AQUI (0,95 no meio, 0,30 na borda), e nao
     // mais por dois veus radiais de 1400x2200 por cima: na C9 a tela ficava em
     // 34 fps e, sem esses dois quads, em 60 (medido peca por peca, 05/10/2026).
     float a = (0.95f - dist * dist * 0.65f) * alfa;
-    if (off < 0.0f) off += passoY;
     for (k = -3; k < 3; k++) {
       float y = NV_TELA_H * 0.5f + (float)k * passoY + off - passoY * 0.5f;
-      int idx = ((col * 3 + k + 30) % s->n + s->n) % s->n;
+      int slot = ((k - row) % count + count) % count;
+      int idx = first + slot * stride;
       GLuint t = s->tex[idx];
       // Corte grosso: o cartao girado que nem encosta na tela nao vai a GPU.
       float cx = x + PAR_CW * 0.5f - NV_TELA_W * 0.5f, cy = y + PAR_CH * 0.5f - NV_TELA_H * 0.5f;

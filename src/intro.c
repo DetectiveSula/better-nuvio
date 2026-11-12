@@ -864,6 +864,17 @@ int intro_botao_visivel(double*fim,int*tipo){
   pthread_mutex_unlock(&trava);return v;
 }
 
+// How much of this appearance's INTRO_BOTAO_SEG has gone (0..1), for the
+// pill's countdown line; -1 with no button on screen.
+float intro_botao_fracao(double agora){
+  float f=-1.0f;pthread_mutex_lock(&trava);
+  if(botaoVis&&botaoIdx>=0){
+    double d=(agora-botaoDesde)/INTRO_BOTAO_SEG;
+    f=d<0.0?0.0f:d>1.0?1.0f:(float)d;
+  }
+  pthread_mutex_unlock(&trava);return f;
+}
+
 // Dismiss this appearance; opening the controls can reveal it again.
 void intro_botao_esconder(double agora){
   pthread_mutex_lock(&trava);

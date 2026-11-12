@@ -183,6 +183,11 @@ int main(void) {
     CONFERE(!strcmp(f, i18n("amanhã")), "falta amanha: [%s]", f);
     agenda_falta("2026-09-20", f, sizeof f);
     CONFERE(strstr(f, "4") != NULL, "falta 4 dias: [%s]", f);
+    // 8 a 13 dias: UMA semana, no singular ("in 1 weeks" saia na tela).
+    agenda_falta("2026-09-25", f, sizeof f);
+    CONFERE(!strcmp(f, i18n("em 1 semana")), "falta 1 semana: [%s]", f);
+    agenda_falta("2026-09-30", f, sizeof f);
+    CONFERE(strstr(f, "2") != NULL, "falta 2 semanas: [%s]", f);
     // 04/11/2026 sao 49 dias: SETE semanas cravadas.
     agenda_falta("2026-11-04", f, sizeof f);
     CONFERE(strstr(f, "7") != NULL, "falta 7 semanas: [%s]", f);
@@ -531,6 +536,24 @@ int main(void) {
   nCinemeta = 0;
   agenda_atualizar_seguidas();
   CONFERE(!agenda_atualizando() && nCinemeta == 0, "fresco: nada pedido");
+
+  // DATA SEM NOME (a pagina de titulo grava so a data): o registro fresco nao
+  // pode deixar a linha como "Serie" e retangulo cinza por 12 h — uma busca,
+  // e uma so por sessao (Ghosts, BlueStacks do dono, 12/11/2026).
+  agenda_registrar("tt5550002", NULL, NULL, "Returning Series", 6, 3, "",
+                   "2026-12-10", "2026-11-12");
+  memset(&lista[0], 0, sizeof lista[0]);
+  snprintf(lista[0].imdb, sizeof lista[0].imdb, "tt5550002");
+  nLista = 1;
+  nCinemeta = 0;
+  agenda_atualizar_seguidas();
+  { int k; for (k = 0; k < 500 && agenda_atualizando(); k++) usleep(10000); }
+  CONFERE(nCinemeta == 1, "sem nome: uma busca (veio %d)", nCinemeta);
+  { const AgItem *r = agenda_registro("tt5550002");
+    CONFERE(r && r->titulo[0] && r->poster[0], "sem nome: nome e cartaz gravados"); }
+  nCinemeta = 0;
+  agenda_atualizar_seguidas();
+  CONFERE(!agenda_atualizando() && nCinemeta == 0, "sem nome: nao repete na sessao");
 
   // --- TRAKT LIGADO: ele decide as datas, o Cinemeta completa ---------------
   // TZ cravado: `first_aired` e instante UTC e vira o DIA NO RELOGIO DA TV.

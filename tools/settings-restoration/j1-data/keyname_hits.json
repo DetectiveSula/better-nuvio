@@ -1,0 +1,356 @@
+{
+"AJ_PAUSA_OVERLAY": {
+"key": "pause_overlay_enabled",
+"feature": "player_settings",
+"file": "PlayerSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_LANDSCAPE": {
+"key": "modern_landscape_posters_enabled",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_HERO": {
+"key": "hero_section_enabled",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_DESCOBRIR": {
+"key": "discover_location",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "string"
+},
+"AJ_ROTULOS": {
+"key": "poster_labels_enabled",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_NOME_ADDON": {
+"key": "catalog_addon_name_enabled",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_SUFIXO_TIPO": {
+"key": "catalog_type_suffix_enabled",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_OCULTAR_NLANC": {
+"key": "hide_unreleased_content",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_NOTAS_HOME": {
+"key": "home_imdb_ratings_visibility",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "string"
+},
+"AJ_GRAD_CLASSICO": {
+"key": "classic_focus_gradient_enabled",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_CW_LIGADO": {
+"key": "continue_watching_enabled",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_CW_ESTILO": {
+"key": "continue_watching_card_style",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "string"
+},
+"AJ_CW_THUMB": {
+"key": "use_episode_thumbnails_in_cw",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_CW_BLUR_PROX": {
+"key": "blur_continue_watching_next_up",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_CW_FURTHEST": {
+"key": "next_up_from_furthest_episode",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_CW_NAO_EXIBIDOS": {
+"key": "show_unaired_next_up",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_CW_ORDEM": {
+"key": "continue_watching_sort_mode",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "string"
+},
+"AJ_DET_BLUR_NAO_VISTOS": {
+"key": "blur_unwatched_episodes",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_DET_TRAILER": {
+"key": "detail_page_trailer_button_enabled",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_DET_META_EXT": {
+"key": "prefer_external_meta_addon_detail",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_DET_DATA_CHEIA": {
+"key": "show_full_release_date",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_EXPANDIR": {
+"key": "focused_poster_backdrop_expand_enabled",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_EXPANDIR_ATRASO": {
+"key": "focused_poster_backdrop_expand_delay_seconds",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "int"
+},
+"AJ_NAV_RAPIDA": {
+"key": "fast_horizontal_navigation_enabled",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_PROF": {
+"key": "card_depth_enabled",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_PROF_BORDA": {
+"key": "card_depth_edge_strength",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "int"
+},
+"AJ_PROF_BRILHO": {
+"key": "card_depth_sheen_strength",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "int"
+},
+"AJ_PROF_COBERTURA": {
+"key": "card_depth_edge_coverage",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "int"
+},
+"AJ_PROF_POSTERS": {
+"key": "card_depth_posters_enabled",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_PROF_CW": {
+"key": "card_depth_continue_watching_enabled",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_PROF_EPS": {
+"key": "card_depth_episode_cards_enabled",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_PROF_ELENCO": {
+"key": "card_depth_cast_enabled",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_PROF_TRAILERS": {
+"key": "card_depth_trailers_enabled",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "boolean"
+},
+"AJ_LARGURA_DP": {
+"key": "poster_card_width_dp",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "int"
+},
+"AJ_RAIO_DP": {
+"key": "poster_card_corner_radius_dp",
+"feature": "layout_settings",
+"file": "LayoutPreferenceDataStore.kt",
+"type": "int"
+},
+"AJ_TEMA": {
+"key": "selected_theme",
+"feature": "theme_settings",
+"file": "ThemeDataStore.kt",
+"type": "string"
+},
+"AJ_TMDB_LIGADO": {
+"key": "tmdb_enabled",
+"feature": "tmdb_settings",
+"file": "TmdbSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_TMDB_IDIOMA": {
+"key": "tmdb_language",
+"feature": "tmdb_settings",
+"file": "TmdbSettingsDataStore.kt",
+"type": "string"
+},
+"AJ_TMDB_ARTE": {
+"key": "tmdb_use_artwork",
+"feature": "tmdb_settings",
+"file": "TmdbSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_TMDB_BASICO": {
+"key": "tmdb_use_basic_info",
+"feature": "tmdb_settings",
+"file": "TmdbSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_TMDB_FICHA": {
+"key": "tmdb_use_details",
+"feature": "tmdb_settings",
+"file": "TmdbSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_TMDB_ELENCO": {
+"key": "tmdb_use_credits",
+"feature": "tmdb_settings",
+"file": "TmdbSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_TMDB_PROD": {
+"key": "tmdb_use_productions",
+"feature": "tmdb_settings",
+"file": "TmdbSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_TMDB_REDES": {
+"key": "tmdb_use_networks",
+"feature": "tmdb_settings",
+"file": "TmdbSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_TMDB_EPS": {
+"key": "tmdb_use_episodes",
+"feature": "tmdb_settings",
+"file": "TmdbSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_TMDB_TRAILERS": {
+"key": "tmdb_use_trailers",
+"feature": "tmdb_settings",
+"file": "TmdbSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_TMDB_MAIS": {
+"key": "tmdb_use_more_like_this",
+"feature": "tmdb_settings",
+"file": "TmdbSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_TMDB_COL": {
+"key": "tmdb_use_collections",
+"feature": "tmdb_settings",
+"file": "TmdbSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_TMDB_CW": {
+"key": "tmdb_enrich_continue_watching",
+"feature": "tmdb_settings",
+"file": "TmdbSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_MDB_LIGADO": {
+"key": "mdblist_enabled",
+"feature": "mdblist_settings",
+"file": "MDBListSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_MDB_TRAKT": {
+"key": "mdblist_show_trakt",
+"feature": "mdblist_settings",
+"file": "MDBListSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_MDB_IMDB": {
+"key": "mdblist_show_imdb",
+"feature": "mdblist_settings",
+"file": "MDBListSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_MDB_TMDB": {
+"key": "mdblist_show_tmdb",
+"feature": "mdblist_settings",
+"file": "MDBListSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_MDB_LETTER": {
+"key": "mdblist_show_letterboxd",
+"feature": "mdblist_settings",
+"file": "MDBListSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_MDB_TOMATES": {
+"key": "mdblist_show_tomatoes",
+"feature": "mdblist_settings",
+"file": "MDBListSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_MDB_AUDIENCIA": {
+"key": "mdblist_show_audience",
+"feature": "mdblist_settings",
+"file": "MDBListSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_MDB_META": {
+"key": "mdblist_show_metacritic",
+"feature": "mdblist_settings",
+"file": "MDBListSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_MDB_MAL": {
+"key": "mdblist_show_mal",
+"feature": "mdblist_settings",
+"file": "MDBListSettingsDataStore.kt",
+"type": "boolean"
+},
+"AJ_FONTE_ESCOPO": {
+"key": "stream_auto_play_source",
+"feature": "player_settings",
+"file": "PlayerSettingsDataStore.kt",
+"type": "string"
+}
+}

@@ -13,6 +13,9 @@
 void legfontes_dir(const char *dir);
 int legfontes_n(void);
 const char *legfontes_nome(int indice);
+const char *legfontes_id(int indice); /* content ID only; never a path/URI */
+const char *legfontes_escolha_id(int slot); /* retains an unavailable selected ID */
+int legfontes_reservar_secundaria_id(const char *id); /* missing content only; bundled fallback */
 int legfontes_selecionada(int slot); /* -1 = bundled font / inherit */
 int legfontes_escolher(int slot, int indice); /* -1 clears custom selection */
 /* A related atomic preference write runs only after renderer admission. The

@@ -13,7 +13,7 @@ int main(void) {
   assert(!seekrStatusLinhas(SEEKR_PRONTO, &u, 1, l));
   assert(!seekrStatusLinhas(SEEKR_BUSCANDO, &u, 1, l));
   assert(!seekrStatusLinhas(SEEKR_DESLIGADO, &u, 1, l));
-  assert(seekrStatusLinhas(SEEKR_DESLIGADO, &u, 0, l) == 1 && strstr(l[0], "sem chave"));
+  assert(!seekrStatusLinhas(SEEKR_DESLIGADO, &u, 0, l));   // off is not an error
   assert(seekrStatusLinhas(SEEKR_LIMITE_LOCAL, &u, 1, l) == 3);
   assert(strstr(l[0], "TV") && !strstr(l[0], "temporário"));
   assert(!strcmp(l[1], "50 de 50 consultas hoje (UTC)"));

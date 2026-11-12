@@ -16,6 +16,8 @@
 #include "mkvass.h"
 #include "assrender.h"
 #include "ajustes.h"
+#include "idiomacod.h"
+#include "subtitle_auto_policy.h"
 #include "catalogo.h"
 #include "linguas.h"
 #include "audioescolha.h"
@@ -588,7 +590,7 @@ static int nLinhas(int col) {
 // linha restaura o conjunto inteiro sem exigir dezenas de toques no controle.
 enum { EST_FONTE = 1, EST_COR = 2, EST_RESTAURAR = 9, EST_COR_BORDA = 10 };
 static const char *const EST_ROT[FX_N_ESTILO] = {
-  "Tamanho", "Fonte OpenSubtitles", "Cor", "Opacidade", "Fundo", "Posição", "Borda", "Atraso",
+  "Tamanho", "Fonte da legenda", "Cor", "Opacidade", "Fundo", "Posição", "Borda", "Atraso",
   "Negrito", "Restaurar padrão", "Cor da borda"
 };
 static const char *const EST_FUNDO[5] = { "Nenhum", "Escuro 25%", "Escuro 50%",
@@ -1031,6 +1033,7 @@ static void legendaAutomatica(Uint32 agora) {
   tituloAtual(tit, sizeof tit);
   mt = tit[0] ? legmem_do_titulo(tit) : NULL;
   pref = legmem_preferencia(ling_legenda(), mt, legmem_ultima(), &origem);
+  pref=nv_subtitle_auto_preference(pref,ajustes_legenda_automatica_completa(),idioma_iso(ajustes_idioma()));
   nEmb = video_n_legenda();
   if (nEmb > NV_FAIXA_MAX) nEmb = NV_FAIXA_MAX;
   // Faixa de LETREIROS/FORCADA nunca liga como a legenda inteira: nao traduz
@@ -1048,7 +1051,7 @@ static void legendaAutomatica(Uint32 agora) {
   // e de UM episodio; embutida: outro numero em outra fonte) e o que sobra e o
   // idioma — com o audio no mesmo idioma o #287 respondia "so a forcada" e a
   // escolha sumia: serie em ingles com legenda em ingles abria sem legenda.
-  forcadaAuto = ajustes_legenda_forcada_auto() &&
+  forcadaAuto = !ajustes_legenda_automatica_completa() && ajustes_legenda_forcada_auto() &&
                 !(origem == LEGMEM_DE_TITULO &&
                   (mt->tipo == 'a' || (mt->tipo == 'e' && !strcmp(mt->id, "c"))));
   soForcada = forcadaAuto && audio[0] && pref[0] &&

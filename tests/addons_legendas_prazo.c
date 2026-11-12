@@ -7,13 +7,14 @@
 static CatItem item;
 static VideoFaixa audio;
 static char selecionada[1024];
+static VideoFaixa testEmbedded[2];static int testEmbeddedCount,testEmbeddedSelected=-1;
 int video_n_audio(void) { return 1; }
 const VideoFaixa *video_audio(int i) { return i == 0 ? &audio : NULL; }
 int video_audio_atual(void) { return 0; }
-int video_n_legenda(void) { return 0; }
-const VideoFaixa *video_legenda(int i) { (void)i; return NULL; }
-int video_legenda_atual(void) { return -1; }
-void video_escolher_legenda(int i) { (void)i; }
+int video_n_legenda(void) { return testEmbeddedCount; }
+const VideoFaixa *video_legenda(int i) { return i>=0&&i<testEmbeddedCount?&testEmbedded[i]:NULL; }
+int video_legenda_atual(void) { return testEmbeddedSelected; }
+void video_escolher_legenda(int i) { testEmbeddedSelected=i; }
 void video_escolher_audio(int i) { (void)i; }
 int video_mkv_sondado(void) { return 2; }
 int video_legenda_ordinal_mkv(int i) { (void)i; return -1; }
@@ -30,7 +31,11 @@ int player_com_video(void) { return 1; }
 int player_indice(void) { return 0; }
 const char *player_id_canal(void) { return ""; }
 const CatItem *cat_item(int i) { (void)i; return &item; }
-int ajustes_legenda_forcada_auto(void) { return 0; }
+static int testFullSubtitles,testForcedSubtitles;
+int ajustes_legenda_automatica_completa(void) { return testFullSubtitles; }
+int ajustes_idioma(void) { return IDIOMA_EN; }
+const char *legenda_idioma(const char *language,const char *file){(void)file;return language;}
+int ajustes_legenda_forcada_auto(void) { return testForcedSubtitles; }
 Uint32 SDL_GetTicks(void) { return 0; }
 void legsync_primaria_externa(const char *u, const char *i, const char *p) {
   (void)i; (void)p; snprintf(selecionada, sizeof selecionada, "%s", u);
@@ -45,7 +50,7 @@ int dados_apagar(const char *n) { (void)n; return 1; }
 void prazo_auto_iniciar(void) {
   snprintf(item.imdb, sizeof item.imdb, "tt123");
   snprintf(audio.idioma, sizeof audio.idioma, "en");
-  selecionada[0] = 0; legExterna = -1; legExternaId[0] = 0;
+  testEmbeddedSelected=-1; selecionada[0] = 0; legExterna = -1; legExternaId[0] = 0;
   legAuto = 1; legAutoDesde = 1; aberta = 0;
 }
 void prazo_auto_avancar(unsigned ms) { legendaAutomatica(ms); }

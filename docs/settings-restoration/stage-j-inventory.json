@@ -1,0 +1,5416 @@
+{
+ "generated": "2026-11-04",
+ "stage": "J1",
+ "official_commit": "99fbd65d8c16928d1fe11bf3f9812c4b5aaaca8f",
+ "tiers": {
+  "official: synced (Stage I)": "Already bidirectional via \"tv\"",
+  "official tier: J6 candidate": "Regular Nuvio exports it; sync through \"tv\" after a tested value conversion (never also in better_nuvio)",
+  "official tier: key unresolved": "Counterpart exists; stored key composite/unresolved; local until J6",
+  "better_nuvio tier: portable": "Synced per profile through p_platform \"better_nuvio\" (J4)",
+  "device-local": "Never uploaded",
+  "not a preference": "Actions, read-only rows, sections"
+ },
+ "policy": [
+  "One owner per setting: an exported official equivalent always wins over better_nuvio.",
+  "Device-local rows never leave the device, including when regular Nuvio would sync an equivalent elsewhere.",
+  "Credentials, API keys, tokens, URLs and endpoint configuration are not settings rows; they stay in their existing stores or the provider-credential RPC.",
+  "Profile scope: every synced row is per profile; nothing is account-wide."
+ ],
+ "controls": [
+  {
+   "native_id": "AJ_QUALIDADE",
+   "storage_key": "qualidade",
+   "label": "Maximum quality",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "hardware/display/GPU/audio capability"
+  },
+  {
+   "native_id": "AJ_DV",
+   "storage_key": "dolbyVision",
+   "label": "Dolby Vision",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "hardware/display/GPU/audio capability"
+  },
+  {
+   "native_id": "AJ_ATMOS",
+   "storage_key": "dolbyAtmos",
+   "label": "Dolby Atmos",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "hardware/display/GPU/audio capability"
+  },
+  {
+   "native_id": "AJ_LEG_LINGUA",
+   "storage_key": "legendaIdioma",
+   "label": "Subtitle language",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_AUD_LINGUA",
+   "storage_key": "audioIdioma",
+   "label": "Audio language",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "player_settings",
+     "key": "preferred_audio_language",
+     "type": "string",
+     "evidence": "official setter/property (PlayerSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports player_settings.preferred_audio_language (string value map required)"
+  },
+  {
+   "native_id": "AJ_PAUSA_OVERLAY",
+   "storage_key": "pauseOverlayEnabled",
+   "label": "Pause panel",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "pause_overlay_enabled",
+     "feature": "player_settings",
+     "file": "PlayerSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_FONTE_MANUAL",
+   "storage_key": "escolherFonteManual",
+   "label": "Choose the source on Play",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "player_settings",
+     "key": "stream_auto_play_mode",
+     "type": "string",
+     "evidence": "official setter/property (PlayerSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "device-local",
+   "reason": "Native TV-only scope; regular Nuvio exports player_settings.stream_auto_play_mode (revisit after J6)"
+  },
+  {
+   "native_id": "AJ_FONTE_AUTO",
+   "storage_key": "fonteAutoLocal",
+   "label": "Automatic source",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install); could be portable, revisit after J4"
+  },
+  {
+   "native_id": "AJ_FONTE_REPOR",
+   "storage_key": "fonteReporLocal",
+   "label": "Another source on failure",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install); candidate official mapping rejected in review"
+  },
+  {
+   "native_id": "AJ_FONTE_TEXTO",
+   "storage_key": "fonteTextoLocal",
+   "label": "Source text",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install); could be portable, revisit after J4"
+  },
+  {
+   "native_id": "AJ_LANDSCAPE",
+   "storage_key": "modernLandscapePostersEnabled",
+   "label": "Landscape posters",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "modern_landscape_posters_enabled",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_HERO_CHEIO",
+   "storage_key": "modernHeroFullScreenBackdropEnabled",
+   "label": "Full-screen backdrop",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_HERO_FUNDO",
+   "storage_key": "heroFundoLocal",
+   "label": "Hero background",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_HERO_ARTE_DIF",
+   "storage_key": "heroDifferentFromCard",
+   "label": "Hero with different art",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_HERO_TRAILER",
+   "storage_key": "trailerHero",
+   "label": "Trailer on the hero",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_FIL_LIMITE",
+   "storage_key": "-limiteFileiras",
+   "label": "Row limit",
+   "category": "Layout",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_FIL_ORDEM",
+   "storage_key": "-ordenarFileiras",
+   "label": "Reorder and enable rows",
+   "category": "Layout",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_RAIL",
+   "storage_key": "collapseSidebar",
+   "label": "Sidebar",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_RAIL_MODERNA",
+   "storage_key": "modernSidebar",
+   "label": "Modern sidebar",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_RAIL_BLUR",
+   "storage_key": "modernSidebarBlur",
+   "label": "Modern sidebar blur",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "candidate official mapping rejected in review; counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_HERO",
+   "storage_key": "heroSectionEnabled",
+   "label": "Show hero",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "hero_section_enabled",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_HERO_CATALOGOS",
+   "storage_key": "-heroCatalogKeys",
+   "label": "Hero catalogs",
+   "category": "Layout",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_PS_FUNDO",
+   "storage_key": "perfilFundoLocal",
+   "label": "Profile picker background",
+   "category": "Switch Profile",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "profile picker (shown before a profile is selected)"
+  },
+  {
+   "native_id": "AJ_DESCOBRIR",
+   "storage_key": "discoverLocation",
+   "label": "Discover location",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "discover_location",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "string",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.discover_location (string value map required)"
+  },
+  {
+   "native_id": "AJ_ROTULOS",
+   "storage_key": "posterLabelsEnabled",
+   "label": "Poster labels",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "poster_labels_enabled",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_NOME_ADDON",
+   "storage_key": "catalogAddonNameEnabled",
+   "label": "Addon name in catalog",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "catalog_addon_name_enabled",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.catalog_addon_name_enabled (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_SUFIXO_TIPO",
+   "storage_key": "catalogTypeSuffixEnabled",
+   "label": "Content type",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "catalog_type_suffix_enabled",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_OCULTAR_NLANC",
+   "storage_key": "hideUnreleasedContent",
+   "label": "Hide unreleased",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "hide_unreleased_content",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.hide_unreleased_content (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_NOTAS_HOME",
+   "storage_key": "homeImdbRatingsVisibility",
+   "label": "Overall ratings",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "home_imdb_ratings_visibility",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "string",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.home_imdb_ratings_visibility (string value map required)"
+  },
+  {
+   "native_id": "AJ_GRAD_CLASSICO",
+   "storage_key": "classicFocusGradientEnabled",
+   "label": "Classic focus gradient",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "classic_focus_gradient_enabled",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.classic_focus_gradient_enabled (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_CW_LIGADO",
+   "storage_key": "continueWatchingEnabled",
+   "label": "Show \"Continue Watching\"",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "continue_watching_enabled",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_CW_OK",
+   "storage_key": "cwOkLocal",
+   "label": "OK on the card",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_CW_FONTE",
+   "storage_key": "cwFonteLocal",
+   "label": "Source for \"Continue Watching\"",
+   "category": "Tracking",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "trakt_settings",
+     "key": "watch_progress_source",
+     "type": "string",
+     "evidence": "official setter/property (TraktSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports trakt_settings.watch_progress_source (string value map required)"
+  },
+  {
+   "native_id": "AJ_CW_ESTILO",
+   "storage_key": "continueWatchingCardStyle",
+   "label": "\"Continue Watching\" style",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "continue_watching_card_style",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "string",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.continue_watching_card_style (string value map required)"
+  },
+  {
+   "native_id": "AJ_CW_THUMB",
+   "storage_key": "useEpisodeThumbnailsInCw",
+   "label": "Episode thumbnail",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "use_episode_thumbnails_in_cw",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_CW_BLUR_PROX",
+   "storage_key": "blurContinueWatchingNextUp",
+   "label": "Blur next episode",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "blur_continue_watching_next_up",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_CW_FURTHEST",
+   "storage_key": "nextUpFromFurthestEpisode",
+   "label": "Next up from furthest episode",
+   "category": "Tracking",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "next_up_from_furthest_episode",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_CW_NAO_EXIBIDOS",
+   "storage_key": "showUnairedNextUp",
+   "label": "Show unaired episodes",
+   "category": "Tracking",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "show_unaired_next_up",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_CW_ORDEM",
+   "storage_key": "continueWatchingSortMode",
+   "label": "Sort order",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "continue_watching_sort_mode",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "string",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.continue_watching_sort_mode (string value map required)"
+  },
+  {
+   "native_id": "AJ_DET_BLUR_NAO_VISTOS",
+   "storage_key": "blurUnwatchedEpisodes",
+   "label": "Blur unwatched",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "blur_unwatched_episodes",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_DET_TRAILER",
+   "storage_key": "detailPageTrailerButtonEnabled",
+   "label": "Trailer button",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "detail_page_trailer_button_enabled",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.detail_page_trailer_button_enabled (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_DET_META_EXT",
+   "storage_key": "preferExternalMetaAddonDetail",
+   "label": "Prefer external metadata",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "prefer_external_meta_addon_detail",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_DET_DATA_CHEIA",
+   "storage_key": "showFullReleaseDate",
+   "label": "Full release date",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "show_full_release_date",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_DET_VEU",
+   "storage_key": "detalheVeu",
+   "label": "Backdrop dimming",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_DET_TRAILER_AUTO",
+   "storage_key": "trailerAuto",
+   "label": "Auto-play trailer",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "candidate official mapping rejected in review; counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_TRAILER_QUAL",
+   "storage_key": "trailerQualidade",
+   "label": "Trailer quality",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "trailer_settings",
+     "key": "trailer_allow_4k",
+     "type": "boolean",
+     "evidence": "official setter/property (TrailerSettingsDataStore)",
+     "official_sync": "device-local in regular Nuvio (excluded from the blob)"
+    },
+    {
+     "feature": "layout_settings",
+     "key": "blur_unwatched_episodes",
+     "type": "boolean",
+     "evidence": "official setter/property (LayoutPreferenceDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.blur_unwatched_episodes (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_TRAILER_ASPECTO",
+   "storage_key": "trailerAspecto",
+   "label": "Trailer aspect",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_TRAILER_FONTE",
+   "storage_key": "trailerFonteLocal",
+   "label": "Trailer source",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_EXPANDIR",
+   "storage_key": "focusedPosterBackdropExpandEnabled",
+   "label": "Expand poster on focus",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "focused_poster_backdrop_expand_enabled",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_EXPANDIR_ATRASO",
+   "storage_key": "focusedPosterBackdropExpandDelaySeconds",
+   "label": "Expansion delay",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [
+    {
+     "key": "focused_poster_backdrop_expand_delay_seconds",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "int",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.focused_poster_backdrop_expand_delay_seconds (int value map required)"
+  },
+  {
+   "native_id": "AJ_NAV_RAPIDA",
+   "storage_key": "fastHorizontalNavigationEnabled",
+   "label": "Fast horizontal navigation",
+   "category": "Advanced",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "fast_horizontal_navigation_enabled",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_BORDA_FOCO",
+   "storage_key": "bordaFocoCartaz",
+   "label": "Border on the focused card",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_PROF",
+   "storage_key": "cardDepthEnabled",
+   "label": "Depth effect",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "card_depth_enabled",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.card_depth_enabled (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_PROF_BORDA",
+   "storage_key": "cardDepthEdgeStrength",
+   "label": "Edge glow",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [
+    {
+     "key": "card_depth_edge_strength",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "int",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.card_depth_edge_strength (int value map required)"
+  },
+  {
+   "native_id": "AJ_PROF_BRILHO",
+   "storage_key": "cardDepthSheenStrength",
+   "label": "Sheen",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [
+    {
+     "key": "card_depth_sheen_strength",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "int",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.card_depth_sheen_strength (int value map required)"
+  },
+  {
+   "native_id": "AJ_PROF_COBERTURA",
+   "storage_key": "cardDepthEdgeCoverage",
+   "label": "Edge coverage",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [
+    {
+     "key": "card_depth_edge_coverage",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "int",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.card_depth_edge_coverage (int value map required)"
+  },
+  {
+   "native_id": "AJ_PROF_POSTERS",
+   "storage_key": "cardDepthPostersEnabled",
+   "label": "Depth on posters",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "card_depth_posters_enabled",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.card_depth_posters_enabled (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_PROF_CW",
+   "storage_key": "cardDepthContinueWatchingEnabled",
+   "label": "Depth on \"Continue\"",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "card_depth_continue_watching_enabled",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.card_depth_continue_watching_enabled (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_PROF_EPS",
+   "storage_key": "cardDepthEpisodeCardsEnabled",
+   "label": "Depth on episodes",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "card_depth_episode_cards_enabled",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.card_depth_episode_cards_enabled (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_PROF_ELENCO",
+   "storage_key": "cardDepthCastEnabled",
+   "label": "Depth on cast",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "card_depth_cast_enabled",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.card_depth_cast_enabled (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_PROF_TRAILERS",
+   "storage_key": "cardDepthTrailersEnabled",
+   "label": "Depth on trailers",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "card_depth_trailers_enabled",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.card_depth_trailers_enabled (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_LARGURA_DP",
+   "storage_key": "posterCardWidthDp",
+   "label": "Item width",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [
+    {
+     "key": "poster_card_width_dp",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "int",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.poster_card_width_dp (int value map required)"
+  },
+  {
+   "native_id": "AJ_RAIO_DP",
+   "storage_key": "posterCardCornerRadiusDp",
+   "label": "Corner radius",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [
+    {
+     "key": "poster_card_corner_radius_dp",
+     "feature": "layout_settings",
+     "file": "LayoutPreferenceDataStore.kt",
+     "type": "int",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports layout_settings.poster_card_corner_radius_dp (int value map required)"
+  },
+  {
+   "native_id": "AJ_QUALIDADE_IMG",
+   "storage_key": "qualidadeImagem",
+   "label": "Image quality",
+   "category": "Advanced",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_IDIOMA",
+   "storage_key": "idioma",
+   "label": "App language",
+   "category": "Appearance",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_ANIM",
+   "storage_key": "animacoes",
+   "label": "Animations",
+   "category": "Appearance",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_RESOLUCAO",
+   "storage_key": "resolucaoUi",
+   "label": "Interface resolution",
+   "category": "Advanced",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_TEMA",
+   "storage_key": "selected_theme",
+   "label": "Accent color",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "selected_theme",
+     "feature": "theme_settings",
+     "file": "ThemeDataStore.kt",
+     "type": "string",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports theme_settings.selected_theme (string value map required)"
+  },
+  {
+   "native_id": "AJ_COR_LOGO",
+   "storage_key": "corDaLogoLocal",
+   "label": "Logo color",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_PERFIL_ATIVO",
+   "storage_key": "-perfil",
+   "label": "Profile",
+   "category": "Switch Profile",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_SYNC",
+   "storage_key": "-sync",
+   "label": "Sync",
+   "category": "Account",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_ADDONS",
+   "storage_key": "-addons",
+   "label": "Add-ons",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_STALKER_PORTAL",
+   "storage_key": "-stalkerPortal",
+   "label": "Stalker portal (MAC)",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_STALKER_MAC",
+   "storage_key": "-stalkerMac",
+   "label": "Portal MAC",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_STALKER_LIMPAR",
+   "storage_key": "-stalkerLimpar",
+   "label": "Remove the Stalker portal",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_XTREAM_SERVIDOR",
+   "storage_key": "-xtreamServidor",
+   "label": "Xtream server",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_XTREAM_USUARIO",
+   "storage_key": "-xtreamUsuario",
+   "label": "Xtream username",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_XTREAM_SENHA",
+   "storage_key": "-xtreamSenha",
+   "label": "Xtream password",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_XTREAM_LIMPAR",
+   "storage_key": "-xtreamLimpar",
+   "label": "Remove Xtream",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_XTREAM_CONTA",
+   "storage_key": "-xtreamConta",
+   "label": "Xtream account",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_EPG_PAIS",
+   "storage_key": "epgPaisLocal",
+   "label": "TV guide source",
+   "category": "Content & Discovery",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_SALVOS_DEST",
+   "storage_key": "salvosDestino",
+   "label": "Library source",
+   "category": "Tracking",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "trakt_settings",
+     "key": "library_source_mode",
+     "type": "string",
+     "evidence": "official setter/property (TraktSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports trakt_settings.library_source_mode (string value map required)"
+  },
+  {
+   "native_id": "AJ_TRAKT",
+   "storage_key": "-trakt",
+   "label": "Trakt",
+   "category": "Tracking",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_SIMKL",
+   "storage_key": "-simkl",
+   "label": "Simkl",
+   "category": "Tracking",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_SAIR",
+   "storage_key": "-sair",
+   "label": "Sign out",
+   "category": "Account",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_VERSAO_I",
+   "storage_key": "-versao",
+   "label": "Version",
+   "category": "About",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_ATUALIZAR",
+   "storage_key": "-atualizar",
+   "label": "Update the app",
+   "category": "About",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_ENVIAR_LOG",
+   "storage_key": "-registro",
+   "label": "Send log",
+   "category": "Advanced",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_ENVIO_AUTO",
+   "storage_key": "envioAuto",
+   "label": "Send logs automatically",
+   "category": "Advanced",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_ESPACO",
+   "storage_key": "-espaco",
+   "label": "Memory used by images",
+   "category": "Advanced",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_TEX_MB",
+   "storage_key": "texturasMB",
+   "label": "Memory for images",
+   "category": "Advanced",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_TMDB_LIGADO",
+   "storage_key": "tmdb_enabled",
+   "label": "TMDB",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "tmdb_enabled",
+     "feature": "tmdb_settings",
+     "file": "TmdbSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_TMDB_IDIOMA",
+   "storage_key": "tmdb_language",
+   "label": "Metadata language",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "tmdb_language",
+     "feature": "tmdb_settings",
+     "file": "TmdbSettingsDataStore.kt",
+     "type": "string",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports tmdb_settings.tmdb_language (string value map required)"
+  },
+  {
+   "native_id": "AJ_TMDB_ARTE",
+   "storage_key": "tmdb_use_artwork",
+   "label": "Localized artwork",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "tmdb_use_artwork",
+     "feature": "tmdb_settings",
+     "file": "TmdbSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_TMDB_BASICO",
+   "storage_key": "tmdb_use_basic_info",
+   "label": "Title and overview",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "tmdb_use_basic_info",
+     "feature": "tmdb_settings",
+     "file": "TmdbSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_TMDB_FICHA",
+   "storage_key": "tmdb_use_details",
+   "label": "Details",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "tmdb_use_details",
+     "feature": "tmdb_settings",
+     "file": "TmdbSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_TMDB_DATAS",
+   "storage_key": "tmdb_use_release_dates",
+   "label": "Release dates",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_TMDB_ELENCO",
+   "storage_key": "tmdb_use_credits",
+   "label": "Cast and crew",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "tmdb_use_credits",
+     "feature": "tmdb_settings",
+     "file": "TmdbSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_TMDB_PROD",
+   "storage_key": "tmdb_use_productions",
+   "label": "Production companies",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "tmdb_use_productions",
+     "feature": "tmdb_settings",
+     "file": "TmdbSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_TMDB_REDES",
+   "storage_key": "tmdb_use_networks",
+   "label": "Networks and studios",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "tmdb_use_networks",
+     "feature": "tmdb_settings",
+     "file": "TmdbSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_TMDB_EPS",
+   "storage_key": "tmdb_use_episodes",
+   "label": "Episodes",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "tmdb_use_episodes",
+     "feature": "tmdb_settings",
+     "file": "TmdbSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_TMDB_TRAILERS",
+   "storage_key": "tmdb_use_trailers",
+   "label": "Trailers",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "tmdb_use_trailers",
+     "feature": "tmdb_settings",
+     "file": "TmdbSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_TMDB_MAIS",
+   "storage_key": "tmdb_use_more_like_this",
+   "label": "\"More like this\"",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "tmdb_use_more_like_this",
+     "feature": "tmdb_settings",
+     "file": "TmdbSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_TMDB_COL",
+   "storage_key": "tmdb_use_collections",
+   "label": "Collections and sagas",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "tmdb_use_collections",
+     "feature": "tmdb_settings",
+     "file": "TmdbSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_TMDB_CW",
+   "storage_key": "tmdb_enrich_continue_watching",
+   "label": "Enrich \"Continue Watching\"",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "tmdb_enrich_continue_watching",
+     "feature": "tmdb_settings",
+     "file": "TmdbSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_MDB_LIGADO",
+   "storage_key": "mdblist_enabled",
+   "label": "MDBList",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "mdblist_enabled",
+     "feature": "mdblist_settings",
+     "file": "MDBListSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports mdblist_settings.mdblist_enabled (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_MDB_CHAVE",
+   "storage_key": "-mdblistChave",
+   "label": "MDBList key",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_MDB_TRAKT",
+   "storage_key": "mdblist_show_trakt",
+   "label": "Trakt ratings",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "mdblist_show_trakt",
+     "feature": "mdblist_settings",
+     "file": "MDBListSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports mdblist_settings.mdblist_show_trakt (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_MDB_IMDB",
+   "storage_key": "mdblist_show_imdb",
+   "label": "IMDb ratings",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "mdblist_show_imdb",
+     "feature": "mdblist_settings",
+     "file": "MDBListSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports mdblist_settings.mdblist_show_imdb (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_MDB_TMDB",
+   "storage_key": "mdblist_show_tmdb",
+   "label": "TMDB ratings",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "mdblist_show_tmdb",
+     "feature": "mdblist_settings",
+     "file": "MDBListSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports mdblist_settings.mdblist_show_tmdb (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_MDB_LETTER",
+   "storage_key": "mdblist_show_letterboxd",
+   "label": "Letterboxd ratings",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "mdblist_show_letterboxd",
+     "feature": "mdblist_settings",
+     "file": "MDBListSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports mdblist_settings.mdblist_show_letterboxd (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_MDB_TOMATES",
+   "storage_key": "mdblist_show_tomatoes",
+   "label": "Rotten Tomatoes ratings",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "mdblist_show_tomatoes",
+     "feature": "mdblist_settings",
+     "file": "MDBListSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports mdblist_settings.mdblist_show_tomatoes (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_MDB_AUDIENCIA",
+   "storage_key": "mdblist_show_audience",
+   "label": "Audience score",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "mdblist_show_audience",
+     "feature": "mdblist_settings",
+     "file": "MDBListSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports mdblist_settings.mdblist_show_audience (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_MDB_META",
+   "storage_key": "mdblist_show_metacritic",
+   "label": "Metacritic ratings",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "mdblist_show_metacritic",
+     "feature": "mdblist_settings",
+     "file": "MDBListSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports mdblist_settings.mdblist_show_metacritic (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_MDB_MAL",
+   "storage_key": "mdblist_show_mal",
+   "label": "MyAnimeList ratings",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "mdblist_show_mal",
+     "feature": "mdblist_settings",
+     "file": "MDBListSettingsDataStore.kt",
+     "type": "boolean",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports mdblist_settings.mdblist_show_mal (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_FANART_CHAVE",
+   "storage_key": "-fanartChave",
+   "label": "fanart.tv key",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_DIAGNOSTICO",
+   "storage_key": "-diagnostico",
+   "label": "Diagnostics and optimization",
+   "category": "Advanced",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_VELOCIDADE",
+   "storage_key": "-velocidade",
+   "label": "Speed test",
+   "category": "Advanced",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_MENU_EXPLORAR",
+   "storage_key": "menuExplorarLocal",
+   "label": "Explore in the sidebar",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_MENU_GUIA",
+   "storage_key": "menuGuiaLocal",
+   "label": "TV Guide in the sidebar",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_MENU_AGENDA",
+   "storage_key": "menuAgendaLocal",
+   "label": "Schedule in the sidebar",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_MENU_PERFIL",
+   "storage_key": "menuPerfilLocal",
+   "label": "Profile & Stats in the sidebar",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_FOCO_TRAILER",
+   "storage_key": "trailerCartazModo",
+   "label": "Trailer on the focused poster",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "candidate official mapping rejected in review; counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_ITENS_FILEIRA",
+   "storage_key": "itensFileiraLocal",
+   "label": "Items per row",
+   "category": "Layout",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_FONTE_UI",
+   "storage_key": "fonteInterface",
+   "label": "Interface font",
+   "category": "Appearance",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "theme_settings",
+     "key": "selected_font",
+     "type": "string",
+     "evidence": "official setter/property (ThemeDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "device-local",
+   "reason": "Native TV-only scope; regular Nuvio exports theme_settings.selected_font (revisit after J6)"
+  },
+  {
+   "native_id": "AJ_GPU_EFEITOS",
+   "storage_key": "gpuEfeitosLocal",
+   "label": "Visual effects",
+   "category": "Advanced",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_VIDRO",
+   "storage_key": "vidroLocal",
+   "label": "Glass UI",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "hardware/display/GPU/audio capability"
+  },
+  {
+   "native_id": "AJ_P2P_LIGADO",
+   "storage_key": "p2pLocal",
+   "label": "P2P server (experimental)",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install); candidate official mapping rejected in review"
+  },
+  {
+   "native_id": "AJ_P2P_URL",
+   "storage_key": "-p2pEndereco",
+   "label": "P2P server address",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_P2P_TESTAR",
+   "storage_key": "-p2pTestar",
+   "label": "Test P2P server",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_POSTER_PROV",
+   "storage_key": "posterProvLocal",
+   "label": "Custom posters",
+   "category": "Layout",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_POSTER_INST",
+   "storage_key": "-posterInst",
+   "label": "SpatialPosters address",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_POSTER_TOKEN",
+   "storage_key": "-posterToken",
+   "label": "SpatialPosters token",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_POSTER_EXTRA",
+   "storage_key": "-posterExtra",
+   "label": "SpatialPosters parameters",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_POSTER_CHAVE",
+   "storage_key": "-posterChave",
+   "label": "RPDB key",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_POSTER_MODELO",
+   "storage_key": "-posterModelo",
+   "label": "Poster URL template",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_POSTER_TESTAR",
+   "storage_key": "-posterTestar",
+   "label": "Test posters",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_HOME_LAYOUT",
+   "storage_key": "homeLayoutLocal",
+   "label": "Home layout",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_DEBRID_AD",
+   "storage_key": "-debridAD",
+   "label": "AllDebrid key",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_DEBRID_AD_TESTAR",
+   "storage_key": "-debridADTestar",
+   "label": "Test AllDebrid key",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_DEBRID_RD",
+   "storage_key": "-debridRD",
+   "label": "Real-Debrid key",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_DEBRID_TB",
+   "storage_key": "-debridTB",
+   "label": "TorBox key",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_DEBRID_PM",
+   "storage_key": "-debridPM",
+   "label": "Premiumize key",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_DEBRID_RD_TESTAR",
+   "storage_key": "-debridRDTestar",
+   "label": "Test Real-Debrid key",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_DEBRID_TB_TESTAR",
+   "storage_key": "-debridTBTestar",
+   "label": "Test TorBox key",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_DEBRID_PM_TESTAR",
+   "storage_key": "-debridPMTestar",
+   "label": "Test Premiumize key",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_DET_SO_CINEMETA",
+   "storage_key": "soCinemetaLocal",
+   "label": "Always use the Nuvio catalog",
+   "category": "Layout",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install); could be portable, revisit after J4"
+  },
+  {
+   "native_id": "AJ_NT_IMDB",
+   "storage_key": "notaTituloImdb",
+   "label": "IMDb",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_NT_TOMATES",
+   "storage_key": "notaTituloTomates",
+   "label": "Rotten Tomatoes (critics)",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_NT_AUDIENCIA",
+   "storage_key": "notaTituloAudiencia",
+   "label": "Popcornmeter (audience)",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_NT_META",
+   "storage_key": "notaTituloMeta",
+   "label": "Metacritic (critics)",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_NT_METAUSER",
+   "storage_key": "notaTituloMetaUser",
+   "label": "Metacritic (users)",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_NT_TRAKT",
+   "storage_key": "notaTituloTrakt",
+   "label": "Trakt",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_NT_TMDB",
+   "storage_key": "notaTituloTmdb",
+   "label": "TMDB",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_NT_LETTER",
+   "storage_key": "notaTituloLetter",
+   "label": "Letterboxd",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_NT_MAL",
+   "storage_key": "notaTituloMal",
+   "label": "MyAnimeList",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_NT_EBERT",
+   "storage_key": "notaTituloEbert",
+   "label": "Roger Ebert (critic)",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_NT_SCORE",
+   "storage_key": "notaTituloScore",
+   "label": "MDBList score",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_PERFIL_PESQ",
+   "storage_key": "-perfilPesquisavel",
+   "label": "Searchable profile",
+   "category": "Switch Profile",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_PERFIL_EDITAR",
+   "storage_key": "-perfilEditar",
+   "label": "My public profile",
+   "category": "Switch Profile",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_VIDRO_CONTORNO",
+   "storage_key": "vidroContornoLocal",
+   "label": "Glass outline",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_HERO_TRAILER_SOM",
+   "storage_key": "trailerDestaqueSomLocal",
+   "label": "Trailer sound",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "candidate official mapping rejected in review; counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_HERO_TRAILER_ESPERA",
+   "storage_key": "trailerDestaqueEsperaLocal",
+   "label": "Hero trailer delay",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [
+    {
+     "feature": "trailer_settings",
+     "key": "trailer_delay_seconds",
+     "type": "int",
+     "evidence": "official setter/property (TrailerSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    },
+    {
+     "feature": "trailer_settings",
+     "key": "trailer_play_in_background",
+     "type": "boolean",
+     "evidence": "official setter/property (TrailerSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports trailer_settings.trailer_delay_seconds (int value map required)"
+  },
+  {
+   "native_id": "AJ_CW_CONCLUIDO",
+   "storage_key": "cwConcluidoLocal",
+   "label": "Watched percentage",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [
+    {
+     "feature": "player_settings",
+     "key": "next_episode_threshold_percent_v2",
+     "type": "float",
+     "evidence": "official setter/property (PlayerSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports player_settings.next_episode_threshold_percent_v2 (float value map required)"
+  },
+  {
+   "native_id": "AJ_ADDONS_PRINCIPAL",
+   "storage_key": "addonsPrincipalLocal",
+   "label": "Use the primary profile's add-ons",
+   "category": "Content & Discovery",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_HERO_TRANSICAO",
+   "storage_key": "heroTransicaoLocal",
+   "label": "Hero transition",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_ADDON_POSTER",
+   "storage_key": "posterAddonLocal",
+   "label": "Addon posters",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_ADDON_FUNDO",
+   "storage_key": "fundoAddonLocal",
+   "label": "Addon hero background",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_ADDON_LOGO",
+   "storage_key": "logoAddonLocal",
+   "label": "Addon logo",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_COL_ARTE_CONTA",
+   "storage_key": "colArteContaLocal",
+   "label": "Account folder artwork",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_SELOS_CORES",
+   "storage_key": "selosColoridosLocal",
+   "label": "Colored badges",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_DET_TRAILER_SOM",
+   "storage_key": "trailerDetalheSomLocal",
+   "label": "Title page trailer sound",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_LIVETV_RES",
+   "storage_key": "liveTvResolucaoLocal",
+   "label": "Main resolution",
+   "category": "Content & Discovery",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_LIVETV_FORMATO",
+   "storage_key": "xtreamFormatoLocal",
+   "label": "Xtream format",
+   "category": "Content & Discovery",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_LIVETV_ESPERA",
+   "storage_key": "liveTvEsperaLocal",
+   "label": "Wait for a channel to open",
+   "category": "Content & Discovery",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_LIVETV_DIAG",
+   "storage_key": "-liveTvDiag",
+   "label": "Live TV diagnostics",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_LIVETV_MODO",
+   "storage_key": "liveTvModoLocal",
+   "label": "Live TV player mode",
+   "category": "Content & Discovery",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_LIVETV_PROXY",
+   "storage_key": "liveTvProxyLocal",
+   "label": "Live TV TS proxy",
+   "category": "Content & Discovery",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_RELOGIO",
+   "storage_key": "relogioTelaLocal",
+   "label": "Clock on screen",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_RELOGIO_POS",
+   "storage_key": "relogioPosLocal",
+   "label": "Clock position",
+   "category": null,
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_SELO_VISTO",
+   "storage_key": "seloVistoLocal",
+   "label": "Watched badge on posters",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_SEEKR_LIGADO",
+   "storage_key": "seekrLocal",
+   "label": "Seek bar thumbnails",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_SEEKR_CHAVE",
+   "storage_key": "-seekrChave",
+   "label": "Seekr key",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_SEEKR_TESTAR",
+   "storage_key": "-seekrTestar",
+   "label": "Test Seekr key",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_SEEKR_FITA",
+   "storage_key": "seekrFitaLocal",
+   "label": "Thumbnail strip",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_SEEKR_AJUSTE",
+   "storage_key": "seekrAjusteLocal",
+   "label": "Thumbnail sync",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_SAIDA_PLAYER",
+   "storage_key": "saidaPlayerLocal",
+   "label": "When leaving the player",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_REACAO_CREDITOS",
+   "storage_key": "reacaoCreditosLocal",
+   "label": "Ask what you thought at the credits",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_FONTE_PRAZO",
+   "storage_key": "fonteEsperaLocal",
+   "label": "Wait for add-ons",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "player_settings",
+     "key": "stream_auto_play_timeout_seconds",
+     "type": "int",
+     "evidence": "official setter/property (PlayerSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "device-local",
+   "reason": "Native TV-only scope; regular Nuvio exports player_settings.stream_auto_play_timeout_seconds (revisit after J6)"
+  },
+  {
+   "native_id": "AJ_VER_REGISTRO",
+   "storage_key": "-verRegistro",
+   "label": "View the log on screen",
+   "category": "Advanced",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_MEDIDOR",
+   "storage_key": "medidorFormaLocal",
+   "label": "Performance meter",
+   "category": "Advanced",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install); candidate official mapping rejected in review"
+  },
+  {
+   "native_id": "AJ_GUIA",
+   "storage_key": "-guiaUso",
+   "label": "User guide",
+   "category": "About",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_SELOS_PACOTE",
+   "storage_key": "-selosPacote",
+   "label": "Badge pack",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_SELOS_PACOTE_ADD",
+   "storage_key": "-selosPacoteAdd",
+   "label": "Add badge pack",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_SELOS_PACOTE_REM",
+   "storage_key": "-selosPacoteRem",
+   "label": "Remove pack",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_TAMANHO_UI",
+   "storage_key": "tamanhoUiLocal",
+   "label": "Interface size",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "hardware/display/GPU/audio capability"
+  },
+  {
+   "native_id": "AJ_FUNDO",
+   "storage_key": "fundoLocal",
+   "label": "Background",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "theme_settings",
+     "key": "amoled_mode",
+     "type": "boolean",
+     "evidence": "official setter/property (ThemeDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    },
+    {
+     "feature": "theme_settings",
+     "key": "amoled_surfaces_mode",
+     "type": "boolean",
+     "evidence": "official setter/property (ThemeDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    },
+    {
+     "feature": "theme_settings",
+     "key": "settings_ui_style",
+     "type": "string",
+     "evidence": "official setter/property (ThemeDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports theme_settings.amoled_mode (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_VIDRO_OPAC",
+   "storage_key": "vidroOpacLocal",
+   "label": "Glass opacity",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_VIDRO_FOSCO",
+   "storage_key": "vidroFoscoLocal",
+   "label": "Frosted glass",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "hardware/display/GPU/audio capability"
+  },
+  {
+   "native_id": "AJ_ICONE_APP",
+   "storage_key": "iconeAppLocal",
+   "label": "App icon",
+   "category": "Appearance",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_DISCORD",
+   "storage_key": "-discord",
+   "label": "Discord",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_TAMANHO_AJUSTES",
+   "storage_key": "tamanhoAjustesLocal",
+   "label": "Settings size",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "hardware/display/GPU/audio capability"
+  },
+  {
+   "native_id": "AJ_LOGO_TRAILER",
+   "storage_key": "logoTrailerLocal",
+   "label": "Hide logo during trailer",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_LEG_LINGUA2",
+   "storage_key": "legendaSecundariaIdioma",
+   "label": "Second subtitle language",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_LEG_SYNC_AUDIO",
+   "storage_key": "legendaSyncAudioLocal",
+   "label": "Sync by audio",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_CACHE_SEEK",
+   "storage_key": "cacheSeekLocal",
+   "label": "Seek cache on disk",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install); candidate official mapping rejected in review"
+  },
+  {
+   "native_id": "AJ_TRAILER_ZOOM_TPK",
+   "storage_key": "trailerZoomTpkLocal",
+   "label": "Trailer and player zoom (experimental)",
+   "category": "Layout",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_PLUGINS",
+   "storage_key": "-plugins",
+   "label": "Plugins",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_JF_LIGADO",
+   "storage_key": "jellyfinLocal",
+   "label": "Personal servers (experimental)",
+   "category": "Content & Discovery",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install); candidate official mapping rejected in review"
+  },
+  {
+   "native_id": "AJ_JF_SERVIDOR",
+   "storage_key": "-jellyfinServidor",
+   "label": "Jellyfin address",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_JF_ENTRAR",
+   "storage_key": "-jellyfinEntrar",
+   "label": "Sign in to Jellyfin",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_JF_SAIR",
+   "storage_key": "-jellyfinSair",
+   "label": "Sign out of Jellyfin",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_AVANCADAS",
+   "storage_key": "avancadasLocal",
+   "label": "Show advanced options",
+   "category": null,
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_LEG2_POS",
+   "storage_key": "legenda2PosLocal",
+   "label": "Second subtitle position",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_LEG2_TAMANHO",
+   "storage_key": "legenda2EscalaLocal",
+   "label": "Size",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_LEG2_COR",
+   "storage_key": "legenda2CorLocal",
+   "label": "Color",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_LEG2_FUNDO",
+   "storage_key": "legenda2FundoLocal",
+   "label": "Background",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_LEG2_BORDA",
+   "storage_key": "legenda2BordaLocal",
+   "label": "Edge",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_EM_SERVIDOR",
+   "storage_key": "-embyServidor",
+   "label": "Emby address",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_EM_ENTRAR",
+   "storage_key": "-embyEntrar",
+   "label": "Sign in to Emby",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_EM_SAIR",
+   "storage_key": "-embySair",
+   "label": "Sign out of Emby",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_PX_ENTRAR",
+   "storage_key": "-plexEntrar",
+   "label": "Sign in to Plex",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_PX_SERVIDOR",
+   "storage_key": "-plexServidor",
+   "label": "Plex server",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_PX_SAIR",
+   "storage_key": "-plexSair",
+   "label": "Sign out of Plex",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_FONTE_PRIORIDADE",
+   "storage_key": "fontePrioridadeLocal",
+   "label": "Automatic pick prioritizes",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_FONTE_HDR",
+   "storage_key": "fonteHdrLocal",
+   "label": "HDR and Dolby Vision",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "hardware/display/GPU/audio capability"
+  },
+  {
+   "native_id": "AJ_LOGO_APP",
+   "storage_key": "logoAppLocal",
+   "label": "App logo",
+   "category": "Appearance",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install); candidate official mapping rejected in review"
+  },
+  {
+   "native_id": "AJ_ABERTURA",
+   "storage_key": "aberturaAppLocal",
+   "label": "App opening",
+   "category": "Appearance",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install); candidate official mapping rejected in review"
+  },
+  {
+   "native_id": "AJ_ENQUETES",
+   "storage_key": "enquetesLocal",
+   "label": "Receive polls",
+   "category": "Notifications",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "consent or diagnostics (given per device)"
+  },
+  {
+   "native_id": "AJ_BUSCA_CINEMETA",
+   "storage_key": "buscaCinemetaLocal",
+   "label": "Search Cinemeta",
+   "category": "Content & Discovery",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install); could be portable, revisit after J4"
+  },
+  {
+   "native_id": "AJ_ESMAECER",
+   "storage_key": "esmaecerLocal",
+   "label": "Screensaver",
+   "category": "Appearance",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install); candidate official mapping rejected in review"
+  },
+  {
+   "native_id": "AJ_BRILHO_PLAYER",
+   "storage_key": "brilhoPlayerLocal",
+   "label": "Player interface brightness",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_NOVIDADES20",
+   "storage_key": "-novidades20",
+   "label": "What's new in 2.0",
+   "category": "About",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_MANTER_VIDEO",
+   "storage_key": "manterVideoLocal",
+   "label": "Keep the video ready on exit",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_DESCANSO_ESTILO",
+   "storage_key": "descansoEstiloLocal",
+   "label": "Screensaver style",
+   "category": "Appearance",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install); could be portable, revisit after J4"
+  },
+  {
+   "native_id": "AJ_DESCANSO_FONTE",
+   "storage_key": "descansoFonteLocal",
+   "label": "Showcase titles",
+   "category": "Appearance",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_RELOGIO_12H",
+   "storage_key": "relogio12hLocal",
+   "label": "Clock format",
+   "category": "Appearance",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install); could be portable, revisit after J4"
+  },
+  {
+   "native_id": "AJ_TAM_MAX",
+   "storage_key": "tamanhoMaxLocal",
+   "label": "Maximum size",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "candidate official mapping rejected in review; counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_TAM_MIN",
+   "storage_key": "tamanhoMinLocal",
+   "label": "Minimum size",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "candidate official mapping rejected in review; counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_APOIAR",
+   "storage_key": "-apoiar",
+   "label": "Support the project",
+   "category": "About",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_LEG_FORCADA",
+   "storage_key": "legendaForcadaLocal",
+   "label": "Forced subtitles when the audio is in your language",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "player_settings",
+     "key": "subtitle_use_forced_subtitles",
+     "type": "boolean",
+     "evidence": "official setter/property (PlayerSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports player_settings.subtitle_use_forced_subtitles (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_PLR_CLASSIF",
+   "storage_key": "classifPlayerLocal",
+   "label": "Content rating in the player",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "player_settings",
+     "key": "parental_guide_enabled",
+     "type": "boolean",
+     "evidence": "official setter/property (PlayerSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports player_settings.parental_guide_enabled (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_FONTE_ESCOPO",
+   "storage_key": "streamAutoPlaySource",
+   "label": "Auto-play sources",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "key": "stream_auto_play_source",
+     "feature": "player_settings",
+     "file": "PlayerSettingsDataStore.kt",
+     "type": "string",
+     "evidence": "identical preference key",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports player_settings.stream_auto_play_source (string value map required)"
+  },
+  {
+   "native_id": "AJ_FONTE_ADDONS_PERM",
+   "storage_key": "-fonteAddonsPermitidos",
+   "label": "Allowed add-ons",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_FONTE_PLUGINS_PERM",
+   "storage_key": "-fontePluginsPermitidos",
+   "label": "Allowed plugins",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_FONTE_OUTROS",
+   "storage_key": "fonteOutrosLocal",
+   "label": "Use the others if there are none",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_FONTE_REGEX",
+   "storage_key": "fonteRegexLocal",
+   "label": "Regex match",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_FONTE_REGEX_PADRAO",
+   "storage_key": "-fonteRegexPadrao",
+   "label": "Regex pattern",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_FONTE_REGEX_MODELO",
+   "storage_key": "-fonteRegexModelo",
+   "label": "Regex preset",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_ESPACO_FILEIRAS",
+   "storage_key": "espacoFileirasLocal",
+   "label": "Space between rows",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_ESPACO_TITULOS",
+   "storage_key": "espacoTitulosLocal",
+   "label": "Space between titles",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_PROPORCAO_PADRAO",
+   "storage_key": "proporcaoPadraoLocal",
+   "label": "Default aspect ratio",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_CW_RETIDO_TAMBEM",
+   "storage_key": "cwRetidoTambemLocal",
+   "label": "Also in Continue watching",
+   "category": "Tracking",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_PS_CONTINUAR",
+   "storage_key": "psContinuarLocal",
+   "label": "Continue on profile picker",
+   "category": "Switch Profile",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "profile picker (shown before a profile is selected)"
+  },
+  {
+   "native_id": "AJ_DTS_AC3",
+   "storage_key": "dtsSaidaLocal",
+   "label": "DTS converted to",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install); candidate official mapping rejected in review"
+  },
+  {
+   "native_id": "AJ_DV_MKV",
+   "storage_key": "dvMkvLocal",
+   "label": "Dolby Vision in MKV (experimental)",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_HIST_CONTA",
+   "storage_key": "histContaLocal",
+   "label": "Send history to the Nuvio account",
+   "category": "Tracking",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "consent or diagnostics (given per device)"
+  },
+  {
+   "native_id": "AJ_SOCIAL",
+   "storage_key": "socialLocal",
+   "label": "Social features",
+   "category": "Tracking",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "consent or diagnostics (given per device)"
+  },
+  {
+   "native_id": "AJ_FONTE_ORDEM",
+   "storage_key": "-fonteOrdem",
+   "label": "Add-on order",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_FONTE_ORDEM_USO",
+   "storage_key": "fonteOrdemUsoLocal",
+   "label": "Use the order",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_FONTE_TOCAR_CONFERINDO",
+   "storage_key": "fonteTocarConferindoLocal",
+   "label": "Play while checking the source",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "network/connection behaviour"
+  },
+  {
+   "native_id": "AJ_FONTE_AQUECER",
+   "storage_key": "fonteAquecerLocal",
+   "label": "Warm up connections when a title opens",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "network/connection behaviour"
+  },
+  {
+   "native_id": "AJ_FONTE_CONFERIR_VARIAS",
+   "storage_key": "fonteConferirVariasLocal",
+   "label": "Check several sources at once",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "network/connection behaviour"
+  },
+  {
+   "native_id": "AJ_FONTE_PREPARAR",
+   "storage_key": "fontePrepararLocal",
+   "label": "Prepare the source when a title opens",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "candidate official mapping rejected in review; counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_CW_PROXIMO",
+   "storage_key": "cwProximoLocal",
+   "label": "Next episode in Continue",
+   "category": "Tracking",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_BUSCA_NUVIO",
+   "storage_key": "buscaNuvioLocal",
+   "label": "Nuvio catalog results in search",
+   "category": "Content & Discovery",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_BUSCA_ORIGEM",
+   "storage_key": "buscaOrigemLocal",
+   "label": "Show the source on search results",
+   "category": "Content & Discovery",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_LAYOUT_AJUSTES",
+   "storage_key": "ajustesLayoutLocal",
+   "label": "Settings layout",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "theme_settings",
+     "key": "settings_ui_style",
+     "type": "string",
+     "evidence": "official setter/property (ThemeDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports theme_settings.settings_ui_style (string value map required)"
+  },
+  {
+   "native_id": "AJ_P2P_LIMITE",
+   "storage_key": "p2pLimiteLocal",
+   "label": "P2P space limit",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_P2P_DESTINO",
+   "storage_key": "p2pDestinoLocal",
+   "label": "P2P cache location",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_FONTE_ORDEM_ADDON",
+   "storage_key": "fonteOrdemLocal",
+   "label": "Source order",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "candidate official mapping rejected in review; counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_LEG_SYNC_AUTO",
+   "storage_key": "legendaSyncAutoLocal",
+   "label": "Automatic subtitle sync",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install); candidate official mapping rejected in review"
+  },
+  {
+   "native_id": "AJ_LEG_MOSTRAR",
+   "storage_key": "legendaMostrarLocal",
+   "label": "Show in player",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "candidate official mapping rejected in review; counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_AVISO_LEGAL",
+   "storage_key": "-avisoLegal",
+   "label": "Legal notice",
+   "category": "About",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_HDR_UI",
+   "storage_key": "hdrUiLocal",
+   "label": "Interface brightness in HDR",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_TELA_ABERTURA",
+   "storage_key": "telaAberturaLocal",
+   "label": "Video opening screen",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "player_settings",
+     "key": "loading_overlay_enabled",
+     "type": "boolean",
+     "evidence": "official setter/property (PlayerSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports player_settings.loading_overlay_enabled (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_CW_MINIMO",
+   "storage_key": "cwMinimoLocal",
+   "label": "Minimum to enter Continue",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_BUFFER",
+   "storage_key": "bufferPlayerLocal",
+   "label": "Buffer size",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_PULAR_ABERTURA",
+   "storage_key": "pularAberturaLocal",
+   "label": "Skip the intro automatically",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "player_settings",
+     "key": "skip_intro_enabled",
+     "type": "boolean",
+     "evidence": "official setter/property (PlayerSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports player_settings.skip_intro_enabled (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_PULAR_RESUMO",
+   "storage_key": "pularResumoLocal",
+   "label": "Skip the recap automatically",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_PROXIMO_AUTO",
+   "storage_key": "proximoAutoLocal",
+   "label": "Play the next episode automatically",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "player_settings",
+     "key": "stream_auto_play_next_episode_enabled",
+     "type": "boolean",
+     "evidence": "official setter/property (PlayerSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports player_settings.stream_auto_play_next_episode_enabled (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_PULAR_CREDITOS",
+   "storage_key": "pularCreditosLocal",
+   "label": "Skip the credits automatically",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_PROXIMO_CONTAGEM",
+   "storage_key": "proximoContagemLocal",
+   "label": "Next episode countdown",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_INTERFACE_MODO",
+   "storage_key": "interfaceModoLocal",
+   "label": "Interface mode",
+   "category": "Appearance",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_MIC_BUSCA",
+   "storage_key": "micBuscaLocal",
+   "label": "Mic button in search",
+   "category": "Layout",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_MENU_TOPO",
+   "storage_key": "menuTopoLocal",
+   "label": "Menu position",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_ABAS_ESTILO",
+   "storage_key": "abasEstiloLocal",
+   "label": "Tab style",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_TECLADO_ANDROID",
+   "storage_key": "tecladoAndroidLocal",
+   "label": "Keyboard",
+   "category": "Appearance",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_LEG_CONTORNO_COR",
+   "storage_key": "legendaContornoCorLocal",
+   "label": "Subtitle outline color",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_FALHA_PROVEDORES",
+   "storage_key": "-falhaProvedores",
+   "label": "Switch provider on failure",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_FALHA_PROVEDOR_ORDEM",
+   "storage_key": "-falhaProvedorOrdem",
+   "label": "Provider order and limits",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_FALHA_RD_LIMITE",
+   "storage_key": "-falhaRDLinks",
+   "label": "Links on Real-Debrid",
+   "category": null,
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_FALHA_TB_LIMITE",
+   "storage_key": "-falhaTBLinks",
+   "label": "Links on TorBox",
+   "category": null,
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_FALHA_PM_LIMITE",
+   "storage_key": "-falhaPMLinks",
+   "label": "Links on Premiumize",
+   "category": null,
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_FALHA_AD_LIMITE",
+   "storage_key": "-falhaADLinks",
+   "label": "Links on AllDebrid",
+   "category": null,
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_FALHA_ADDONS",
+   "storage_key": "-falhaAddons",
+   "label": "Switch add-on on failure",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_FALHA_ADDON_ORDEM",
+   "storage_key": "-falhaAddonOrdem",
+   "label": "Add-on order and limits",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_FALHA_ADDON_LIMITE",
+   "storage_key": "-falhaAddonLinks",
+   "label": "Links in this add-on",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_RETOMADA_MORNA",
+   "storage_key": "retomadaMornaLocal",
+   "label": "Quick resume on return",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_MANTER_PRAZO",
+   "storage_key": "manterVideoPrazoLocal",
+   "label": "Time to keep video ready",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_ESTAT_TAMANHO",
+   "storage_key": "estatTamanhoLocal",
+   "label": "Live statistics size",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_OCULTAR_FILMES_VISTOS",
+   "storage_key": "hideWatchedMoviesLocal",
+   "label": "Hide watched movies",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_ESTAT_LADO",
+   "storage_key": "estatLadoLocal",
+   "label": "Live statistics side",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_DICASCONTROLE",
+   "storage_key": "-dicasControle",
+   "label": "Remote tips",
+   "category": "About",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_HERO_GENERO",
+   "storage_key": "heroGeneroLocal",
+   "label": "Show genre on hero",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_ABERTURA_ADDON",
+   "storage_key": "aberturaAddonLocal",
+   "label": "Show add-on on opening",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_HERO_SINOPSE",
+   "storage_key": "heroSinopseLocal",
+   "label": "Show synopsis on hero",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_HERO_NOTAS",
+   "storage_key": "heroNotasLocal",
+   "label": "Show ratings on hero",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "mdblist_settings",
+     "key": "mdblist_show_on_hero",
+     "type": "boolean",
+     "evidence": "official setter/property (MDBListSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    },
+    {
+     "feature": "layout_settings",
+     "key": "home_imdb_ratings_visibility",
+     "type": "string",
+     "evidence": "official setter/property (LayoutPreferenceDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    },
+    {
+     "feature": "layout_settings",
+     "key": "detail_imdb_ratings_visibility",
+     "type": "string",
+     "evidence": "official setter/property (LayoutPreferenceDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports mdblist_settings.mdblist_show_on_hero (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_HERO_ANO",
+   "storage_key": "heroAnoLocal",
+   "label": "Show year on hero",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_HERO_DURACAO",
+   "storage_key": "heroDuracaoLocal",
+   "label": "Show runtime on hero",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_CURADORIA_URL",
+   "storage_key": "-curadoria",
+   "label": "Curation address",
+   "category": "Layout",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_ABERTURA_FUNDO",
+   "storage_key": "aberturaFundoLocal",
+   "label": "Opening screen backdrop",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_HERO_SINOPSE_TAM",
+   "storage_key": "heroSynopsisSizeLocal",
+   "label": "Synopsis size",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_EP_TAMANHO",
+   "storage_key": "epTamanhoLocal",
+   "label": "Episode card size",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_FONTE_PRECARREGAR",
+   "storage_key": "fontePrecarregarLocal",
+   "label": "Preload video",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "candidate official mapping rejected in review; counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_PROVEDORES_ESCOPO",
+   "storage_key": "-provedoresEscopo",
+   "label": "Provider setup",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_MURAL_TITULOS",
+   "storage_key": "muralTitulosLocal",
+   "label": "Titles in Mural",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_AMIGOS_ESTILO",
+   "storage_key": "friendsRowStyleLocal",
+   "label": "Friends row style",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_FONTE_IDIOMA_AUDIO",
+   "storage_key": "fonteIdiomaAudioLocal",
+   "label": "Prefer audio language",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_AUD_LINGUA2",
+   "storage_key": "audioSecundarioIdioma",
+   "label": "Second audio language",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "player_settings",
+     "key": "secondary_preferred_audio_language",
+     "type": "string",
+     "evidence": "official setter/property (PlayerSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports player_settings.secondary_preferred_audio_language (string value map required)"
+  },
+  {
+   "native_id": "AJ_BAIXAR_REGISTRO",
+   "storage_key": "-baixarRegistro",
+   "label": "Download log",
+   "category": "Advanced",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_FILTROS_FONTES",
+   "storage_key": "-filtrosFontes",
+   "label": "Source filters",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_FILTRO_TAM_MAX",
+   "storage_key": "-filtroTamanhoMax",
+   "label": "Maximum source size",
+   "category": null,
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_FILTRO_GRUPOS",
+   "storage_key": "-filtroGrupos",
+   "label": "Excluded release groups",
+   "category": null,
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_LEG1_TAMANHO",
+   "storage_key": "-legenda1Tamanho",
+   "label": "Size",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_LEG1_FONTE",
+   "storage_key": "-legenda1Fonte",
+   "label": "Subtitle font",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_LEG1_COR",
+   "storage_key": "-legenda1Cor",
+   "label": "Color",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_LEG1_OPACIDADE",
+   "storage_key": "-legenda1Opacidade",
+   "label": "Opacity",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_LEG1_FUNDO",
+   "storage_key": "-legenda1Fundo",
+   "label": "Background",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_LEG1_POSICAO",
+   "storage_key": "-legenda1Posicao",
+   "label": "Position",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_LEG1_BORDA",
+   "storage_key": "-legenda1Borda",
+   "label": "Edge",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_LEG1_ATRASO",
+   "storage_key": "-legenda1Atraso",
+   "label": "Delay",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_LEG1_NEGRITO",
+   "storage_key": "-legenda1Negrito",
+   "label": "Bold",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_LEG1_COR_BORDA",
+   "storage_key": "-legenda1CorBorda",
+   "label": "Outline color",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_LEG1_RESTAURAR",
+   "storage_key": "-legenda1Restaurar",
+   "label": "Restore default",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_LEG2_FONTE",
+   "storage_key": "legenda2FonteLocal",
+   "label": "Subtitle font",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_LEG2_OPACIDADE",
+   "storage_key": "legenda2OpacidadeLocal",
+   "label": "Opacity",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_LEG2_POSICAO",
+   "storage_key": "legenda2PosicaoLocal",
+   "label": "Position",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_LEG2_ATRASO",
+   "storage_key": "legenda2AtrasoLocal",
+   "label": "Delay",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_LEG2_NEGRITO",
+   "storage_key": "legenda2NegritoLocal",
+   "label": "Bold",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_LEG2_COR_BORDA",
+   "storage_key": "legenda2CorBordaLocal",
+   "label": "Outline color",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_LEG2_RESTAURAR",
+   "storage_key": "-legenda2Restaurar",
+   "label": "Restore default",
+   "category": "Playback",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_COLECAO_EXIBICAO",
+   "storage_key": "colecaoExibicaoPadraoLocal",
+   "label": "Default collection view",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_PLAYER_EXTERNO",
+   "storage_key": "playerExternoLocal",
+   "label": "Player",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install); candidate official mapping rejected in review"
+  },
+  {
+   "native_id": "AJ_TRAILER_AUDIO",
+   "storage_key": "trailerAudioLocal",
+   "label": "Trailer audio",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_PLAYER_ANIME",
+   "storage_key": "playerExternoAnimeLocal",
+   "label": "Anime player",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_ABERTURA_ESTILO",
+   "storage_key": "aberturaEstiloLocal",
+   "label": "Opening screen style",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_MENU_CARTAZ",
+   "storage_key": "menuCartazLocal",
+   "label": "Enriched context menu",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "candidate official mapping rejected in review; counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_TITULO_FIL",
+   "storage_key": "rowTitleStyleLocal",
+   "label": "Row titles",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_VIDRO_QUALIDADE",
+   "storage_key": "vidroQualidadeLocal",
+   "label": "Glass quality",
+   "category": "Appearance",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_FUNDO_DIN",
+   "storage_key": "fundoDinamicaLocal",
+   "label": "Dynamic layout background",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_FUNDO_DIN_COR",
+   "storage_key": "fundoDinamicaCorLocal",
+   "label": "Background color",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_ESCALA_TEXTO",
+   "storage_key": "escalaTextoLocal",
+   "label": "Text and component scale",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "hardware/display/GPU/audio capability"
+  },
+  {
+   "native_id": "AJ_FONTE_GRUPO",
+   "storage_key": "fonteGrupoLocal",
+   "label": "Prefer binge group",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "player_settings",
+     "key": "stream_auto_play_prefer_bingegroup_next_episode",
+     "type": "boolean",
+     "evidence": "official setter/property (PlayerSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports player_settings.stream_auto_play_prefer_bingegroup_next_episode (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_FONTE_GRUPO_SESSOES",
+   "storage_key": "fonteGrupoSessoesLocal",
+   "label": "Reuse binge group across sessions",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "player_settings",
+     "key": "stream_auto_play_reuse_binge_group",
+     "type": "boolean",
+     "evidence": "official setter/property (PlayerSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports player_settings.stream_auto_play_reuse_binge_group (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_LINK_REUSAR",
+   "storage_key": "linkReusarLocal",
+   "label": "Reuse last link",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "player_settings",
+     "key": "stream_reuse_last_link_enabled",
+     "type": "boolean",
+     "evidence": "official setter/property (PlayerSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports player_settings.stream_reuse_last_link_enabled (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_LINK_PRAZO",
+   "storage_key": "linkPrazoLocal",
+   "label": "Last link cache duration",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "player_settings",
+     "key": "stream_reuse_last_link_cache_hours",
+     "type": "int",
+     "evidence": "official setter/property (PlayerSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports player_settings.stream_reuse_last_link_cache_hours (int value map required)"
+  },
+  {
+   "native_id": "AJ_DET_ESPACO",
+   "storage_key": "detEspacoLocal",
+   "label": "Row spacing",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_FOCO_ACENTO",
+   "storage_key": "focoAcentoLocal",
+   "label": "Accent-colour focus",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_NT_ORDEM",
+   "storage_key": "notaTituloOrdem",
+   "label": "Title line rating order",
+   "category": "Integrations",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_ARTE_TOM",
+   "storage_key": "artToneLocal",
+   "label": "Art tone",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_PALCO_FUNDO",
+   "storage_key": "palcoFundoLocal",
+   "label": "Stage background",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_URL_LISTA",
+   "storage_key": "-urlLista",
+   "label": "Lists and guides by URL",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_URL_M3U_ADD",
+   "storage_key": "-urlM3uAdd",
+   "label": "Add M3U list",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_URL_XMLTV_ADD",
+   "storage_key": "-urlXmltvAdd",
+   "label": "Add XMLTV guide",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_URL_REM",
+   "storage_key": "-urlRem",
+   "label": "Remove the chosen one",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_NT_EP",
+   "storage_key": "notaEpisodio",
+   "label": "Episode rating",
+   "category": "Integrations",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "official tier: key unresolved",
+   "reason": "candidate official mapping rejected in review; counterpart key composite or unresolved; local until J6 resolves it"
+  },
+  {
+   "native_id": "AJ_LIVETV_SUGERIR",
+   "storage_key": "liveTvSugerirLocal",
+   "label": "Suggest channel categories",
+   "category": "Content & Discovery",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "depends on device-only IPTV/guide sources"
+  },
+  {
+   "native_id": "AJ_AUDIO_OFFSET",
+   "storage_key": "audioOffsetMsLocal",
+   "label": "Audio offset (ms)",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "int",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_XTREAM_CONEXOES",
+   "storage_key": "-xtreamConexoes",
+   "label": "Limited connections",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_AMPLIAR_UI",
+   "storage_key": "ampliarUiLocal",
+   "label": "Scale interface",
+   "category": "Advanced",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "hardware/display/GPU/audio capability"
+  },
+  {
+   "native_id": "AJ_GUIA_FONTE",
+   "storage_key": "guiaFonteLocal",
+   "label": "TV guide sources",
+   "category": "Content & Discovery",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "depends on device-only IPTV/guide sources"
+  },
+  {
+   "native_id": "AJ_GUIA_RECARREGAR",
+   "storage_key": "-guiaRecarregar",
+   "label": "Refresh channels and guide",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_M3U_URL",
+   "storage_key": "-m3uUrl",
+   "label": "M3U playlist URL",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_M3U_EPG",
+   "storage_key": "-m3uEpg",
+   "label": "XMLTV guide URL",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_M3U_LIMPAR",
+   "storage_key": "-m3uLimpar",
+   "label": "Remove M3U playlist",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_IPTV_CONTA",
+   "storage_key": "-iptvConta",
+   "label": "Live TV account",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_IPTV_ADD_XTREAM",
+   "storage_key": "-iptvAddXtream",
+   "label": "Add Xtream account",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_IPTV_ADD_M3U",
+   "storage_key": "-iptvAddM3u",
+   "label": "Add M3U list",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_IPTV_ADD_STALKER",
+   "storage_key": "-iptvAddStalker",
+   "label": "Add Stalker portal",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_IPTV_NOME",
+   "storage_key": "-iptvNome",
+   "label": "Account name",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_IPTV_ATIVA",
+   "storage_key": "-iptvAtiva",
+   "label": "Account enabled",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_IPTV_REMOVER",
+   "storage_key": "-iptvRemover",
+   "label": "Remove Live TV account",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_IPTV_LISTA_XTREAM",
+   "storage_key": "-iptvListaXtream",
+   "label": "Xtream",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_IPTV_LISTA_M3U",
+   "storage_key": "-iptvListaM3u",
+   "label": "M3U",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_IPTV_LISTA_STALKER",
+   "storage_key": "-iptvListaStalker",
+   "label": "Stalker",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_IPTV_ACOES",
+   "storage_key": "-iptvAcoes",
+   "label": "Live TV account",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_IPTV_EXCLUIR",
+   "storage_key": "-iptvExcluir",
+   "label": "Remove Live TV account",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_IPTV_SALVAR",
+   "storage_key": "-iptvSalvar",
+   "label": "Save",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_IPTV_CANCELAR",
+   "storage_key": "-iptvCancelar",
+   "label": "Cancel",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_GUIA_ORDEM",
+   "storage_key": "guiaOrdemLocal",
+   "label": "Sort order",
+   "category": "Content & Discovery",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "depends on device-only IPTV/guide sources"
+  },
+  {
+   "native_id": "AJ_IPTV_ORDEM",
+   "storage_key": "-iptvOrdem",
+   "label": "Order",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_EPG_MEMORIA",
+   "storage_key": "epgMemoriaLocal",
+   "label": "Guide memory",
+   "category": "Content & Discovery",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "hardware/display/GPU/audio capability"
+  },
+  {
+   "native_id": "AJ_GUIA_CATEGORIAS",
+   "storage_key": "-guiaCategorias",
+   "label": "Hide categories",
+   "category": "Content & Discovery",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_BIB_HOME",
+   "storage_key": "libraryRowLocal",
+   "label": "Library row",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_AMPLIACAO_ALGO",
+   "storage_key": "ampliarAlgoLocal",
+   "label": "Upscaling algorithm",
+   "category": "Advanced",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "hardware/display/GPU/audio capability"
+  },
+  {
+   "native_id": "AJ_AMPLIACAO_NITIDEZ",
+   "storage_key": "ampliarNitidezLocal",
+   "label": "Sharpness",
+   "category": "Advanced",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [],
+   "tier": "device-local",
+   "reason": "hardware/display/GPU/audio capability"
+  },
+  {
+   "native_id": "AJ_HDR_INTERFACE",
+   "storage_key": "hdrInterfaceLocal",
+   "label": "HDR UI (test)",
+   "category": "Advanced",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_LIMPAR_CACHE",
+   "storage_key": "-limparCache",
+   "label": "Clear cache",
+   "category": "Advanced",
+   "native_scope": "none",
+   "native_value": "int",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_TUNNELING",
+   "storage_key": "tunneledPlaybackLocal",
+   "label": "Tunneled Playback",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_DV7",
+   "storage_key": "dv7ConversionLocal",
+   "label": "Dolby Vision P7 to P8.1 (experimental)",
+   "category": "Playback",
+   "native_scope": "device (Native TV-only)",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "Native TV-only scope (hardware, display, input, local service or install)"
+  },
+  {
+   "native_id": "AJ_LOG_REDE",
+   "storage_key": "logRedeLocal",
+   "label": "Log on the local network",
+   "category": "Advanced",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "consent or diagnostics (given per device)"
+  },
+  {
+   "native_id": "AJ_PLR_FORMATO",
+   "storage_key": "plrFormatoLocal",
+   "label": "Format in the player",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "stream_badge_settings",
+     "key": "show_badges_in_player",
+     "type": "boolean",
+     "evidence": "official setter/property (StreamBadgeSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports stream_badge_settings.show_badges_in_player (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_PERFIL_INFANTIL",
+   "storage_key": "-perfilInfantil",
+   "label": "Kids profile",
+   "category": "Switch Profile",
+   "native_scope": "none",
+   "native_value": "enum",
+   "official": [],
+   "tier": "not a preference",
+   "reason": "action, read-only row or section"
+  },
+  {
+   "native_id": "AJ_PAUSA_COMENTARIOS",
+   "storage_key": "pausaComentariosLocal",
+   "label": "Trakt comments when paused",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [
+    {
+     "feature": "trakt_settings",
+     "key": "show_meta_comments",
+     "type": "boolean",
+     "evidence": "official setter/property (TraktSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports trakt_settings.show_meta_comments (boolean, same meaning)"
+  },
+  {
+   "native_id": "AJ_PAUSA_NOTAS",
+   "storage_key": "pausaNotasLocal",
+   "label": "Ratings when paused",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_PAUSA_ELENCO",
+   "storage_key": "pausaElencoLocal",
+   "label": "Cast when paused",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_PLR_FORMATO_POS",
+   "storage_key": "plrFormatoPosLocal",
+   "label": "Format position in the player",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_PLR_CODEC",
+   "storage_key": "plrCodecLocal",
+   "label": "Show the audio codec",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_SUAVIZAR_DEGRADES",
+   "storage_key": "suavizarDegradesLocal",
+   "label": "Smooth gradients",
+   "category": "Appearance",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "device-local",
+   "reason": "hardware/display/GPU/audio capability"
+  },
+  {
+   "native_id": "AJ_HERO_TAMANHO",
+   "storage_key": "heroSizeLocal",
+   "label": "Hero size",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_HERO_PASTA_DETALHES",
+   "storage_key": "heroFolderDetailsLocal",
+   "label": "Show folder details on hero",
+   "category": "Layout",
+   "native_scope": "profile",
+   "native_value": "enum",
+   "official": [],
+   "tier": "better_nuvio tier: portable",
+   "reason": "Better Nuvio-exclusive (or distinct behaviour), profile preference"
+  },
+  {
+   "native_id": "AJ_CW_DIAS",
+   "storage_key": "traktContinueWatchingDaysCapLocal",
+   "label": "Days in Trakt Continue Watching (0 = all)",
+   "category": "Tracking",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [
+    {
+     "feature": "trakt_settings",
+     "key": "continue_watching_days_cap",
+     "type": "int",
+     "evidence": "official setter/property (TraktSettingsDataStore)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports trakt_settings.continue_watching_days_cap (int value map required)"
+  },
+  {
+   "native_id": "AJ_RESOLVE_LINKS",
+   "storage_key": "resolvePlayableLinksLocal",
+   "label": "Resolve playable links",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [],
+   "tier": "official: synced (Stage I)",
+   "reason": "bidirectional through the \"tv\" blob; 32 verified fields"
+  },
+  {
+   "native_id": "AJ_RESOLVE_PROVIDER",
+   "storage_key": "resolverProviderLocal",
+   "label": "Resolve with",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [
+    {
+     "feature": "debrid_settings",
+     "key": "preferred_resolver_provider_id",
+     "type": "string",
+     "evidence": "DebridSettingsDataStore (Stage C mapping)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports debrid_settings.preferred_resolver_provider_id (string value map required)"
+  },
+  {
+   "native_id": "AJ_RESOLVE_PREPARE",
+   "storage_key": "resolverPrepareLocal",
+   "label": "Prepare instant playback",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [
+    {
+     "feature": "debrid_settings",
+     "key": "instant_playback_preparation_limit",
+     "type": "int",
+     "evidence": "DebridSettingsDataStore (Stage C mapping)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports debrid_settings.instant_playback_preparation_limit (int value map required)"
+  },
+  {
+   "native_id": "AJ_RESOLVE_LIMIT",
+   "storage_key": "resolverLimitLocal",
+   "label": "Preparation limit",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [
+    {
+     "feature": "debrid_settings",
+     "key": "instant_playback_preparation_limit",
+     "type": "int",
+     "evidence": "DebridSettingsDataStore (Stage C mapping)",
+     "official_sync": "exported in \"tv\" blob"
+    }
+   ],
+   "tier": "official tier: J6 candidate",
+   "reason": "regular Nuvio exports debrid_settings.instant_playback_preparation_limit (int value map required)"
+  },
+  {
+   "native_id": "AJ_TB_CACHED_ADD",
+   "storage_key": "torboxCachedAddLocal",
+   "label": "Add cached TorBox torrents",
+   "category": "Playback",
+   "native_scope": "profile",
+   "native_value": "int",
+   "official": [],
+   "tier": "device-local",
+   "reason": "download-capable safety opt-in (Stage D)"
+  }
+ ]
+}

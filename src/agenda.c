@@ -255,6 +255,8 @@ void agenda_falta(const char *iso, char *dst, size_t tam) {
   // que esta frase faz e dar a ESCALA da espera de longe ("semanas" contra
   // "meses"), nao substituir o dia. Arredondar para o mais proximo faria
   // "em 2 meses" aparecer sobre um numeral de 45 dias, que le como erro.
+  // UMA semana no singular: "in 1 weeks" saia na tela do dono (12/11/2026).
+  if (d < 14)      { snprintf(dst, tam, "%s", i18n("em 1 semana")); return; }
   if (d < 56)      { snprintf(dst, tam, i18n("em %d semanas"), d / 7); return; }
   { int m = d / 30;
     if (m < 2) m = 2;
@@ -495,10 +497,12 @@ void agenda_iniciar(void) {
   nLista = 0;
 }
 
+static int nGrades;
 void agenda_esquecer(void) {
   int p;
   pthread_mutex_lock(&trava);
   nCache = 0; nLembretes = 0; nLista = 0; cacheSujo = 0;
+  nGrades = 0;
   dados_apagar("agenda.txt");
   dados_apagar("lembretes.txt");
   for (p = 1; p <= 8; p++) {
@@ -1575,6 +1579,20 @@ static void *fioAgenda(void *arg) {
   return NULL;
 }
 
+// As series que ja foram buscadas nesta sessao (por qualquer motivo): a falta
+// de nome/cartaz so pede UMA busca por serie por sessao.
+static char faltaTentada[AG_MAX][24];
+static int  nFaltaTentada;
+static int jaTentada(const char *imdb) {
+  int k;
+  for (k = 0; k < nFaltaTentada; k++) if (!strcmp(faltaTentada[k], imdb)) return 1;
+  return 0;
+}
+static void marcaTentada(const char *imdb) {
+  if (!jaTentada(imdb) && nFaltaTentada < AG_MAX)
+    snprintf(faltaTentada[nFaltaTentada++], sizeof faltaTentada[0], "%s", imdb);
+}
+
 void agenda_atualizar_seguidas(void) {
   pthread_t f;
   int i;
@@ -1589,7 +1607,16 @@ void agenda_atualizar_seguidas(void) {
   for (i = 0; i < nLista && nFila < AG_MAX; i++) {
     int idc;
     const CatItem *ci;
-    if (!precisaBuscar(lista[i].imdb)) continue;
+    // SEM NOME OU SEM CARTAZ, mesmo com o registro "fresco": a pagina de titulo
+    // (extras.c) grava so a DATA, sem nome nem cartaz, e o registro ficava 12 h
+    // fresco — a serie que nao esta no catalogo (veio do progresso) aparecia
+    // como "Serie" e um retangulo cinza (Ghosts, BlueStacks do dono,
+    // 12/11/2026). Uma tentativa por serie por sessao: serie que nenhuma fonte
+    // conhece nao vira um pedido a cada abertura da Agenda.
+    { int velho = precisaBuscar(lista[i].imdb);
+      int falta = !lista[i].titulo[0] || !lista[i].poster[0];
+      if (!velho && !(falta && !jaTentada(lista[i].imdb))) continue;
+      marcaTentada(lista[i].imdb); }
     snprintf(filaImdb[nFila], sizeof filaImdb[nFila], "%s", lista[i].imdb);
     snprintf(filaTit[nFila], sizeof filaTit[nFila], "%s", lista[i].titulo);
     snprintf(filaPoster[nFila], sizeof filaPoster[nFila], "%s", lista[i].poster);
@@ -1843,4 +1870,135 @@ int agenda_historico_proximo(const AgEp *eps, int n) {
   // da janela e o melhor palpite honesto (o modal diz "desconhecido" ao lado).
   // Com todos vistos, nao ha o que assistir e o modal nao oferece a acao.
   return desconhecido;
+}
+
+// ---------------------------------------------------------------------------
+// A GRADE DO MES (vista Mes da Agenda)
+//
+// O registro de cada serie so guarda o PROXIMO episodio, e a grade do mes
+// pintava um dia por serie: os episodios seguintes do mesmo mes nao apareciam
+// (dono, 12/11/2026). A grade inteira vem do MESMO pedido do historico
+// (/meta/series/<id>.json do Cinemeta, sem chave), feito so quando a vista Mes
+// ABRE, um fio por vez e uma serie depois da outra — so as series que ja tem
+// data confirmada, porque as outras nao tem grade futura a mostrar. Fica 6 h em
+// memoria: a grade de uma serie muda pouco, e a TV nao deve repetir dezenas de
+// pedidos a cada troca de vista.
+//
+// Guarda do primeiro dia do mes de hoje em diante (o que ja saiu este mes
+// tambem e calendario), ate AG_GRADE_POR episodios por serie.
+// ---------------------------------------------------------------------------
+
+#define AG_GRADE_POR 16
+#define AG_GRADE_VALIDADE_S (6 * 60 * 60)
+
+typedef struct {
+  char  imdb[24];
+  AgEp  eps[AG_GRADE_POR];
+  int   n;
+  long  quando;
+} AgGrade;
+
+static AgGrade grades[AG_MAX];
+static int     gradeVoo;
+
+typedef struct { char ids[AG_MAX][24]; int n; char desde[12]; } GradePedido;
+
+static AgGrade *gradeDe(const char *id) {
+  int i;
+  for (i = 0; i < nGrades; i++) if (!strcmp(grades[i].imdb, id)) return &grades[i];
+  return NULL;
+}
+
+static void *fioGrade(void *arg) {
+  GradePedido *p = arg;
+  static AgEp tmp[AG_EPS_MAX];
+  int k;
+  for (k = 0; k < p->n; k++) {
+    char *corpo = metaprov_meta_com("series", p->ids[k], AG_REDE_S, metaGetAg, NULL, NULL);
+    int n = corpo ? lerVideos(corpo, tmp, AG_EPS_MAX) : 0, i, m = 0;
+    AgGrade *g;
+    pthread_mutex_lock(&trava);
+    g = gradeDe(p->ids[k]);
+    if (!g && nGrades < AG_MAX) { g = &grades[nGrades++]; memset(g, 0, sizeof *g); }
+    if (g) {
+      snprintf(g->imdb, sizeof g->imdb, "%s", p->ids[k]);
+      // Sem corpo (rede falhou) a grade fica VAZIA mas datada: a tela volta ao
+      // proximo episodio do registro, e o fio nao insiste a cada quadro.
+      for (i = 0; i < n && m < AG_GRADE_POR; i++)
+        if (strcmp(tmp[i].data, p->desde) >= 0) g->eps[m++] = tmp[i];
+      g->n = m;
+      g->quando = corpo ? (long)time(NULL) : (long)time(NULL) - AG_GRADE_VALIDADE_S + 10 * 60;
+    }
+    pthread_mutex_unlock(&trava);
+    free(corpo);
+  }
+  printf("[agenda] grade do mes: %d serie(s)\n", p->n);
+  fflush(stdout);
+  pthread_mutex_lock(&trava);
+  gradeVoo = 0;
+  pthread_mutex_unlock(&trava);
+  free(p);
+  return NULL;
+}
+
+void agenda_grade_pedir(void) {
+  GradePedido *p;
+  pthread_t f;
+  const char *h = agenda_hoje();
+  long agora = (long)time(NULL);
+  int i;
+  if (!ehIso(h)) return;
+  p = calloc(1, sizeof *p);
+  if (!p) return;
+  snprintf(p->desde, sizeof p->desde, "%.8s01", h);
+  pthread_mutex_lock(&trava);
+  if (gradeVoo) { pthread_mutex_unlock(&trava); free(p); return; }
+  for (i = 0; i < agenda_n() && p->n < AG_MAX; i++) {
+    const AgItem *it = agenda_lista(i);
+    char id[24];
+    AgGrade *g;
+    if (!it || !ehIso(it->dataProx) || strcmp(it->dataProx, h) < 0) continue;
+    serieDe(id, sizeof id, it->imdb);
+    if (!id[0]) continue;
+    g = gradeDe(id);
+    if (g && agora - g->quando < AG_GRADE_VALIDADE_S) continue;
+    snprintf(p->ids[p->n++], sizeof p->ids[0], "%s", id);
+  }
+  if (!p->n) { pthread_mutex_unlock(&trava); free(p); return; }
+  gradeVoo = 1;
+  pthread_mutex_unlock(&trava);
+  if (pthread_create(&f, NULL, fioGrade, p) != 0) {
+    free(p);
+    pthread_mutex_lock(&trava); gradeVoo = 0; pthread_mutex_unlock(&trava);
+    return;
+  }
+  pthread_detach(f);
+}
+
+int agenda_grade_tem(const char *imdb) {
+  char id[24];
+  int tem;
+  serieDe(id, sizeof id, imdb);
+  pthread_mutex_lock(&trava);
+  { AgGrade *g = gradeDe(id); tem = g && g->n > 0; }
+  pthread_mutex_unlock(&trava);
+  return tem;
+}
+
+int agenda_grade_entre(const char *ini, const char *fim, AgGradeEp *saida, int max) {
+  int i, j, n = 0;
+  if (!ehIso(ini) || !ehIso(fim)) return 0;
+  pthread_mutex_lock(&trava);
+  for (i = 0; i < nGrades; i++)
+    for (j = 0; j < grades[i].n; j++) {
+      const AgEp *e = &grades[i].eps[j];
+      if (strcmp(e->data, ini) < 0 || strcmp(e->data, fim) > 0) continue;
+      if (n < max) {
+        snprintf(saida[n].imdb, sizeof saida[n].imdb, "%s", grades[i].imdb);
+        saida[n].ep = *e;
+      }
+      n++;
+    }
+  pthread_mutex_unlock(&trava);
+  return n < max ? n : max;
 }

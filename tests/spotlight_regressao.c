@@ -9,6 +9,7 @@ static void teste_sp_free(void *ptr);
 #define desc_busca_n_alvos teste_alvos
 #define desc_busca_alvo_n teste_n
 #define desc_busca_alvo_item teste_item
+#define desc_busca_alvo_nuvio teste_nuvio
 #define desc_busca_n teste_total
 #define desc_buscando teste_buscando
 #define desc_busca_geracao teste_geracao
@@ -71,6 +72,7 @@ static void bufferZerar(void) {
 }
 void teste_buscar(const char *t) { montagens++; snprintf(termo, sizeof termo, "%s", t); }
 int teste_alvos(void) { return nAlvosTeste; }
+int teste_nuvio(int a) { (void)a; return 1; }   /* search is Nuvio-only */
 int teste_n(int a, const char *t) { return !strcmp(t, termo) ? quant[a] : 0; }
 int teste_item(int a, int i, CatItem *it) {
   assert(a >= 0 && a < 7 && i >= 0 && i <= DESC_BUSCA_POR_ALVO);

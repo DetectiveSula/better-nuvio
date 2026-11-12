@@ -250,7 +250,7 @@ static void pausao_desenharCorpo_(Uint32 agora, const PausaoCena *cena) {
   // --- VEUS: o degrade da esquerda (.78 -> 0 a 80%) e o leve de baixo, pelo
   // shader com dither. A arte continua viva a direita.
   gfx_veu_css((GfxRect){ 0, 0, NV_TELA_W, NV_TELA_H }, 2, 0.0f, 0.80f, 0.78f * a);
-  gfx_veu_css((GfxRect){ 0, NV_TELA_H - 300.0f, NV_TELA_W, 300.0f }, 0, 1.0f, 1.0f, 0.60f * a);
+  gfx_veu_css((GfxRect){ 0, NV_TELA_H - 300.0f, NV_TELA_W, 300.0f }, 0, 1.0f, 1.0f, 0.75f * a);   // holds bar + time
 
   // --- A PILULA DA ILHA diz "Pausado" (hora e "termina as" vem do player) ----
   { PlrIlhaPedido p;
@@ -449,7 +449,7 @@ static void pausao_desenharCorpo_(Uint32 agora, const PausaoCena *cena) {
     }
   }
 
-  // --- BARRA: a MESMA do OSD, com o tempo acima dela a direita -----------------
+  // --- BARRA: a MESMA do OSD, com o tempo logo abaixo dela a direita -----------
   if (cena && cena->dur > 0.0f) {
     char t1[24], t2[32], d[24];
     plrui_tempo(t1, sizeof t1, cena->pos);
@@ -459,7 +459,9 @@ static void pausao_desenharCorpo_(Uint32 agora, const PausaoCena *cena) {
     { TxtLinha l2 = txt_linha(TXT_ILHA_NOME, t2, 243, 242, 239, 128);
       TxtLinha l1 = txt_linha(TXT_ILHA_NOME, t1, 243, 242, 239, 235);
       float xr = NV_TELA_W - PAUSAO_X - l2.w;
-      float timeY = telefoneui_ativo() ? PAUSAO_BARRA_Y - 52.0f : 938.0f;
+      // TV: right under the bar, inside the bottom veil. At 938 it floated
+      // mid-right, above the veil's dark part, and vanished on bright frames.
+      float timeY = telefoneui_ativo() ? PAUSAO_BARRA_Y - 52.0f : PAUSAO_BARRA_Y + 20.0f;
       txt_desenhar_alpha(l2, xr, timeY, a);
       txt_desenhar_alpha(l1, xr - 8.0f - l1.w, timeY, a); }
   }

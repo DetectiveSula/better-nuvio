@@ -26,6 +26,7 @@
 #include "explorar.h"
 #include "mapa.h"
 #include "posterprov.h"
+#include "artehero.h"
 #include "catalogo.h"
 #include "descoberta.h"
 #include "tex_cache.h"
@@ -104,6 +105,7 @@ static int clAberto = -1;             // posicao do clima aberto (climas.c[])
 static int caLinha, caCol[2];         // clima aberto: 0 = descobrir, 1 = vistos
 static int caIdx[2][MAPA_CLIMA_ITENS], caN[2];
 static float caRolar[2];
+static float caTvRolar;               // TV: rolagem vertical das fileiras do clima
 #ifdef NV_TOUCH_UI
 static ToqueRolagem toqueCl;
 static float clRolar;
@@ -318,6 +320,7 @@ static void abrirClima(int pos) {
   caLinha = 0;
   caCol[0] = caCol[1] = 0;
   caRolar[0] = caRolar[1] = 0.0f;
+  caTvRolar = 0.0f;
 #ifdef NV_TOUCH_UI
   caPagina = 0;
   for (int i = 0; i < 2; i++) toquerol_limpar(&toqueCa[i]);
@@ -499,7 +502,175 @@ static void subir(void) {
 
 static int ehOk(SDL_Keycode k) { return k == SDLK_RETURN || k == SDLK_KP_ENTER || k == SDLK_SPACE; }
 
+// --- TV: a pagina de climas (mock-up do dono, 11/2026) -----------------------------
+//
+// So na TV (no telefone continua a grade de sempre). De cima para baixo:
+//   DESTAQUE   o banner "Clima em destaque": os climas de maior afinidade que
+//              tem titulos (ate EX_TV_DEST), um por vez, com pontos; esquerda e
+//              direita no botao trocam, e ele gira sozinho quando o foco esta
+//              em outra secao.
+//   COLECOES   os climas com titulos, na ordem de afinidade, em cartoes
+//              grandes (nome, descricao, "N titulos"), e o "Ver tudo" no fim
+//              da fileira, que leva para a grade.
+//   CONTINUAR  "Continuar explorando": os climas em que ela JA viu alguma
+//              coisa (vistos > 0), com a arte de um titulo que ela viu. Nao ha
+//              historico de navegacao na Explorar; o que existe e o progresso,
+//              e e dele que a fileira sai. Sem nada visto, a secao some.
+//   FILTRO     Todos / Filmes / Series, com quantos climas tem cada tipo.
+//   GRADE      todos os climas na ordem editorial, 4 colunas.
+// OK em qualquer clima abre o clima como sempre (abrirClima).
+enum { EXS_DESTAQUE = 0, EXS_COLECAO, EXS_CONTINUAR, EXS_FILTRO, EXS_GRADE, EXS_N };
+#define EX_TV_DEST      5
+#define EX_TV_GIRO      8.0f      // segundos por destaque quando ele gira sozinho
+#define EX_TV_COLS      4
+
+static int tvSec, tvIdx[EXS_N];
+static int tvDest[EX_TV_DEST], tvNDest, tvDestaque;
+static float tvGiro, tvDestEntrada = 10.0f;
+static int tvCol[MAPA_CLIMA_N], tvNCol;
+static int tvCont[MAPA_CLIMA_N], tvNCont;
+static int tvGrade[MAPA_CLIMA_N], tvNGrade, tvFiltro;
+static int tvNFiltro[3];
+static float tvRolar, tvHRolar[EXS_N];
+
+static int exTv(void) {
+#ifdef NV_TOUCH_UI
+  return !telefoneui_ativo();
+#else
+  return 1;
+#endif
+}
+
+static int tvClimaTem(const MapaClima *c, int filtro) {
+  return filtro == 1 ? c->filmes > 0 : filtro == 2 ? c->series > 0 : 1;
+}
+
+// As listas sao posicoes em climas.c[] (a ordem de afinidade de mapa.c).
+static void tvListas(void) {
+  int i, id;
+  tvNDest = tvNCol = tvNCont = tvNGrade = 0;
+  tvNFiltro[0] = tvNFiltro[1] = tvNFiltro[2] = 0;
+  for (i = 0; i < climas.n; i++) {
+    const MapaClima *c = &climas.c[i];
+    if (c->n > 0 && tvNDest < EX_TV_DEST) tvDest[tvNDest++] = i;
+    if (c->n > 0) tvCol[tvNCol++] = i;
+    if (c->vistos > 0 && c->n > 0) tvCont[tvNCont++] = i;
+    tvNFiltro[0]++;
+    if (c->filmes > 0) tvNFiltro[1]++;
+    if (c->series > 0) tvNFiltro[2]++;
+  }
+  // A grade segue a ordem editorial (o id), como a tabela de mapa.c.
+  for (id = 0; id < MAPA_CLIMA_N; id++)
+    for (i = 0; i < climas.n; i++)
+      if (climas.c[i].id == id && tvClimaTem(&climas.c[i], tvFiltro)) tvGrade[tvNGrade++] = i;
+  if (tvDestaque >= tvNDest) tvDestaque = 0;
+}
+
+static int tvNItens(int s) {
+  switch (s) {
+    case EXS_DESTAQUE:  return tvNDest > 0 ? 1 : 0;
+    case EXS_COLECAO:   return tvNCol > 0 ? tvNCol + 1 : 0;   // + "Ver tudo"
+    case EXS_CONTINUAR: return tvNCont;
+    case EXS_FILTRO:    return climas.n > 0 ? 3 : 0;
+    default:            return tvNGrade;
+  }
+}
+
+static void tvAjustarFoco(void) {
+  int s;
+  for (s = 0; s < EXS_N; s++) {
+    int n = tvNItens(s);
+    if (tvIdx[s] >= n) tvIdx[s] = n > 0 ? n - 1 : 0;
+    if (tvIdx[s] < 0) tvIdx[s] = 0;
+  }
+  if (tvNItens(tvSec) <= 0) {
+    for (s = 0; s < EXS_N && tvNItens(s) <= 0; s++) {}
+    tvSec = s < EXS_N ? s : EXS_DESTAQUE;
+  }
+}
+
+static void tvRefazer(void) { tvListas(); tvAjustarFoco(); }
+
+static void tvFiltrar(int f) {
+  if (f == tvFiltro) return;
+  tvFiltro = f;
+  tvIdx[EXS_GRADE] = 0;
+  tvRefazer();
+}
+
+// Para cima/baixo entre secoes: a proxima que tem itens.
+static int tvSecVizinha(int s, int passo) {
+  for (s += passo; s >= 0 && s < EXS_N; s += passo) if (tvNItens(s) > 0) return s;
+  return -1;
+}
+
+static void tvEntrar(int s, int deCima) {
+  tvSec = s;
+  if (s == EXS_GRADE && deCima) {
+    int col = tvIdx[EXS_GRADE] % EX_TV_COLS;
+    tvIdx[s] = col < tvNGrade ? col : tvNGrade - 1;
+  } else if (s == EXS_GRADE) {
+    tvIdx[s] = tvNGrade - 1 - (tvNGrade - 1) % EX_TV_COLS;
+  }
+  if (tvIdx[s] < 0) tvIdx[s] = 0;
+}
+
+static void tvOk(void) {
+  int i = tvIdx[tvSec];
+  switch (tvSec) {
+    case EXS_DESTAQUE: if (tvNDest > 0) abrirClima(tvDest[tvDestaque]); break;
+    case EXS_COLECAO:
+      if (i < tvNCol) abrirClima(tvCol[i]);
+      else if (tvNGrade > 0) { tvSec = EXS_GRADE; tvIdx[EXS_GRADE] = 0; }   // "Ver tudo"
+      break;
+    case EXS_CONTINUAR: if (i < tvNCont) abrirClima(tvCont[i]); break;
+    case EXS_FILTRO:    tvFiltrar(i); break;
+    default:            if (i < tvNGrade) abrirClima(tvGrade[i]); break;
+  }
+}
+
+static void tvTrocarDestaque(int d) {
+  tvDestaque = d;
+  tvGiro = 0.0f;
+  tvDestEntrada = 0.0f;
+}
+
+static void eventoClimasTv(SDL_Keycode k) {
+  int *i = &tvIdx[tvSec], n = tvNItens(tvSec), s;
+  if (climas.n <= 0) { if (k == SDLK_LEFT) sair = 1; else if (k == SDLK_UP) pediuRelogio = 1; return; }
+  if (k == SDLK_LEFT) {
+    if (tvSec == EXS_DESTAQUE) { if (tvDestaque > 0) tvTrocarDestaque(tvDestaque - 1); else { sair = 1; return; } }
+    else if (tvSec == EXS_GRADE ? *i % EX_TV_COLS == 0 : *i == 0) { sair = 1; return; }
+    else (*i)--;
+  } else if (k == SDLK_RIGHT) {
+    if (tvSec == EXS_DESTAQUE) { if (tvDestaque + 1 < tvNDest) tvTrocarDestaque(tvDestaque + 1); }
+    else if (tvSec == EXS_GRADE) { if (*i % EX_TV_COLS < EX_TV_COLS - 1 && *i + 1 < n) (*i)++; }
+    else if (*i + 1 < n) (*i)++;
+  } else if (k == SDLK_UP) {
+    if (tvSec == EXS_GRADE && *i >= EX_TV_COLS) *i -= EX_TV_COLS;
+    else if ((s = tvSecVizinha(tvSec, -1)) >= 0) tvEntrar(s, 0);
+    else if (ajustes_menu_topo()) { sair = 1; return; }
+    else { pediuRelogio = 1; return; }
+  } else if (k == SDLK_DOWN) {
+    if (tvSec == EXS_GRADE) {
+      if (*i + EX_TV_COLS < n) *i += EX_TV_COLS;
+      else if (*i / EX_TV_COLS < (n - 1) / EX_TV_COLS) *i = n - 1;
+      else return;
+    } else if ((s = tvSecVizinha(tvSec, 1)) >= 0) tvEntrar(s, 1);
+    else return;
+  } else if (ehOk(k)) { tvOk(); return; }
+  else return;
+  focoT = 0.0f;
+}
+
+static void ponteiroTv(int sec, int idx) {
+  if (modo != MODO_CLIMAS || sec < 0 || sec >= EXS_N || idx < 0 || idx >= tvNItens(sec)) return;
+  if (sec == tvSec && idx == tvIdx[sec]) return;
+  tvSec = sec; tvIdx[sec] = idx; focoT = 0.0f;
+}
+
 static void eventoClimas(SDL_Keycode k) {
+  if (exTv()) { eventoClimasTv(k); return; }
   int cols = EX_CL_COLS;
 #ifdef NV_TOUCH_UI
   cols = climaColunas();
@@ -830,10 +1001,370 @@ static void desenharClimasTelefone(void) {
 }
 #endif
 
+// --- desenho: TV (pagina de climas do mock-up) -------------------------------------
+
+#define EX_TV_BAN_Y     184.0f
+#define EX_TV_BAN_H     400.0f
+#define EX_TV_SEC_GAP   44.0f     // do fim de um bloco ao titulo do proximo
+#define EX_TV_TIT_H     56.0f     // titulo da secao ate os cartoes
+#define EX_TV_COL_H     330.0f
+#define EX_TV_CONT_H    160.0f
+#define EX_TV_GR_H      200.0f
+#define EX_TV_GAP       20.0f
+#define EX_TV_PIL_H     46.0f
+
+typedef struct { float ban, col, cont, grade, fim; } ExTvPlano;
+
+// Onde cada secao comeca (titulo da secao), em coordenadas da pagina.
+static ExTvPlano tvPlano(void) {
+  ExTvPlano p;
+  float y = EX_TV_BAN_Y;
+  p.ban = y;
+  if (tvNDest > 0) y += EX_TV_BAN_H + EX_TV_SEC_GAP;
+  p.col = y;
+  if (tvNCol > 0) y += EX_TV_TIT_H + EX_TV_COL_H + EX_TV_SEC_GAP;
+  p.cont = y;
+  if (tvNCont > 0) y += EX_TV_TIT_H + EX_TV_CONT_H + EX_TV_SEC_GAP;
+  p.grade = y;
+  y += EX_TV_TIT_H + 8.0f;
+  if (tvNGrade > 0) y += ((tvNGrade + EX_TV_COLS - 1) / EX_TV_COLS) * (EX_TV_GR_H + EX_TV_GAP) - EX_TV_GAP;
+  p.fim = y;
+  return p;
+}
+
+// A rolagem vertical que deixa a secao em foco inteira na tela.
+static float tvRolarAlvo(void) {
+  ExTvPlano p = tvPlano();
+  float max = fmaxf(0.0f, p.fim + 60.0f - NV_TELA_H), alvo = 0.0f;
+  switch (tvSec) {
+    case EXS_DESTAQUE: case EXS_COLECAO: alvo = 0.0f; break;
+    case EXS_CONTINUAR: alvo = p.cont - 160.0f; break;
+    case EXS_FILTRO:    alvo = p.grade - 160.0f; break;
+    default: {
+      float topo = p.grade + EX_TV_TIT_H + 8.0f + (tvIdx[EXS_GRADE] / EX_TV_COLS) * (EX_TV_GR_H + EX_TV_GAP);
+      alvo = fmaxf(p.grade - 160.0f, topo + EX_TV_GR_H + 70.0f - NV_TELA_H);
+    }
+  }
+  return anim_clamp(alvo, 0.0f, max);
+}
+
+// A obra que representa o clima: a primeira com backdrop (paisagem de
+// verdade), senao a primeira; `vista` = so as que ela ja viu.
+static const MapaObra *tvObraClima(const MapaClima *c, int vista) {
+  int i;
+  for (i = 0; i < c->n; i++) if ((!vista || c->visto[i]) && c->itens[i].fundo[0]) return &c->itens[i];
+  for (i = 0; i < c->n; i++) if (!vista || c->visto[i]) return &c->itens[i];
+  return NULL;
+}
+
+// Arte em cover (sem barras), backdrop quando ha, cartaz recortado senao.
+// Arte de tela grande (banner, topo do clima): a politica do destaque da Home
+// (artehero_url: metahub large / TMDB original) quando o titulo e do catalogo;
+// fora dele, o backdrop do /discover, que ja vem em w1280.
+static const char *tvUrlGrande(const MapaObra *o) {
+  const CatItem *ci = o && o->catIndice >= 0 ? cat_item(o->catIndice) : NULL;
+  const char *u = ci && !strcmp(ci->titulo, o->titulo) ? artehero_url(ci) : NULL;
+  return u && u[0] ? u : NULL;
+}
+
+static void tvArteTam(const MapaObra *o, GfxRect r, float raioPx, float a, int grande) {
+  const char *url = NULL;
+  GLuint t = 0;
+  float raio = raioPx / r.h;
+  if (o && grande) url = tvUrlGrande(o);
+  if (o && !url) url = o->fundo[0] ? o->fundo : posterprov_card(o->imdb, o->tmdb, o->tipo, o->poster);
+  if (url && url[0]) t = tex_obter_larg(url, r.w);
+  if (t) {
+    gfx_tex_aspect_atual = tex_aspecto(url);
+    gfx_card_forcar_cover_atual = 1.0f;
+    gfx_rect(r, t, GFX_CARD, 0.0f, 0.0f, 0.0f, raio, 1, 1, 1, a);
+    gfx_card_forcar_cover_atual = 0.0f;
+    gfx_tex_aspect_atual = 0.0f;
+  } else if (url && url[0] && !tex_falhou(url)) {
+    gfx_esqueleto(r, raio, NV_COR_ESQUELETO_R, NV_COR_ESQUELETO_G, NV_COR_ESQUELETO_B, a);
+  } else {
+    float ar, ag, ab;
+    ajustes_acento(&ar, &ag, &ab);
+    gfx_cor(r, raio, 0.05f + ar * 0.10f, 0.06f + ag * 0.10f, 0.07f + ab * 0.10f, a);
+    gfx_icone((GfxRect){ r.x + r.w - 76.0f, r.y + 24.0f, 48.0f, 48.0f }, "aj_compass", ar, ag, ab, 0.45f * a);
+  }
+}
+
+static void tvArte(const MapaObra *o, GfxRect r, float raioPx, float a) { tvArteTam(o, r, raioPx, a, 0); }
+
+// Cartaz retrato (posterprov), cantos de 14 px, esqueleto enquanto carrega.
+static void tvArteCartaz(const MapaObra *o, GfxRect r, float a) {
+  const char *url = posterprov_card(o->imdb, o->tmdb, o->tipo, o->poster);
+  GLuint t = url && url[0] ? tex_obter_larg(url, r.w) : 0;
+  float raio = 14.0f / r.h;
+  if (t) {
+    gfx_tex_aspect_atual = tex_aspecto(url);
+    gfx_card_forcar_cover_atual = 1.0f;
+    gfx_rect(r, t, GFX_CARD, 0.0f, 0.0f, 0.0f, raio, 1, 1, 1, a);
+    gfx_card_forcar_cover_atual = 0.0f;
+    gfx_tex_aspect_atual = 0.0f;
+  } else {
+    gfx_esqueleto(r, raio, NV_COR_ESQUELETO_R, NV_COR_ESQUELETO_G, NV_COR_ESQUELETO_B, a);
+  }
+}
+
+// Foco do mock-up: anel de acento por fora e um halo de acento por baixo.
+static void tvFocoAntes(GfxRect r, float f, float a) {
+  float ar, ag, ab;
+  if (f <= 0.01f) return;
+  ajustes_acento(&ar, &ag, &ab);
+  gfx_rect((GfxRect){ r.x - 30.0f, r.y - 14.0f, r.w + 60.0f, r.h + 54.0f }, 0, GFX_SOMBRA, 1.0f, 0, 0, 0.5f,
+           ar, ag, ab, 0.30f * f * a);
+}
+static void tvFocoDepois(GfxRect r, float raioPx, float f, float a) {
+  float ar, ag, ab;
+  if (f <= 0.01f) return;
+  ajustes_acento(&ar, &ag, &ab);
+  gfx_anel_fora(r, raioPx / r.h, 3.0f, 3.5f, ar, ag, ab, f * a);
+}
+
+// Pilula "▣ N titulos" no pe do cartao. Devolve a altura.
+static void tvTipos(int filmes, int series, char *dst, size_t n);
+// O chip diz o TIPO: "3 filmes · 1 série"; sem nenhum, "0 títulos".
+static float tvChip(const MapaClima *c, int filtro, float x, float y, float a) {
+  char s[80];
+  TxtLinha l;
+  GfxRect p;
+  tvTipos(filtro == 2 ? 0 : c->filmes, filtro == 1 ? 0 : c->series, s, sizeof s);
+  if (!s[0]) snprintf(s, sizeof s, i18n("%d títulos"), 0);
+  l = txt_linha(TXT_CAPTION2, s, 236, 238, 242, 255);
+  p = (GfxRect){ x, y, (float)l.w + 62.0f, 38.0f };
+  gfx_cor(p, 0.5f, 0.0f, 0.0f, 0.0f, 0.42f * a);
+  gfx_anel(p, 0.5f, 1.0f, 1.0f, 1.0f, 1.0f, 0.14f * a);
+  gfx_icone((GfxRect){ p.x + 15.0f, p.y + 10.0f, 18.0f, 18.0f }, "aj_film", 0.92f, 0.93f, 0.95f, a);
+  txt_desenhar_alpha(l, p.x + 44.0f, p.y + (p.h - l.h) * 0.5f, a);
+  return p.h;
+}
+
+
+static void tvSecaoTitulo(const char *s, float x, float y, float a) {
+  TxtLinha l = txt_linha(TXT_ROW_TITULO, s, 246, 247, 249, 255);
+  txt_desenhar_alpha(l, x, y, a);
+}
+
+static void tvBanner(GfxRect r, float a) {
+  const MapaClima *c = &climas.c[tvDest[tvDestaque]];
+  const MapaObra *o = tvObraClima(c, 0);
+  float ar, ag, ab, f = tvSec == EXS_DESTAQUE ? focoT : 0.0f;
+  float e = ajustes_animacoes_reduzidas() ? 1.0f : suave(tvDestEntrada / 0.5f);
+  float x = r.x + 56.0f, y, tw = r.w * 0.48f;
+  int i;
+  ajustes_acento(&ar, &ag, &ab);
+  ponteiro_alvo(r.x, r.y, r.w, r.h, ponteiroTv, NULL, EXS_DESTAQUE, 0);
+  // Preto: o veu da arte termina em preto, entao nao ha emenda visivel.
+  gfx_cor(r, 28.0f / r.h, 0.0f, 0.0f, 0.0f, a);
+  // A arte ocupa os 62% da direita e se dissolve no fundo do banner.
+  { GfxRect art = { r.x + r.w * 0.38f, r.y, r.w * 0.62f, r.h };
+    tvArteTam(o, art, 28.0f, a * e, 1);
+    gfx_veu_css(art, 2, 0.0f, 0.70f, a);
+    gfx_cor((GfxRect){ art.x - 2.0f, r.y + 1.0f, 10.0f, r.h - 2.0f }, 0.0f, 0.0f, 0.0f, 0.0f, a);   // a borda da arte
+    gfx_veu_css((GfxRect){ art.x, art.y + art.h * 0.55f, art.w, art.h * 0.45f }, 0, 0.0f, 1.0f, 0.55f * a); }
+  gfx_anel(r, 28.0f / r.h, 1.5f, ar, ag, ab, 0.28f * a);
+
+  // "Clima em destaque": pilula escura com borda de acento.
+  { TxtLinha l = txt_linha(TXT_BODY, i18n("Clima em destaque"), 236, 240, 242, 255);
+    GfxRect p = { x, r.y + 52.0f, (float)l.w + 40.0f, 48.0f };
+    gfx_cor(p, 0.5f, ar * 0.22f, ag * 0.22f, ab * 0.22f, 0.9f * a);
+    gfx_anel(p, 0.5f, 1.5f, ar, ag, ab, 0.75f * a);
+    txt_desenhar_alpha(l, p.x + 20.0f, p.y + (p.h - l.h) * 0.5f, a); }
+  y = r.y + 118.0f + 10.0f * (1.0f - e);
+  { TxtLinha t = txt_linha_corta(TXT_TITULO1, i18n(mapa_clima_nome(c->id)), 250, 250, 252, 255, tw);
+    txt_desenhar_alpha(t, x, y, a * e); y += t.h + 4.0f; }
+  { TxtLinha d = txt_linha_corta(TXT_CALLOUT, i18n(mapa_clima_descricao(c->id)), 214, 218, 226, 255, tw);
+    txt_desenhar_alpha(d, x, y, a * e); }
+
+  // Botao "Explorar clima": pilula clara, como no mock-up.
+  { TxtLinha l = txt_linha(TXT_BODY, i18n("Explorar clima"), 16, 18, 22, 255);
+    GfxRect b = { x, r.y + r.h - 64.0f - 56.0f, (float)l.w + 96.0f, 64.0f };
+    if (f > 0.01f) b = crescer(b, 0.04f * f);
+    tvFocoAntes(b, f, a);
+    gfx_cor(b, 0.5f, 0.95f, 0.96f, 0.97f, a);
+    gfx_icone((GfxRect){ b.x + 28.0f, b.y + (b.h - 24.0f) * 0.5f, 24.0f, 24.0f }, "aj_play", 0.06f, 0.07f, 0.08f, a);
+    txt_desenhar_alpha(l, b.x + 64.0f, b.y + (b.h - l.h) * 0.5f, a);
+    tvFocoDepois(b, b.h * 0.5f, f, a); }
+
+  // Pontos: um por destaque, o atual alongado no acento.
+  if (tvNDest > 1) {
+    float w = 0.0f, px;
+    for (i = 0; i < tvNDest; i++) w += (i == tvDestaque ? 34.0f : 12.0f) + (i ? 12.0f : 0.0f);
+    px = r.x + (r.w - w) * 0.5f + r.w * 0.19f;
+    for (i = 0; i < tvNDest; i++) {
+      float dw = i == tvDestaque ? 34.0f : 12.0f;
+      GfxRect d = { px, r.y + r.h - 34.0f, dw, 10.0f };
+      if (i == tvDestaque) gfx_cor(d, 0.5f, ar, ag, ab, a);
+      else gfx_cor(d, 0.5f, 1.0f, 1.0f, 1.0f, 0.32f * a);
+      px += dw + 12.0f;
+    }
+  }
+}
+
+static float tvEntrelinha(TxtEstilo e) {
+  return e == TXT_HEADLINE ? 44.0f : e == TXT_ROW_TITULO ? 38.0f : 34.0f;
+}
+
+// Cartao de clima: arte em cover, veu embaixo, nome (+ descricao) e o chip.
+static void tvCartao(const MapaClima *c, const MapaObra *o, GfxRect r, int sec, int idx,
+                     TxtEstilo estilo, int descricao, int chip, float a) {
+  float f = (tvSec == sec && tvIdx[sec] == idx) ? focoT : 0.0f, raio = 20.0f;
+  float tx, tw, y, hNome, hDesc = 0.0f, hChip = chip ? 38.0f + 14.0f : 0.0f;
+  const char *nome = i18n(mapa_clima_nome(c->id));
+  ponteiro_alvo(r.x, r.y, r.w, r.h, ponteiroTv, NULL, sec, idx);
+  if (f > 0.01f) r = crescer(r, 0.03f * f);
+  tvFocoAntes(r, f, a);
+  tvArte(o, r, raio, a);
+  gfx_veu_css(r, 0, 0.0f, 0.80f, 0.92f * a);
+  gfx_anel(r, raio / r.h, 1.0f, 1.0f, 1.0f, 1.0f, 0.10f * a);
+  tx = r.x + 22.0f; tw = r.w - 44.0f;
+  hNome = txt_bloco_corta(estilo, nome, 0, 0, 0, tx, 0, tw, tvEntrelinha(estilo), 0.0f, 2);
+  if (descricao)
+    hDesc = txt_bloco_corta(TXT_CAPTION, i18n(mapa_clima_descricao(c->id)), 0, 0, 0, tx, 0, tw, 28.0f, 0.0f, 2) + 8.0f;
+  y = r.y + r.h - 22.0f - hChip - hDesc - hNome;
+  txt_bloco_corta(estilo, nome, 248, 248, 250, tx, y, tw, tvEntrelinha(estilo), a, 2);
+  y += hNome;
+  if (descricao) {
+    txt_bloco_corta(TXT_CAPTION, i18n(mapa_clima_descricao(c->id)), 210, 214, 222, tx, y + 6.0f, tw, 28.0f, a, 2);
+    y += hDesc;
+  }
+  // O filtro Filmes/Series e da grade; as fileiras contam tudo.
+  if (chip) tvChip(c, sec == EXS_GRADE ? tvFiltro : 0, tx, y + 14.0f, a);
+  tvFocoDepois(r, raio, f, a);
+}
+
+// Fileira horizontal; a rolagem mantem o cartao em foco inteiro.
+static void tvFileira(int sec, const int *lista, int n, float y, float w, float h,
+                      TxtEstilo estilo, int descricao, int chip, int vista, float a) {
+  float x0 = ajustes_conteudo_x(), passo = w + EX_TV_GAP, vis = EX_DIR - x0;
+  int i;
+  gfx_recorte(x0 - 24.0f, y - 30.0f, NV_TELA_W - x0 + 24.0f, h + 70.0f);
+  for (i = 0; i < n; i++) {
+    float x = x0 + i * passo - tvHRolar[sec];
+    const MapaClima *c = &climas.c[lista[i]];
+    if (x + w < x0 - 30.0f || x > NV_TELA_W) continue;
+    tvCartao(c, tvObraClima(c, vista), (GfxRect){ x, y, w, h }, sec, i, estilo, descricao, chip, a);
+  }
+  gfx_sem_recorte();
+  (void)vis;
+}
+
+static float tvHRolarAlvo(int sec, int n, float w) {
+  float x0 = ajustes_conteudo_x(), passo = w + EX_TV_GAP, vis = EX_DIR - x0;
+  float max = fmaxf(0.0f, n * passo - EX_TV_GAP - vis), x, alvo = tvHRolar[sec];
+  int i = tvIdx[sec] < n ? tvIdx[sec] : n - 1;
+  if (i < 0) return 0.0f;
+  x = i * passo;
+  if (x < alvo) alvo = x;
+  if (x + w > alvo + vis) alvo = x + w - vis;
+  return anim_clamp(alvo, 0.0f, max);
+}
+
+static float tvLargCol(void) { return (EX_DIR - ajustes_conteudo_x() - EX_TV_GAP * 3.0f) / 4.0f; }
+static float tvLargCont(void) { return (EX_DIR - ajustes_conteudo_x() - EX_TV_GAP * 3.0f) / 4.35f; }
+
+static void tvFiltros(float y, float a) {
+  static const char *const nomes[3] = { "Todos", "Filmes", "Séries" };
+  static const char *const icones[3] = { NULL, "aj_film", "aj_tv-minimal-play" };
+  float ar, ag, ab, larg[3], x = EX_DIR;
+  TxtLinha l[3];
+  int c;
+  ajustes_acento(&ar, &ag, &ab);
+  for (c = 0; c < 3; c++) {
+    char rot[64];
+    snprintf(rot, sizeof rot, "%s (%d)", i18n(nomes[c]), tvNFiltro[c]);
+    l[c] = txt_linha(TXT_AJ_SEG, rot, 255, 255, 255, 255);
+    larg[c] = (float)l[c].w + (icones[c] ? 30.0f : 0.0f) + 40.0f;
+    x -= larg[c] + (c ? 14.0f : 0.0f);
+  }
+  for (c = 0; c < 3; c++) {
+    GfxRect t = { x, y, larg[c], EX_TV_PIL_H };
+    float f = (tvSec == EXS_FILTRO && tvIdx[EXS_FILTRO] == c) ? focoT : 0.0f;
+    int ativo = tvFiltro == c;
+    ponteiro_alvo(t.x, t.y, t.w, t.h, ponteiroTv, NULL, EXS_FILTRO, c);
+    if (ativo) {
+      gfx_cor(t, 0.5f, ar * 0.30f, ag * 0.30f, ab * 0.30f, a);
+      gfx_anel(t, 0.5f, 1.5f, ar, ag, ab, a);
+    } else {
+      gfx_cor(t, 0.5f, 1.0f, 1.0f, 1.0f, 0.04f * a);
+      gfx_anel(t, 0.5f, 1.2f, 1.0f, 1.0f, 1.0f, 0.38f * a);
+    }
+    tvFocoAntes(t, f * 0.6f, a);
+    { float tr = ativo ? anim_mistura(1.0f, ar, 0.35f) : 0.92f, tg = ativo ? anim_mistura(1.0f, ag, 0.35f) : 0.92f,
+            tb = ativo ? anim_mistura(1.0f, ab, 0.35f) : 0.94f, ix = t.x + 20.0f;
+      if (icones[c]) { gfx_icone((GfxRect){ ix, t.y + (t.h - 20.0f) * 0.5f, 20.0f, 20.0f }, icones[c], tr, tg, tb, a); ix += 30.0f; }
+      txt_desenhar_tom(l[c], ix, t.y + (t.h - l[c].h) * 0.5f, tr, tg, tb, a); }
+    tvFocoDepois(t, t.h * 0.5f, f, a);
+    x += larg[c] + 14.0f;
+  }
+}
+
+static void desenharClimasTv(void) {
+  float x0 = ajustes_conteudo_x(), W = EX_DIR - x0, ro = tvRolar;
+  float e = ajustes_animacoes_reduzidas() ? 1.0f : suave(entrada / 0.45f), a = e;
+  ExTvPlano p = tvPlano();
+  // Cabecalho (rola com a pagina).
+  if (!menu_pilula_titulo()) {
+    TxtLinha t = txt_linha(TXT_TITULO2, i18n("Explorar"), 246, 246, 248, 255);
+    txt_desenhar(t, x0, 54.0f - ro);
+  }
+  { TxtLinha s = txt_linha_corta(TXT_BODY, i18n("Escolha um clima e puxe o fio de uma história"), 190, 196, 206, 255, W);
+    txt_desenhar(s, x0, 128.0f - ro); }
+  if (climas.n <= 0 || cat_n() <= 0) {
+    TxtLinha v = txt_linha(TXT_TITULO3, i18n("Os climas aparecem quando o catálogo carregar"), 236, 238, 244, 255);
+    txt_desenhar(v, (NV_TELA_W - v.w) * 0.5f, 500.0f);
+    return;
+  }
+  if (tvNDest > 0 && p.ban - ro + EX_TV_BAN_H > 0.0f)
+    tvBanner((GfxRect){ x0, p.ban - ro + 18.0f * (1.0f - e), W, EX_TV_BAN_H }, a);
+
+  if (tvNCol > 0 && p.col - ro < NV_TELA_H && p.col - ro + EX_TV_TIT_H + EX_TV_COL_H > -40.0f) {
+    float y = p.col - ro;
+    float f = (tvSec == EXS_COLECAO && tvIdx[EXS_COLECAO] == tvNCol) ? focoT : 0.0f;
+    tvSecaoTitulo(i18n("Coleções de climas"), x0, y, a);
+    // "Ver tudo >": o ultimo item da fileira; OK leva para a grade.
+    { TxtLinha l = txt_linha(TXT_BODY, i18n("Ver tudo"), 236, 238, 242, 255);
+      GfxRect b = { EX_DIR - l.w - 54.0f, y - 6.0f, (float)l.w + 54.0f, 46.0f };
+      ponteiro_alvo(b.x, b.y, b.w, b.h, ponteiroTv, NULL, EXS_COLECAO, tvNCol);
+      if (f > 0.01f) {
+        float ar, ag, ab;
+        ajustes_acento(&ar, &ag, &ab);
+        gfx_cor(b, 0.5f, ar * 0.30f, ag * 0.30f, ab * 0.30f, 0.9f * f * a);
+      }
+      txt_desenhar_alpha(l, b.x + 16.0f, b.y + (b.h - l.h) * 0.5f, a);
+      gfx_icone((GfxRect){ b.x + b.w - 32.0f, b.y + (b.h - 20.0f) * 0.5f, 20.0f, 20.0f }, "aj_chevron-right",
+                0.92f, 0.93f, 0.95f, a);
+      tvFocoDepois(b, b.h * 0.5f, f, a); }
+    tvFileira(EXS_COLECAO, tvCol, tvNCol, y + EX_TV_TIT_H, tvLargCol(), EX_TV_COL_H, TXT_HEADLINE, 1, 1, 0, a);
+  }
+  if (tvNCont > 0 && p.cont - ro < NV_TELA_H && p.cont - ro + EX_TV_TIT_H + EX_TV_CONT_H > -40.0f) {
+    float y = p.cont - ro;
+    tvSecaoTitulo(i18n("Continuar explorando"), x0, y, a);
+    tvFileira(EXS_CONTINUAR, tvCont, tvNCont, y + EX_TV_TIT_H, tvLargCont(), EX_TV_CONT_H, TXT_CALLOUT, 0, 0, 1, a);
+  }
+  if (p.grade - ro < NV_TELA_H) {
+    float y = p.grade - ro, w = tvLargCol();
+    int i;
+    tvSecaoTitulo(i18n("Todos os climas"), x0, y, a);
+    tvFiltros(y - 6.0f, a);
+    y += EX_TV_TIT_H + 8.0f;
+    for (i = 0; i < tvNGrade; i++) {
+      int col = i % EX_TV_COLS, lin = i / EX_TV_COLS;
+      GfxRect r = { x0 + col * (w + EX_TV_GAP), y + lin * (EX_TV_GR_H + EX_TV_GAP), w, EX_TV_GR_H };
+      const MapaClima *c = &climas.c[tvGrade[i]];
+      if (r.y > NV_TELA_H || r.y + r.h < -40.0f) continue;
+      tvCartao(c, tvObraClima(c, 0), r, EXS_GRADE, i, TXT_ROW_TITULO, 0, 1, a);
+    }
+  }
+}
+
 static void desenharClimas(void) {
 #ifdef NV_TOUCH_UI
   if(telefoneui_ativo()) { desenharClimasTelefone(); return; }
 #endif
+  if (exTv()) { desenharClimasTv(); return; }
   float x0 = ajustes_conteudo_x();
   float w = (EX_DIR - x0 - EX_CL_GAP * (EX_CL_COLS - 1)) / EX_CL_COLS;
   int i, tr, tg, tb;
@@ -885,7 +1416,8 @@ static void desenharClimas(void) {
       }
     }
   }
-  desenharDica(i18n("Setas   Escolher um clima   ·   OK   Abrir"));
+  // Sem dica de teclas no canto (pedido do dono): so fora da TV.
+  if (!exTv()) desenharDica(i18n("Setas   Escolher um clima   ·   OK   Abrir"));
 }
 
 // --- desenho: clima aberto -------------------------------------------------------
@@ -925,10 +1457,153 @@ static void fileiraClima(int linha, float y, float w, float h, float a) {
 #endif
 }
 
+// --- desenho: clima aberto na TV ----------------------------------------------------
+//
+// Como a Home: o titulo em foco no alto (backdrop a direita, ano, tipo,
+// generos, nota e sinopse), o clima como cabecalho da pagina, e embaixo as duas
+// fileiras do MESMO tamanho — "Para descobrir" e "Voce ja viu" (com selo). As
+// fileiras rolam dentro da faixa de baixo; o titulo em foco fica sempre a vista.
+#define EX_TVC_W        184.0f
+#define EX_TVC_H        276.0f
+#define EX_TVC_GAP      28.0f
+#define EX_TVC_TOPO     520.0f    // onde a faixa das fileiras comeca
+#define EX_TVC_LINHA    (EX_TV_TIT_H + EX_TVC_H + 46.0f)
+
+
+// "3 filmes · 1 série" (so os tipos que existem).
+static void tvTipos(int filmes, int series, char *dst, size_t n) {
+  char a[32] = "", b[32] = "";
+  if (filmes > 0) snprintf(a, sizeof a, i18n(filmes == 1 ? "%d filme" : "%d filmes"), filmes);
+  if (series > 0) snprintf(b, sizeof b, i18n(series == 1 ? "%d série" : "%d séries"), series);
+  snprintf(dst, n, "%s%s%s", a, a[0] && b[0] ? "  ·  " : "", b);
+}
+
+// Selo de visto: pilula com o check e a palavra, no pe do cartaz.
+static void tvSeloVisto(GfxRect r, float a) {
+  float ar, ag, ab;
+  TxtLinha l = txt_linha(TXT_CAPTION2, i18n("Visto"), 240, 242, 244, 255);
+  GfxRect p = { r.x + 10.0f, r.y + r.h - 44.0f, l.w + 50.0f, 34.0f };
+  ajustes_acento(&ar, &ag, &ab);
+  gfx_cor(p, 0.5f, ar * 0.25f, ag * 0.25f, ab * 0.25f, 0.92f * a);
+  gfx_anel(p, 0.5f, 1.2f, ar, ag, ab, 0.8f * a);
+  gfx_icone((GfxRect){ p.x + 11.0f, p.y + 8.0f, 18.0f, 18.0f }, "aj_check", ar, ag, ab, a);
+  txt_desenhar_alpha(l, p.x + 36.0f, p.y + (p.h - l.h) * 0.5f, a);
+}
+
+// Generos do item do catalogo, sem o tipo na frente ("Filme · Drama · Mistério"
+// -> "Drama · Mistério"): o tipo ja vai na linha.
+static void tvGeneros(const MapaObra *o, char *dst, size_t n) {
+  const CatItem *ci = o->catIndice >= 0 ? cat_item(o->catIndice) : NULL;
+  const char *g, *sep;
+  dst[0] = 0;
+  if (!ci || strcmp(ci->titulo, o->titulo)) return;
+  g = ci->genero;
+  sep = strstr(g, "\xc2\xb7");
+  if (sep && (!strncmp(g, "Filme", 5) || !strncmp(g, "Programa", 8) || !strncmp(g, "Série", 6))) {
+    g = sep + 2;
+    while (*g == ' ') g++;
+  }
+  snprintf(dst, n, "%s", g);
+}
+
+static void tvLinhaMeta(const MapaObra *o, char *dst, size_t n) {
+  char gen[160], nota[24] = "";
+  const char *tipo = i18n(!strcmp(o->tipo, "series") ? "Série" : "Filme");
+  tvGeneros(o, gen, sizeof gen);
+  if (o->nota > 0) {
+    snprintf(nota, sizeof nota, "TMDB %d.%d", o->nota / 10, o->nota % 10);
+    idioma_decimal_texto(nota, ajustes_idioma());
+  }
+  dst[0] = 0;
+  if (o->ano) snprintf(dst, n, "%d", o->ano);
+  snprintf(dst + strlen(dst), n - strlen(dst), "%s%s", dst[0] ? "  ·  " : "", tipo);
+  if (gen[0]) snprintf(dst + strlen(dst), n - strlen(dst), "  ·  %s", gen);
+  if (nota[0]) snprintf(dst + strlen(dst), n - strlen(dst), "  ·  %s", nota);
+}
+
+static void tvFileiraClima(int linha, float y, float a) {
+  const MapaClima *c = &climas.c[clAberto];
+  float x0 = ajustes_conteudo_x(), x = x0 - caRolar[linha];
+  int i;
+  for (i = 0; i < caN[linha]; i++, x += EX_TVC_W + EX_TVC_GAP) {
+    int k = caIdx[linha][i];
+    const MapaObra *o = &c->itens[k];
+    int sel = linha == caLinha && i == caCol[linha];
+    float f = sel ? focoT : 0.0f;
+    GfxRect r = { x, y, EX_TVC_W, EX_TVC_H };
+    if (x + EX_TVC_W < x0 - 40.0f || x > NV_TELA_W) continue;
+    ponteiro_alvo(r.x, r.y, r.w, r.h, ponteiroClima, NULL, linha, i);
+    if (sel) r = crescer(r, 0.05f * f);
+    tvFocoAntes(r, f, a);
+    tvArteCartaz(o, r, a);
+    if (c->visto[k]) tvSeloVisto(r, a);
+    tvFocoDepois(r, 14.0f, f, a);
+  }
+}
+
+static void desenharClimaTv(void) {
+  const MapaClima *c = &climas.c[clAberto];
+  const MapaObra *o = climaObraFocada();
+  float x0 = ajustes_conteudo_x(), W = EX_DIR - x0;
+  float a = ajustes_animacoes_reduzidas() ? 1.0f : suave(entrada / 0.4f);
+  float e = ajustes_animacoes_reduzidas() ? 1.0f : suave(focoT * 1.6f);
+  char s[200], tipos[80];
+  int lin;
+  // Backdrop do titulo em foco, sangrando ate a borda direita e o topo.
+  if (o) {
+    GfxRect art = { NV_TELA_W * 0.36f, 0.0f, NV_TELA_W * 0.64f, EX_TVC_TOPO + 40.0f };
+    tvArteTam(o, art, 0.0f, 0.85f * a * e, 1);
+    gfx_veu_css(art, 2, 0.0f, 0.75f, a);
+    gfx_veu_css(art, 0, 0.0f, 0.55f, a);
+  }
+  // Cabecalho: o clima e o que ele tem.
+  { TxtLinha t = txt_linha_corta(TXT_TITULO2, i18n(mapa_clima_nome(c->id)), 246, 246, 248, 255, W * 0.6f);
+    txt_desenhar_alpha(t, x0, 54.0f, a); }
+  tvTipos(c->filmes, c->series, tipos, sizeof tipos);
+  snprintf(s, sizeof s, "%s%s%s", i18n(mapa_clima_descricao(c->id)), tipos[0] ? "   ·   " : "", tipos);
+  { TxtLinha d = txt_linha_corta(TXT_BODY, s, 190, 196, 206, 255, W * 0.6f);
+    txt_desenhar_alpha(d, x0, 128.0f, a); }
+  if (c->carregando) {
+    float pulso = ajustes_animacoes_reduzidas() ? 1.0f : 0.55f + 0.45f * sinf(tempo * 3.0f);
+    TxtLinha l = txt_linha(TXT_CAPTION2, i18n("Buscando mais títulos…"), 170, 176, 196, 255);
+    txt_desenhar_alpha(l, x0, 168.0f, pulso * a);
+  }
+  if (c->n == 0) {
+    TxtLinha v = txt_linha(TXT_TITULO3, i18n("Nada deste clima no seu catálogo ainda"), 236, 238, 244, 255);
+    txt_desenhar_alpha(v, x0, 400.0f, a);
+    return;
+  }
+  // O titulo em foco: nome, linha de meta e sinopse.
+  if (o) {
+    float y = 222.0f, tw = W * 0.50f;
+    TxtLinha t = txt_linha_corta(TXT_TITULO3, o->titulo, 250, 250, 252, 255, tw);
+    txt_desenhar_alpha(t, x0, y, a * e); y += t.h + 10.0f;
+    tvLinhaMeta(o, s, sizeof s);
+    { TxtLinha m = txt_linha_corta(TXT_CALLOUT, s, 214, 218, 226, 255, tw);
+      txt_desenhar_alpha(m, x0, y, a * e); y += m.h + 14.0f; }
+    if (o->sinopse[0])
+      txt_bloco_corta(TXT_CAPTION, o->sinopse, 190, 196, 206, x0, y, tw, 30.0f, a * e, 3);
+  }
+  // As fileiras, recortadas na faixa de baixo.
+  gfx_recorte(0.0f, EX_TVC_TOPO - 10.0f, NV_TELA_W, NV_TELA_H - EX_TVC_TOPO + 10.0f);
+  for (lin = 0; lin < 2; lin++) {
+    float y;
+    int pos = lin == 1 && caN[0] > 0 ? 1 : 0;
+    if (caN[lin] <= 0) continue;
+    y = EX_TVC_TOPO + pos * EX_TVC_LINHA - caTvRolar;
+    if (y > NV_TELA_H || y + EX_TVC_LINHA < EX_TVC_TOPO - 40.0f) continue;
+    snprintf(s, sizeof s, i18n(lin == 0 ? "Para descobrir (%d)" : "Você já viu (%d)"), caN[lin]);
+    tvSecaoTitulo(s, x0, y, a);
+    tvFileiraClima(lin, y + EX_TV_TIT_H, a);
+  }
+  gfx_sem_recorte();
+}
+
 static void desenharClima(void) {
 #ifdef NV_TOUCH_UI
   if (telefoneui_ativo()) { desenharClimaTelefone(); return; }
 #endif
+  if (exTv()) { if (clAberto >= 0 && clAberto < climas.n) desenharClimaTv(); return; }
   const MapaClima *c;
   float x0 = ajustes_conteudo_x(), a = ajustes_animacoes_reduzidas() ? 1.0f : suave(entrada / 0.4f), caBase = 262.0f;
   char s[120];
@@ -1030,6 +1705,28 @@ static void desenharTrilha(float a) {
   }
 }
 
+// Foco tingido (como o da Busca): miolo de acento escuro + contorno de acento.
+static void tvFocoTingido(GfxRect r, float raioPx, float f, float a) {
+  float ar, ag, ab;
+  if (f <= 0.01f) return;
+  ajustes_acento(&ar, &ag, &ab);
+  gfx_rect((GfxRect){ r.x - 10, r.y - 2, r.w + 20, r.h + 20 }, 0, GFX_SOMBRA, 1.0f, 0, 0, 0.5f,
+           ar, ag, ab, 0.28f * f * a);
+  gfx_cor(r, raioPx / r.h, ar * 0.35f, ag * 0.35f, ab * 0.35f, 0.85f * f * a);
+  gfx_anel(r, raioPx / r.h, 2.5f, ar, ag, ab, f * a);
+}
+
+// Visto em cartaz pequeno (84 px): disco de acento com o check no canto; a
+// palavra nao cabe sem cobrir o cartaz e o titulo ao lado.
+static void seloVistoMini(GfxRect r, float a) {
+  float ar, ag, ab;
+  GfxRect d = { r.x + r.w - 30.0f, r.y + 6.0f, 24.0f, 24.0f };
+  ajustes_acento(&ar, &ag, &ab);
+  gfx_cor(d, 0.5f, ar * 0.25f, ag * 0.25f, ab * 0.25f, 0.95f * a);
+  gfx_anel(d, 0.5f, 1.5f, ar, ag, ab, a);
+  gfx_icone((GfxRect){ d.x + 5.0f, d.y + 5.0f, 14.0f, 14.0f }, "aj_check", ar, ag, ab, a);
+}
+
 static void desenharHero(float a) {
   float x = ajustes_conteudo_x(), y = EX_TOPO;
   const MapaObra *o = &viz.foco;
@@ -1037,7 +1734,7 @@ static void desenharHero(float a) {
   float f = vzLinha < 0 ? focoT : 0.0f;
   GfxRect p = { x, y, 240.0f, 360.0f };
   cartaz(o, p, 0.0f, a);
-  if (viz.focoVisto) seloVisto(p, a);
+  if (viz.focoVisto) { if (exTv()) tvSeloVisto(p, a); else seloVisto(p, a); }
   y += p.h + 22.0f;
   y += txt_bloco_corta(TXT_TITULO3, o->titulo, 246, 246, 248, x, y, EX_HERO_W, 56.0f, a, 2) + 8.0f;
   metaObra(o, meta, sizeof meta);
@@ -1065,6 +1762,10 @@ static void desenharHero(float a) {
       gfx_vidro_painel(b, 0.5f, 0.55f, a);
       gfx_vidro_pilula_cheia(b, 0.5f, vzLinha < 0 ? f : 0.0f, a);
       tinta = gfx_vidro_tinta(vzLinha < 0 ? f : 0.0f);
+    } else if (vzLinha < 0 && exTv()) {
+      gfx_cor(b, 0.5f, 0.14f, 0.15f, 0.17f, 0.92f * a);
+      tvFocoTingido(b, b.h * 0.5f, f, a);
+      tinta = 250;
     } else if (vzLinha < 0) {
       float ar, ag, ab;
       ajustes_acento(&ar, &ag, &ab);
@@ -1102,7 +1803,7 @@ static void desenharGrupos(float a) {
     char cab[140];
     if (ae <= 0.01f) { y += EX_VZ_LINHA; continue; }
     cabecalhoGrupo(gr, cab, sizeof cab);
-    { TxtLinha l = txt_linha_corta(TXT_HEADLINE, cab, 236, 238, 244, 255, EX_DIR - x0);
+    { TxtLinha l = txt_linha_corta(exTv() ? TXT_ROW_TITULO : TXT_HEADLINE, cab, 236, 238, 244, 255, EX_DIR - x0);
       txt_desenhar_alpha(l, x, y, ae);
       if (gr->tipo == MAPA_GR_AMIGOS && gr->sub[0]) {
 #ifdef NV_TOUCH_UI
@@ -1149,11 +1850,13 @@ static void desenharGrupos(float a) {
       }
       if (sel) {
         GfxRect fundo = { x - 10.0f, p.y - 10.0f, EX_VZ_CARD + 14.0f, EX_VZ_PH + 20.0f };
-        painel(fundo, 14.0f / fundo.h, ae * f * 0.8f);
+        // TV: o foco do mock-up (miolo tingido de acento + contorno).
+        if (exTv()) tvFocoTingido(fundo, 14.0f, f, ae);
+        else painel(fundo, 14.0f / fundo.h, ae * f * 0.8f);
         p = crescer(p, 0.05f * f);
       }
-      cartaz(&it->obra, p, f, ae);
-      if (it->visto) seloVisto(p, ae);
+      cartaz(&it->obra, p, exTv() ? 0.0f : f, ae);
+      if (it->visto) { if (exTv()) seloVistoMini(p, ae); else seloVisto(p, ae); }
       ty = p.y + 2.0f;
       ty += txt_bloco_corta(TXT_CAPTION, it->obra.titulo, sel ? 255 : 230, sel ? 255 : 232, sel ? 255 : 238,
                             x + EX_VZ_PW + 14.0f, ty, EX_VZ_CARD - EX_VZ_PW - 18.0f, 31.0f, ae, 2) + 4.0f;
@@ -1415,12 +2118,21 @@ static void desenharViz(void) {
   if (telefoneui_ativo()) { desenharVizTelefone(); return; }
 #endif
   float a = ajustes_animacoes_reduzidas() ? 1.0f : suave(entrada / 0.35f);
+  // TV: o backdrop do titulo em foco no alto, apagado por veus (fica atras
+  // da trilha e do comeco dos grupos sem brigar com o texto).
+  if (exTv() && viz.foco.titulo[0]) {
+    GfxRect art = { NV_TELA_W * 0.40f, 0.0f, NV_TELA_W * 0.60f, 560.0f };
+    tvArteTam(&viz.foco, art, 0.0f, 0.42f * a, 1);
+    gfx_veu_css(art, 2, 0.0f, 0.80f, a);
+    gfx_veu_css(art, 0, 0.0f, 0.75f, a);
+  }
   desenharTitulo(NULL);
   desenharTrilha(1.0f);
   desenharHero(a);
   desenharGrupos(a);
-  desenharDica(i18n(nTrilha > 1 ? "OK   Descer pela toca   ·   Voltar   Subir um degrau"
-                                : "OK   Descer pela toca   ·   Voltar   Sair da toca"));
+  if (!exTv())
+    desenharDica(i18n(nTrilha > 1 ? "OK   Descer pela toca   ·   Voltar   Subir um degrau"
+                                  : "OK   Descer pela toca   ·   Voltar   Sair da toca"));
 }
 
 // --- ciclo ------------------------------------------------------------------------
@@ -1442,6 +2154,10 @@ void explorar_iniciar(void) {
   trocarModo(MODO_CLIMAS);
   mapa_climas_pedir();
   mapa_climas_copiar(&climas, &climasRev);
+  memset(tvIdx, 0, sizeof tvIdx); memset(tvHRolar, 0, sizeof tvHRolar);
+  tvSec = EXS_DESTAQUE; tvDestaque = 0; tvGiro = 0.0f; tvDestEntrada = 10.0f;
+  tvFiltro = 0; tvRolar = 0.0f;
+  tvRefazer();
 }
 
 void explorar_abrir_titulo(const MapaObra *o) {
@@ -1469,6 +2185,7 @@ void explorar_atualizar(float dt, Uint32 agora) {
     if (clFoco >= climas.n) clFoco = climas.n > 0 ? climas.n - 1 : 0;
     // O /discover do clima aberto chegou: as fileiras crescem, o foco fica.
     climaSeparar();
+    tvRefazer();
   }
   if (mapa_vizinhos_copiar(&viz, &vizRev)) {
 #ifdef NV_TOUCH_UI
@@ -1481,11 +2198,28 @@ void explorar_atualizar(float dt, Uint32 agora) {
   if (reduzida) entrada = 10.0f;
   focoT = reduzida ? 1.0f : anim_mola(focoT, 1.0f, dt, 14.0f);
   if (abrindo && !desc_titulo_buscando()) abrindo = 0;
+  // TV, clima aberto: a faixa das fileiras sobe quando o foco vai para a segunda.
+  if (modo == MODO_CLIMA && exTv()) {
+    float alvo = (caLinha == 1 && caN[0] > 0) ? EX_TVC_LINHA : 0.0f;
+    caTvRolar = reduzida ? alvo : anim_mola(caTvRolar, alvo, dt, 10.0f);
+  }
+  // TV: rolagens da pagina de climas e o giro do destaque.
+  if (modo == MODO_CLIMAS && exTv()) {
+    float alvo = tvRolarAlvo();
+    tvRolar = reduzida ? alvo : anim_mola(tvRolar, alvo, dt, 10.0f);
+    alvo = tvHRolarAlvo(EXS_COLECAO, tvNCol, tvLargCol());
+    tvHRolar[EXS_COLECAO] = reduzida ? alvo : anim_mola(tvHRolar[EXS_COLECAO], alvo, dt, 10.0f);
+    alvo = tvHRolarAlvo(EXS_CONTINUAR, tvNCont, tvLargCont());
+    tvHRolar[EXS_CONTINUAR] = reduzida ? alvo : anim_mola(tvHRolar[EXS_CONTINUAR], alvo, dt, 10.0f);
+    tvDestEntrada += dt;
+    if (!reduzida && tvNDest > 1 && tvSec != EXS_DESTAQUE && (tvGiro += dt) >= EX_TV_GIRO)
+      tvTrocarDestaque((tvDestaque + 1) % tvNDest);
+  }
   // Rolagem das fileiras do clima: o cartaz em foco sempre inteiro na tela.
   if (modo == MODO_CLIMA) {
     int k;
     for (k = 0; k < 2; k++) {
-      float w = (k == 1 && caN[0] > 0) ? EX_CB_W : EX_CA_W;
+      float w = exTv() ? EX_TVC_W + EX_TVC_GAP - EX_CAR_GAP : (k == 1 && caN[0] > 0) ? EX_CB_W : EX_CA_W;
       float visivel = EX_DIR - ajustes_conteudo_x();
 #ifdef NV_TOUCH_UI
       if (telefoneui_ativo()) { w = telefoneClimaPasso() - EX_CAR_GAP; visivel /= gfx_escala_ui(); }
@@ -1512,6 +2246,10 @@ void explorar_desenhar(Uint32 agora) {
 #endif
   (void)agora;
   desenharFundo();
+  // TV, dentro de um clima ou da toca: o backdrop do alto se dissolve em
+  // preto; o ceu vai quase a preto embaixo dele para nao sobrar a borda da arte.
+  if (exTv() && modo != MODO_CLIMAS)
+    gfx_cor((GfxRect){ 0, 0, NV_TELA_W, NV_TELA_H }, 0.0f, 0.0f, 0.0f, 0.0f, 0.90f);
   if (modo == MODO_CLIMAS) desenharClimas();
   else if (modo == MODO_CLIMA) desenharClima();
   else desenharViz();
@@ -1530,4 +2268,13 @@ int explorar_pediu_abrir(int *indice) {
   pediuAbrir = 0;
   if (indice) *indice = pediuIndice;
   return 1;
+}
+
+int explorar_clima_aberto(void) {
+  return modo == MODO_CLIMA && clAberto >= 0 && clAberto < climas.n ? climas.c[clAberto].id : -1;
+}
+
+void explorar_tv_foco(int *secao, int *indice) {
+  if (secao) *secao = tvSec;
+  if (indice) *indice = tvIdx[tvSec];
 }

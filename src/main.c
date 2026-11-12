@@ -1971,7 +1971,11 @@ int main(int argc, char **argv) {
         fflush(stdout);
       }
       player_ciclo_evento(e.type);
-      if (e.type == SDL_APP_DIDENTERFOREGROUND) { atualizacao_retomou(); quadroc_suspendeu(&quadroRel); }
+      if (e.type == SDL_APP_DIDENTERFOREGROUND) {
+        atualizacao_retomou(); quadroc_suspendeu(&quadroRel);
+        // Settings/Home order changed in regular Nuvio while this app waited.
+        sync_pedir_atualizacao(SDL_GetTicks(), "voltou ao primeiro plano");
+      }
       // PONTEIRO (Magic Remote, issue #99): mouse, rodinha e os avisos 484/485
       // de cursor do webOS ficam la; o que ele traduz em tecla chega a
       // app_evento como se viesse do D-pad.

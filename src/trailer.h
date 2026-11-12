@@ -109,4 +109,16 @@ void trailer_osd_desenhar(const char *titulo, float a);
 void trailer_shot_pausado(int sim);
 #endif
 
+// Android reveal rule (pure, for tests): 1 = show the trailer video. Waits for
+// the zoom crop to be sent and the native layout to be confirmed; sticky once
+// shown; fallbacks 2.5 s after playing / 6 s after opening.
+int trailer_portao_android(int recortePendente, int janelaPronta, int jaMostrado,
+                           long tocandoHaMs, long abertoHaMs);
+// Burned-in subtitles (best effort): the crop moves its vertical trim up so the
+// bottom band stays visible, without a black strip (see trailer.c). Callers
+// pass the title's original language (ISO 639-1, "" unknown) BEFORE opening.
+void trailer_recorte_legenda(int vw, int vh, float z, float dw, float dh, int legenda,
+                             int *sx, int *sy, int *sw, int *sh);
+int  trailer_legenda_provavel(const char *original, const char *app);
+void trailer_idioma_original(const char *iso);
 #endif

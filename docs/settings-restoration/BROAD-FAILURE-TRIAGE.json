@@ -1,0 +1,4673 @@
+{
+  "original_total": 1141,
+  "original_passed": 424,
+  "original_failed": 717,
+  "controlled_comparisons": 41,
+  "comparison_runs": 82,
+  "network_denied_in_reproductions": true,
+  "whole_sweep_now_green": false,
+  "failures": [
+    {
+      "test": "addons_legendas",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "9fc81f1af0b1c4f9a3649e1d0b155f568f6d5f9e068100ebf6d20345a969daf1",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "abrirtitulo",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "15ef5e2c875742a4f5f2d03e5790d21b5cac734c5e1e63479ec476b3a2575bb7",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "addons_legendas_merge",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "47edf82bcca91ca86d7568d343774e30f9328a5203515a1b83469984997b7bc9"
+    },
+    {
+      "test": "addons_paralelo",
+      "original_rc": 134,
+      "category": "assertion-failure",
+      "original_log_sha256": "92dce3df86fcd35a628c822f9d8389b665313530128d3889096aa3afff110245",
+      "controlled_comparison": {
+        "current": 134,
+        "checkpoint": 134
+      }
+    },
+    {
+      "test": "addons_sync_ui",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "2dba65f401398fe829b139205ed77752899f7b8f3d7fc413ba2543256a401112",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "addonurl",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "6b3a8268ece97e1691b1c072fe06ac9d6b10f692d4cad8088a2afb7e32664bf0"
+    },
+    {
+      "test": "addonslista",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "dbf850d0a8efdffdc12666158b8430135be3ef27a82afa4db440eb93c77a2119",
+      "detail": "legacy-runtime-or-contract",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "aiostream_instances",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "e5cd1c90399080989225c4af073ce02e7c3d6462f9c97cc2dc724399ef820b82"
+    },
+    {
+      "test": "ajustes_categorias_ui",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "addons_aviso_legal",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "addons_alvo_pendente",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "abertura_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "agenda",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "5ea54e88aadf08ee9aef44b6d3c89551c34f83422af3a8ee5269563c3e5fbf0e"
+    },
+    {
+      "test": "agenda_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "fdbd0dd76cbe24606afa22e24c7a92a53d4dabfd25bd51b805813c840051bb5a"
+    },
+    {
+      "test": "ajustes_aviso_legal",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ajustes_creditos",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ajustes_iptv",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "ajustes_envio_auto",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ajustes_escala_migra",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ajustes_escopo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618",
+      "controlled_comparison": {
+        "current": 134,
+        "checkpoint": 134
+      }
+    },
+    {
+      "test": "ajustes_failover",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "ajustes_fonte",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ajustes_perf",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "ajustes_idioma_disco",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ajustes_lista_cabecalho",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ajustes_nuvem",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ajustes_log",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ajustes_memoria_migra",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ajustes_sync",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 0
+      },
+      "disposition": "Obsolete device-snapshot protocol expectation; do not restore removed uploads"
+    },
+    {
+      "test": "ajustes_p2p_motivo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ajustes_padroes",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618",
+      "controlled_comparison": {
+        "current": 0,
+        "checkpoint": 0
+      }
+    },
+    {
+      "test": "ajustes_perfil",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "amigos_estilos_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "ajustes_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ajustes_trailer_fonte",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ajustes_ux_dados",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ajustes_ux_interacao",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "android_live_ts",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "9af2e6075fe523bbfd7e696dc7fa65c3a3afb9a6a10af07277f0a986a54f96b3",
+      "detail": "JDK-discovery",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      },
+      "after_test_harness_fix_rc": 0
+    },
+    {
+      "test": "ajustes_ux_toque_modo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ajustes_ux_toque_modo_desktop",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "amigoperfil_estados",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "arabe_negrito_padrao",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "amigos_lista_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "amigos_polish",
+      "original_rc": 2,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "aca99120d08701a6d0a018326a4284131d442648bab3bfc1f49946f6feaf931c"
+    },
+    {
+      "test": "arabe_ui_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "amigosarte_build",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "amigostitulo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "animacoes205",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "aovivo_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ass_fonte_local",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "detail": "missing-pkg-config-dependency"
+    },
+    {
+      "test": "artepastel_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "680b0f1a46530b3fd26e3e383667c7f42fa32fd13e94c5af3e6177bc1720c662"
+    },
+    {
+      "test": "app_camadas_toque_modo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "atualizacao_android",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "37f4fd555f8ed6cffe2d04ee40a64c437f770e186cb2be026ae290106d906b3b",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "arabe_texto",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "arabe_texto_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "audio_offset",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "96cc03eadbe1121924d01f6da91e95e09776bebf1d2607f2cef699cf8bf01234",
+      "detail": "FFmpeg-development-headers",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "artemenor",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "artetamanho",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "c6d26c63a71756d18fb78d6631226cfffb3c339aa7523953174ca7a6126c21dc"
+    },
+    {
+      "test": "autoplay_alvo",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "19709754da10882b36ad5579d599aecaad0dc02fda1f8823236137a58c023ae5"
+    },
+    {
+      "test": "atualizacao",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "avaliar21_pngs",
+      "original_rc": 127,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "ec19f6f16fabee1f36c58ea23ac8594bebba2840a4663d1d2b9f0d46dc9239a3",
+      "detail": "visual-capture-prerequisites"
+    },
+    {
+      "test": "avaliar21_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "avaliar_ilha_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "atualizacao_agenda",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "avisofonte_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "audio_offset_mac_build",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "atualizacao_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "barra27_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "audsync_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "arte676",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "190e5b54626042bd90b284547da0f2aed8fb89cb4650f8b9caa5b0ee50a7ffe1"
+    },
+    {
+      "test": "autoplay_ajustes_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "bibfonte",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "680b0f1a46530b3fd26e3e383667c7f42fa32fd13e94c5af3e6177bc1720c662"
+    },
+    {
+      "test": "bibfonte_baseline",
+      "original_rc": 127,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "1574380c9126fbfe1fd1e9983601c7a56ee62a8b835297ac72fbb0c4002d7352",
+      "detail": "missing-ripgrep"
+    },
+    {
+      "test": "avisodisp",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "c6b65ca85d170ecb1c86b0bafa58c52d83a80ec4554aca1c928530e135ceb674"
+    },
+    {
+      "test": "avisofonte",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "busca555",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "206f0bce6045c17b4a0f0aed2b9989233a16a92eeababf95b9752a456d0d7d5d"
+    },
+    {
+      "test": "bordafileira",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "5cf31ef04c7d0ab29d8af749d7dd77fa03406e5fed56e35c87e36dc259cc02ab"
+    },
+    {
+      "test": "busca_limite",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "b52ab8e59ed3635824b4c16ea816cc1c335eb9ed035534d9e64a320634426980"
+    },
+    {
+      "test": "avisos_dispensar_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "d05696cdfca79555a2cbc4037934f1a33635c160b832cb38e1dfbf3f18bc06f5"
+    },
+    {
+      "test": "avisos_toast_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "busca_teclado",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "bibhome",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "biblioteca_grade_escala",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "c9_dv_arm_offline",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "f5ec38e8312774071a75112db18f0d3d46abd441d76f839824c62d700989f47c",
+      "detail": "Rust-target-or-path"
+    },
+    {
+      "test": "biblioteca_ordem_visto",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "cache_fontes_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "biblioteca_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "cachearte-wasm",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "detail": "WebAssembly-SDK-prerequisite",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "cache_contrato",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "fa922464f41458cb330fa8e9c91a9826aa63b20564c7671fe27cd9c792ebdf24"
+    },
+    {
+      "test": "canaisidx",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "0a17ff96c3aedffffc58f5ad6292ea96aaccd0ed88a0e2e31c9d8ee1bb6f8ce4"
+    },
+    {
+      "test": "cache_regressoes",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "busca_debounce",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "busca_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "busca_titulo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "busca_toque_modo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "busca_voice_regression",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "cast_addon",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "5a0e436aebc4b3c7a6cd88e326eb579964718228ec60f92e5f2ed4b256e083e5"
+    },
+    {
+      "test": "cast_empty",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "645c143890d2a967b6c2c43c73e30a9c3b4f6606589a48219dea150c78cd584b"
+    },
+    {
+      "test": "catalog_episode_identity512",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "fb3029cd49478b54114a0b425a8967e93d48b847b533f48341ab030c1e2c58c9"
+    },
+    {
+      "test": "catcache",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "28fcca2fef060a12d2797e87104aad31b435a6929f25ea2352e22b0cfbd1ee97"
+    },
+    {
+      "test": "catcachecorrida",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "5269a36e7a55d8e8741369bbe76621c44086b4852cc3e16af456d700e4b6dad6"
+    },
+    {
+      "test": "catconsistencia",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "70f6cf491bd5c72b77108a7324f2dad1d737b0607a25c5643fcec31dd8c112cb"
+    },
+    {
+      "test": "catcorrida",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "33398e2f12ec4d13f916b8e268a288a0acaeb79f3ff262778054f1a9cd80fc59"
+    },
+    {
+      "test": "cateps",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "125ac24bcd91ee35975b018a695ded8b6e38c86371e5e8bfc2973a45f6145eac"
+    },
+    {
+      "test": "cateps_corrida",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "8ba54f1c07d97e5876f88cbb2f7e96189d3d795449726856da46a243b7cb2574"
+    },
+    {
+      "test": "catfileira",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "9841468e1c78cdef52b569cfe88ac1a242824f3da1a53b096032811ca305f122"
+    },
+    {
+      "test": "catvida",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "49eed82245431d78d1d28f1d8b3ba6caf1b0317741609932c11b1bdc0f427840"
+    },
+    {
+      "test": "cacheboost_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "canal_res",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "canalfila",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "carrossel_cede",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "carrossel_heroi",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "carrossel_prebusca",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "cinematic",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "e56bbaba529e3b8c43531b4e372dff2382ccfc1905de846fc167c8ef641ede9e"
+    },
+    {
+      "test": "carrossel_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "61b5902a24f442475435daccbe20c2051915968c7d132d3a80a8746932f91e1b"
+    },
+    {
+      "test": "colecao_configurator",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "415bdb6a5ac2b4b1140d2f6010976f64f3357ffee1081cd18301177c3801dcfe",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "cncverse_regression",
+      "original_rc": 1,
+      "category": "assertion-failure",
+      "original_log_sha256": "e51d20678b3e846ef32af628fb8c08f24c81e78820c755eb567921c81194dc19",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "central",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "central_cab_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "central_capacity",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "colecao_padrao_proof",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "colecaoround",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "central_hold",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "colecoes_teto",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "bc9f9754f226f8e828dabbcfe096d352a5e51a3713a5b7e6a5a266b85392f2ae"
+    },
+    {
+      "test": "colestilos",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "04f7dec330d6e0c47f12337dae8a4b94228a04ebed88b8094b20151c6b88fdee",
+      "detail": "stale-fixture-declaration",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "colfileiras",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "20530f5a426ab867bcf46c2a00f63170eb5f5d6381371aef93e91b8d0fee38ce",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "colfileiras_home",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "e1b83c9458ab7b379590364d546fdab1c72ea90bbc751731346a2d3d572ba609",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "central_rotulos",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "central_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "colhdr_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "colfiltro",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "6c42c45f77ba09b7ba65d913f620d20acde87a26def037830a2d4762265cd352"
+    },
+    {
+      "test": "cominteiro",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "conexlim",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "93fef5be8ce658c161b499934f1f9d53019532843428821934dacb5742d919c8",
+      "detail": "JDK-discovery"
+    },
+    {
+      "test": "contaoffline",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "ab890286a4d237251b989d07a63cb4cad6fffe74aa9ecc23ba242dd81ac09b8e"
+    },
+    {
+      "test": "contaoffline_limites",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "524b2082dde5897baf7b51d5e82a38e91f85dba6130fb901985cc0ce1a0f98b9"
+    },
+    {
+      "test": "colecao_exibicao",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "3a37e7cbfab48bc01ad29f5d4852ca019d7fe821ca9a2a123c74235a7487b92e"
+    },
+    {
+      "test": "colecao_exibicao_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "colecao_layout",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ctxmenu_contract",
+      "original_rc": 2,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "e9e2890a85fc90f2de7118b43093362f272130516fedf340503d654c6a66c768",
+      "detail": "missing-ripgrep",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "conta",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ec87b24d5a90d12f32e63e0d3d2e7c297b7c72fca0eee49795a319afe795169f"
+    },
+    {
+      "test": "custom_id_stream",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "1b5aae9c27480bae9008be8d0d500a46bb66443dd1458e81ef0047948704fefd",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "cw205_diagnostico",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "e080575968ef88695dfdc44d7b2787c0bbee588d8c87c2203b095b1580a805b7"
+    },
+    {
+      "test": "cw_addon_request",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "ba7755bac72a909961e99211ebc7af42e85cb4a5ae01fcb723072a71422496ec"
+    },
+    {
+      "test": "colecao_padrao_default",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "cw_prioridade",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "a60cce10908e31d2288184c0c12b7c597adcdceeb14e517b08ded09f277e4180"
+    },
+    {
+      "test": "colestilos_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "dff474618d9b1eddc52c9a2e9b2f8625403dc782a16b2bcf66b30880def5c525"
+    },
+    {
+      "test": "cwdup244",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "ff685c1721220715f22387dae13170a6522dd8cb60fa1465c352ab295413df9d"
+    },
+    {
+      "test": "cwleg",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "0f442db06fb5349f5555ede12bc53efef8ff3e04494e4d520c53a596fa8e95e7"
+    },
+    {
+      "test": "cwminimo",
+      "original_rc": 134,
+      "category": "assertion-failure",
+      "original_log_sha256": "2f62cfc1ba237018ed80e5a02763c3de5fe62d8858c3caa4dd7ac741b63b9ff8",
+      "controlled_comparison": {
+        "current": 134,
+        "checkpoint": 134
+      }
+    },
+    {
+      "test": "cwoculto",
+      "original_rc": 134,
+      "category": "assertion-failure",
+      "original_log_sha256": "9bdb7efa237a19dea3a7a133fb10d74665c12e8b52ac0a7d325b8c1692cb3b93",
+      "controlled_comparison": {
+        "current": 134,
+        "checkpoint": 134
+      }
+    },
+    {
+      "test": "conexlim_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "cwremover",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "300103dd6d2728ede337a04309e697c91443826b2624c75251621c3a256d4ce6",
+      "detail": "stale-fixture-declaration",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "cwretido",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "d28862399b9a6569c71dca8e01a0f9237a5a7b733ed4b255b2b6e02553f5aae5",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "ctxinfo_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "d0476143e0c4ef235ef272b1234800b945cacf2657cae28da03c2adb56409c8c"
+    },
+    {
+      "test": "corviva_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "e3bdc07fda063713fd558e513c038913befcd4b3911851d40259a365d8863fa3"
+    },
+    {
+      "test": "ctxlista",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "b581e60b87495f59c0806af443bd3b00b402c2bdfda97a4d066d52659b60cb86"
+    },
+    {
+      "test": "cwthumb",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "bcad34ad48332fb9ddde2fdc4597b9206d66349129d22e139ca875048235789a"
+    },
+    {
+      "test": "ctxmenu_semfio",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "cw_pedidos",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "fa2261b9a679369354735c13bb247a3242fd59a347133572cf93b5d96b597b7f"
+    },
+    {
+      "test": "detail_cast_memoria",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "febeb287776c64a01e3fc266b23d862f14e08bdd1dbe02796c13cb1b90538cd6"
+    },
+    {
+      "test": "cwinicio",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "decoder409",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "descanso_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "desfoque_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "desmarcarfrente",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "detail_assistido",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "detail_epinfo",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "detail_epmaterial_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "detail_eps",
+      "original_rc": 127,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "8c8c58e533388970bae979fc292a57fa985b977513e59d1620be33eb795e3dd0",
+      "detail": "missing-ripgrep"
+    },
+    {
+      "test": "detail_cast_ok",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "detail_ep_fonte",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "descanso_wake",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "224801b4768b8d0e4f9104f62a59f3575b5ab118f35962d9149d27e3e0be63ba"
+    },
+    {
+      "test": "detail_ep_fonte_foco",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "detail_ep_fonte_trava",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "detail_ep_fonte_vazio",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "detail_epcard",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "detail_eps_repede",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "detalhe_b2",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "43f1110ac13d557cee766b06ec1b5a854dac8791ca8afaaccccd7a2667500539"
+    },
+    {
+      "test": "detalhe_espaco",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "detail": "silent-script-precondition"
+    },
+    {
+      "test": "detalheglass",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "9144bc8b25fe19979a7c6204b5635dfa53fcfc88c4b7c8d00a55f8a954ddd4b3",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "detalheglass_configs",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "detalheglass_fix",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "4baacc3bd45c7d0f1694e4ea0d8f26e6f7d8f4ca12373f59d2684bc45d97e82f",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "detalheglass_rev4",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "detalheglass_review",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "detmaisglass",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "9144bc8b25fe19979a7c6204b5635dfa53fcfc88c4b7c8d00a55f8a954ddd4b3",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "detalhe_glass_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "71d725f3f3af3238a71d27d4feb5929b340f5e22aa42b138c99af2506fc69567"
+    },
+    {
+      "test": "detail_epslista",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "diagnostico_persistencia",
+      "original_rc": 134,
+      "category": "assertion-failure",
+      "original_log_sha256": "e4489b9dfcf1bd18d6a22cc485d3ee105a729b2698f851271c183d2fa024b9c8",
+      "controlled_comparison": {
+        "current": 134,
+        "checkpoint": 134
+      }
+    },
+    {
+      "test": "dicacreditos",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "detalheanime",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "31a784cfc8495e75ad3dec5658c3f928b6ce0991f4e42eb8dd2c1f8a79b27a55"
+    },
+    {
+      "test": "diagnostico",
+      "original_rc": 134,
+      "category": "assertion-failure",
+      "original_log_sha256": "b7f835c48d7eb1715ab6246df194ccbbad088eb97383d766e987d475ee044cd9",
+      "controlled_comparison": {
+        "current": 134,
+        "checkpoint": 134
+      }
+    },
+    {
+      "test": "dinpalco",
+      "original_rc": 127,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "f0fe6b12e935c36a3b947fd73c0c9893cd9918ab3f45e4920dc9b1728e7421c5",
+      "detail": "missing-tool-or-file"
+    },
+    {
+      "test": "dinpalco_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "discord_runtime",
+      "original_rc": 134,
+      "category": "assertion-failure",
+      "original_log_sha256": "0e07a0c3705e7857a34074d4b9967ff0ef3bad0925caa6fb9c50e8b2fb789e3d",
+      "controlled_comparison": {
+        "current": 0,
+        "checkpoint": 0
+      }
+    },
+    {
+      "test": "detail_layout",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "dts-pr531",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "733aa60df91c9abf71aed531787433c68ec8afa4fa1b7c1440990db931b39387",
+      "detail": "FFmpeg-development-headers"
+    },
+    {
+      "test": "dts_buffer64",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "4546278e38ec00feb9460e9d430758b09f5555b1793b63e5a74bca964a938901",
+      "detail": "FFmpeg-development-headers"
+    },
+    {
+      "test": "dts_buffer_reporting",
+      "original_rc": 127,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "0d6453fb9fc996857b49d900adb67449305a043cb04cecd61ae9f2f8e10de408",
+      "detail": "missing-tool-or-file"
+    },
+    {
+      "test": "dts_debug",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "8faa6bed9b489764747f694d2f3dec36f7e410bcae2a3f18bc828a8a63ef6285",
+      "detail": "other-link-or-toolchain-diagnostic"
+    },
+    {
+      "test": "dts_engine",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "c54411e7a206a609530c7fd5ba784001b238e0171e0a45efa51a05b9e9074943",
+      "detail": "FFmpeg-development-headers"
+    },
+    {
+      "test": "dts_p2p_tail",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "fd0b6c8b76811b33199e1a075b7a714c91a936b3e041bc3c692d394870c46e57",
+      "detail": "FFmpeg-development-headers"
+    },
+    {
+      "test": "dts_pipeline",
+      "original_rc": 134,
+      "category": "assertion-failure",
+      "original_log_sha256": "51b6ce468eab1458729e60fe968eb7198342a6cf771f2f41bb00f58442f182ee",
+      "controlled_comparison": {
+        "current": 134,
+        "checkpoint": 134
+      }
+    },
+    {
+      "test": "detail_notas",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "dts_range_retry",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "f1b312c48b5e01e5da36a9d1f72394ad3b07d5066a3771f136013d1a67f46203",
+      "detail": "FFmpeg-development-headers"
+    },
+    {
+      "test": "dts_recovery_scope",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "24c7d5a87749454dbf2b2c99f7c480d48cb823931fe49441c555b3cce6fda391",
+      "detail": "FFmpeg-development-headers"
+    },
+    {
+      "test": "dts_sonda_repetida",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "660ceb9e61389c9e9c5f5575abfb1c11e4a17a04f8ec57b6ad45c63a17ed5d62",
+      "detail": "platform-compiler-flag"
+    },
+    {
+      "test": "dts_subtitles",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "7ed59a10a545dc342dfbb81e608273f89cc87ff77f7f99f443469737b69118e9",
+      "detail": "FFmpeg-development-headers"
+    },
+    {
+      "test": "dts_timestamp_engine",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "be578e565e60eb58b1f69773ab00628cd9385afe7f24ea1c378e3afb16475559",
+      "detail": "FFmpeg-development-headers"
+    },
+    {
+      "test": "dts_sonda_cache",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "3c453691313850c51df6d5fa105f806b3b44b73dbbd25a0a4616db03062c1ee4",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "dv7_engine",
+      "original_rc": 127,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "75960196fea6fa261a6ac1a5fd81ae1e2f1c3a96e08622c3b58f2f8e6e83f3cd",
+      "detail": "missing-tool-or-file"
+    },
+    {
+      "test": "dv7_opt_in",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "d4e470cd33aed8c824f607009b806f2d2bd48a256b6320cd94fa123099ddad71",
+      "detail": "FFmpeg-development-headers"
+    },
+    {
+      "test": "dv_autoplay",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "1e7f9b4f9b957ae0d3540461c8859f8ef37d9a42e6c4a18911cf9183e16f1fe4",
+      "detail": "stale-extracted-function-or-signature"
+    },
+    {
+      "test": "detail_remonta",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "detail_secoes_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "950e025345920150b1b98a9b9ad0e1b65da1b28d1c82132e00f2cde9b783d825"
+    },
+    {
+      "test": "dina_pisca_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "diagnostico_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "dicascontrole",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "dvabertura_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "dvguard",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "epescala",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "epfoco",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "4baacc3bd45c7d0f1694e4ea0d8f26e6f7d8f4ca12373f59d2684bc45d97e82f",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "dvaudio_lg",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "episode_identity512",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "2ee53376980ba83a4e3c7af8009b1c161a558581d2a1bc14805c60811b8a6d3c",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "episodiosdup",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "cc3e67242c49ac22d1124d2621494ec19da10a34b1ea23c7297928fba0d94274"
+    },
+    {
+      "test": "dvretry_lg",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "eps555",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "d17ec18f995b89a09356e1f2ceb5852c0f35decb9fc961b1adae28be4eb2b171"
+    },
+    {
+      "test": "epsrapido",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "971a5ba8c55d6d8e1884de871217ac0d0787fab1c42a0d95b2d73e5445e61559"
+    },
+    {
+      "test": "escala_ancoras",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "escala_upcoming",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "dvsonda_contentor",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "dvtela_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "enquete",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "enquete_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "epcoment",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "episodios_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "erro409",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "faixasmkv",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "43729788650a4c8dbac0394bbfc1719e2d972f3259a4fd13dc363e4fb41616f7",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "espaco",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "farah",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "c0bbce40dd857de3f33e75e05732fad61850a4f0a725560bbb098702b9519902"
+    },
+    {
+      "test": "estatvivo_cabe",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fileiraredonda",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "0f24fd2bbb88c395963f7955b584ceb1f8b855f88c614cb50eeb710c472b3a32",
+      "detail": "stale-fixture-declaration"
+    },
+    {
+      "test": "fimfileira",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "54e4ce31b172819b124a6c7197911f657f71986c4821c76d734b6476f9619b15"
+    },
+    {
+      "test": "estatvivo_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "estilo3_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "estiloanim_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "2d574cd110919245c16d52bf9e3eb1bd1c52c84797171bfbf68d4411c24390e0"
+    },
+    {
+      "test": "foco_acento",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "adda80b405b92b6328345805ea2d93bda59cc24963eb3eba3220a2c51406ef4c"
+    },
+    {
+      "test": "explorar_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "faixas_estilo_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fileiras_navegacao",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fluidez_perf_guia",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fonte_ordem_addon",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "c2eb958859c04c94a17f96053cae8d18702766762d5267a3398f3a37a85979da"
+    },
+    {
+      "test": "fluidez_perf",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fluidez_perf_player",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fontecache_vod",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "bcddf1669d053cfeffac5b9c47454e4a8a5ede0e8f1dbd78d6cb5719deec4d6e"
+    },
+    {
+      "test": "fonteescolha",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "0ff41f512a09734e1c18bdece01945d618f1cae4290a8dedd855caf1874280ec",
+      "detail": "legacy-runtime-or-contract",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "fontefalha_playback",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "1e7f9b4f9b957ae0d3540461c8859f8ef37d9a42e6c4a18911cf9183e16f1fe4",
+      "detail": "stale-extracted-function-or-signature"
+    },
+    {
+      "test": "fontefalha_worker",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "ff519a3ba05bfebc705a04267db64af8ba1edf8a71513302d561dd2403a136bd"
+    },
+    {
+      "test": "fonte_addon_texto_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fonteparalela",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "cb8bb5838f36dcc986b7c0834d4ff4b4d63401264464e253bc149b41cff1ce94",
+      "detail": "legacy-runtime-or-contract",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "fonte_detalhe",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fonte_detalhe_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fonte_lg_mp4",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fonte_manual_resume",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fontepref_manual",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "55349b1ce74fb3a968ecfd1e57b55561ef93720c16afa693735806ca9f2dc7c6",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "fonte_qualidade",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fontes_cabecalho",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "fonte_troca",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "eec322cd03753607d0a60def34e522e9995c4648ab27e2b8810ce1d3a2425dbf"
+    },
+    {
+      "test": "fontenota_preparo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fontepref",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "c4f1983685c84c847a71bd4fb0471f5f3f5b96cf7a2d8702e77eab975978e07d"
+    },
+    {
+      "test": "fontepref_auto",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "6c45f212635b54a9ba5746e76f07954c23772c0dca90aff1d151c472aa006b2f"
+    },
+    {
+      "test": "fontepref_file",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "c6275c83e559dad35caa25f9982aa6f9f19669c5dfa0657a998a980cb4a4ad19"
+    },
+    {
+      "test": "fontepref_lancamento",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "b0e740fe8ae68d61dcbea62838deaccdfd17a55edcb85a0eaef3e67fe600b84e"
+    },
+    {
+      "test": "fontepref_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fontes_relogio_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "fontes_sombra",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "fontesmortas",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "86c97f35bbd49eb0bad57d05390c0ba80ef295896c725a893e005b4fb0380cf8"
+    },
+    {
+      "test": "fontes_chips_ocultos",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fontes_cabecalho_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fontesmortas_orcamento",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "4b8b1add55f714d9e3c76ff4ed35d7cd38bbdb7b4e00cdf4f908fe9eec7332ba"
+    },
+    {
+      "test": "fontes_formatter",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fundo_din_escuro",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "fontes_glifos_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fontes_lista",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fundohome_palco",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "fontes_quadro",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fontes_parcial",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "2b6073cf1aa6e5fd8244dd72b40de0b744c3d48f77f6f08cc3ead32f6531a4d7"
+    },
+    {
+      "test": "fpscena_build",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fontesmortas_manual",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "fundo_assado",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "glass_surfaces_contract",
+      "original_rc": 2,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "52aef5089f697a46398114eebf2e79393e4a80b3f55819b09a617a464e5927b1",
+      "detail": "missing-ripgrep"
+    },
+    {
+      "test": "gpu1080_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "gpuauto",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "4024042527e95d41bd29384918d2a708c9c6e3a55a82f9fd36bcf83e50221f01"
+    },
+    {
+      "test": "gpunivel",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "9dbbc7fbca58877f457131edde3adeef9b1666579756422859015af141ccc252"
+    },
+    {
+      "test": "fundo_dither",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "gpunivel_r2",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "d0632b0937dcf394adccd6ef7bd0bc48d4843fa2a03d806afd43c068cce4c8da"
+    },
+    {
+      "test": "fundo_paleta",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "guia_grande",
+      "original_rc": 134,
+      "category": "assertion-failure",
+      "original_log_sha256": "ce6b5e8e83d3ad62be3ac5f42172507781a1fa665b8089d5dcde40d839113bb1",
+      "controlled_comparison": {
+        "current": 134,
+        "checkpoint": 134
+      }
+    },
+    {
+      "test": "gfx_cor_painel",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "guia_logos",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "gfx_din_adiado_split",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "gfx_vidro_preguica",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "gifavatar",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "gifperfis",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "guiacache",
+      "original_rc": 1,
+      "category": "assertion-failure",
+      "original_log_sha256": "0f7b985396a0c0b793e4e6e50b34ca21c96bbae17f8623adbd5292f62a1ac716",
+      "controlled_comparison": {
+        "current": 0,
+        "checkpoint": 0
+      }
+    },
+    {
+      "test": "guiafiltro_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "guiafiltro",
+      "original_rc": 1,
+      "category": "assertion-failure",
+      "original_log_sha256": "f5aefc3edb63559aeb0c99f971bfb917f41fedccae9dcf47af51596b8f4fe9aa",
+      "controlled_comparison": {
+        "current": 0,
+        "checkpoint": 0
+      }
+    },
+    {
+      "test": "hdr_surface",
+      "original_rc": 127,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "4fc260d497f965656dfd3fea807ed4dc729613bc01954d5dd34fe6fcdbccc302",
+      "detail": "missing-ripgrep"
+    },
+    {
+      "test": "guia_hold",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "gpunivel_ajuda",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "herobotaofrost",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "guiabusca_reabrir",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "heroglassfoco_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "gpunivel_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "heroisA",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "40ce44b9db08fa341c57f1247c579dbfeb44fa1e59684da46b5e433a23fea1cf",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "heroidentidade",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "8dd0978ad88fe6dde1b3ae463f48c62d4429376269e24955c71692b3869f1146"
+    },
+    {
+      "test": "herorotacao",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "6eb10cb1000121715a2b061494a715789cf6dfb111d7f2a61604acd6e1c0decf"
+    },
+    {
+      "test": "herosinopse",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "7f5cee6ea147a93e20507c1bd91564944a2562a42b0dd77e1258740a07804892"
+    },
+    {
+      "test": "herosinopse_corrida",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "4e537619fb18523fcc73457df8157333cee228536665cab75f382acf3bc0c4f4"
+    },
+    {
+      "test": "guia_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "e9c2e9d250d8cf0dc3602fe0f98647ec95deb80c61335e2706d19586ea4b0ffa"
+    },
+    {
+      "test": "herotamanho_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "home-trailer-timer",
+      "original_rc": 127,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "84a2be291a09e9a7da3ad8367d6658e7fb78a77ea9a5b5ad0b53f3ed10b23e68",
+      "detail": "missing-tool-or-file"
+    },
+    {
+      "test": "guiabusca_paginacao",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "home",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "49d7cc2b56c5c0b8a6b59745090c25ea8d6eb2d92663741bf168944acbe0b26a"
+    },
+    {
+      "test": "home_progressiva",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "3dd52bd8bf7a52c5156b3c966f543c43655eef3d9349ab91ce6c0b007121cc55"
+    },
+    {
+      "test": "home_relogio",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "b149fb0cea7242f0f5c74642e56887b12590a971bb4c342f387e401f49d226f8",
+      "detail": "stale-extracted-function-or-signature",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "guiaoverlay_ok",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "f032baad34c8bdbb4d060bd20991af349892450de18073b709d0dac57896cfec"
+    },
+    {
+      "test": "hero_trailer_rampa_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "home_scroll_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "homejanelas",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "556a442c4f146bb9c13a7a633ce7c64a0d1fcf651590cf67c35d059af1d9eb77",
+      "detail": "stale-extracted-function-or-signature"
+    },
+    {
+      "test": "homecarga_ilha",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "1827e4a265dc39ca33f80e92a494aa0cd36c91b68d03c68f9a014ae73183ada8"
+    },
+    {
+      "test": "hero_vizinhos",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "homevazio",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "homevazio_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "htmlq",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "fa315ef45b69e3f388bf0590aab6550365334af525e8eafe260b17163d7a301a",
+      "detail": "other-link-or-toolchain-diagnostic"
+    },
+    {
+      "test": "homerefresh",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "55db1dcf56054ee111f96b15802acaa644efbd66c587440da75433b5401340dd"
+    },
+    {
+      "test": "homelerdo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "herocat_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "i613",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "a5ad0a5d978e13d7da7f8799529ddcf856055dbb63b64222640ded9d94f240d9"
+    },
+    {
+      "test": "i610",
+      "original_rc": 134,
+      "category": "assertion-failure",
+      "original_log_sha256": "1cd0ffd404e20cd9f7d576d7f4498d2d422e09d002aaa1e70f83e9a7094c0bd2",
+      "controlled_comparison": {
+        "current": 134,
+        "checkpoint": 134
+      }
+    },
+    {
+      "test": "idiomaauto",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "b207f2f04edd9653ba5c8296c055ad095032035d53a81f16d18549af431a794d",
+      "detail": "legacy-runtime-or-contract",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "i18n",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "051823662a855eb2334daa17220941f8a81f5e8711df85a00469489c602dc8ee",
+      "detail": "legacy-runtime-or-contract",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "i616",
+      "original_rc": 1,
+      "category": "assertion-failure",
+      "original_log_sha256": "9e0c83210d90f5b053553ecbf55928e389fded8640afd0a76c15979f133d9ea2",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "ilha_medidor_trailer",
+      "original_rc": 139,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "ff4ea1f0cd940e8931c2a11ffe0e9f0e650566288b72143f7b30887e2aee008f",
+      "detail": "legacy-runtime-or-contract",
+      "controlled_comparison": {
+        "current": 139,
+        "checkpoint": 139
+      }
+    },
+    {
+      "test": "ilha_relogio_largura",
+      "original_rc": 139,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "b642621f9539a06568ef55934b9c292037894120cb24385c2e1f1491c0b7dbb6",
+      "detail": "legacy-runtime-or-contract",
+      "controlled_comparison": {
+        "current": 139,
+        "checkpoint": 139
+      }
+    },
+    {
+      "test": "herometa",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "hold",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "homecarga_painel_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "imgbaixa",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "4baacc3bd45c7d0f1694e4ea0d8f26e6f7d8f4ca12373f59d2684bc45d97e82f",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "iconeapp_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "idioma_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ilha2_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "issue_triagem_checklist",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "9c9492a3c0a3cda573a9bdf6a4c6c521d6de11862d6ceacdac108a2dd3f35901",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "issue607_subtitle",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "7f7a02d2255bf836fb2a9abfa53dba2695f2c59032ff8a97cafe02d1a83fafe3"
+    },
+    {
+      "test": "kaptain",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "ad954c163b8eb0539ad2589a48c50552e48e8b36d96b5bef6790614f04e967d0",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "legauto",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "eec003691b9f596582ab2cdf51e1f91bc55c4adbda0ef4faf6f359cfe8be7f70"
+    },
+    {
+      "test": "ilha3_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ilha_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "legenda_ass_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "7abbdacabb34f4c142b539a12520579996296968d3804b6f72d26bd0b264b2f6",
+      "detail": "visual-capture-prerequisites"
+    },
+    {
+      "test": "legenda_borda_preta",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "27d7efe5f0f687a84e3e04e2b4ffbd085f0455a56d89321b7b5d07758b9b1c8b"
+    },
+    {
+      "test": "ilha_voo_cw",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "interface_font",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "ilhasalvar_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "issue674_play_button",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "legendasui",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "734159b44214baa1fa35803e663855ccc053bd122795e0f12b41858bb3ee02a9"
+    },
+    {
+      "test": "legendasui_425",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "359f539581fcc75dd33e412625a900da1e66048f0d29d47a67eb8034e4fc9308"
+    },
+    {
+      "test": "legmem_383",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "26e7f428781f2ba5caa6729e067474d4a1b189ef7e595a9d042b7e4598b9cc88"
+    },
+    {
+      "test": "legmemoria",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "983bd24f79aed87e4c3a636fa9a54de45503c36a957a92cf54b6ebfa1733ab9e"
+    },
+    {
+      "test": "legpre",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "94af13e09af8058fff8c360f302d7a64904f756560a476be1708442be7cf1e49",
+      "detail": "stale-extracted-function-or-signature"
+    },
+    {
+      "test": "legref",
+      "original_rc": 2,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "65b6d8e39725d239ac08b1a4bad4fd33fb8c82a756538ef854b27f938e88786e",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "legref_fixtures",
+      "original_rc": 2,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "65b6d8e39725d239ac08b1a4bad4fd33fb8c82a756538ef854b27f938e88786e",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "legsync",
+      "original_rc": 2,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "65b6d8e39725d239ac08b1a4bad4fd33fb8c82a756538ef854b27f938e88786e",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "legsync_shot",
+      "original_rc": 2,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "65b6d8e39725d239ac08b1a4bad4fd33fb8c82a756538ef854b27f938e88786e",
+      "detail": "visual-capture-prerequisites"
+    },
+    {
+      "test": "legauto_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "lg_subtitle_selection",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "f0b1f1ba73f2edd5b13d5d0aa85f437b13434caa5fe9c31bce426e9ac11516a6"
+    },
+    {
+      "test": "library639",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "b603a8db877d41a99034dea583730caefb56c911f817d86d2aa3aa10737dbd63"
+    },
+    {
+      "test": "legconta378",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "livecat",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "0dd64afa45fd4ef88087aa81158582857bd0427ce1943b27903d64c412e62355",
+      "detail": "stale-extracted-function-or-signature"
+    },
+    {
+      "test": "legenda_contorno_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "legenda_dobrada",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "de6d59927432d594dd99c97ef0f09df47826b7da25db834363a4700fec41c793"
+    },
+    {
+      "test": "logorapido_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "02181538032b81d5a38085b885e400d71a39330bbc615955f8eb568a0ac8908d",
+      "detail": "visual-capture-prerequisites"
+    },
+    {
+      "test": "logorapido",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "447df590cb6c7228bf3ac25ebc34a1850ecd415d24ea0bc3db9d1c495405ffa5"
+    },
+    {
+      "test": "legenda_negrito_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "localizar_corrida",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "4f71b3fd35afca3f919c998b2b0195e132e603845d492df48b4d9e8fff2b550f"
+    },
+    {
+      "test": "medidor_trailer_pausa",
+      "original_rc": 139,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "8842b342cd4d838ec10a94a034bd6749693545f91ec9178709e089c58caa5f50",
+      "detail": "legacy-runtime-or-contract",
+      "controlled_comparison": {
+        "current": 139,
+        "checkpoint": 139
+      }
+    },
+    {
+      "test": "menu_avatar",
+      "original_rc": 134,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "148e768355ce901e2122aa326055cb0062ccbf9e70131c34a4e7b26dcb4d8943",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "menu_geometry",
+      "original_rc": 134,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "ce2b9f1d15ea73d7cbfe5205b50765099c1abd93f656bc846a79589e6391e1f5",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "legenda_tamanho",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "legendas_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "listas",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "menu_tvos",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "cfb746af4621b774255ec7bd2c707c06c2178d82ce1d31e0a34a392ab3cdfd5b",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "logofila",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "logos_formato_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "medidor_migra",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "medidor_trailer",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "mkv_dvrpu",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "3be06d2218cfbb1215d6f38a5922e0f8e4b9f3746c877cfa9d3c6707eeca326a",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "mkv_legendas",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "5f38776a9dbf740c493d3e3608ba538fad8f11ad5c536febe89dc2691bed7c7e",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "mkvass",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "a7c38b1542d2f23383ced625b3f011853996111a8e0fb7849e38c779222f8cba",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "menu_ocultos",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "menu_topo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "mkvass_url",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "6423415732d4acd541b93d132a5bbcc19c169fc558ddbcc6720cadde2ff93b31",
+      "detail": "missing-tool-or-file"
+    },
+    {
+      "test": "mkvcore_webos_abi",
+      "original_rc": 101,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "aa335d8969f3db6369ae6f71d4c01f3f0fdf6d4278d15c4bb68d18e177495d7b",
+      "detail": "Rust-target-or-path"
+    },
+    {
+      "test": "montagem_cedo",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "397ffb391eee3eb2bb7a3b8d346308606e7e35289602ea412a7abd75bcb91ae8"
+    },
+    {
+      "test": "moviebuffer",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "c54411e7a206a609530c7fd5ba784001b238e0171e0a45efa51a05b9e9074943",
+      "detail": "FFmpeg-development-headers"
+    },
+    {
+      "test": "montagem_estrutura",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "237f64271e6e55bdbf2f65e23623d78ffe284aa72a3da8f23bea598b3dd5ff56"
+    },
+    {
+      "test": "mural_largura_titulos",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "7e15128750ee5e6aedea77121948d47537a5496eab85e4334f00fa71af74ede4",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "musica_ui_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "musica_visual",
+      "original_rc": 127,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "c0ce6b005748d396b8a569ec65aa5ee2c560dd8a08c24c7a7e7f7ded25f57ad1",
+      "detail": "missing-tool-or-file"
+    },
+    {
+      "test": "notas0",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "613fe253ea956e51f1c8ee5a1342d00bc7d699b489ec85c38bf3458ffdf66efa"
+    },
+    {
+      "test": "notas1",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "6f217526353500802a3371bb26c164a3ca2b41d381745bf30fe242d8b840367b"
+    },
+    {
+      "test": "menu_topo_tira",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "notaordem",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "menu_tvos_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "menuep",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "mipcpu",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "mp4oculto_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "notas_ajustes_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "notas_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "3170ea813f2b0f325c7cee8780756341930651d0107aa46b08dd8a0fb845b68e"
+    },
+    {
+      "test": "novidades11_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "d353d2237e2116fcc998a5c89ea556b971a105ce8ff2e5077310c070ba04f6d5"
+    },
+    {
+      "test": "novidades1312_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "novidades142_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "novidades148_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "novidades151_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "novidades207_showoff_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "fd6b437842a3ee9a1fc3897b76a67ce3dc4657a63507aa54c8e4eb2e9cf17ec4",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "novidades160_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "novidades170_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "novidades172_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "novidades180_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "novidades174_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "novidades201_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "novidades20_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "novidades202_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "p2p_dica486",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "5c67d7955d564c168473da6298503502bc8ca99244b7f667d9dcdfb06a61c308"
+    },
+    {
+      "test": "palcolimpo",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "pasta_titulo_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "novidades_cartao",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "pengu",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "f86a9a8271b3e931a38ae1405c74cadd8585c1b81d57d483c59989046258316f",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "perfil_luz_arranque",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "novidades_fila",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "novidades_cartao_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ocultar_filmes_vistos",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "perfilfundo_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "perfilsel",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "f8e9393ffe0b5ad4161499101b043f79489a64dd86936adeaa618a44c954747d",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 0
+      },
+      "after_test_harness_fix_rc": 0
+    },
+    {
+      "test": "ondever",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ondever_folha",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "pinrows",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "b0b1b432e4d26f1d08e4d9a622a7420643492f29c2b6515d445c0ba49470a92f"
+    },
+    {
+      "test": "perfil_esquerda_barra",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "perfil_pilula",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "plainass",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "detail": "missing-pkg-config-dependency"
+    },
+    {
+      "test": "plain_tv",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "6df6cee3d378fbf8768ccf890d609e49d2b91cb9ffb8d139f2e28383a90a7f8a"
+    },
+    {
+      "test": "perfil_sair_roteador",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "perfil_fundo_cobre",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "detail": "silent-script-precondition"
+    },
+    {
+      "test": "pisca3_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "perfil_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "pessoas_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "pgtam_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "player",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "player_android_retomada",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "327ac65642e3c3b135d16bc3e940b82336aa4f2f31ea116afe670f9fff69c50d"
+    },
+    {
+      "test": "player_aspecto_android",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "player_cineabre_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "player_eof_episodios",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "player_loading",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "889d78de3ca4b2ddb85840d0174a77e1276db4a7c72a29a676d355426c735916",
+      "detail": "stale-extracted-function-or-signature"
+    },
+    {
+      "test": "player_fonte_duracao",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "player_fosco",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "player_pacing",
+      "original_rc": 127,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "8d8ffccffcacb0200f7c44a4e7bf6a42f8c42f8bd2ee689d5bfd1fbc8c65e950",
+      "detail": "missing-tool-or-file"
+    },
+    {
+      "test": "player_fundo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "player_glass_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "player_identity524",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "cda628fe2949a7e5422358b70c7fe7956d2ca33f3feb6436ba30c44a71423a05"
+    },
+    {
+      "test": "player_identity524_guards",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "14ae164e0a33167d1b32fe5308a8b81fb6d4cafb70b3e2fcfd1c733c0a283bbc"
+    },
+    {
+      "test": "player_loadtela_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "c511350d0673c814c76775e8344338e873305e5e875960656acf271f98203c4d",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "player_info_teclas",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "player_loading_artwork",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "player_pausa_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "player_prefs",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "player_recuo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "pluginjs",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "plugins_fontes",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "player_republica",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "plx_arte",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "plx_legenda_adocao",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "plx_legenda_janela",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "plx_legenda_prefetch",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "player_seekr_status_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "player_vidro_furo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "player_retido",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "player_scrobble_trailer",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "player_visto_trailer",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "pluginsui_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "plugins_folha_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "daf7db06a8f78805163da6c1d6384619a4d5c0a4a11fa6629ea055149b4aeb3f"
+    },
+    {
+      "test": "plx_recusa",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "plx_recusa_trava",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "posterprov",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "464ee0765c381f80006ed157e96f577887456e5ae791381528685438f684d33e"
+    },
+    {
+      "test": "ponteiro_telas",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "pr536_review",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "44096410b9d17ca80766c053c351fae00b608268ee63a312e3c91e6d52caab1a",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "pr536_fixes",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "906499d36a96e98ea640ac4e85f9fb862bdae01c974c07cd1c2377440ffe303d"
+    },
+    {
+      "test": "pr567-followup",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "d1d2d48ddc4a680baceda81c3dd160119188b99efc952035a8dfa272e2186425",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "pr567-metadata-packs",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "07b27634cb79cebf916c656237b9bf75b4d625a384a9f3d6a7a0d2e3e5b0c6f6",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "posplay",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "posplay_recuo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "pr567-review",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "ba189a645b6e96c0ac003fac8b730c57b73bd896dee3f4f07e5a4a417d54f36e",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "pr567-owners",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "a3d99a9ec421a499009fa1bfa736cbe6c3f569da7f149eea2e5e621984caafe7",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "proxprefetch",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "083fc060d6ff229739c0d103987d82ea89e90d1278dcc40f250670f68bf37c6f"
+    },
+    {
+      "test": "psfundo",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "7dca41e46640d20da8aedb732965baf85e36b42b95a327facaf85265f82d7176"
+    },
+    {
+      "test": "proximo_desfoque_home",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "62c30f2f531daf9ae1f3b687a46076cd9156545d826aa13b99756390a12ecda1"
+    },
+    {
+      "test": "poster_modelo_longo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "poster_url_longa",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ecca673bf1bc3c1b8886489a3faa163aeec3bb1ddc6093c799a736b64b00de3a"
+    },
+    {
+      "test": "rebuffer_review",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "cc39d51f1daafa7864e7de5df7ae5c2ef7a6398a091bbd7c7865e33a7a92781a",
+      "detail": "stale-fixture-declaration"
+    },
+    {
+      "test": "posterfluido",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "poweroff_resume",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7cd15f499f3e2cf985e40e93003fee2edc00d3a66779eef5a7d669a98c4cd89a"
+    },
+    {
+      "test": "quickmenuvidro",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "progresso_serie",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "rail_rodape_recolhida",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "reacao",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "reacao_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "recamigos",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "recenviar_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "rede_pedido",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "cf6a2eb690a58fd61dd53be557fe45516ce46ab8ee161779a84be6768642db7a",
+      "detail": "stale-fixture-declaration"
+    },
+    {
+      "test": "rede_postar_wasm",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "6849b2aabe5ccc848625e5222d21abc0e898f0d526d8cf3b71ea550e2e22f8f8",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "recintro_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "0dc572f8b799b9af4a21c9087aae74247f8a26a6695d4e04e3e9628587ce5e6a"
+    },
+    {
+      "test": "recomenda",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "cc24a0230de36382b8a649fbc4b9b195421509872d16ba53883cbe342e795868"
+    },
+    {
+      "test": "rede_tmdb",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "6157b8b6cf501d3fd207374d5b4eefef9116f2962e3fc5afd0259be0c56ceece",
+      "detail": "missing-ripgrep"
+    },
+    {
+      "test": "rede_sonda",
+      "original_rc": 127,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "acb1e8564812fe21f4d0f04726059d0cc8efa39469f33abbea5a3d1196534ecb",
+      "detail": "missing-tool-or-file"
+    },
+    {
+      "test": "registro_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "17405ac5286e3ddf8f314fa4fbba283b49d8bfa416a30064d42962ae3a22ce87",
+      "detail": "visual-capture-prerequisites"
+    },
+    {
+      "test": "recomenda_identidade_servicos",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "retomar_copias",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "adebd2cffc36fd8f71ad162fce4a08bc26262057250e406f24d2952b5af71a89"
+    },
+    {
+      "test": "recomenda_pedidos_ciclo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "9f8d8758c11cf12158decd3a72d9e7db4ed0f52d57ed0878aa0f58e04460f404"
+    },
+    {
+      "test": "recomenda_social",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "rust_mkvcore",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "677f1a3862bb648873407690996de0247acb4e1dfeec4044d490e6c5f18911a7",
+      "detail": "Rust-target-or-path"
+    },
+    {
+      "test": "recomenda_tecla",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "recresp",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "reduzir",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "regex_campo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "resolucao",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "retomar_dispensar_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "seekr_vivo",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "35d1994f38642689b6497357f451aa807db9472b8953cb29a19de2971b5bd059"
+    },
+    {
+      "test": "retomar_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "salvos_segurar",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "9f8d8758c11cf12158decd3a72d9e7db4ed0f52d57ed0878aa0f58e04460f404"
+    },
+    {
+      "test": "salvosorg_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "salvospainel",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "9f8d8758c11cf12158decd3a72d9e7db4ed0f52d57ed0878aa0f58e04460f404"
+    },
+    {
+      "test": "seekr_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "seguro_ajustes",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "sessao_corrida",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "selo_visto_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "sessao_email",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "607ba9c556056ee8593dc4681cb14b637ecdb388de59868bfc6db94c78d4f1fa"
+    },
+    {
+      "test": "sessao_fora",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "sessao_parcial",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "salvospainel_perf",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "settings_stage_b",
+      "original_rc": 1,
+      "category": "assertion-failure",
+      "original_log_sha256": "79cf36abda1525071aacab0e9e2214194dfd517ddcc5673efd5624eb862d498d",
+      "current_focused_gate_rc": 0
+    },
+    {
+      "test": "selos_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "serieaud",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ce5a653bb4726a34c5e4f4519916f3510ff7b034d18c308c3f82cee3fcc80332"
+    },
+    {
+      "test": "serieaud_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "seriefrases",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "37d0e09fcf58308fdd21e580ef705fcf1fc7b5e2c1dbfaa083b7ddbb08cff599"
+    },
+    {
+      "test": "seriefrases_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "6221995f9c47fae23107391c2d3dc2db1ee49c8ebd615c751f753909d4dd4f40"
+    },
+    {
+      "test": "settings_stage_a_interaction",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "settings_stage_b_interaction",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "settings_stage_a",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "3764b8ecd427c29e95739593fd063c76de9653ccb683ddb3e5e30902e8bdff69"
+    },
+    {
+      "test": "settings_stage_c_interaction",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "settings_stage_c_streams",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "settings_stage_c",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "684d3d0c28a30560466260d7e254253c42bec79f71e188f2a76e77c515ff7390"
+    },
+    {
+      "test": "settings_stage_d",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "sidebaratv_fonte",
+      "original_rc": 134,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "12ef66073f9d18bdac3447f98543c597fbc4f3e388c80e7bd2ca8a041f799387",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "sidebaratv_geometry",
+      "original_rc": 134,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "9cc75ca69584cfdcf73197f843785090009c9cc86b0750605f976a93c0a5e5e9",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "settings_stage_i",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "a2695b33803caf8de521c5d3cb657970135d1d10c6b4bfc038eb75f3c53f4429"
+    },
+    {
+      "test": "settings_stage_j4",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ed360baa380a6e1aa20de30e68247809af6eeb887e8ab9c6c025d890c360e922"
+    },
+    {
+      "test": "settings_stage_j5_native",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ed360baa380a6e1aa20de30e68247809af6eeb887e8ab9c6c025d890c360e922"
+    },
+    {
+      "test": "settings_stage_j6",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7d4a025cd147c791ff574e3bfd16036b46794adc4289f67085a30432d62480e8"
+    },
+    {
+      "test": "simkl_anime_cw",
+      "original_rc": 127,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "b632d24a954fa3c7e7760158a096a3bcab2a7a344a15635ec0467ac6e6c11081",
+      "detail": "missing-ripgrep"
+    },
+    {
+      "test": "simkl_scrobble",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "a440ef9c1d83c3c73e755fc899b8e804e8d5d8a74e2d0c5de0f8734da9b977ad"
+    },
+    {
+      "test": "simkl_library",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "44c75725e03917cd35ed00e615473fed77005ccd918ca048e2ef40544396767c",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "settings_stage_j7",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "snapshot_falha",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "309271f16cb60041ecd1fa8fc3f60b748917ce3d1c5a38d73aead28a990f55bb"
+    },
+    {
+      "test": "shufflepos",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "shuffleserie",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "sidebaratv_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "d7141cc89acc406a45ab2fded6ce6e8faf25262dd6da6700db779ac96143b6b0"
+    },
+    {
+      "test": "simkl_anime_build",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "sigterm_despedida",
+      "original_rc": 2,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ab23f09f0321aafc4391779f2ecc674a352193b290f61de034f3dc8a1f3ac801"
+    },
+    {
+      "test": "spainel_acordeao_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "bf8e0f33c11fbad87a403dfb4a0e7f6dc2a5d821eff85ac5453cbbaa5fa0ab43",
+      "detail": "visual-capture-prerequisites"
+    },
+    {
+      "test": "sinopse_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "social_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "8020212933789f9811f90c9c851824c95a16923a776e2bc645986c3e8b3289e2"
+    },
+    {
+      "test": "social_tela_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "source_audio_language",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "socialui_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "socialvis",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "stalker_portal",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "97b0797c4a0ed4347b168a5670b1ee80cb52d35754a9844991fc19588b4414b9",
+      "detail": "stale-fixture-declaration"
+    },
+    {
+      "test": "stalker_scheduler",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "42ed8b6e13bb6917c15c0c0a375616de4536faa3dd6cdb258a0f4c4db3de4ec0"
+    },
+    {
+      "test": "spainel_abas_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "stream_mp4",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "f418a59d41ac285d58d67e82d7751fbd343c542aa75990f69047f3af0c886d0e",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "spainel_foco_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "939f9591b876fb3a7d5f0fa5a1ad8d4c9814548efbaf621f8fc122a50e92a338"
+    },
+    {
+      "test": "spainel_fundo_tempo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "spotlight_canais",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "36259d46e5b15eee791f11870e40acb2d4e246a45007d66bc2dd4503eabbb161"
+    },
+    {
+      "test": "spotlight_regressao",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "sync_aplicar_perf",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "95b4ffe7c72d2868f7fe3a14fb5382dcd5e7204c49989725d8f1f65283dbb3d7"
+    },
+    {
+      "test": "sync_prioridade",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "7cf4c4c438b3a2485b298973000682096c6303ab0e7bcad455db3fc1d856485a",
+      "detail": "stale-fixture-declaration"
+    },
+    {
+      "test": "sync_resumo_corrida",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "d1f8b8ae3f7a66f1a90c897da923ce1ffc7f5e27bcd4b6054215f7bcb714c403"
+    },
+    {
+      "test": "synccolecoes",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "dd4e8bb3856dbf84841281663866da260cfeadd0d06df5448684008ee4873119"
+    },
+    {
+      "test": "syncordem",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "4a051075afd3304b46e5526bb5e0233c159997c8c925c4d64b43e1480de3831f"
+    },
+    {
+      "test": "spotlight_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "c4cab30d45c5090d8290d9f2b313b081d8b80fdce1de7fd82b74787186b1eb5e"
+    },
+    {
+      "test": "spotlight_tv_texto",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "stream_cache_filter",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "stream_retry",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "streamfit_folha_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "subtitle_fallback_bold",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "syncjank",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "synopsis_review",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "tex_pressao",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "e72dfd7f0c547e150256faa3a3214f1c73fb80984cb083833472eafc66b332c6",
+      "detail": "mixed-Kotlin-compiler-cache"
+    },
+    {
+      "test": "tailandes_texto",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "teclado_ime_modo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "teclado_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "teclado_webos",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "temporadas_grafico",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "ba7542b191180e46bc8b90d8a0b251912fd94318ea1e179cb6899f60a327a728"
+    },
+    {
+      "test": "temporadas_grafico_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "c505c0a51cbf7c60240b69069834e15ff3b7e74f898b52da621c5659dc4557d5"
+    },
+    {
+      "test": "tex_nonblocking",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "texb3",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "texpressao",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "5b4483bc3219174dece8d243a8ee0ae18bfc12e2e693663aa1da682160d2fe3e"
+    },
+    {
+      "test": "texbruto",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "8f859cafe178ab1e6830ec3cf00c451963826b4a285789384e643816e450bcda"
+    },
+    {
+      "test": "texcorpo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "32acdcf7a513016d4c71a64aea082d9cc90c795e56deffc06122aef14c240190"
+    },
+    {
+      "test": "texdisco",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "88fd422a32e3fd4116472f66618bb5d3aa85fb6396789355be81a64563635fe7"
+    },
+    {
+      "test": "texfila",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "65205b416cba601d61e95128ee65e4beba1107e4fdcfd0c77bf477283a1f880f"
+    },
+    {
+      "test": "textoescala_fix2",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "46a33569605d83df2efa74e0b32ed1521ffdd2fa900def548ba7db5f42929d6e",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "textoescala_fix2_prova",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "teximgloop",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "9a460ffb26f2875bccbce7c308d1505d395eef117a8d22173865f5e955eae36b"
+    },
+    {
+      "test": "texlento",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "127ecd8561f1a40c9bbccdb89856507c331b3296bf870de342ceaece81f73e74"
+    },
+    {
+      "test": "textoescala_layout",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "textoescala_rev3",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "27dfffdbcc0960edd578bffd8f58dbc8f46f377e715f8e93cf7ea8adb0447d5e"
+    },
+    {
+      "test": "textoescala_rev4",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "094a5e509d8c1a1be45f804afac777c42414940913484fbad2d64d9d841dbd4f"
+    },
+    {
+      "test": "texquente",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "6e593c194035aec29a66663be9520578603fdb72821a57b0e85b460bdf01dffb"
+    },
+    {
+      "test": "tirarremoto",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "95227c301abe9df3e0c209d3852e5e0732724b400210859c506abe355edc3c1d"
+    },
+    {
+      "test": "title_identity524",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "948ffd78983f3ab6066d856d4d24f58401c5c342fd20f383f7e6ea2501898a48"
+    },
+    {
+      "test": "textoescala_prova",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "67eaa6d81fc634bf01518a76aae8b52df5cf96132d2b10c86abd3a53aba689e9"
+    },
+    {
+      "test": "textoescala_rapida",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "67eaa6d81fc634bf01518a76aae8b52df5cf96132d2b10c86abd3a53aba689e9"
+    },
+    {
+      "test": "top10_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "e3f01e29378101d4e82235711ba727c8960f867db72fd01e4d37260ee1a9aff4",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "topx_catalogs",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "4d57e3bd12034fed877a45f9737eb716dae0d5c5d91f8d31d085c3e6b5d59a87"
+    },
+    {
+      "test": "torrentdica",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "text_arabe_negrito",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "tpk-dts-legendas",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "cd78323e50941d32dbbcc770b6b1af8cc384d9096856f0f7c758a36f3384ff8c"
+    },
+    {
+      "test": "tpk-dts-reabrir",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "38784fa821ae6aa2191ab1b1c4b7bbc52381089fb54fa34754046fccaa608769"
+    },
+    {
+      "test": "tpk-cdn",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "90f7ce826a9c3f8232252bbccf72a2dd44c496097a7cc829038cb182318bcd34",
+      "detail": "legacy-runtime-or-contract",
+      "controlled_comparison": {
+        "current": 1,
+        "checkpoint": 1
+      }
+    },
+    {
+      "test": "tpk-responsive",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "0e7e6502806a59329d1f903b50f8f2ae9073564959f533c14192b29c70af5e5d",
+      "detail": "missing-tool-or-file"
+    },
+    {
+      "test": "tpk-roi",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "072efb0f3d63e9335fb4f7dc88b00c0f2ca2dc5ce52ed314d2adf271e5934fd9",
+      "detail": "stale-extracted-function-or-signature"
+    },
+    {
+      "test": "text_camadas",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "tpk_lifecycle",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "45bc666f2a09713582e954dc0f672d8f2922ca7f5b7dcf12259ff7b1c5dde349",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "tpk_live_geometry",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "bfdf693c724d5438ec2b6b3b72d6ff0ac76ed8a91445c47e4b89747ce0262cfa",
+      "detail": "other-link-or-toolchain-diagnostic"
+    },
+    {
+      "test": "text_familias",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "tpk_texto_flag",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "b9fb21971cd345f516af01f68fc66fa0d7779c8cde54ca4f5e1256e7a68db164",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "tpk_window_metrics",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "45bc666f2a09713582e954dc0f672d8f2922ca7f5b7dcf12259ff7b1c5dde349",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "text_largura",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "trailer-hero-contract",
+      "original_rc": 127,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "67ab5c7dd4583ff1ea825b08535f1d4a0421aec9002ffc9fdc0384696e45e2eb",
+      "detail": "missing-tool-or-file"
+    },
+    {
+      "test": "trailer-legenda",
+      "original_rc": 127,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "4837b908a468b9bfecd309ce8e644542b2d66d45082a439b2ce56484672675d1",
+      "detail": "missing-tool-or-file"
+    },
+    {
+      "test": "trailer-native-state",
+      "original_rc": 139,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "6f1aad768bb4ca2c0c2806b265f28cef7d7965adc9563d336cbc309a264eaff2",
+      "detail": "legacy-runtime-or-contract",
+      "controlled_comparison": {
+        "current": 139,
+        "checkpoint": 139
+      }
+    },
+    {
+      "test": "trailer-nativo-igual",
+      "original_rc": 128,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "06ccc2d2ec8a11bd7f206ee581d7eb04ef0f6428911ef6f58ddd0ca2db65afec",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "trailer-recorte",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "textura_fraca",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "trakt610_ajustes",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "trakt610",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "c93ad50b57e5067a37b0c7d35634c055869fd6633ddf449be28df18b968dfe4b",
+      "detail": "stale-fixture-declaration"
+    },
+    {
+      "test": "trakt_arranque",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "fd603b041669bc8db4b9fd39f38063ae3e5afcbaf08f5342d9d09a0dfda1922e"
+    },
+    {
+      "test": "trakt_cw_dup",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "97e39689c1e080ae16f7a6b77231bd9392811acfd1b75356e039e4b79ba223ee"
+    },
+    {
+      "test": "trakt_cw_vistas",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "116690ecaef6f98a97e37bf0f662f19ed57d2dcc696be53f296ed86ee224797e"
+    },
+    {
+      "test": "trakt_ep_cinemeta",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "d24c2a4ce6efcaf4ca26858537e99a691d51f3c5f2e7a2dee029b67403e51ce4"
+    },
+    {
+      "test": "trakt_filmes_vistos",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "4b599839397d2425e85b1fc7b9e17b8c230e59b739210a185ba9e1e4a3d4b3b1"
+    },
+    {
+      "test": "trakt_play_corrida",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "f758dbeab21045b553fd84fe7fdb137bf02274c3ea156cb979e488b7ab40eeef"
+    },
+    {
+      "test": "tmdb_idioma_conta",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "traktauth",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "e37ec1770b7d60decdac8e2d7b606f9cb846f9a0fd7a9b92b1ea04c6dcd4eb8c"
+    },
+    {
+      "test": "traktcoment",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "9144bc8b25fe19979a7c6204b5635dfa53fcfc88c4b7c8d00a55f8a954ddd4b3",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "trakt_season_meta",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "00f8a6749d56fad2680ddc4343df3f0e6f82247abd1caabbf85b080c5a5c61a0"
+    },
+    {
+      "test": "traktvidro",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "9144bc8b25fe19979a7c6204b5635dfa53fcfc88c4b7c8d00a55f8a954ddd4b3",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "traktult",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "95f20c26ee8c5c3226ca7724807e53ce3e7510cb640c80e0d8dd4544568e28ae",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "troca_perfil_esquece_contalib",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "detail": "silent-script-precondition"
+    },
+    {
+      "test": "troca_perfil_repete_desc",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "detail": "silent-script-precondition"
+    },
+    {
+      "test": "troca_perfil_espera_conta",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "9cbb5c7a690e366cdd6f3303e155ae91c14add74118dbdacf7372d6152920cf6"
+    },
+    {
+      "test": "ui720",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "tvplay",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "f0bab2358a2b47a2756a388288d686942f650e31f4d16eadc9da68dc73689595"
+    },
+    {
+      "test": "ui_sizing",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "upscaleiguais",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "torbox_cached_add",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "ui720b",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "tpk_context",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "6db06aa78c1a4a8642477b5cc057119eb4741c4310cf3ffb1a19397b39663090"
+    },
+    {
+      "test": "trailer_dither",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "vertfileira",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "ae4a75a521019c01e56b49e574c838b100413964e8af9e2d911251cbdf82380b"
+    },
+    {
+      "test": "vertudo_abastopo_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "tpk_primary_subtitle",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "trailer-cheia-escada",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "trocaarte_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "940e464180ec4174a9339ce5cac9c0facac79ef7065794731c578da1ea82064e"
+    },
+    {
+      "test": "vertudo_painel_cartaz",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "d187bb5893a8f31410781eee5d65bbb25a7f31175ea96ba805684e6f1e0d1fcd",
+      "detail": "stale-extracted-function-or-signature"
+    },
+    {
+      "test": "usbmodal_ok",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "usbmodal_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "680b0f1a46530b3fd26e3e383667c7f42fa32fd13e94c5af3e6177bc1720c662"
+    },
+    {
+      "test": "vertudo_timeline_geo",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "e7c91c7a2cc76a814c0fed6395e504e255371cce33b651e811cf096d309f4cfa",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "vertfileira_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "video_android_cacheboost",
+      "original_rc": 134,
+      "category": "assertion-failure",
+      "original_log_sha256": "b312a080513dcd705456df2e326dee8135bbd133cf8384e3b85d01fce971c719",
+      "controlled_comparison": {
+        "current": 134,
+        "checkpoint": 134
+      }
+    },
+    {
+      "test": "vertudo_colhdr_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "video_android_retomada",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "7fb660ce534b51a38bd5e0441ae4aef8e1476c6a7a2c63683fc0f813f36c1056",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "vazao",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "30819eb57c80e55b1271515302d6a283a1699e1eaacb24d024c9deb3788f4acc"
+    },
+    {
+      "test": "vertudo_colrank_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "vidro_c9",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "vidro_c9_cache",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "vidro_c9_webos_compile",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "4027d39ac84dfb5677189708b2d414333821ccc6eae0114c2a0f40f5e3b6fc92",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "vertudo_diretorpol_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "vertudo_rankdec_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "vertudo_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "vidro_padrao",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "ec3395d72ad14ef3a553a253c702967d5d7c3921bade2f19370f71a5043adced",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "vertudo_vitlogo_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "631f764ff3ba72260fafbf81657165aaddbd43461314a4658fff7b98f730e7ab"
+    },
+    {
+      "test": "vidro_ilhas_fix",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "vidro_telas",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "vidro_acento",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "video_pausa_lg",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "vidromenu_fix",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "4baacc3bd45c7d0f1694e4ea0d8f26e6f7d8f4ca12373f59d2684bc45d97e82f",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "vidrotabs_shot",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "88f57d8191a68da0f141b627612430b9a5d4bc081396fc0cd53364f4b0089527",
+      "detail": "external-volume-path"
+    },
+    {
+      "test": "vidro_menu_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "visto",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "7c2b49322324a28668d8ddb6f593596d23823df728f9ef4a85f103a6ad01313d"
+    },
+    {
+      "test": "vistonao",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "fea997a0c79325dc34c7362933f8a9a7998fbfa44a5eb99cbaeaa6bde820911a",
+      "detail": "SDL-header-search-path"
+    },
+    {
+      "test": "vistos_regressoes",
+      "original_rc": 1,
+      "category": "other-compile-or-tool-error",
+      "original_log_sha256": "8ac7b7ff31fc279e443c195367e70dafc1a4b780fa0445bc60b6ab02dce40d6a",
+      "detail": "stale-extracted-function-or-signature"
+    },
+    {
+      "test": "vidro_neutro",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "watchstate_poda",
+      "original_rc": 1,
+      "category": "link-failure",
+      "original_log_sha256": "d21cb23b82ae102b9ec2d882a6fd213f8debb608bd28086b54f32802b8d68530"
+    },
+    {
+      "test": "webp",
+      "original_rc": 1,
+      "category": "other-runtime-or-harness",
+      "original_log_sha256": "7f0f40c8aaf1b7aea3e5246ccac98fddd9a37be728d0dc28c8bc3d6523367ee3",
+      "detail": "legacy-runtime-or-contract"
+    },
+    {
+      "test": "vidro_orcamento",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "vidro_padrao_shot",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "vidro_qualidade",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    },
+    {
+      "test": "vidro_todo",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "8ffcd50a2b57b08caa99faab8c32e8adcb80e713cbdb5a6b516850867dd30b81"
+    },
+    {
+      "test": "vidro_video",
+      "original_rc": 1,
+      "category": "interrupted-session-source-compile",
+      "original_log_sha256": "7f457411a89f8e29c3f6d542602a20a16366e17c5cec051afe05e54a6accb618"
+    }
+  ]
+}

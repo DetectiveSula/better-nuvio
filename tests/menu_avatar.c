@@ -6,6 +6,7 @@
 
 float gfx_tex_aspect_atual;
 float gfx_card_forcar_cover_atual;
+int ajustes_menu_ocultar_pilula(void){return 0;}
 int ajustes_home_layout(void) { return HOME_LAYOUT_MODERNA; }
 int ajustes_menu_explorar(void) { return 1; }
 int ajustes_menu_guia(void) { return 1; }

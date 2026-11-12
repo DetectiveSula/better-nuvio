@@ -653,7 +653,7 @@ static void *fioPoll(void *u) {
     if (resp && st >= 200 && st < 300 && guardarTokens(resp, 0)) {
       estado = SES_LOGADO;
       codigo[0] = 0;
-      printf("[sessao] logado como %s\n", sub[0] ? sub : "(sem sub)");
+      { char fp[9]; printf("[sessao] logado como conta %s\n", sessao_impressao(sub, fp)); }
     } else if (falhaServidor(st)) {
       // AUTORIZADO, mas o servidor nao respondeu a troca: o codigo continua
       // valendo, entao a TV continua esperando e a proxima volta do poll tenta
@@ -729,7 +729,7 @@ static void *fioEmail(void *u) {
     erroEmail[0] = 0;
     codigo[0] = 0;
     estado = SES_LOGADO;
-    printf("[sessao] logado por e-mail como %s\n", sub[0] ? sub : "(sem sub)");
+    { char fp[9]; printf("[sessao] logado por e-mail como conta %s\n", sessao_impressao(sub, fp)); }
   } else {
     // So o status vai para o log: o corpo de erro do GoTrue repete o e-mail
     // em algumas versoes ("User with email x not found").
@@ -808,7 +808,7 @@ void sessao_iniciar(void) {
   // login e depois falhar em todo sync com 401 sem explicar nada.
   if (acesso[0] && !anonima) {
     estado = SES_LOGADO;
-    printf("[sessao] sessao restaurada (%s)\n", sub[0] ? sub : "sem sub");
+    { char fp[9]; printf("[sessao] sessao restaurada (conta %s)\n", sessao_impressao(sub, fp)); }
   }
 }
 

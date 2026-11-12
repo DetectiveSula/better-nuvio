@@ -110,3 +110,41 @@ size_t busca_apagar_ultimo(char *s, size_t n) {
   s[n] = 0;
   return n;
 }
+
+// ---- title relevance (see buscanorm.h) -------------------------------------
+static int ehLetra(unsigned char c) {
+  return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c >= 0x80;
+}
+static const char *semArtigo(const char *t) {
+  static const char *const art[] = { "the ", "a ", "an " };
+  for (int i = 0; i < 3; i++) {
+    size_t n = strlen(art[i]);
+    if (!strncmp(t, art[i], n) && t[n]) return t + n;
+  }
+  return t;
+}
+static int prefixo(const char *t, const char *q, size_t nq) {
+  if (strncmp(t, q, nq)) return -1;
+  if (!t[nq]) return 0;                      // exact
+  return ehLetra((unsigned char)t[nq]) ? 2 : 1;
+}
+int busca_relevancia(const char *titulo, const char *alvo) {
+  size_t nq;
+  int r, r2;
+  const char *p;
+  if (!titulo || !alvo) return 6;
+  while (*alvo == ' ') alvo++;
+  nq = strlen(alvo);
+  while (nq > 0 && alvo[nq - 1] == ' ') nq--;
+  if (!nq) return 6;
+  r = prefixo(titulo, alvo, nq);                 // 0 exact, 1 word, 2 inside a word
+  r2 = prefixo(semArtigo(titulo), alvo, nq);
+  if (r == 0 || r2 == 0) return 0;               // "matrix" == "the matrix"
+  if (r == 1) return 1;
+  if (r2 == 1) return 2;                         // "the rocky horror..." after "rocky ii"
+  if (r == 2 || r2 == 2) return 3;
+  for (p = titulo + 1; *p; p++)
+    if (!ehLetra((unsigned char)p[-1]) && ehLetra((unsigned char)*p) && !strncmp(p, alvo, nq)) return 4;
+  for (p = titulo; *p; p++) if (!strncmp(p, alvo, nq)) return 5;
+  return 6;
+}

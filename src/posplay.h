@@ -19,6 +19,7 @@
 #ifndef NV_POSPLAY_H
 #define NV_POSPLAY_H
 #include <SDL2/SDL.h>
+#include "gfx.h"
 
 // Chamada por quadro pelo player, com a posicao e a duracao correntes.
 // `janelaSerie` diz se a serie ja esta na janela de "proximo episodio" — os
@@ -53,6 +54,13 @@ void posplay_desenhar(Uint32 agora, float baseY);
 float posplay_topo(float baseY);
 // Teste do ponteiro (#99): o cartaz em foco (filme).
 int  posplay_teste_foco(void);
+// Film page (TV): the focused control — 0 Details, 1 previous, 2 next, 3 the
+// video window. Para teste.
+int  posplay_teste_botao(void);
+// Film page (TV): the recommendation's backdrop and the official scrims,
+// drawn by the player in REAL pixels around the receded video `furo`.
+// 1 = drew (the player skips its own blurred art).
+int  posplay_fundo(GfxRect tela, GfxRect furo);
 // Fecha e zera. Chamado quando o player abre outra coisa.
 void posplay_fechar(void);
 // Recuo manual: cancela contagem e pedido automatico, mantendo o OK manual.
@@ -78,6 +86,8 @@ int  posplay_pediu_titulo(void);
 Uint32 posplay_contagem(Uint32 agora, Uint32 fecharEm, double restaReal, int autoplay, int contagemSeg);
 #ifdef NV_SHOT_HOOKS
 void posplay_shot(int idxCatalogo, int ehSerie, int t, int e, Uint32 fecha);
+void posplay_shot_estado(int cena, int aindaAssistindo);
+GfxRect posplay_shot_cartao(void);
 #endif
 
 #endif

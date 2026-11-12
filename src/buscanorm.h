@@ -27,4 +27,15 @@ int busca_codepoints(const char *s);
 // deixar meia sequencia UTF-8 no campo. Devolve o novo tamanho em bytes.
 size_t busca_apagar_ultimo(char *s, size_t n);
 
+// TITLE RELEVANCE for ordering results (both already busca_normalizar'd):
+//   0 exact title ("rocky"; also "the matrix" for "matrix")
+//   1 title starts with the query as whole word(s) ("rocky ii", "rocky balboa")
+//   2 the same after a leading "the/a/an" ("the rocky horror picture show")
+//   3 the query ends inside a longer first word ("rockyfeller")
+//   4 a later word starts with the query ("meet rocky")
+//   5 the query appears elsewhere in the title
+//   6 not in the title at all (the add-on matched other fields)
+// Lower is better.
+int busca_relevancia(const char *tituloNorm, const char *alvoNorm);
+
 #endif

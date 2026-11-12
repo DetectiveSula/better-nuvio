@@ -678,7 +678,7 @@ void notasui_mapa_card(const NotasSecao *s, GfxRect c, int selT, int selI, float
         if (rotTodos || (s->tempNum(t) % 5) == 0 || t == 0) {
           char rot[12];
           TxtLinha l;
-          snprintf(rot, sizeof rot, "T%d", s->tempNum(t));
+          snprintf(rot, sizeof rot, i18n("T%d"), s->tempNum(t));
           l = texto(rotTodos ? TXT_G20M : TXT_ILHA_NUM, rot, 180);
           txt_desenhar_alpha(l, px, ry + (ch - (float)l.h) * 0.5f, aa);
         }

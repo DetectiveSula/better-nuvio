@@ -8,6 +8,7 @@
 // resolve "tt1234567" direto, e o TMDB nao.
 #ifndef NV_EXTRAS_H
 #define NV_EXTRAS_H
+#include <stddef.h>
 // Clear published detail/trailer data and invalidate its in-flight requests.
 void extras_abrir_sessao(void);
 
@@ -168,6 +169,9 @@ int         extras_n_estudios(void);
 // Sai do `original_language` do TMDB, no mesmo corpo que a ficha ja baixa.
 // Serve ao ajuste "Áudio: Original" — ver linguas.h.
 const char *extras_idioma_original(void);
+// Stage H: a title's TMDB original language as cached by the Home hero
+// trailer lookup ("" unknown). For the trailer's subtitle-safe crop.
+void extras_idioma_original_de(const char *imdb, char *dst, size_t cap);
 
 const char *extras_estudio_nome(int i);
 const char *extras_estudio_logo(int i);
@@ -269,12 +273,21 @@ const char *extras_relacionado_imdb(int i);
 // Poster do relacionado (URL). Vem de `extended=images` do Trakt, que devolve o
 // caminho sem esquema — o https e acrescentado aqui.
 const char *extras_relacionado_poster(int i);
+// Post-play detail of a recommendation ("" / 0 / -1 when the source has none).
+const char *extras_relacionado_fundo(int i);    // backdrop URL
+const char *extras_relacionado_logo(int i);     // title logo URL (Trakt only)
+const char *extras_relacionado_sinopse(int i);
+const char *extras_relacionado_generos(int i);  // "Drama, Thriller", localised
+int extras_relacionado_duracao(int i);          // minutes
+int extras_relacionado_nota(int i, int *fonte); // 0..100 or -1; fonte = EX_TMDB/EX_TRAKT
 #ifdef NV_SHOT_HOOKS
 void extras_shot_relacionados(const char *const *titulo, const char *const *ano,
                               const char *const *poster, int n);
 void extras_shot_relacionados_ids(const char *const *titulo, const char *const *ano,
                                   const char *const *poster, const char *const *imdb,
                                   int n);
+void extras_shot_relacionado_extra(int i, const char *fundo, const char *logo, const char *sinopse,
+                                   const char *generos, int nota, int fonte, int duracao);
 #endif
 
 

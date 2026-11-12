@@ -22,6 +22,10 @@ void ajustes_teste_poster_recarregar(char *lido, size_t n);
 const char *ajustes_teste_poster_aviso(void);
 void ajustes_teste_poster_definir(int campo, const char *texto);
 
+// The input test build now requires explicit platform/crash hooks. This
+// fixture exercises URL editing only, never a crash or a webOS version probe.
+int texto_teste_webos_major(void) { return 0; }
+void texto_teste_crash_outro(void) { assert(!"unexpected crash hook"); }
 static int falhas;
 #define OK(c, m) do { if (c) printf("ok   %s\n", m); else { printf("FALHA %s\n", m); falhas++; } } while (0)
 

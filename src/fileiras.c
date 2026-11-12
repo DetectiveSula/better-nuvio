@@ -13,6 +13,7 @@ extern int addons_perfil_da_lista(void) NV_PERFIL_OPCIONAL;
 extern int addons_travar_lista(unsigned, int) NV_PERFIL_OPCIONAL;
 extern void addons_destravar_lista(void) NV_PERFIL_OPCIONAL;
 
+
 // Uma linha da escolha local. A ORDEM do vetor E a ordem da home: nao ha campo
 // de posicao porque um numero de ordem gravado ao lado do indice sempre acaba
 // discordando dele — foi o que o formato moderno do blob da conta precisou
@@ -98,6 +99,8 @@ static int   carregado;
 // nasce nesta versao ja nasce limpo; so o que veio de antes passa por ela, e
 // uma vez so. Ver fil_migrar_197.
 static int   migrado197;
+static int backupDuplicadas;
+static char backupPath[600];
 static int   registroSujo;   // ver fil_gravar_registro
 // FONTE DO DESTAQUE. "" = automatico (os primeiros titulos do catalogo, que e
 // o que a home sempre fez), "*" = sorteio do catalogo, qualquer outra coisa = a
@@ -113,7 +116,7 @@ static unsigned revisao;
 // Lista COMPLETA e identificada da conta deste perfil. So em memoria: impede
 // que uma foto antiga da Home recrie catalogos que acabamos de apagar.
 #define FIL_ADDONS_MAX ADDONS_MAX
-static struct { char id[FIL_CHAVE], base[NV_ADDON_URL_MAX]; } addonsConta[FIL_ADDONS_MAX];
+static struct { char id[FIL_CHAVE], base[NV_ADDON_URL_MAX], fp[32]; } addonsConta[FIL_ADDONS_MAX];
 static int nAddonsConta = -1, addonsContaCompleta, addonsContaVinculada;
 static unsigned addonsContaVersao;
 static void esquecerAddonsConta(void) {
@@ -307,7 +310,113 @@ static int limita(int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v
 //
 // dados_gravar ja e atomica (temporario + rename), ja pega a trava e ja marca a
 // sujeira. Montar o texto e entrega-lo pronto e menos codigo do que estava aqui.
+static char profileKeys[FIL_MAX][FIL_CHAVE];
+static int profileEnabled[FIL_MAX], profileCount;
+static int tetoSessao;
+static int contaAtiva(void) { return profileCount>0; }
+int fil_tem_projecao(void) { int v;pthread_mutex_lock(&trava);v=contaAtiva();pthread_mutex_unlock(&trava);return v; }
+// Regular Nuvio keys every instance of an addon as <manifest id>_<type>_<catalogue>
+// (homeCatalogKey; the first instance wins an exact collision). Native keys the
+// catalogues of a second instance by its URL fingerprint so their local rows stay
+// distinct. Synced visibility/order must still reach them through the official
+// key, or a catalogue disabled on this profile stays visible. Stored keys, styles
+// and sizes are untouched. Requires `trava`.
+static int chaveOficial(const char *key, char *dst, size_t cap) {
+  for (int i = 0; key && i < nAddonsConta; i++) {
+    size_t n = strlen(addonsConta[i].fp);
+    if (!n || !addonsConta[i].id[0] || !strcmp(addonsConta[i].fp, addonsConta[i].id) ||
+        strncmp(key, addonsConta[i].fp, n) || key[n] != '_') continue;
+    return snprintf(dst, cap, "%s%s", addonsConta[i].id, key + n) < (int)cap;
+  }
+  return 0;
+}
+static int contaEstado(const char *key) {
+  char oficial[FIL_CHAVE];
+  if(!key)return -1;
+  for(int i=0;i<profileCount;i++)if(!strcmp(key,profileKeys[i]))return profileEnabled[i];
+  if(chaveOficial(key,oficial,sizeof oficial))
+    for(int i=0;i<profileCount;i++)if(!strcmp(oficial,profileKeys[i]))return profileEnabled[i];
+  return -1;
+}
+// Official layout_settings.follow_addons_order of the selected profile (Stage I
+// read-only import). Only consulted while a valid synced projection is active.
+static int seguirAddons;
+// Account collections with pinToTop: regular Nuvio adds them above every ordered
+// row. Published with the projection by colfileiras.c. Requires `trava`.
+static char fixasConta[64][FIL_CHAVE];
+static int nFixasConta;
+void fil_definir_colecoes_fixas(const char *const *chaves, int n) {
+  pthread_mutex_lock(&trava);
+  int m = 0, mudou = 0;
+  for (int i = 0; i < n && m < 64; i++) {
+    if (!chaves[i] || strlen(chaves[i]) >= FIL_CHAVE) continue;
+    int repetida = 0;
+    for (int k = 0; k < m && !repetida; k++) repetida = !strcmp(fixasConta[k], chaves[i]);
+    if (repetida) continue;
+    if (m >= nFixasConta || strcmp(fixasConta[m], chaves[i])) mudou = 1;
+    snprintf(fixasConta[m++], FIL_CHAVE, "%s", chaves[i]);
+  }
+  if (m != nFixasConta) mudou = 1;
+  nFixasConta = m;
+  if (mudou) revisao++;
+  pthread_mutex_unlock(&trava);
+}
+void fil_definir_seguir_addons(int ligado) {
+  pthread_mutex_lock(&trava);
+  if (seguirAddons != !!ligado) { seguirAddons = !!ligado; revisao++; }
+  pthread_mutex_unlock(&trava);
+}
+int fil_seguir_addons(void) { int v; pthread_mutex_lock(&trava); v = seguirAddons; pthread_mutex_unlock(&trava); return v; }
+// Shared = a row regular Nuvio would place on its Home: listed in the synced
+// snapshot, an account collection, or a catalogue of an account addon. App rows
+// (Continue Watching, Friends Watching, Last Session) and catalogues from
+// Native-only sources stay Native-exclusive. Requires `trava`.
+static int contaCompartilhada(const char *key);
+static void logarProjecao(void);
+// Snapshot publication is supplied by the existing account/collection boundary;
+// this module performs no network calls and never stores remote data in Native files.
+void fil_projecao_conta(const char *const *keys,const int *enabled,int n) {
+  if(n<0||n>FIL_MAX||(n&&(!keys||!enabled)))return;
+  for(int i=0;i<n;i++)if(!keys[i]||!*keys[i]||strlen(keys[i])>=FIL_CHAVE)return;
+  pthread_mutex_lock(&trava);
+  int changed=n!=profileCount;
+  for(int i=0;i<n&&!changed;i++)changed=strcmp(profileKeys[i],keys[i])||profileEnabled[i]!=enabled[i];
+  if(changed){
+    profileCount=n;
+    for(int i=0;i<n;i++){snprintf(profileKeys[i],FIL_CHAVE,"%s",keys[i]);profileEnabled[i]=!!enabled[i];}
+    revisao++;
+    logarProjecao();
+  }
+  pthread_mutex_unlock(&trava);
+}
+static int limiteAtual(void) {
+#ifdef NV_ANDROID
+  // The saved low row quota remains a recovery preference, not an enabled-row cap.
+  int v=FIL_LIMITE_MAX;
+#else
+  int v=limite;
+#endif
+  return tetoSessao>0 && v>tetoSessao ? tetoSessao : v;
+}
+// Unlisted shared rows follow regular Nuvio: shown (it appends unsaved catalogues
+// enabled and never hides collection members). Only an explicit TV choice hides.
+static int ocultaPelaTv(int i) {
+  if (contaAtiva() && contaCompartilhada(linhas[i].chave)) return linhas[i].oculta == OC_PESSOA;
+  return -1;
+}
+static int linhaOculta(int i);
+static void garantir(void);
+#include "fileiras_home.inc"
+static int linhaOculta(int i) {
+  BnValue v;int override=homeGet(linhas[i].chave,'v',&v),state=contaEstado(linhas[i].chave),tv=state>=0?-1:ocultaPelaTv(i);
+  int hidden=state>=0?(!state||(override&&v.number)):
+    tv>=0?(override?(int)v.number:tv):
+    ((override?(int)v.number:linhas[i].oculta)||linhas[i].ocultaConta||linhas[i].emColecao);
+  return hidden||linhas[i].semAddon||linhas[i].semDecl;
+}
+static int escritaPessoal;
 static void gravar(void) {
+  if(contaAtiva() && !escritaPessoal)return;
   // 64 linhas de ate ~310 bytes (chave 192 + titulo 96 + quatro numeros), mais
   // o cabecalho. Alocado e nao na pilha: sao ~20 KB e esta funcao roda no fio
   // do desenho.
@@ -355,15 +464,39 @@ static void gravar(void) {
     if (linhas[i].ordem > 0 && linhas[i].ordem < FIL_ORD_N)
       k += (size_t)snprintf(txt + k, cap - k, "ordemfileira %s %d\n",
                             linhas[i].chave, linhas[i].ordem);
-  if (k < cap) dados_gravar(arquivoDoPerfil(), txt);
+  if (k < cap) {
+    if(backupDuplicadas) {
+      char name[96];snprintf(name,sizeof name,"%s.pre-stage-g",arquivoDoPerfil());
+      char path[600];FILE *existing=NULL;
+      if(dados_caminho(path,sizeof path,name))existing=fopen(path,"r");
+      if(existing)fclose(existing);
+      else if(backupPath[0] || dados_caminho(path,sizeof path,arquivoDoPerfil())) {
+        FILE *original=fopen(backupPath[0]?backupPath:path,"rb");
+        if(!original){free(txt);return;}
+        if(original){
+          fseek(original,0,SEEK_END);long bytes=ftell(original);rewind(original);
+          char *copy=bytes>=0&&bytes<2000000?malloc((size_t)bytes+1):NULL;
+          int ok=copy&&fread(copy,1,(size_t)bytes,original)==(size_t)bytes;
+          fclose(original);if(ok){copy[bytes]=0;ok=dados_gravar(name,copy);}free(copy);
+          if(!ok){free(txt);return;}
+        }
+      }
+      backupDuplicadas=0;
+    }
+    dados_gravar(arquivoDoPerfil(), txt);
+  }
   free(txt);
   revisao++;
 }
+
+static void gravarPessoal(void) { escritaPessoal=1;gravar();escritaPessoal=0; }
 
 static void carregar(void) {
   char caminho[600], buf[900];
   FILE *f;
   carregado = 1;
+  backupDuplicadas = 0;
+  backupPath[0]=0;
   donoAuto[0] = 0;
   // ZERA A FONTE DO DESTAQUE ANTES DE LER, e nao so ao achar a linha.
   //
@@ -388,6 +521,7 @@ static void carregar(void) {
     f = fopen(caminho, "r");
   // Sem arquivo: nada de antes para limpar.
   if (!f) { migrado197 = 1; return; }
+  snprintf(backupPath,sizeof backupPath,"%s",caminho);
   migrado197 = 0;
   while (fgets(buf, sizeof buf, f)) {
     char *fim = buf + strlen(buf);
@@ -436,6 +570,10 @@ static void carregar(void) {
         *tab = 0; campo[c] = p; p = tab + 1;
       }
       if (c < 4) continue;
+      int duplicate=0;
+      for(int i=0;i<nLinhas;i++)if(!strcmp(linhas[i].chave,campo[0])){duplicate=1;break;}
+      if(duplicate){backupDuplicadas=1;continue;}
+
       memset(&linhas[nLinhas], 0, sizeof linhas[nLinhas]);
       // QUINTO NUMERO OPCIONAL (fila), antes do titulo. Arquivo antigo nao o
       // tem, e ai `p` ja e o titulo. Um titulo nunca comeca por "digito+TAB".
@@ -469,13 +607,13 @@ static void garantir(void) { if (!carregado) carregar(); }
 
 // ------------------------------------------------------------------ limite
 
-static int tetoSessao;   // 0 = nenhum; ver fil_definir_teto_sessao
+// tetoSessao is declared beside the effective row-budget helper above.
 
 int fil_limite(void) {
   int v;
   pthread_mutex_lock(&trava);
   garantir();
-  v = limite;
+  v = limiteAtual();
   if (tetoSessao > 0 && v > tetoSessao) v = tetoSessao;
   pthread_mutex_unlock(&trava);
   return v;
@@ -531,6 +669,11 @@ const char *fil_hero_fonte(void) {
   pthread_mutex_lock(&trava);
   garantir();
   snprintf(copia, sizeof copia, "%s", heroFonte);
+  int hi=homeIndex(HOME_HERO);
+  if(hi>=0){const char *ref=homeOverrides[hi].value.text;copia[0]=0;
+   if(!strcmp(ref,"random"))strcpy(copia,"*");
+   else if(strcmp(ref,"auto"))for(int i=0;i<nLinhas;i++){char id[33];if(linhas[i].vista&&homeId(linhas[i].chave,id)&&!strcmp(ref,id)){snprintf(copia,sizeof copia,"%s",linhas[i].chave);break;}}
+  }
   pthread_mutex_unlock(&trava);
   return copia;
 }
@@ -538,9 +681,12 @@ const char *fil_hero_fonte(void) {
 void fil_definir_hero_fonte(const char *chave) {
   pthread_mutex_lock(&trava);
   garantir();
-  if (strcmp(heroFonte, chave ? chave : "")) {
-    snprintf(heroFonte, sizeof heroFonte, "%s", chave ? chave : "");
-    gravar();
+  BnValue v={.type=BN_STRING};const char *selected=chave?chave:"";
+  if(!*selected)strcpy(v.text,"auto");else if(!strcmp(selected,"*"))strcpy(v.text,"random");else homeId(selected,v.text);
+  int hi=homeIndex(HOME_HERO),different=hi>=0&&strcmp(homeOverrides[hi].value.text,v.text);
+  if (strcmp(heroFonte, selected)||different) {
+    snprintf(heroFonte, sizeof heroFonte, "%s", selected);
+    gravarPessoal();if(home_reference(&v))homeSend(HOME_HERO,v);
   }
   pthread_mutex_unlock(&trava);
 }
@@ -551,7 +697,7 @@ void fil_definir_hero_fonte(const char *chave) {
 static int posicaoLigada(int i) {
   int k, p = 0;
   for (k = 0; k < i && k < nLinhas; k++)
-    if (!linhas[k].oculta && !linhas[k].ocultaConta && !linhas[k].emColecao && !linhas[k].semAddon && !linhas[k].semDecl &&
+    if (!linhaOculta(k) &&
         fil_origem_de(linhas[k].chave) == FIL_ORIGEM_CATALOGO) p++;
   return p;
 }
@@ -579,8 +725,10 @@ void fil_definir_limite(int n) {
   limiteOrigem = 0;
   n = limita(n, FIL_LIMITE_MIN, FIL_LIMITE_MAX);
   if (n != limite) {
+#ifndef NV_ANDROID
     if (n < limite) ocultarAlem(n);
-    limite = n; gravar();
+#endif
+    limite = n; gravarPessoal();
   }
   pthread_mutex_unlock(&trava);
 }
@@ -597,14 +745,16 @@ void fil_ajustar_limite(int n) {
   garantir();
   if (!limiteOrigem) limiteOrigem = limite;
   n = limita(n, FIL_LIMITE_MIN, FIL_LIMITE_MAX);
-  if (n != limite) { limite = n; gravar(); }
+  if (n != limite) { limite = n; gravarPessoal(); }
   pthread_mutex_unlock(&trava);
 }
 
 void fil_confirmar_limite(void) {
   pthread_mutex_lock(&trava);
   if (limiteOrigem) {
-    if (limite < limiteOrigem) { ocultarAlem(limite); gravar(); }
+#ifndef NV_ANDROID
+    if (limite < limiteOrigem) { ocultarAlem(limite); gravarPessoal(); }
+#endif
     limiteOrigem = 0;
   }
   pthread_mutex_unlock(&trava);
@@ -614,9 +764,9 @@ int fil_estado(int i) {
   int r = FIL_FORA;
   pthread_mutex_lock(&trava);
   garantir();
-  if (i >= 0 && i < nLinhas && !linhas[i].oculta && !linhas[i].ocultaConta && !linhas[i].emColecao && !linhas[i].semAddon && !linhas[i].semDecl)
+  if (i >= 0 && i < nLinhas && !linhaOculta(i))
     r = fil_origem_de(linhas[i].chave) != FIL_ORIGEM_CATALOGO ||
-        posicaoLigada(i) < limite ? FIL_NA_HOME : FIL_NA_FILA;
+        posicaoLigada(i) < limiteAtual() ? FIL_NA_HOME : FIL_NA_FILA;
   pthread_mutex_unlock(&trava);
   return r;
 }
@@ -631,9 +781,9 @@ int fil_estado_chave(const char *chave) {
   pthread_mutex_lock(&trava);
   garantir();
   i = achar(chave);
-  if (i >= 0) r = linhas[i].oculta || linhas[i].ocultaConta || linhas[i].emColecao || linhas[i].semAddon || linhas[i].semDecl ? FIL_FORA
+  if (i >= 0) r = linhaOculta(i) ? FIL_FORA
                 : (fil_origem_de(linhas[i].chave) != FIL_ORIGEM_CATALOGO ||
-                   posicaoLigada(i) < limite ? FIL_NA_HOME : FIL_NA_FILA);
+                   posicaoLigada(i) < limiteAtual() ? FIL_NA_HOME : FIL_NA_FILA);
   pthread_mutex_unlock(&trava);
   return r;
 }
@@ -642,21 +792,21 @@ int fil_n_na_home(void) {
   int i, p = 0, livres = 0;
   pthread_mutex_lock(&trava);
   garantir();
-  for (i = 0; i < nLinhas; i++) if (!linhas[i].oculta && !linhas[i].ocultaConta && !linhas[i].emColecao && !linhas[i].semAddon && !linhas[i].semDecl) {
+  for (i = 0; i < nLinhas; i++) if (!linhaOculta(i)) {
     if (fil_origem_de(linhas[i].chave) == FIL_ORIGEM_CATALOGO) p++;
     else livres++;
   }
   pthread_mutex_unlock(&trava);
-  return livres + (p < limite ? p : limite);
+  return livres + (p < limiteAtual() ? p : limiteAtual());
 }
 int fil_n_capacidade(void) {
   int p = 0;
   pthread_mutex_lock(&trava);
   garantir();
   for (int i = 0; i < nLinhas; i++)
-    if (!linhas[i].oculta && !linhas[i].ocultaConta && !linhas[i].emColecao && !linhas[i].semAddon && !linhas[i].semDecl &&
+    if (!linhaOculta(i) &&
         fil_origem_de(linhas[i].chave) == FIL_ORIGEM_CATALOGO) p++;
-  int n = p < limite ? p : limite;
+  int n = p < limiteAtual() ? p : limiteAtual();
   pthread_mutex_unlock(&trava);
   return n;
 }
@@ -666,10 +816,10 @@ int fil_n_fila(void) {
   pthread_mutex_lock(&trava);
   garantir();
   for (i = 0; i < nLinhas; i++)
-    if (!linhas[i].oculta && !linhas[i].ocultaConta && !linhas[i].emColecao && !linhas[i].semAddon && !linhas[i].semDecl &&
+    if (!linhaOculta(i) &&
         fil_origem_de(linhas[i].chave) == FIL_ORIGEM_CATALOGO) p++;
   pthread_mutex_unlock(&trava);
-  return p > limite ? p - limite : 0;
+  return p > limiteAtual() ? p - limiteAtual() : 0;
 }
 
 // ADICIONAR A HOME: liga e vai para o FIM do bloco ligado. Se ainda cabe no
@@ -706,9 +856,9 @@ int fil_adicionar(int i, int *estado) {
     ordemLocal = 1;
   }
   linhas[i].fila = fil_origem_de(linhas[i].chave) != FIL_ORIGEM_CATALOGO ||
-                  posicaoLigada(i) < limite ? 0 : 1;
+                  posicaoLigada(i) < limiteAtual() ? 0 : 1;
   if (estado) *estado = linhas[i].fila ? FIL_NA_FILA : FIL_NA_HOME;
-  gravar();
+  gravarPessoal();homeEdit(i,'v');homeAnchors();
   pthread_mutex_unlock(&trava);
   return i;
 }
@@ -723,6 +873,10 @@ int fil_adicionar(int i, int *estado) {
 // aqui, mesmo alem do limite — e o caso da "vaga garantida por addon", que a
 // descoberta promove para dentro da janela por conta propria.
 void fil_normalizar(void) {
+#ifdef NV_ANDROID
+  return; // Opening the editor must not turn rows beyond an old small quota Off.
+#endif
+  if(contaAtiva())return;
   int i, p = 0, mudou = 0, w = 0;
   pthread_mutex_lock(&trava);
   garantir();
@@ -748,7 +902,7 @@ void fil_normalizar(void) {
   if (w != nLinhas) { nLinhas = w; revisao++; }
   for (i = 0; i < nLinhas; i++) {
     int nova = linhas[i].nova;
-    if (linhas[i].oculta || linhas[i].ocultaConta || linhas[i].emColecao || linhas[i].semAddon || linhas[i].semDecl) {
+    if (linhaOculta(i)) {
       if (nova && (linhas[i].oculta || linhas[i].ocultaConta)) { linhas[i].nova = 0; mudou = 1; }
       continue;
     }
@@ -757,7 +911,7 @@ void fil_normalizar(void) {
       if (nova) { linhas[i].nova = 0; mudou = 1; }
       continue;
     }
-    if (p < limite) { if (linhas[i].fila) { linhas[i].fila = 0; mudou = 1; } }
+    if (p < limiteAtual()) { if (linhas[i].fila) { linhas[i].fila = 0; mudou = 1; } }
     else if (!linhas[i].fila && !linhas[i].naHome) {
       // #358: catalogo novo e intocado que nao coube espera na FILA; so o que
       // ja estava no arquivo (ou a pessoa tirou) vai para Fora.
@@ -776,13 +930,33 @@ void fil_normalizar(void) {
 void fil_remover(int i) {
   pthread_mutex_lock(&trava);
   garantir();
-  if (i >= 0 && i < nLinhas && linhas[i].oculta != OC_PESSOA) {
+  if (i >= 0 && i < nLinhas && !homeNumber(i,'v',linhas[i].oculta==OC_PESSOA)) {
     linhas[i].oculta = OC_PESSOA; linhas[i].visPessoal = 1; linhas[i].fila = 0;
     linhas[i].nova = 0;
     linhas[i].addVenceConta = 0;   // o add que a protegia acabou de ser desfeito
-    gravar();
+    gravarPessoal();homeEdit(i,'v');
   }
   pthread_mutex_unlock(&trava);
+}
+
+// SHOW IN PLACE (Stage H): the inverse of fil_remover for a fixed app row,
+// used when "Family Watching" is switched on so its slot is not left hidden by
+// the old Friends row choice. The row keeps its position (fil_adicionar would
+// move it to the end of the enabled block). 1 = it was hidden and now shows.
+int fil_mostrar_chave(const char *chave) {
+  int i, mudou = 0;
+  if (!chave || !chave[0]) return 0;
+  pthread_mutex_lock(&trava);
+  garantir();
+  i = achar(chave);
+  if (i >= 0 && linhaOculta(i) && !linhas[i].semAddon && !linhas[i].semDecl) {
+    linhas[i].oculta = 0; linhas[i].ocultaConta = 0; linhas[i].emColecao = 0;
+    linhas[i].visPessoal = 1; linhas[i].fila = 0; linhas[i].nova = 0;
+    gravarPessoal(); homeEdit(i, 'v');
+    mudou = 1;
+  }
+  pthread_mutex_unlock(&trava);
+  return mudou;
 }
 
 // PODA DE FANTASMAS. Um addon removido da conta deixa os catalogos dele na
@@ -837,6 +1011,53 @@ static int catalogoInstalado(const char *chave) {
   for (int i = 0; i < nAddonsConta; i++)
     if (doAddon(chave, addonsConta[i].id, addonsConta[i].base)) return 1;
   return 0;
+}
+
+// Index of the account addon declaring a catalogue key, or -1.
+static int donoConta(const char *chave) {
+  for (int i = 0; i < nAddonsConta; i++)
+    if (doAddon(chave, addonsConta[i].id, addonsConta[i].base)) return i;
+  return -1;
+}
+static int contaCompartilhada(const char *key) {
+  if (!key || !*key) return 0;
+  if (contaEstado(key) >= 0) return 1;
+  switch (fil_origem_de(key)) {
+    case FIL_ORIGEM_APP: return 0;
+    case FIL_ORIGEM_COLECAO: return 1;
+    default: return donoConta(key) >= 0;
+  }
+}
+// One line per profile/snapshot/addon-list change for device checks: how this
+// profile's registered rows met its synced snapshot. Keys only (addon id, type,
+// catalogue id or URL hash), never URLs or credentials. Requires `trava`.
+static void logarProjecao(void) {
+  int direto = 0, instancia = 0, fora = 0, ocultas = 0;
+  char amostra[5][FIL_CHAVE], oficial[FIL_CHAVE];
+  if (!contaAtiva()) return;
+  for (int i = 0; i < nLinhas; i++) {
+    const char *k = linhas[i].chave;
+    if (fil_origem_de(k) == FIL_ORIGEM_APP) continue;
+    int listado = 0;
+    for (int j = 0; j < profileCount && !listado; j++) listado = !strcmp(k, profileKeys[j]);
+    if (listado) direto++;
+    else if (chaveOficial(k, oficial, sizeof oficial) && contaEstado(k) >= 0) instancia++;
+    else if (contaCompartilhada(k)) { if (fora < 5) snprintf(amostra[fora], FIL_CHAVE, "%s", k); fora++; }
+    if (contaEstado(k) == 0) ocultas++;
+  }
+  printf("[fileiras] perfil %d: snapshot %d chave(s); %d fileira(s) casadas, %d por chave oficial de 2a instancia, "
+         "%d desligadas pela conta; %d da conta fora do snapshot%s%s%s%s%s%s%s%s%s%s\n",
+         perfil, profileCount, direto, instancia, ocultas, fora, fora ? ": " : "",
+         fora > 0 ? amostra[0] : "", fora > 1 ? ", " : "", fora > 1 ? amostra[1] : "",
+         fora > 2 ? ", " : "", fora > 2 ? amostra[2] : "", fora > 3 ? ", " : "", fora > 3 ? amostra[3] : "",
+         fora > 4 ? ", " : "", fora > 4 ? amostra[4] : "");
+}
+int fil_conta_compartilhada(const char *chave) {
+  int v;
+  pthread_mutex_lock(&trava);
+  v = contaAtiva() && contaCompartilhada(chave);
+  pthread_mutex_unlock(&trava);
+  return v;
 }
 
 int fil_addon_ausente(const char *id, const char *base) {
@@ -982,6 +1203,7 @@ static int podarCatalogos(const char *const *ids, const char *const *bases, int 
     if (strcmp(addonsConta[i].id, id) || strcmp(addonsConta[i].base, base)) mudouLista = 1;
     snprintf(addonsConta[i].id, sizeof addonsConta[i].id, "%s", id);
     snprintf(addonsConta[i].base, sizeof addonsConta[i].base, "%s", base);
+    nv_addon_chave(base, addonsConta[i].fp, sizeof addonsConta[i].fp);
   }
   for (i = n; i < FIL_ADDONS_MAX; i++) memset(&addonsConta[i], 0, sizeof addonsConta[i]);
   nAddonsConta = n; addonsContaCompleta = completa;
@@ -994,6 +1216,7 @@ static int podarCatalogos(const char *const *ids, const char *const *bases, int 
   if (completa && heroFonte[0] && strcmp(heroFonte, "*") && !catalogoInstalado(heroFonte)) {
     heroFonte[0] = 0; limpouHero = 1;
   }
+  if (mudouLista) logarProjecao();   // second-instance rows become matchable now
   if (fora || limpouHero) {
     memset(linhas + w, 0, sizeof *linhas * (size_t)(nLinhas - w));
     nLinhas = w; gravar(); registroSujo = 0;
@@ -1148,9 +1371,11 @@ void fil_definir_perfil(int p) {
     // Flush it now; left pending, the next fil_gravar_registro wrote it under
     // the NEW profile's file name — with nLinhas already 0 when nothing had
     // reloaded yet, wiping that profile's saved order.
-    if (registroSujo && carregado) gravar();
+    if (registroSujo && carregado && !contaAtiva()) gravar();
     registroSujo = 0;
+    homeClear();
     perfilGeracao++;
+    profileCount=0;
     perfil = p;
     esquecerAddonsConta();
     nLinhas = 0; ordemLocal = 0; limite = FIL_LIMITE_PADRAO; limiteOrigem = 0;
@@ -1270,7 +1495,7 @@ static void registrar(const FilPassada *passada, const char *chave,
     if (nLinhas >= FIL_MAX) {
       int v = -1, k, passo, ligadas = 0, topo[FIL_MAX];
       for (k = 0; k < nLinhas; k++) {
-        topo[k] = !linhas[k].oculta && ligadas < limite;
+        topo[k] = !linhas[k].oculta && ligadas < limiteAtual();
         if (!linhas[k].oculta) ligadas++;
       }
       // Antes de tudo sai uma SUGESTAO (catalogo fora da cota, ninguem pediu):
@@ -1401,7 +1626,7 @@ int fil_escolhida(const char *chave) {
     int p = posicaoLigada(i);
     // Explicit additions retain quota priority even while excluded from slots.
     if ((!linhas[i].semDecl || linhas[i].visPessoal || linhas[i].fila) &&
-        (p < limite || linhas[i].fila)) r = p;
+        (p < limiteAtual() || linhas[i].fila)) r = p;
   }
   pthread_mutex_unlock(&trava);
   return r;
@@ -1415,7 +1640,7 @@ void fil_colecao_catalogo_removido(const char *chave) {
   int i = achar(chave);
   if (i >= 0 && !temEscolha(&linhas[i]) && !linhas[i].naHome &&
       !(ordemLocal && linhas[i].doDisco && !linhas[i].oculta &&
-        posicaoLigada(i) < limite) && linhas[i].oculta != OC_COLECAO) {
+        posicaoLigada(i) < limiteAtual()) && linhas[i].oculta != OC_COLECAO) {
     linhas[i].oculta = OC_COLECAO;
     registroSujo = 1;
   }
@@ -1454,7 +1679,7 @@ int fil_conta_dono(const char *usuario) {
 
 void fil_gravar_registro(void) {
   pthread_mutex_lock(&trava);
-  if (registroSujo) { registroSujo = 0; gravar(); }
+  if (registroSujo && !contaAtiva()) { registroSujo = 0; gravar(); }
   logarOrfas();
   pthread_mutex_unlock(&trava);
 }
@@ -1472,6 +1697,8 @@ void fil_colecoes_reconciliar(const char *const *chaves,
       viva = 0;
       for (int j = 0; j < n && !viva; j++)
         viva = chaves[j] && !strcmp(linhas[i].chave, chaves[j]);
+      // Absence from a regular-Nuvio snapshot does not delete Native-only groups.
+      if(!viva && contaAtiva() && contaEstado(linhas[i].chave)<0)viva=1;
     }
     if (viva) { if (w != i) linhas[w] = linhas[i]; w++; }
     else {
@@ -1536,7 +1763,7 @@ void fil_conta_reconciliar(const char *const *chaves, const int *ocultas,
     if (linhas[i].emColecao != c) { linhas[i].emColecao = c; revisao++; }
     if (fil_origem_de(linhas[i].chave) != FIL_ORIGEM_APP) slots[m++] = i;
   }
-  if (!ordemLocal && m) {
+  if (!ordemLocal && m && !contaAtiva()) {
     memcpy(novo, linhas, sizeof(Linha) * (size_t)nLinhas);
     for (int j = 0; j < n; j++) {
       int i = chaves[j] ? achar(chaves[j]) : -1;
@@ -1567,16 +1794,25 @@ const char *fil_titulo(int i) {
   if (i < 0 || i >= nLinhas) return "";
   return linhas[i].titulo[0] ? linhas[i].titulo : linhas[i].chave;
 }
-int fil_linha_oculta(int i) { return (i >= 0 && i < nLinhas && (linhas[i].oculta || linhas[i].ocultaConta || linhas[i].emColecao || linhas[i].semAddon || linhas[i].semDecl)) ? 1 : 0; }
+int fil_linha_oculta(int i) { return (i >= 0 && i < nLinhas && linhaOculta(i)) ? 1 : 0; }
 int fil_linha_sem_addon(int i) { return (i >= 0 && i < nLinhas && linhas[i].semAddon) ? 1 : 0; }
-int fil_linha_tipo(int i)   { return (i >= 0 && i < nLinhas) ? linhas[i].tipo : FIL_TIPO_AUTO; }
-int fil_linha_tam(int i)    { return (i >= 0 && i < nLinhas) ? linhas[i].tam : FIL_TAM_PADRAO; }
+int fil_linha_tipo(int i)   { return (i >= 0 && i < nLinhas) ? homeNumber(i,'s',linhas[i].tipo) : FIL_TIPO_AUTO; }
+int fil_linha_tam(int i)    { return (i >= 0 && i < nLinhas) ? homeNumber(i,'z',linhas[i].tam) : FIL_TAM_PADRAO; }
 
 int fil_linha_origem(int i) {
   return fil_origem_de((i >= 0 && i < nLinhas) ? linhas[i].chave : "");
 }
 const char *fil_linha_addon(int i) {
   return (i >= 0 && i < nLinhas) ? linhas[i].addon : "";
+}
+void fil_catalogo_addon_copiar(const char *chave, char *nome, unsigned tam) {
+  if (!nome || !tam) return;
+  nome[0] = 0;
+  if (!chave || fil_origem_de(chave) != FIL_ORIGEM_CATALOGO) return;
+  pthread_mutex_lock(&trava);
+  int i = achar(chave);
+  if (i >= 0) snprintf(nome, tam, "%s", linhas[i].addon);
+  pthread_mutex_unlock(&trava);
 }
 const char *fil_linha_conteudo(int i) {
   // Traduz o codigo do protocolo para a palavra da tela. "movie"/"series" e o
@@ -1602,14 +1838,14 @@ int fil_aceita_tipo(int i)  { return (i >= 0 && i < nLinhas) && !formaFixa(linha
 void fil_alternar(int i) {
   pthread_mutex_lock(&trava);
   if (i >= 0 && i < nLinhas) {
-    linhas[i].oculta = linhas[i].oculta ? 0 : OC_PESSOA;
+    linhas[i].oculta = homeNumber(i,'v',linhas[i].oculta!=0) ? 0 : OC_PESSOA;
     linhas[i].visPessoal = 1;
     linhas[i].nova = 0;
     // Voltar a ficar ligado pela alternancia e um add como outro qualquer:
     // mesmo snapshot contra a conta (#360).
     if (linhas[i].oculta) linhas[i].addVenceConta = 0;
     else linhas[i].addVenceConta = linhas[i].ocultaConta;
-    gravar();
+    gravarPessoal();homeEdit(i,'v');
   }
   pthread_mutex_unlock(&trava);
 }
@@ -1617,8 +1853,8 @@ void fil_alternar(int i) {
 void fil_ciclar_tipo(int i) {
   pthread_mutex_lock(&trava);
   if (i >= 0 && i < nLinhas && !formaFixa(linhas[i].chave)) {
-    linhas[i].tipo = (linhas[i].tipo + 1) % FIL_TIPO_N;
-    gravar();
+    linhas[i].tipo = (homeNumber(i,'s',linhas[i].tipo) + 1) % FIL_TIPO_N;
+    gravarPessoal();homeEdit(i,'s');
   }
   pthread_mutex_unlock(&trava);
 }
@@ -1713,7 +1949,7 @@ const char *fil_estilo_ajuda(const char *chave, int t) {
 
 const char *fil_linha_tipo_rotulo(int i) {
   if (i < 0 || i >= nLinhas) return fil_tipo_rotulo(FIL_TIPO_AUTO);
-  return fil_estilo_rotulo(linhas[i].chave, linhas[i].tipo);
+  return fil_estilo_rotulo(linhas[i].chave, homeNumber(i,'s',linhas[i].tipo));
 }
 
 // --- ORDEM DOS ITENS da fileira de colecao (FilOrdem, 2.0.5) ----------------
@@ -1736,8 +1972,8 @@ int fil_ordem(const char *chave) {
   pthread_mutex_lock(&trava);
   garantir();
   i = achar(chave);
-  if (i >= 0 && linhas[i].ordem > 0 && linhas[i].ordem < FIL_ORD_N)
-    v = linhas[i].ordem;
+  if (i >= 0)
+    v = homeNumber(i,'o',linhas[i].ordem);
   pthread_mutex_unlock(&trava);
   return v;
 }
@@ -1752,7 +1988,7 @@ int fil_definir_ordem(const char *chave, int o) {
   if (i >= 0) {
     ok = 1;
     // Mesma ordem: nao reescreve o arquivo nem remonta a home por nada.
-    if (linhas[i].ordem != o) { linhas[i].ordem = o; gravar(); }
+    if (homeNumber(i,'o',linhas[i].ordem) != o) { linhas[i].ordem = o; gravarPessoal();homeEdit(i,'o'); }
   }
   pthread_mutex_unlock(&trava);
   return ok;
@@ -1767,7 +2003,7 @@ int fil_definir_tipo(const char *chave, int t) {
   if (i >= 0) {
     ok = 1;
     // Mesma forma: nao reescreve o arquivo nem remonta a home por nada.
-    if (linhas[i].tipo != t) { linhas[i].tipo = t; gravar(); }
+    if (homeNumber(i,'s',linhas[i].tipo) != t) { linhas[i].tipo = t; gravarPessoal();homeEdit(i,'s'); }
   }
   pthread_mutex_unlock(&trava);
   return ok;
@@ -1776,8 +2012,8 @@ int fil_definir_tipo(const char *chave, int t) {
 void fil_ciclar_tam(int i) {
   pthread_mutex_lock(&trava);
   if (i >= 0 && i < nLinhas) {
-    linhas[i].tam = (linhas[i].tam + 1) % FIL_TAM_N;
-    gravar();
+    linhas[i].tam = (homeNumber(i,'z',linhas[i].tam) + 1) % FIL_TAM_N;
+    gravarPessoal();homeEdit(i,'z');
   }
   pthread_mutex_unlock(&trava);
 }
@@ -1823,6 +2059,7 @@ void fil_ciclar_tam(int i) {
 //   forma e tamanho padrao) — perder esse registro nao perde nada.
 void fil_espelhar_ordem(const char *const *chaves,
                         const char *const *titulos, int n) {
+  if(contaAtiva())return; // runtime projection must not reorder Native storage
   static Linha novo[FIL_MAX];
   char usado[FIL_MAX];
   int i, k = 0;
@@ -1935,7 +2172,7 @@ int fil_mover(int i, int direcao) {
       // ordem continua sendo a do app web — que e o certo para quem nunca
       // mexeu aqui.
       ordemLocal = 1;
-      gravar();
+      gravarPessoal();homeAnchors();
       ret = j;
     }
   }
@@ -2009,7 +2246,7 @@ int fil_mover_grupo(int i, int direcao) {
         memcpy(tmp, linhas + ini, sizeof(Linha) * (size_t)tamMeu);
         memmove(linhas + ini, linhas + fim + 1, sizeof(Linha) * (size_t)tamMeio);
         memcpy(linhas + ini + tamMeio, tmp, sizeof(Linha) * (size_t)tamMeu);
-        ordemLocal = 1; gravar();
+        ordemLocal = 1; gravarPessoal();homeAnchors();
         ret = ini + tamMeio + (i - ini); }
     } else {
       b = ini - 1;
@@ -2030,7 +2267,7 @@ int fil_mover_grupo(int i, int direcao) {
         memmove(linhas + vIni + tamMeu, linhas + vIni,
                 sizeof(Linha) * (size_t)tamMeio);
         memcpy(linhas + vIni, tmp, sizeof(Linha) * (size_t)tamMeu);
-        ordemLocal = 1; gravar();
+        ordemLocal = 1; gravarPessoal();homeAnchors();
         ret = vIni + (i - ini); }
     }
   }
@@ -2049,7 +2286,14 @@ int fil_oculta(const char *chave) {
   i = achar(chave);
   // So a escolha da pessoa desliga: sugestao (OC_SUGESTAO) nao e "nao quero",
   // e a ordem da conta ainda pode pedir o catalogo.
-  if (i >= 0) v = linhas[i].oculta == OC_PESSOA || linhas[i].oculta == OC_COLECAO || linhas[i].ocultaConta;
+  if (i >= 0) {
+    int state = contaEstado(chave), tv = state >= 0 ? -1 : ocultaPelaTv(i);
+    v = state >= 0 ? !state : tv >= 0 ? tv :
+        linhas[i].oculta == OC_PESSOA || linhas[i].oculta == OC_COLECAO || linhas[i].ocultaConta;
+    BnValue h;if(homeGet(chave,'v',&h)){
+      v=state>=0?(!state||h.number):tv>=0?(int)h.number:(h.number||linhas[i].ocultaConta||linhas[i].emColecao);
+    }
+  } else v = contaEstado(chave) == 0;   // synced "disabled" holds before registration
   pthread_mutex_unlock(&trava);
   return v;
 }
@@ -2060,7 +2304,7 @@ int fil_tipo(const char *chave) {
   pthread_mutex_lock(&trava);
   garantir();
   i = achar(chave);
-  if (i >= 0) v = linhas[i].tipo;
+  if (i >= 0) v = homeNumber(i,'s',linhas[i].tipo);
   pthread_mutex_unlock(&trava);
   return v;
 }
@@ -2080,7 +2324,7 @@ float fil_escala(const char *chave) {
   pthread_mutex_lock(&trava);
   garantir();
   i = achar(chave);
-  if (i >= 0) v = escalaCom(linhas[i].tam, linhas[i].tipo);
+  if (i >= 0) v = escalaCom(homeNumber(i,'z',linhas[i].tam), homeNumber(i,'s',linhas[i].tipo));
   pthread_mutex_unlock(&trava);
   return v;
 }
@@ -2090,7 +2334,7 @@ float fil_escala_tipo(const char *chave, int t) {
     pthread_mutex_lock(&trava);
     garantir();
     i = achar(chave);
-    if (i >= 0) tam = linhas[i].tam;
+    if (i >= 0) tam = homeNumber(i,'z',linhas[i].tam);
     pthread_mutex_unlock(&trava);
   }
   return escalaCom(tam, t);
@@ -2109,9 +2353,117 @@ int fil_tem_ordem(void) {
   int v;
   pthread_mutex_lock(&trava);
   garantir();
-  v = ordemLocal && nLinhas > 0;
+  v = (ordemLocal || contaAtiva()) && nLinhas > 0;
   pthread_mutex_unlock(&trava);
   return v;
+}
+
+// Regular Nuvio's HomeViewModel.rebuildCatalogOrder over the shared rows, in the
+// caller's order (addon list x manifest order, the official defaultOrder).
+// `nat` is the Native order, used only to anchor Native-exclusive rows after the
+// shared row they followed. Continue Watching leads. Requires `trava`.
+static int ehColecao(const char *k) { return k && !strncmp(k, "collection_", 11); }
+static int contaOficial(const char *const *chaves, int n, int *nat, int qNat, int max) {
+  int *s = malloc(sizeof(int) * (size_t)n), *ancora = malloc(sizeof(int) * (size_t)n);
+  char *comp = calloc((size_t)n, 1), *posto = calloc((size_t)n, 1);
+  int ns = 0, q = 0;
+  if (!s || !ancora || !comp || !posto) { free(s); free(ancora); free(comp); free(posto); return qNat; }
+  // Each candidate's synced identity (official key for a second addon instance).
+  char (*conta)[FIL_CHAVE] = malloc(sizeof *conta * (size_t)n);
+  if (!conta) { free(s); free(ancora); free(comp); free(posto); return qNat; }
+  for (int j = 0; j < n; j++) {
+    comp[j] = chaves[j] && contaCompartilhada(chaves[j]);
+    if (!chaves[j] || !chaveOficial(chaves[j], conta[j], FIL_CHAVE))
+      snprintf(conta[j], FIL_CHAVE, "%s", chaves[j] ? chaves[j] : "");
+  }
+  if (seguirAddons) {
+    // savedValid: listed keys still available (enabled catalogues, collections).
+    int *saved = malloc(sizeof(int) * (size_t)n), nsv = 0, ponteiro = 0;
+    if (!saved) { free(s); free(ancora); free(comp); free(posto); free(conta); return qNat; }
+    for (int k = 0; k < profileCount; k++)
+      for (int j = 0; j < n; j++)
+        if (comp[j] && !posto[j] && !strcmp(conta[j], profileKeys[k])) {
+          if (ehColecao(chaves[j]) || profileEnabled[k]) { saved[nsv++] = j; posto[j] = 1; }
+          break;
+        }
+    memset(posto, 0, (size_t)n);
+    for (int k = 0; k < nsv; k++) {
+      int alvo = saved[k];
+      if (ehColecao(chaves[alvo])) { if (!posto[alvo]) { s[ns++] = alvo; posto[alvo] = 1; } continue; }
+      // Advance the manifest pointer up to this catalogue.
+      for (; ponteiro < n && ponteiro <= alvo; ponteiro++)
+        if (comp[ponteiro] && !ehColecao(chaves[ponteiro]) && !posto[ponteiro]) { s[ns++] = ponteiro; posto[ponteiro] = 1; }
+    }
+    for (int j = 0; j < n; j++) if (comp[j] && !ehColecao(chaves[j]) && !posto[j]) { s[ns++] = j; posto[j] = 1; }
+    for (int j = 0; j < n; j++) if (comp[j] && !posto[j]) { s[ns++] = j; posto[j] = 1; }
+    free(saved);
+    if (nsv) {   // normalizeCollectionBoundaries: no collection splits one addon's block
+      for (int mudou = 1; mudou;) {
+        mudou = 0;
+        for (int i = 0; i < ns; i++) {
+          int a = -1, b = -1, pos, c = s[i];
+          if (!ehColecao(chaves[c])) continue;
+          for (int k = i - 1; k >= 0; k--) if (!ehColecao(chaves[s[k]])) { a = donoConta(chaves[s[k]]); break; }
+          for (int k = i + 1; k < ns; k++) if (!ehColecao(chaves[s[k]])) { b = donoConta(chaves[s[k]]); break; }
+          if (a < 0 || a != b) continue;
+          memmove(s + i, s + i + 1, sizeof(int) * (size_t)(ns - i - 1));
+          for (pos = i; pos < ns - 1 && !ehColecao(chaves[s[pos]]) && donoConta(chaves[s[pos]]) == a; pos++);
+          memmove(s + pos + 1, s + pos, sizeof(int) * (size_t)(ns - 1 - pos));
+          s[pos] = c;
+          if (pos != i) mudou = 1;
+        }
+      }
+    }
+  } else {
+    // savedValid + unsaved catalogues + unsaved collections.
+    for (int k = 0; k < profileCount; k++)
+      for (int j = 0; j < n; j++)
+        if (comp[j] && !posto[j] && !strcmp(conta[j], profileKeys[k])) { s[ns++] = j; posto[j] = 1; break; }
+    for (int j = 0; j < n; j++) if (comp[j] && !posto[j] && !ehColecao(chaves[j])) { s[ns++] = j; posto[j] = 1; }
+    for (int j = 0; j < n; j++) if (comp[j] && !posto[j]) { s[ns++] = j; posto[j] = 1; }
+  }
+  // pinToTop collections lead the shared rows, in collection order (official
+  // computedHomeRows); each still appears once.
+  if (nFixasConta) {
+    int w = 0, *fixas = malloc(sizeof(int) * (size_t)(ns ? ns : 1));
+    if (fixas) {
+      for (int f = 0; f < nFixasConta; f++)
+        for (int i = 0; i < ns; i++)
+          if (s[i] >= 0 && !strcmp(chaves[s[i]], fixasConta[f])) { fixas[w++] = s[i]; s[i] = -1; break; }
+      if (w) {
+        int r = 0;
+        for (int i = 0; i < ns; i++) if (s[i] >= 0) fixas[w + r++] = s[i];
+        memcpy(s, fixas, sizeof(int) * (size_t)ns);
+      }
+      free(fixas);
+    }
+  }
+  // Native-exclusive rows keep the shared row they followed in the Native order.
+  { int ultima = -1;
+    for (int k = 0; k < qNat; k++) {
+      int j = nat[k];
+      if (comp[j]) ultima = j; else ancora[j] = ultima;
+    } }
+  memset(posto, 0, (size_t)n);
+  // Every index appears once: shared rows are unique in `s`, exclusives in `nat`.
+  { int *saida = malloc(sizeof(int) * (size_t)n), w = 0;
+    if (!saida) { free(s); free(ancora); free(comp); free(posto); free(conta); return qNat; }
+    for (int k = 0; k < qNat; k++) {
+      int j = nat[k];
+      if (!comp[j] && chaves[j] && !strcmp(chaves[j], "continue_watching")) { saida[w++] = j; posto[j] = 1; break; }
+    }
+    for (int k = 0; k < qNat; k++) { int j = nat[k]; if (!comp[j] && !posto[j] && ancora[j] < 0) { saida[w++] = j; posto[j] = 1; } }
+    for (int i = 0; i < ns; i++) {
+      saida[w++] = s[i];
+      for (int k = 0; k < qNat; k++) { int j = nat[k]; if (!comp[j] && !posto[j] && ancora[j] == s[i]) { saida[w++] = j; posto[j] = 1; } }
+    }
+    // Shared rows absent from the Native pass (truncated by `max`) never appear twice.
+    q = w < max ? w : max;
+    memcpy(nat, saida, sizeof(int) * (size_t)q);
+    free(saida);
+  }
+  free(s); free(ancora); free(comp); free(posto); free(conta);
+  return q;
 }
 
 int fil_unir(const char *const *chaves, int n, int *saida, int max) {
@@ -2122,7 +2474,7 @@ int fil_unir(const char *const *chaves, int n, int *saida, int max) {
   pthread_mutex_lock(&trava);
   garantir();
   memset(usado, 0, (size_t)n);
-  if (ordemLocal) {
+  if (ordemLocal || contaAtiva()) {
     for (i = 0; i < nLinhas; i++)
       for (j = 0; j < n && q < max; j++)
         if (!usado[j] && chaves[j] && !strcmp(chaves[j], linhas[i].chave)) {
@@ -2134,6 +2486,8 @@ int fil_unir(const char *const *chaves, int n, int *saida, int max) {
   // mesmo motivo de catordem_unir — sem este laco, catalogo instalado depois de
   // a ordem local ter sido gravada sumiria da home.
   for (j = 0; j < n && q < max; j++) if (!usado[j]) saida[q++] = j;
+  if (contaAtiva() && q > 0) q = contaOficial(chaves, n, saida, q, max);
+  homeReorder(chaves,saida,q);
   pthread_mutex_unlock(&trava);
   return q;
 }
@@ -2150,8 +2504,10 @@ void fil_recarregar(void) {
 
 void fil_esquecer(void) {
   pthread_mutex_lock(&trava);
+  homeClear();
   passadaGeracao++;   // #392: fotos de antes do logout nao valem
   esquecerAddonsConta();
+  profileCount=0;
   nLinhas = 0;
   ordemLocal = 0;
   donoAuto[0] = 0;
@@ -2222,7 +2578,7 @@ void fil_ordenar_por_addon(void) {
   memcpy(linhas, novo, sizeof(Linha) * (size_t)k);
   nLinhas = k;
   ordemLocal = 1;
-  gravar();
+  gravarPessoal();homeAnchors();
   pthread_mutex_unlock(&trava);
 }
 
@@ -2281,7 +2637,7 @@ int fil_migrar_197(const char *const *contaLigadas, int n) {
   int i, ocultas = 0, volta = 0, saem = 0, feito = 0;
   pthread_mutex_lock(&trava);
   garantir();
-  if (migrado197) { pthread_mutex_unlock(&trava); return 0; }
+  if (migrado197 || contaAtiva()) { pthread_mutex_unlock(&trava); return 0; }
   for (i = 0; i < nLinhas; i++) {
     if (linhas[i].oculta) ocultas++;
     if (restauravel(i, contaLigadas, n)) volta++;

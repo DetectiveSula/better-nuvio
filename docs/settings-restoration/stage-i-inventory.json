@@ -1,0 +1,1283 @@
+{
+ "official_commit": "99fbd65d8c16928d1fe11bf3f9812c4b5aaaca8f",
+ "controls": [
+  {
+   "native_id": "AJ_RAIL",
+   "feature": "layout_settings",
+   "key": "sidebar_collapsed_by_default",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/LayoutPreferenceDataStore.kt",
+   "official_key_line": 78,
+   "official_default_reads": [
+    {
+     "line": 229,
+     "code": "prefs[sidebarCollapsedKey] ?: false"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_rail_recolhida",
+     "file": "src/ajustes.c",
+     "line": 3624,
+     "consumers": [
+      {
+       "file": "src/menu.c",
+       "line": 722,
+       "code": "static int railFixa(void) { return !topo() && !ajustes_rail_recolhida() && !(sobre && semRail); }"
+      },
+      {
+       "file": "src/ajustes_ux_previa.inc",
+       "line": 257,
+       "code": "AjMini m = { ajLayoutAtual(), ajArteFundoN, 2, valor[AJ_LANDSCAPE] == 0, !ajustes_rail_recolhida() || ajustes_rail_moderna(), 1, !ajustes_hero_ligado() };"
+      },
+      {
+       "file": "src/ajustes_ux_secoes.inc",
+       "line": 442,
+       "code": "int larga = !ajustes_rail_recolhida() || ajustes_rail_moderna(), i;"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_RAIL_MODERNA",
+   "feature": "layout_settings",
+   "key": "modern_sidebar_enabled",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/LayoutPreferenceDataStore.kt",
+   "official_key_line": 79,
+   "official_default_reads": [
+    {
+     "line": 233,
+     "code": "prefs[modernSidebarEnabledKey] ?: prefs[legacyModernSidebarEnabledKey] ?: false"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_rail_moderna",
+     "file": "src/ajustes.c",
+     "line": 3612,
+     "consumers": [
+      {
+       "file": "src/ajustes_ux_previa.inc",
+       "line": 257,
+       "code": "AjMini m = { ajLayoutAtual(), ajArteFundoN, 2, valor[AJ_LANDSCAPE] == 0, !ajustes_rail_recolhida() || ajustes_rail_moderna(), 1, !ajustes_hero_ligado() };"
+      },
+      {
+       "file": "src/ajustes_ux_secoes.inc",
+       "line": 442,
+       "code": "int larga = !ajustes_rail_recolhida() || ajustes_rail_moderna(), i;"
+      },
+      {
+       "file": "src/ajustes_ux_secoes.inc",
+       "line": 448,
+       "code": "if (ajustes_rail_moderna_blur() && ajustes_rail_moderna()) ajcBorrada(ajArte(AJA_FUNDO, A), CR(28, 24, rw, 312), 26 * ajc.s, 1);"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_LANDSCAPE",
+   "feature": "layout_settings",
+   "key": "modern_landscape_posters_enabled",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/LayoutPreferenceDataStore.kt",
+   "official_key_line": 82,
+   "official_default_reads": [
+    {
+     "line": 241,
+     "code": "prefs[modernLandscapePostersEnabledKey] ?: false"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_posteres_deitados",
+     "file": "src/ajustes.c",
+     "line": 3662,
+     "consumers": [
+      {
+       "file": "src/home.c",
+       "line": 537,
+       "code": "return !ajustes_posteres_deitados();"
+      },
+      {
+       "file": "src/home.c",
+       "line": 952,
+       "code": "return layoutHome() == HOME_LAYOUT_PADRAO && !ajustes_posteres_deitados();"
+      },
+      {
+       "file": "src/home.c",
+       "line": 1021,
+       "code": "(ajustes_posteres_deitados() ? (NV_CARD_LAND_W * gfx_poster_k())"
+      },
+      {
+       "file": "src/home.c",
+       "line": 1554,
+       "code": "(ajustes_posteres_deitados() ? (NV_CARD_LAND_H * gfx_poster_k())"
+      },
+      {
+       "file": "src/home.c",
+       "line": 1565,
+       "code": "(t == FILEIRA_NORMAL && !ajustes_posteres_deitados()));"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_HERO",
+   "feature": "layout_settings",
+   "key": "hero_section_enabled",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/LayoutPreferenceDataStore.kt",
+   "official_key_line": 83,
+   "official_default_reads": [
+    {
+     "line": 249,
+     "code": "prefs[heroSectionEnabledKey] ?: true"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_hero_ligado",
+     "file": "src/ajustes.c",
+     "line": 3631,
+     "consumers": [
+      {
+       "file": "src/home.c",
+       "line": 862,
+       "code": "int heroOn = ajustes_hero_ligado();"
+      },
+      {
+       "file": "src/home.c",
+       "line": 876,
+       "code": "if (homeRetratoTelefone() && !ajustes_hero_ligado()) return 132.0f;"
+      },
+      {
+       "file": "src/home.c",
+       "line": 879,
+       "code": "if (!ajustes_hero_ligado()) return 132.0f;"
+      },
+      {
+       "file": "src/home.c",
+       "line": 888,
+       "code": "return ajustes_hero_ligado() ? ANC(NV_PAD_BANNER_Y + NV_PAD_BANNER_H + 8.0f) : 0.0f;"
+      },
+      {
+       "file": "src/home.c",
+       "line": 898,
+       "code": "int heroOn = ajustes_hero_ligado();"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_ROTULOS",
+   "feature": "layout_settings",
+   "key": "poster_labels_enabled",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/LayoutPreferenceDataStore.kt",
+   "official_key_line": 84,
+   "official_default_reads": [
+    {
+     "line": 269,
+     "code": "prefs[posterLabelsEnabledKey] ?: true"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_rotulos_poster",
+     "file": "src/ajustes.c",
+     "line": 3666,
+     "consumers": [
+      {
+       "file": "src/home.c",
+       "line": 1564,
+       "code": "return ajustes_rotulos_poster() && (t == FILEIRA_POSTER ||"
+      },
+      {
+       "file": "src/home.c",
+       "line": 2805,
+       "code": "| (ajustes_rotulos_poster() ? 16 : 0)"
+      },
+      {
+       "file": "src/home.c",
+       "line": 6959,
+       "code": "!(ajustes_rotulos_poster() || tipo == FILEIRA_LARGA) || !cItem ||"
+      },
+      {
+       "file": "src/home.c",
+       "line": 6991,
+       "code": "(ajustes_rotulos_poster() || tipo == FILEIRA_LARGA || tipo == FILEIRA_HEROI_DIVIDIDO) && cItem) {"
+      },
+      {
+       "file": "src/homeestado.c",
+       "line": 72,
+       "code": "h = hashBytes(h, &(int){ajustes_rotulos_poster()}, sizeof(int));"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_SUFIXO_TIPO",
+   "feature": "layout_settings",
+   "key": "catalog_type_suffix_enabled",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/LayoutPreferenceDataStore.kt",
+   "official_key_line": 86,
+   "official_default_reads": [
+    {
+     "line": 277,
+     "code": "prefs[catalogTypeSuffixEnabledKey] ?: true"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_sufixo_tipo",
+     "file": "src/ajustes.c",
+     "line": 3668,
+     "consumers": [
+      {
+       "file": "src/home.c",
+       "line": 7973,
+       "code": "if (!ajustes_sufixo_tipo() && rotFil) {"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_EXPANDIR",
+   "feature": "layout_settings",
+   "key": "focused_poster_backdrop_expand_enabled",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/LayoutPreferenceDataStore.kt",
+   "official_key_line": 88,
+   "official_default_reads": [
+    {
+     "line": 285,
+     "code": "prefs[focusedPosterBackdropExpandEnabledKey] ?: true"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_expandir_poster",
+     "file": "src/ajustes.c",
+     "line": 3881,
+     "consumers": [
+      {
+       "file": "src/home.c",
+       "line": 3957,
+       "code": "if (ajustes_expandir_poster() && !homeRetratoTelefone()) {"
+      },
+      {
+       "file": "src/home.c",
+       "line": 8226,
+       "code": "c == expColuna && ajustes_expandir_poster() && podeExpandir(r)) {"
+      },
+      {
+       "file": "src/home.c",
+       "line": 8346,
+       "code": "int expande = ajustes_expandir_poster() && podeExpandir(r) &&"
+      },
+      {
+       "file": "src/ajustes_ux_secoes.inc",
+       "line": 613,
+       "code": "int exp = ajustes_expandir_poster(), i;"
+      },
+      {
+       "file": "src/ajustes_ux_visual.inc",
+       "line": 512,
+       "code": "int exp = ajustes_expandir_poster(), borda = ajustes_borda_foco(), prof = ajustes_profundidade();"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_DET_BLUR_NAO_VISTOS",
+   "feature": "layout_settings",
+   "key": "blur_unwatched_episodes",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/LayoutPreferenceDataStore.kt",
+   "official_key_line": 106,
+   "official_default_reads": [
+    {
+     "line": 340,
+     "code": "prefs[blurUnwatchedEpisodesKey] ?: false"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_desfocar_nao_assistidos",
+     "file": "src/ajustes.c",
+     "line": 3876,
+     "consumers": [
+      {
+       "file": "src/gfx.c",
+       "line": 4908,
+       "code": "// NAO ERA USADO EM LUGAR NENHUM: ajustes_desfocar_nao_assistidos() so tinha um"
+      },
+      {
+       "file": "src/posplay.c",
+       "line": 613,
+       "code": "if (!ajustes_desfocar_nao_assistidos()) return 0;"
+      },
+      {
+       "file": "src/detail.c",
+       "line": 5710,
+       "code": "if (t2 && ajustes_desfocar_nao_assistidos() &&"
+      },
+      {
+       "file": "src/detail.c",
+       "line": 7963,
+       "code": "trailercinema_t(&trailerCinema) > .001f || ajustes_desfocar_nao_assistidos()) return 0;"
+      },
+      {
+       "file": "src/episodios.c",
+       "line": 1006,
+       "code": "if (tex && ajustes_desfocar_nao_assistidos() && !atual && visto != 1) tex = gfx_desfocado(tex, arte);"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_CW_THUMB",
+   "feature": "layout_settings",
+   "key": "use_episode_thumbnails_in_cw",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/LayoutPreferenceDataStore.kt",
+   "official_key_line": 113,
+   "official_default_reads": [
+    {
+     "line": 378,
+     "code": "prefs[useEpisodeThumbnailsInCwKey] ?: true"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_cw_thumb_episodio",
+     "file": "src/ajustes.c",
+     "line": 3842,
+     "consumers": [
+      {
+       "file": "src/home.c",
+       "line": 1409,
+       "code": "if (item && ajustes_cw_thumb_episodio() && !strcmp(item->tipo, \"series\")) {"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_CW_LIGADO",
+   "feature": "layout_settings",
+   "key": "continue_watching_enabled",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/LayoutPreferenceDataStore.kt",
+   "official_key_line": 114,
+   "official_default_reads": [
+    {
+     "line": 168,
+     "code": "prefs[continueWatchingEnabledKey] ?: true"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_cw_ligado",
+     "file": "src/ajustes.c",
+     "line": 3838,
+     "consumers": [
+      {
+       "file": "src/home.c",
+       "line": 1188,
+       "code": "if (!ci || !arte || !arte[0] || !ajustes_cw_desfocar_proximo() || !ajustes_cw_ligado()) return 0;"
+      },
+      {
+       "file": "src/home.c",
+       "line": 2802,
+       "code": "return (ajustes_cw_ligado() ? 1 : 0)"
+      },
+      {
+       "file": "src/home.c",
+       "line": 3081,
+       "code": "if (!strcmp(cf->chave, \"continue_watching\") && !ajustes_cw_ligado()) continue;"
+      },
+      {
+       "file": "src/homeestado.c",
+       "line": 69,
+       "code": "h = hashBytes(h, &(int){ajustes_cw_ligado()}, sizeof(int));"
+      },
+      {
+       "file": "src/ajustes_ux_previa.inc",
+       "line": 562,
+       "code": "int est = ajustes_cw_estilo(), lig2 = ajustes_cw_ligado(), i;"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_CW_NAO_EXIBIDOS",
+   "feature": "layout_settings",
+   "key": "show_unaired_next_up",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/LayoutPreferenceDataStore.kt",
+   "official_key_line": 116,
+   "official_default_reads": [
+    {
+     "line": 382,
+     "code": "prefs[showUnairedNextUpKey] ?: true"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_cw_mostrar_nao_exibidos",
+     "file": "src/ajustes.c",
+     "line": 3845,
+     "consumers": [
+      {
+       "file": "src/descoberta.c",
+       "line": 3452,
+       "code": "if (!ajustes_cw_mostrar_nao_exibidos() &&"
+      },
+      {
+       "file": "src/descoberta.c",
+       "line": 3721,
+       "code": "int modo = ajustes_cw_ordem(), naoExibidos = ajustes_cw_mostrar_nao_exibidos();"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_CW_FURTHEST",
+   "feature": "layout_settings",
+   "key": "next_up_from_furthest_episode",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/LayoutPreferenceDataStore.kt",
+   "official_key_line": 117,
+   "official_default_reads": [
+    {
+     "line": 386,
+     "code": "prefs[nextUpFromFurthestEpisodeKey] ?: true"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_cw_do_episodio_mais_alto",
+     "file": "src/ajustes.c",
+     "line": 3844,
+     "consumers": [
+      {
+       "file": "src/descoberta.c",
+       "line": 3398,
+       "code": "ajustes_cw_do_episodio_mais_alto());"
+      },
+      {
+       "file": "src/descoberta.c",
+       "line": 3409,
+       "code": "if (ajustes_cw_do_episodio_mais_alto() ? !higher : r->lastWatchedMs <= sem[found].vistoMs) continue;"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_CW_BLUR_PROX",
+   "feature": "layout_settings",
+   "key": "blur_continue_watching_next_up",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/LayoutPreferenceDataStore.kt",
+   "official_key_line": 118,
+   "official_default_reads": [
+    {
+     "line": 390,
+     "code": "prefs[blurContinueWatchingNextUpKey] ?: false"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_cw_desfocar_proximo",
+     "file": "src/ajustes.c",
+     "line": 3843,
+     "consumers": [
+      {
+       "file": "src/home.c",
+       "line": 1188,
+       "code": "if (!ci || !arte || !arte[0] || !ajustes_cw_desfocar_proximo() || !ajustes_cw_ligado()) return 0;"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_DET_META_EXT",
+   "feature": "layout_settings",
+   "key": "prefer_external_meta_addon_detail",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/LayoutPreferenceDataStore.kt",
+   "official_key_line": 121,
+   "official_default_reads": [
+    {
+     "line": 404,
+     "code": "prefs[preferExternalMetaAddonDetailKey] ?: true"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_meta_externo",
+     "file": "src/ajustes.c",
+     "line": 3878,
+     "consumers": [
+      {
+       "file": "src/descoberta.c",
+       "line": 6460,
+       "code": "snprintf(dst, n, \"%s/%s/%s/%d\", tipo, id, desc_tmdb_idioma(), ajustes_meta_externo());"
+      },
+      {
+       "file": "src/descoberta.c",
+       "line": 6672,
+       "code": "int ok = 0, externo = ajustes_meta_externo(), naoIng = idiomaNaoIngles(), lido;"
+      },
+      {
+       "file": "src/descoberta.c",
+       "line": 6726,
+       "code": "if (!ajustes_meta_externo() && !idiomaNaoIngles()) return 0;"
+      },
+      {
+       "file": "src/descoberta.c",
+       "line": 6738,
+       "code": "if (!ajustes_meta_externo() && !idiomaNaoIngles()) return 0;"
+      },
+      {
+       "file": "src/descoberta.c",
+       "line": 6814,
+       "code": "if (!ajustes_meta_externo() && !idiomaNaoIngles()) return;"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_HERO_CHEIO",
+   "feature": "layout_settings",
+   "key": "modern_hero_full_screen_backdrop",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/LayoutPreferenceDataStore.kt",
+   "official_key_line": 122,
+   "official_default_reads": [
+    {
+     "line": 245,
+     "code": "prefs[modernHeroFullScreenBackdropKey] ?: false"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_hero_cheio",
+     "file": "src/ajustes.c",
+     "line": 3638,
+     "consumers": [
+      {
+       "file": "src/home.c",
+       "line": 5057,
+       "code": "int cheio = homeRetratoTelefone() || ajustes_hero_cheio() ||"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_DET_DATA_CHEIA",
+   "feature": "layout_settings",
+   "key": "show_full_release_date",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/LayoutPreferenceDataStore.kt",
+   "official_key_line": 124,
+   "official_default_reads": [
+    {
+     "line": 412,
+     "code": "prefs[showFullReleaseDateKey] ?: true"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_data_completa",
+     "file": "src/ajustes.c",
+     "line": 3699,
+     "consumers": [
+      {
+       "file": "src/detail.c",
+       "line": 5840,
+       "code": "if (!ajustes_data_completa() && strlen(date)>=4) date += strlen(date)-4;"
+      },
+      {
+       "file": "src/detail.c",
+       "line": 5964,
+       "code": "if (epData && !ajustes_data_completa() && strlen(epData) >= 4)"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_NAV_RAPIDA",
+   "feature": "layout_settings",
+   "key": "fast_horizontal_navigation_enabled",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/LayoutPreferenceDataStore.kt",
+   "official_key_line": 127,
+   "official_default_reads": [
+    {
+     "line": 424,
+     "code": "prefs[fastHorizontalNavigationEnabledKey] ?: false"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_navegacao_horizontal_rapida",
+     "file": "src/ajustes.c",
+     "line": 3883,
+     "consumers": [
+      {
+       "file": "src/busca.c",
+       "line": 1243,
+       "code": "if (ajustes_navegacao_horizontal_rapida()) {"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_PAUSA_OVERLAY",
+   "feature": "player_settings",
+   "key": "pause_overlay_enabled",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/PlayerSettingsDataStore.kt",
+   "official_key_line": 651,
+   "official_default_reads": [
+    {
+     "line": 1046,
+     "code": "pauseOverlayEnabled = prefs[pauseOverlayEnabledKey] ?: true,"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_pausa_overlay",
+     "file": "src/ajustes.c",
+     "line": 2912,
+     "consumers": [
+      {
+       "file": "src/pausao.c",
+       "line": 109,
+       "code": "if (podeSubir && ajustes_pausa_overlay() && ajustes_pausa_notas() && imdb && !strncmp(imdb, \"tt\", 2) && episodio <= 0) {"
+      },
+      {
+       "file": "src/pausao.c",
+       "line": 116,
+       "code": "if (podeSubir && ajustes_pausa_overlay() && ajustes_pausa_comentarios()) {"
+      },
+      {
+       "file": "src/pausao.c",
+       "line": 125,
+       "code": "if (!podeSubir || !ajustes_pausa_overlay()) {"
+      },
+      {
+       "file": "src/player.c",
+       "line": 5153,
+       "code": "podeSubir && ajustes_pausa_overlay() ? sinopseEpisodioAtual() : \"\");"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_RELOGIO",
+   "feature": "player_settings",
+   "key": "osd_clock_enabled",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/PlayerSettingsDataStore.kt",
+   "official_key_line": 652,
+   "official_default_reads": [
+    {
+     "line": 1047,
+     "code": "osdClockEnabled = prefs[osdClockEnabledKey] ?: true,"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_relogio_ligado",
+     "file": "src/ajustes.c",
+     "line": 3115,
+     "consumers": [
+      {
+       "file": "src/home.c",
+       "line": 3309,
+       "code": "if (retomarIndice >= 0 && destino < MAX_FIL && !ajustes_relogio_ligado()) {"
+      },
+      {
+       "file": "src/plrilha.c",
+       "line": 337,
+       "code": "if (prevVolta && !temPed && ajustes_relogio_ligado()) horaAte = agora + HORA_SEGURA_MS;"
+      },
+      {
+       "file": "src/plrilha.c",
+       "line": 339,
+       "code": "if (temPed || !ajustes_relogio_ligado()) horaAte = 0;"
+      },
+      {
+       "file": "src/ilha.c",
+       "line": 1853,
+       "code": "if (!temCartao[ILHA_VIVO] || !ajustes_relogio_ligado()) return 0;"
+      },
+      {
+       "file": "src/dicascontrole.c",
+       "line": 106,
+       "code": "if (ajustes_relogio_ligado() && ilha_rect(&ix, &iy, &iw, &ih))"
+      }
+     ]
+    },
+    {
+     "name": "ajustes_saida_player_home",
+     "file": "src/ajustes.c",
+     "line": 3414,
+     "consumers": [
+      {
+       "file": "src/app.c",
+       "line": 6747,
+       "code": "if (player_quer_sair() && !player_minimizavel() && ajustes_saida_player_home())"
+      },
+      {
+       "file": "src/app.c",
+       "line": 6771,
+       "code": "if (!ajustes_saida_player_home() || !player_suspender()) player_encerrar();"
+      },
+      {
+       "file": "src/app.c",
+       "line": 6786,
+       "code": "if (ajustes_saida_player_home() && ilhacart_vivo_seq() != vivoAntes) {"
+      },
+      {
+       "file": "src/player.c",
+       "line": 2899,
+       "code": "return !ajustes_manter_video() && ajustes_saida_player_home() &&"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_TMDB_LIGADO",
+   "feature": "tmdb_settings",
+   "key": "tmdb_enabled",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/TmdbSettingsDataStore.kt",
+   "official_key_line": 35,
+   "official_default_reads": [
+    {
+     "line": 53,
+     "code": "enabled = prefs[enabledKey] ?: false,"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_tmdb_ligado",
+     "file": "src/ajustes.c",
+     "line": 3936,
+     "consumers": [
+      {
+       "file": "src/descoberta.c",
+       "line": 210,
+       "code": "return ajustes_tmdb_ligado() ? tmdbChave : \"\";"
+      },
+      {
+       "file": "src/descoberta.c",
+       "line": 522,
+       "code": "ajustes_tmdb_ligado() ? \"ligada, chave vazia\" : \"desligada\");"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_TMDB_ARTE",
+   "feature": "tmdb_settings",
+   "key": "tmdb_use_artwork",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/TmdbSettingsDataStore.kt",
+   "official_key_line": 39,
+   "official_default_reads": [
+    {
+     "line": 57,
+     "code": "useArtwork = prefs[useArtworkKey] ?: true,"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_tmdb_arte",
+     "file": "src/ajustes.c",
+     "line": 4001,
+     "consumers": [
+      {
+       "file": "src/descoberta.c",
+       "line": 564,
+       "code": "if (ajustes_tmdb_basico() || ajustes_tmdb_arte()) {"
+      },
+      {
+       "file": "src/descoberta.c",
+       "line": 566,
+       "code": "if (ajustes_tmdb_arte())"
+      },
+      {
+       "file": "src/descoberta.c",
+       "line": 605,
+       "code": "if (ajustes_tmdb_arte()) {"
+      },
+      {
+       "file": "src/descoberta.c",
+       "line": 6364,
+       "code": "int querLogo = logo && nl && ajustes_tmdb_arte();"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_TMDB_BASICO",
+   "feature": "tmdb_settings",
+   "key": "tmdb_use_basic_info",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/TmdbSettingsDataStore.kt",
+   "official_key_line": 40,
+   "official_default_reads": [
+    {
+     "line": 58,
+     "code": "useBasicInfo = prefs[useBasicInfoKey] ?: true,"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_tmdb_basico",
+     "file": "src/ajustes.c",
+     "line": 4002,
+     "consumers": [
+      {
+       "file": "src/descoberta.c",
+       "line": 564,
+       "code": "if (ajustes_tmdb_basico() || ajustes_tmdb_arte()) {"
+      },
+      {
+       "file": "src/descoberta.c",
+       "line": 596,
+       "code": "if (ajustes_tmdb_basico()) {"
+      },
+      {
+       "file": "src/descoberta.c",
+       "line": 6368,
+       "code": "if (!chave[0] || (!ajustes_tmdb_basico() && !querLogo)) return 0;"
+      },
+      {
+       "file": "src/descoberta.c",
+       "line": 6387,
+       "code": "if (ajustes_tmdb_basico()) {"
+      },
+      {
+       "file": "src/descoberta.c",
+       "line": 8716,
+       "code": "int tmdbTraduz = desc_chave_tmdb()[0] && ajustes_tmdb_basico();"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_TMDB_FICHA",
+   "feature": "tmdb_settings",
+   "key": "tmdb_use_details",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/TmdbSettingsDataStore.kt",
+   "official_key_line": 41,
+   "official_default_reads": [
+    {
+     "line": 59,
+     "code": "useDetails = prefs[useDetailsKey] ?: true,"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_tmdb_ficha",
+     "file": "src/ajustes.c",
+     "line": 4003,
+     "consumers": [
+      {
+       "file": "src/extras.c",
+       "line": 1096,
+       "code": "(ajustes_tmdb_ficha() || ajustes_tmdb_datas() ||"
+      },
+      {
+       "file": "src/extras.c",
+       "line": 1210,
+       "code": "if (!serie && ajustes_tmdb_ficha()) {"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_TMDB_ELENCO",
+   "feature": "tmdb_settings",
+   "key": "tmdb_use_credits",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/TmdbSettingsDataStore.kt",
+   "official_key_line": 42,
+   "official_default_reads": [
+    {
+     "line": 60,
+     "code": "useCredits = prefs[useCreditsKey] ?: true,"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_tmdb_elenco",
+     "file": "src/ajustes.c",
+     "line": 4005,
+     "consumers": [
+      {
+       "file": "src/pessoa.c",
+       "line": 99,
+       "code": "if (!chave || !chave[0] || !ajustes_tmdb_elenco() || !nomeAlvo[0]) return 0;"
+      },
+      {
+       "file": "src/descoberta.c",
+       "line": 667,
+       "code": "if (ajustes_tmdb_elenco()) {"
+      },
+      {
+       "file": "src/descoberta.c",
+       "line": 9781,
+       "code": "if (!ci || !ci->nElenco || !ajustes_tmdb_elenco() || !desc_chave_tmdb()[0]) return 0;"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_TMDB_PROD",
+   "feature": "tmdb_settings",
+   "key": "tmdb_use_productions",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/TmdbSettingsDataStore.kt",
+   "official_key_line": 43,
+   "official_default_reads": [
+    {
+     "line": 61,
+     "code": "useProductions = prefs[useProductionsKey] ?: true,"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_tmdb_prod",
+     "file": "src/ajustes.c",
+     "line": 4006,
+     "consumers": [
+      {
+       "file": "src/extras.c",
+       "line": 1098,
+       "code": "ajustes_tmdb_prod()))) {"
+      },
+      {
+       "file": "src/extras.c",
+       "line": 1299,
+       "code": "if (!rede && !ajustes_tmdb_prod()) continue;"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_TMDB_REDES",
+   "feature": "tmdb_settings",
+   "key": "tmdb_use_networks",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/TmdbSettingsDataStore.kt",
+   "official_key_line": 44,
+   "official_default_reads": [
+    {
+     "line": 62,
+     "code": "useNetworks = prefs[useNetworksKey] ?: true,"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_tmdb_redes",
+     "file": "src/ajustes.c",
+     "line": 4007,
+     "consumers": [
+      {
+       "file": "src/extras.c",
+       "line": 1298,
+       "code": "if (rede && !ajustes_tmdb_redes()) continue;"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_TMDB_EPS",
+   "feature": "tmdb_settings",
+   "key": "tmdb_use_episodes",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/TmdbSettingsDataStore.kt",
+   "official_key_line": 45,
+   "official_default_reads": [
+    {
+     "line": 63,
+     "code": "useEpisodes = prefs[useEpisodesKey] ?: true,"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_tmdb_eps",
+     "file": "src/ajustes.c",
+     "line": 4008,
+     "consumers": [
+      {
+       "file": "src/extras.c",
+       "line": 1365,
+       "code": "if (serie && ajustes_tmdb_eps())"
+      },
+      {
+       "file": "src/extras.c",
+       "line": 1408,
+       "code": "if (serie && ajustes_tmdb_eps() && idT > 0) {"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_TMDB_TRAILERS",
+   "feature": "tmdb_settings",
+   "key": "tmdb_use_trailers",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/TmdbSettingsDataStore.kt",
+   "official_key_line": 46,
+   "official_default_reads": [
+    {
+     "line": 64,
+     "code": "useTrailers = prefs[useTrailersKey] ?: true,"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_tmdb_trailers",
+     "file": "src/ajustes.c",
+     "line": 4009,
+     "consumers": [
+      {
+       "file": "src/extras.c",
+       "line": 1097,
+       "code": "ajustes_tmdb_trailers() || ajustes_tmdb_col() ||"
+      },
+      {
+       "file": "src/extras.c",
+       "line": 1105,
+       "code": "ajustes_tmdb_datas(), ajustes_tmdb_trailers(), ajustes_tmdb_mais(), \"\");"
+      },
+      {
+       "file": "src/extras.c",
+       "line": 1107,
+       "code": "if (corpo && ajustes_tmdb_trailers() &&"
+      },
+      {
+       "file": "src/extras.c",
+       "line": 1269,
+       "code": "if (ajustes_tmdb_trailers())"
+      },
+      {
+       "file": "src/extras.c",
+       "line": 2225,
+       "code": "if (!id[0] || !desc_chave_tmdb()[0] || !ajustes_tmdb_trailers()) return;"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_TMDB_MAIS",
+   "feature": "tmdb_settings",
+   "key": "tmdb_use_more_like_this",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/TmdbSettingsDataStore.kt",
+   "official_key_line": 47,
+   "official_default_reads": [
+    {
+     "line": 65,
+     "code": "useMoreLikeThis = prefs[useMoreLikeThisKey] ?: true,"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_tmdb_mais",
+     "file": "src/ajustes.c",
+     "line": 4010,
+     "consumers": [
+      {
+       "file": "src/extras.c",
+       "line": 1105,
+       "code": "ajustes_tmdb_datas(), ajustes_tmdb_trailers(), ajustes_tmdb_mais(), \"\");"
+      },
+      {
+       "file": "src/extras.c",
+       "line": 1114,
+       "code": "ajustes_tmdb_datas(), 1, ajustes_tmdb_mais(), original);"
+      },
+      {
+       "file": "src/extras.c",
+       "line": 1330,
+       "code": "if (ajustes_tmdb_mais()) {"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_TMDB_COL",
+   "feature": "tmdb_settings",
+   "key": "tmdb_use_collections",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/TmdbSettingsDataStore.kt",
+   "official_key_line": 48,
+   "official_default_reads": [
+    {
+     "line": 66,
+     "code": "useCollections = prefs[useCollectionsKey] ?: true"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_tmdb_col",
+     "file": "src/ajustes.c",
+     "line": 4011,
+     "consumers": [
+      {
+       "file": "src/extras.c",
+       "line": 1097,
+       "code": "ajustes_tmdb_trailers() || ajustes_tmdb_col() ||"
+      },
+      {
+       "file": "src/extras.c",
+       "line": 1488,
+       "code": "if (!serie && ajustes_tmdb_col() && idCol > 0) {"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_TMDB_CW",
+   "feature": "tmdb_settings",
+   "key": "tmdb_enrich_continue_watching",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/TmdbSettingsDataStore.kt",
+   "official_key_line": 37,
+   "official_default_reads": [
+    {
+     "line": 55,
+     "code": "enrichContinueWatching = prefs[enrichContinueWatchingKey] ?: true,"
+    }
+   ],
+   "native_getters": [
+    {
+     "name": "ajustes_tmdb_cw",
+     "file": "src/ajustes.c",
+     "line": 4012,
+     "consumers": [
+      {
+       "file": "src/trakt.c",
+       "line": 833,
+       "code": "if (ajustes_tmdb_cw() && (!d->backdrop[0] || !d->poster[0])) {"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "native_id": "AJ_RESOLVE_LINKS",
+   "feature": "debrid_settings",
+   "key": "debrid_enabled",
+   "type": "boolean",
+   "scope": "selected profile",
+   "official_store": "app/src/main/java/com/nuvio/tv/data/local/DebridSettingsDataStore.kt",
+   "official_key_line": 45,
+   "official_default_reads": [
+    {
+     "line": 79,
+     "code": "enabled = prefs[enabledKey] ?: false,"
+    }
+   ],
+   "official_ui": "DebridSettingsScreen.kt:171 \"Resolve playable links\" toggles DebridSettingsEvent.ToggleEnabled -> setEnabled(debrid_enabled); effective state is enabled && hasResolverProvider (DebridSettings.kt:40)",
+   "official_sync": "debrid_settings is a synced feature; ProfileSettingsSyncService excludes only torbox_api_key, premiumize_api_key and real_debrid_api_key from it",
+   "native_storage": "valor[AJ_RESOLVE_LINKS], per-profile (ESC_PERFIL_LOCAL, ajustes-p<N>.txt), default Off; effective only with a configured TorBox/Premiumize resolver, like the official hasResolverProvider gate",
+   "native_getters": [
+    {
+     "name": "ajustes_resolver_ativo",
+     "file": "src/ajustes.c",
+     "line": 2971,
+     "consumers": [
+      {
+       "file": "src/resolver_policy.c",
+       "line": 26,
+       "code": "if(!url||!size||!ajustes_resolver_ativo())return 0;"
+      },
+      {
+       "file": "src/resolver_policy.c",
+       "line": 32,
+       "code": "if(!ajustes_resolver_ativo()||provider!=ajustes_resolver_provedor())return 0;"
+      },
+      {
+       "file": "src/app.c",
+       "line": 844,
+       "code": "if (ajustes_resolver_ativo() && servico==ajustes_resolver_provedor() && debrid_servico_disponivel(servico)) disponiveis |= 1u << servico;"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

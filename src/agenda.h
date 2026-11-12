@@ -288,6 +288,21 @@ const char *agenda_lembrete_desde(const char *imdb);
 int  agenda_historico_ler(const char *corpoCinemeta, const char *desde,
                           const char *hoje, AgEp *saida, int max);
 
+// --- a grade do mes (vista Mes da Agenda) ------------------------------------
+//
+// Os episodios com data das series com estreia confirmada, do dia 1 do mes de
+// hoje em diante, para a vista Mes pintar TODOS os dias de episodio e nao so o
+// proximo de cada serie. Um pedido ao Cinemeta por serie, num fio so, disparado
+// quando a vista Mes abre; vale 6 h. Ver a nota em agenda.c.
+typedef struct {
+  char imdb[24];
+  AgEp ep;           // `visto` sai -1
+} AgGradeEp;
+void agenda_grade_pedir(void);                       // FIO PRINCIPAL
+int  agenda_grade_tem(const char *imdb);             // 1 = grade carregada
+// Os episodios entre `ini` e `fim` (ISO, inclusive os dois), ate `max`.
+int  agenda_grade_entre(const char *ini, const char *fim, AgGradeEp *saida, int max);
+
 // Apaga cache e lembretes de todos os perfis. Para o logout.
 void agenda_esquecer(void);
 

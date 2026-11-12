@@ -1,5 +1,6 @@
 #include "cwordem.h"
 #include "idiomacod.h"
+#include "epdata.h"
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
@@ -47,21 +48,90 @@ void cwo_corte(int principal, int nFut, int max, int *nPrincipal, int *nFuturos)
 // 200: a fileira tem ate 40 itens por fonte (3 fontes = 120) e o Trakt guarda
 // ate 64 "a seguir" (TK_ULT_MAX). Cheia, a mais velha e sobrescrita em roda.
 #define CWO_EST_MAX 200
-static struct { char id[40]; long long ms; } est[CWO_EST_MAX];
+// Stage E: `cru` keeps the add-on's raw `released` (official rules need it:
+// a plain date is not an instant), and `vistoMs`/`tempSemente` are what the
+// official release alert compares against (resolveNextUpReleaseState).
+static struct {
+  char id[40]; long long ms; char cru[40];
+  long long vistoMs; int tempSemente; int temSemente;
+} est[CWO_EST_MAX];
 static int nEst, proxEst;
 static pthread_mutex_t estTrava = PTHREAD_MUTEX_INITIALIZER;
+
+// Slot for `id` (created when absent). Caller holds estTrava.
+static int estSlot(const char *id) {
+  int i;
+  for (i = 0; i < nEst; i++) if (!strcmp(est[i].id, id)) return i;
+  i = nEst < CWO_EST_MAX ? nEst++ : proxEst;
+  proxEst = (i + 1) % CWO_EST_MAX;
+  memset(&est[i], 0, sizeof est[i]);
+  snprintf(est[i].id, sizeof est[i].id, "%s", id);
+  est[i].ms = CWO_SEM_DATA;
+  return i;
+}
 
 void cwo_marcar_estreia(const char *id, long long ms) {
   int i;
   if (!id || !id[0]) return;
   pthread_mutex_lock(&estTrava);
-  for (i = 0; i < nEst; i++)
-    if (!strcmp(est[i].id, id)) { est[i].ms = ms; pthread_mutex_unlock(&estTrava); return; }
-  i = nEst < CWO_EST_MAX ? nEst++ : proxEst;
-  proxEst = (i + 1) % CWO_EST_MAX;
-  snprintf(est[i].id, sizeof est[i].id, "%s", id);
+  i = estSlot(id);
   est[i].ms = ms;
+  est[i].cru[0] = 0;
   pthread_mutex_unlock(&estTrava);
+}
+
+void cwo_marcar_estreia_cru(const char *id, const char *cru) {
+  long long ms;
+  int i;
+  if (!id || !id[0]) return;
+  if (!cru || !ep_instante_ms(cru, &ms)) { cwo_marcar_estreia(id, CWO_SEM_DATA); return; }
+  pthread_mutex_lock(&estTrava);
+  i = estSlot(id);
+  est[i].ms = ms;
+  snprintf(est[i].cru, sizeof est[i].cru, "%s", cru);
+  pthread_mutex_unlock(&estTrava);
+}
+
+int cwo_estreia_cru(const char *id, char *dst, size_t cap) {
+  int i, ok = 0;
+  if (!dst || !cap) return 0;
+  dst[0] = 0;
+  if (!id || !id[0]) return 0;
+  pthread_mutex_lock(&estTrava);
+  for (i = 0; i < nEst; i++)
+    if (!strcmp(est[i].id, id)) { snprintf(dst, cap, "%s", est[i].cru); ok = dst[0] != 0; break; }
+  pthread_mutex_unlock(&estTrava);
+  return ok;
+}
+
+void cwo_marcar_semente(const char *id, long long vistoMs, int temporadaSemente) {
+  int i;
+  if (!id || !id[0]) return;
+  pthread_mutex_lock(&estTrava);
+  i = estSlot(id);
+  est[i].vistoMs = vistoMs;
+  est[i].tempSemente = temporadaSemente;
+  est[i].temSemente = 1;
+  pthread_mutex_unlock(&estTrava);
+}
+
+// Recomputed on every call from the stored instant, like the official
+// recalculateCachedReleaseBadge: an item cached as upcoming flips when it airs.
+int cwo_alerta(const char *id, int temporada, long long agoraMs, int *novaTemporada) {
+  int i, alerta = 0, nova = 0;
+  if (novaTemporada) *novaTemporada = 0;
+  if (!id || !id[0]) return 0;
+  pthread_mutex_lock(&estTrava);
+  for (i = 0; i < nEst; i++) if (!strcmp(est[i].id, id)) {
+    if (est[i].temSemente && est[i].ms != CWO_SEM_DATA) {
+      alerta = ep_alerta_lancamento(est[i].ms, est[i].vistoMs, agoraMs);
+      nova = ep_alerta_temporada(alerta, est[i].tempSemente, temporada);
+    }
+    break;
+  }
+  pthread_mutex_unlock(&estTrava);
+  if (novaTemporada) *novaTemporada = nova;
+  return alerta;
 }
 
 long long cwo_estreia(const char *id) {

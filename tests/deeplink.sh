@@ -14,6 +14,8 @@ import tempfile
 from pathlib import Path
 
 source = Path('src/app.c').read_text()
+update=source[source.index('void app_atualizar('):]
+assert update.index('deeplink_desarmar_pendente()') < update.index('if (tela == TELA_ESCOLHA_PERFIL')
 start = source.index('static void deeplinkAbrir(')
 end = source.index('\nstatic void spotAbrir(', start)
 with tempfile.TemporaryDirectory(prefix='deeplink-app-') as tmp:
@@ -27,5 +29,9 @@ with tempfile.TemporaryDirectory(prefix='deeplink-app-') as tmp:
                     '-Isrc', '-I' + tmp, '-O1', '-g', '-Wall', '-o', binary], check=True)
     subprocess.run([binary], check=True)
     subprocess.run([binary, 'pending'], check=True)
+    debug = str(Path(tmp, 'test-debug'))   # Android debug variant of the J0 probe links
+    subprocess.run(['cc', *flags, '-DNV_J0_TESTE', '-DNV_J7_TESTE', 'src/deeplink.c', 'tests/deeplink_app.c',
+                    '-Isrc', '-I' + tmp, '-O1', '-g', '-Wall', '-o', debug], check=True)
+    subprocess.run([debug], check=True)
     print('deeplink app: ok')
 PY

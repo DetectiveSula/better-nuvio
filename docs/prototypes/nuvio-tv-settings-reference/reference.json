@@ -1,0 +1,114 @@
+{
+  "official_commit": "99fbd65d8c16928d1fe11bf3f9812c4b5aaaca8f",
+  "style": "CLASSIC",
+  "font": "Inter",
+  "palette": "Ocean",
+  "design_canvas": [
+    1920,
+    1080
+  ],
+  "source_dimensions_dp": {
+    "rail_width": 220,
+    "rail_min_height": 56,
+    "row_min_height": 62,
+    "workspace_radius": 28,
+    "workspace_padding": 20
+  },
+  "prototype_dp_multiplier": 2,
+  "source_fingerprints": {
+    "SettingsCatalog.kt": "6c0ce066cb52f803016f092e097fa490f468a6f71d2c13f2e9e5c42bc5f74bbf",
+    "SettingsScreen.kt": "7a8091629cfc09a07a54c1c575b4a6600ebbb4696cd075be2d31622606c829a1",
+    "SettingsDesignSystem.kt": "8c894a1d60fa3cb5dc5b842b19076cf9fa99bcdf61c67c73b06f3953ab6d3f6f",
+    "PlaybackSettingsModel.kt": "8f026645ca8163747143256989e39cc0ea6234eb8ad903fb41a0b6406307fa74",
+    "ContentDiscoverySettingsContent.kt": "c183580016d944b9afd777348562ea5dafc60138668370d187a5e3c168c6f052"
+  },
+  "legacy_examples": [
+    {
+      "id": "AJ_IPTV_CONTA",
+      "label": "Live TV account",
+      "category": "Content & Discovery",
+      "legacy_badge": true,
+      "family": "live-tv",
+      "reason": "Native adds its own Xtream, Stalker, M3U/XMLTV accounts and EPG/player controls. The official discovery hub exposes addons, media servers and plugins, not this IPTV account/guide stack. Addon live streams are not equivalent IPTV configuration controls."
+    },
+    {
+      "id": "AJ_FALHA_ADDONS",
+      "label": "Switch add-on on failure",
+      "category": "Content & Discovery",
+      "legacy_badge": true,
+      "family": "provider-fallback",
+      "reason": "Native adds ordered cross-provider/addon failure retries and per-provider attempt limits through fontefalha. Official preferred resolver/provider and stream preferences do not expose this independent retry policy. No resolver behaviour is changed here."
+    },
+    {
+      "id": "AJ_LEG2_FONTE",
+      "label": "Subtitle font",
+      "category": "Playback",
+      "legacy_badge": true,
+      "family": "dual-subtitle-style",
+      "reason": "Native has independent styling, placement, timing and reset for a simultaneously rendered second subtitle. Official secondaryPreferredLanguage feeds ordered track selection with one shared subtitle style, not a second independently styled overlay. Primary subtitle styling remains unbadged."
+    },
+    {
+      "id": "AJ_LEG2_ATRASO",
+      "label": "Delay",
+      "category": "Playback",
+      "legacy_badge": true,
+      "family": "dual-subtitle-style",
+      "reason": "Native has independent styling, placement, timing and reset for a simultaneously rendered second subtitle. Official secondaryPreferredLanguage feeds ordered track selection with one shared subtitle style, not a second independently styled overlay. Primary subtitle styling remains unbadged."
+    },
+    {
+      "id": "AJ_DEBRID_AD",
+      "label": "AllDebrid key",
+      "category": "Integrations",
+      "legacy_badge": true,
+      "family": "alldebrid",
+      "reason": "Native adds AllDebrid credentials and explicit validation. Official connected-service credentials support Real-Debrid, TorBox and Premiumize; the shared providers are not badged."
+    },
+    {
+      "id": "AJ_FALHA_PROVEDORES",
+      "label": "Switch provider on failure",
+      "category": "Integrations",
+      "legacy_badge": true,
+      "family": "provider-fallback",
+      "reason": "Native adds ordered cross-provider/addon failure retries and per-provider attempt limits through fontefalha. Official preferred resolver/provider and stream preferences do not expose this independent retry policy. No resolver behaviour is changed here."
+    }
+  ],
+  "limitations": [
+    "HTML reproduction, not a rendered Compose screen or verified pixel-for-pixel match",
+    "Illustrative values and representative controls; not an exhaustive replacement settings implementation",
+    "Watch Party illustrated as available; feature gate applies in the real application",
+    "No Notifications category exists in the pinned TV catalogue; debug-only categories are omitted",
+    "No app callbacks, persistence, account services, devices or production settings modified"
+  ],
+  "requested_preview_refinements": {
+    "date": "2026-11-07",
+    "appearance": [
+      "App Icon & Banner",
+      "AMOLED Mode",
+      "Pure Black Surfaces"
+    ],
+    "layout": [
+      "Focused Poster",
+      "Poster Card Style"
+    ],
+    "content_discovery_top_level": [
+      "Add-ons",
+      "Plugins"
+    ],
+    "integrations_omitted": [
+      "Discord presence"
+    ],
+    "advanced": [
+      "Experience Mode",
+      "Performance & Navigation",
+      "Diagnostics",
+      "Cache",
+      "DV Diagnostics"
+    ],
+    "legacy_features_not_removed_from_application": true,
+    "synthetic_appearance_values": {
+      "amoled": true,
+      "pure_black_surfaces": false
+    }
+  },
+  "legacy_examples_note": "Live TV and addon fallback remain examples within the Add-ons subpage; Discord is omitted per requested preview refinement."
+}

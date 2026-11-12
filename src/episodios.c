@@ -1004,7 +1004,7 @@ static void linhaEp(int i, const CatItem *ci, float lx, float lw, float y, float
   // DESFOCAR NAO ASSISTIDOS (#133): so o que o mapa afirma como visto fica
   // nitido — e o que esta tocando agora, que a pessoa ja esta vendo.
   if (tex && ajustes_desfocar_nao_assistidos() && !atual && visto != 1) tex = gfx_desfocado(tex, arte);
-  if (tex) { gfx_tex_aspect_atual = tex_aspecto(arte); gfx_rect(tr, tex, GFX_CARD, 0, 0, 0, 16.0f / 135.0f, 0, 0, 0, ra); gfx_tex_aspect_atual = 0; }
+  if (tex) { gfx_tex_aspect_atual = tex_aspecto(arte); gfx_card_para(NV_CARD_EPISODES, tr, tex, GFX_CARD, selF, 0, 0, 16.0f / 135.0f, 0, 0, 0, ra); gfx_tex_aspect_atual = 0; }
   // O PROGRESSO NA STILL: o ponto salvo deste episodio, branco; no que esta
   // tocando, no acento.
   { char chave[96]; ProgRegistro pr;

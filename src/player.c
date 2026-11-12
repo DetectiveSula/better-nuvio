@@ -25,6 +25,8 @@
 //      esta pausado. Pausado sem controles o usuario fica olhando um quadro
 //      congelado sem saber o que houve.
 #include "mediaurl.h"
+#include "idiomacod.h"
+#include "subtitle_auto_policy.h"
 #include "horafmt.h"
 #include "player.h"
 #include "legfontes.h"
@@ -529,7 +531,7 @@ static const char *cinemaArteObter(const CatItem *c) {
   cinemaArte[0] = 0; cinemaPoster = 0;
   // Next e Play direto da Home nao precisam passar pela pagina. Usam a mesma
   // politica dela, inclusive arte alternativa, escolha manual e fundo por id.
-  u = artehero_url_destaque(c, ajustes_hero_fonte(), ajustes_hero_arte_diferente());
+  u = artehero_url_destaque(c, 0, 0);
   if (u && *u && strlen(u) < sizeof cinemaArte) {
     snprintf(cinemaArte, sizeof cinemaArte, "%s", u);
     cinemaPoster = c && c->poster[0] && !strcmp(u, c->poster);
@@ -1620,6 +1622,14 @@ static PlrRect aspectoVisivel(int modo) {
 // ela ganha. Em 100% e 0,52 exato.
 #define PLR_ENC_ALVO (PLR_ENC_ALVO_100 - (gfx_escala_ui() - 1.0f) * 470.0f / 1080.0f)
 #define PLR_ENC_TOPO      48.0f   // respiro acima do video quando recuado
+// TV (official Nuvio TV, PlayerScreen.kt): the film's post-play recommendation
+// page shrinks the video to a 16:9 window 32% of the screen wide, 64 px (32 dp)
+// from the top-right corner; the recommendation's backdrop fills the rest. The
+// phone keeps the old centred recede above its poster row.
+#define PLR_ENC_CANTO_W   0.32f
+#define PLR_ENC_CANTO_M   64.0f
+static int encCanto(void) { return !telefoneui_ativo(); }
+static float encAlvo(void) { return encCanto() ? PLR_ENC_CANTO_W : PLR_ENC_ALVO; }
 // Mais degraus e mais curtos que a primeira versao (eram 6 x 70 ms), e com
 // CURVA em vez de passo constante: o dono viu e pediu mais fluidez. O custo
 // continua sendo uma chamada ao pipeline por degrau, entao a fluidez vem
@@ -1649,6 +1659,15 @@ static PlrRect destinoComRecuo(PlrRect d) {
   if (k > 0.999f) return d;
   o.w = d.w * k;
   o.h = d.h * k;
+  if (encCanto()) {
+    // Progress 0..1 of the recede: the margin grows with it, so the window
+    // leaves the corner smoothly instead of jumping 64 px on the first step.
+    float p = (1.0f - k) / (1.0f - PLR_ENC_CANTO_W);
+    if (p > 1.0f) p = 1.0f;
+    o.x = d.x + d.w - o.w - PLR_ENC_CANTO_M * p;
+    o.y = PLR_ENC_CANTO_M * p;
+    return o;
+  }
   o.x = d.x + (d.w - o.w) * 0.5f;
   o.y = PLR_ENC_TOPO;
   if (o.y + o.h > NV_TELA_H) o.y = NV_TELA_H - o.h;
@@ -1854,6 +1873,20 @@ static void armarTituloGuardado(void) {
   cacheboost_backend_titulo(alvo);
 }
 
+// Direct Continue Watching playback bypasses the details page, which used to
+// be the only owner requesting related titles. Reuse its idempotent metadata
+// request rather than leaving post-play empty (or using the preceding title).
+static void prepararRecomendacoesPlayer(const CatItem *ci) {
+  if (ci && !strcmp(ci->tipo, "movie") && ajustes_posplay_recomendacoes())
+    extras_pedir(ci->imdb, 0, ci->tmdb);
+}
+
+// A visible post-play choice must survive EOF, including recommendations at
+// 100% and the still-watching prompt. Dismissal releases it normally.
+static int posplayReterNoFim(int temProximo) {
+  return posplay_visivel() || (temProximo && posplay_aguarda_escolha());
+}
+
 void player_abrir(int indiceCatalogo, const char *url) {
 #ifdef NV_TOUCH_UI
   avToqueCanal[0] = 0;
@@ -1903,6 +1936,7 @@ void player_abrir(int indiceCatalogo, const char *url) {
     // A COPIA e feita AQUI, no unico instante em que o indice e sabidamente o
     // do titulo pedido. Ver item().
     if (ci) { itemFixo = *ci; temFixo = 1; } else temFixo = 0;
+    prepararRecomendacoesPlayer(temFixo ? &itemFixo : NULL);
     cinemaArteIniciar(temFixo ? &itemFixo : NULL);
     itemSessao = nv_perfil_sessao_ler();
     itemTipoConsultado = 0; itemTipoConfirmado[0] = 0;
@@ -2030,13 +2064,16 @@ static int temMkv(const char *t) {
 // O ordinal da legenda que a legenda AUTOMATICA vai ligar, pela mesma regra
 // (ling_legenda_auto, embutida primeiro). Os idiomas vem do cabecalho do
 // arquivo, na ordem das TrackEntry — a mesma ordem da lista da TV.
+static const char *automaticSubtitlePreference(void) {
+  return nv_subtitle_auto_preference(ling_legenda(), ajustes_legenda_automatica_completa(), idioma_iso(ajustes_idioma()));
+}
 static int escolherLegendaPrebusca(const char *const *idiomas, int n) {
-  int r = ling_legenda_auto(ling_legenda(), idiomas, n, 1, NULL, 0, 1);
+  int r = ling_legenda_auto(automaticSubtitlePreference(), idiomas, n, 1, NULL, 0, 1);
   return r >= 0 && r < n ? r : -1;
 }
 
 static int prebuscaCabe(const char *url) {
-  const char *pref = ling_legenda();
+  const char *pref = automaticSubtitlePreference();
   const Stream *s = stream_item(stream_atual());
   if (mini || ehCanal() || !url || !*url || xtream_url_limitada(url)) return 0;
   if (!pref || !*pref || !strcasecmp(pref, "none")) return 0;
@@ -2080,7 +2117,7 @@ static int preTituloCriar(int indiceCatalogo, int t, int e, const Stream *s, uns
   // Na ficha sem video, Original pertence ao titulo que sera aberto. O Next
   // apenas copia a politica atual, sem alterar o idioma da sessao em curso.
   if (!proximo) ling_definir_original(extras_idioma_original());
-  pref = ling_legenda();
+  pref = automaticSubtitlePreference();
   player_precarregar_cancelar(0);
   preTitulo.token = token; preTitulo.proximo = proximo; preTitulo.kbps = stream_kbps(s);
   snprintf(preTitulo.url, sizeof preTitulo.url, "%s", s->url);
@@ -2137,7 +2174,7 @@ void player_precarregar_adotar(unsigned token) {
 // A folha reinicia seus controles sem cancelar a legenda que este Play adota.
 // Troca de posicao/idioma usa a pre-busca normal; nunca aplica a janela antiga.
 static int preTituloLegendaUsar(const char *url) {
-  const char *pref = ling_legenda();
+  const char *pref = automaticSubtitlePreference();
   double segundos = retomarFonteSeg >= 0.0 ? retomarFonteSeg : retomarSeg;
   double pct = !semRetomada && segundos <= 0.0 ? retomarPct : 0.0;
   int ok = preTitulo.adotado && preTitulo.legenda &&
@@ -2885,6 +2922,7 @@ static void fecharSessao(int manter, int trocaFonte) {
 }
 
 void player_encerrar(void) {
+  if(pediuSair)posplay_troca_manual(); /* Explicit exit cancels an unattended Next carry. */
   if (retido) player_descartar_retido(); else fecharSessao(0, 0);
 }
 
@@ -4720,7 +4758,7 @@ void player_atualizar(float dt, Uint32 agora) {
       encolheT -= passo;
       if (encolheT < encolheAlvo) encolheT = encolheAlvo;
     }
-    encolhe = 1.0f - (1.0f - PLR_ENC_ALVO) * suaveEnc(encolheT);
+    encolhe = 1.0f - (1.0f - encAlvo()) * suaveEnc(encolheT);
     encolheEm = agora + PLR_ENC_MS;
     aplicarAspecto();
   }
@@ -5098,7 +5136,7 @@ void player_atualizar(float dt, Uint32 agora) {
     else {
       if (eofDesde < 0.0) eofDesde = agoraEof;
       if ((!eSerie || !desc_episodios_carregando(idxAtual()) || agoraEof - eofDesde >= 8.0) &&
-          (!player_proximo_episodio() || !posplay_aguarda_escolha())) { saindo = 1; pediuSair = 1; }
+          !posplayReterNoFim(player_proximo_episodio() != NULL)) { saindo = 1; pediuSair = 1; }
     }
   }
   // Com o painel no ar os controles nao somem: eles sao a saida do dono.
@@ -5213,12 +5251,13 @@ static int seekrStatusLinhas(int est, const SeekrUso *uso, int temChave,
   int n = 1;
   char hora[48];
   memset(linhas, 0, 3 * 192);
-  if (est == SEEKR_PRONTO || est == SEEKR_BUSCANDO ||
-      (est == SEEKR_DESLIGADO && temChave) ||
+  // Seekr off (with or without a key) is a choice, not a fault: someone who
+  // never set it up saw "Seekr · no key" on every seek. Only real failures
+  // (quota, network, refused key...) reach the scrub preview.
+  (void)temChave;
+  if (est == SEEKR_PRONTO || est == SEEKR_BUSCANDO || est == SEEKR_DESLIGADO ||
       est < SEEKR_DESLIGADO || est > SEEKR_RELOGIO_INDISPONIVEL) return 0;
-  if (est == SEEKR_DESLIGADO)
-    snprintf(linhas[0], 192, "Seekr · %s", i18n("sem chave"));
-  else snprintf(linhas[0], 192, "%s", i18n(seekr_estado_rotulo(est)));
+  snprintf(linhas[0], 192, "%s", i18n(seekr_estado_rotulo(est)));
   if (est == SEEKR_LIMITE_LOCAL && uso) {
     if (!uso->persistente) {
       snprintf(linhas[0], 192, "%s", i18n(seekr_estado_rotulo(SEEKR_ARMAZENAMENTO_INDISPONIVEL)));
@@ -5358,7 +5397,7 @@ static const char *iconeBotao(int i) {
     case PLR_AUDIO:     return "pl_audio-lines";
     case PLR_ASPECTO:   return "pl_ratio";
     case PLR_FONTES:    return "pl_layers";
-    case PLR_PROXIMO:   return "pl_chevron-right";
+    case PLR_PROXIMO:   return "pl_skip-forward";   // official SkipNext; ">" read as "more"
     case PLR_REINICIAR: return "pl_rotate-ccw";
     case PLR_NESTE:     return "pl_users";
     default:            return epE > 0 ? "pl_list-video" : "pl_film";
@@ -5851,6 +5890,15 @@ static void desenharAcoesEpisodioCorpo(void){
     gfx_icone((GfxRect){p.x+22.0f,p.y+(h-26.0f)*0.5f,26.0f,26.0f},"pl_skip-forward",kt,kt,kt,entrada);
     t=txt_linha(TXT_G21B,rot,tinta,tinta,tinta,255);
     txt_desenhar_alpha(t,p.x+22.0f+26.0f+12.0f,p.y+(h-(float)t.h)*0.5f,entrada);
+    // COUNTDOWN (official SkipIntroButton): alone on screen the pill hides
+    // after INTRO_BOTAO_SEG, so a thin line along its base drains with the
+    // time left. With the controls up the button stays and the line goes.
+    { float fr=intro_botao_fracao(monoSeg()), al=entrada*(1.0f-anim);
+      if(fr>=0.0f&&al>0.01f){
+        float lx=p.x+28.0f,lw=p.w-56.0f,ly=p.y+h-12.0f;
+        gfx_cor((GfxRect){lx,ly,lw,4.0f},0.5f,kt,kt,kt,0.22f*al);
+        if(fr<1.0f) gfx_cor((GfxRect){lx,ly,lw*(1.0f-fr),4.0f},0.5f,kt,kt,kt,0.75f*al);
+      } }
   }
 }
 
@@ -6188,6 +6236,8 @@ void player_fundo_fora_do_furo(GfxRect furo, int recuado, const CatItem *c) {
   GfxRect tela = { 0, 0, NV_TELA_W, NV_TELA_H };
   if (!(furo.w < NV_TELA_W - 0.5f || furo.h < NV_TELA_H - 0.5f)) return;
   if (!recuado) { gfx_cor(tela, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f); return; }
+  // TV film page: the recommendation's own backdrop (official Nuvio layout).
+  if (posplay_fundo(tela, furo)) return;
   { const char *arte = (c && c->backdrop[0]) ? artehero_url(c) : NULL;
     GLuint tb = arte ? tex_obter_larg(arte, 480) : 0;
     if (tb) tb = gfx_desfocado(tb, arte);   // a copia 96x54 desfocada (#133)
@@ -6324,8 +6374,18 @@ static void desenharCinema(Uint32 agora, const CatItem *c, int furou) {
   // ajuste ligado; a de demora so depois de 8 s.
   base = canto ? ra.y + 4.0f : ra.y + ra.h + 30.0f; y = base;
   tx = ra.x + ra.w + 20.0f;
+  // The episode in bold near-white (it was 19 px grey, lost on bright art),
+  // then a quiet status line like official's loading message: still looking
+  // for a source, or opening the one found. Films get the status line alone.
   if (linhaEp[0]) {
-    TxtLinha l = txt_linha_corta(TXT_ILHA_SUB, linhaEp, 243, 242, 239, 170, 1100.0f);
+    TxtLinha l = txt_linha_corta(TXT_G21B, linhaEp, 243, 242, 239, 240, 1100.0f);
+    txt_desenhar_alpha(l, canto ? tx : cx - l.w * 0.5f, y, v * entra);
+    y += 38.0f;
+  }
+  if (!erroFonte) {
+    TxtLinha l = txt_linha_corta(TXT_G19M, esperandoFonte ? i18n("Buscando fontes nos addons…")
+                                                          : i18n("Abrindo a fonte"),
+                                 243, 242, 239, 160, 1100.0f);
     txt_desenhar_alpha(l, canto ? tx : cx - l.w * 0.5f, y, v * entra);
     y += 34.0f;
   }
@@ -6949,7 +7009,10 @@ void player_desenhar(Uint32 agora) {
   // selos na tela virtual. A legenda logo abaixo e conteudo do filme: ela
   // sai da escala e fica no tamanho escolhido para ela.
   { ESCALA_INI();
-    gfx_veu_css((GfxRect){ 0, NV_VTELA_H - 520.0f, NV_VTELA_W, 520.0f }, 0, 1.25f, 1.0f, 0.80f * a * cheio);
+    // Taller and fuller than the mockup's (520, .80, curve 1.25): the title,
+    // episode line and meta sit ~200 px up, where that veil was only ~.44 and
+    // a bright frame washed them out. 600 px, linear, .85 puts ~.57 there.
+    gfx_veu_css((GfxRect){ 0, NV_VTELA_H - 600.0f, NV_VTELA_W, 600.0f }, 0, 1.0f, 1.0f, 0.85f * a * cheio);
     gfx_veu_css((GfxRect){ 0, NV_VTELA_H - 300.0f, NV_VTELA_W, 300.0f }, 0, 1.0f, 1.0f, 0.60f * a * (1.0f - cheio));
     gfx_veu_css((GfxRect){ 0, 0, NV_VTELA_W, 260.0f }, 1, 1.38f, 1.0f, 0.52f * ac);
     ESCALA_FIM(); }
@@ -7210,7 +7273,9 @@ static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) 
       if (nc >= sizeof cod) nc = sizeof cod - 1;
       memcpy(cod, linhaEp, nc); cod[nc] = 0;
       { TxtLinha l1 = txt_linha(TXT_G30B, cod, 243, 242, 239, 255);
-        TxtLinha l2 = sep ? txt_linha_corta(TXT_G30M, sep + 1, 243, 242, 239, 153, cw * 0.6f - l1.w)
+        // Episode name at 90% white (official: titleMedium, White 0.9): at
+        // 60% it sank into bright frames (desert, snow, daylight).
+        TxtLinha l2 = sep ? txt_linha_corta(TXT_G30M, sep + 1, 243, 242, 239, 230, cw * 0.6f - l1.w)
                           : (TxtLinha){ 0 };
         yBase -= (float)l1.h;
         txt_desenhar_alpha(l1, cx, yBase, ac);
@@ -7233,7 +7298,7 @@ static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) 
           gfx_cor((GfxRect){ x + 10.0f, yBase + h * 0.5f - 2.0f, 4.0f, 4.0f }, 0.5f, 0.953f, 0.949f, 0.937f, 0.40f * ac);
           x += 24.0f;
         }
-        { TxtLinha l = txt_linha(TXT_CAPTION2, q, 243, 242, 239, 168);
+        { TxtLinha l = txt_linha(TXT_CAPTION2, q, 243, 242, 239, 214);
           if (x + l.w > cx + cw * 0.6f) break;
           txt_desenhar_alpha(l, x, yBase, ac); x += l.w; }
         prim = 0;
@@ -7260,6 +7325,21 @@ static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) 
     } }
   // Depois do titulo: a miniatura fica POR CIMA dele enquanto a pessoa procura.
   seekrMiniatura(bx, bw, frac, yBarra, a);
+  // TIME BUBBLE over the dot while the bar has focus: the eye is on the dot,
+  // the time was only in the far corner. Not when the Seekr island is up
+  // (it already carries the frame's time) nor on a live channel.
+  if (barraFoco && !ehCanal() && duracaoSeg > 0.0f &&
+      !(ajustes_seekr_habilitado() && seekr_tem_chave() && (scrubbing || posVisSolto))) {
+    char tb[24];
+    plrui_tempo(tb, sizeof tb, posVisSolto ? posVis : posSeg);
+    { TxtLinha l = txt_linha(TXT_G21B, tb, 243, 242, 239, 255);
+      float pw = (float)l.w + 32.0f, ph = 44.0f;
+      float px = bx + bw * frac - pw * 0.5f, py = yBarra - 22.0f - ph;
+      if (px < bx) px = bx;
+      if (px + pw > bx + bw) px = bx + bw - pw;
+      plrui_material((GfxRect){ px, py, pw, ph }, ph * 0.5f, 0, a);
+      txt_desenhar_alpha(l, px + 16.0f, py + (ph - (float)l.h) * 0.5f, a); }
+  }
 
   // --- fileira de BOTOES ---------------------------------------------------
   // Discos de 68 no material da ilha; o focado vira PILULA cheia no acento com
@@ -7325,8 +7405,7 @@ static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) 
   // --- tempo -----------------------------------------------------------------
   // Com o OSD inteiro: "1:12:40 / 2:37:00" na linha dos botoes, o decorrido
   // claro (24/600 a 92%) e "/ total" apagado. Na busca so com a barra: o
-  // decorrido a esquerda e, a direita, o que falta ("-1:16:40") — ou o total,
-  // com o Seekr, cuja ilha ja diz o que falta.
+  // mesmo texto, no mesmo lado (direita), logo abaixo do trilho.
   {
     char t1[24], t2[32], d[24];
     if (ehCanal()) {
@@ -7348,17 +7427,18 @@ static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) 
 #endif
       }
       if (cheio < 0.99f) {
-        char r[32];
-        TxtLinha l1 = txt_linha(TXT_ILHA_NOME, t1, 243, 242, 239, 235), l2;
-        if (ajustes_seekr_ligado()) snprintf(r, sizeof r, "%s", d);
-        else { char f[24]; plrui_tempo(f, sizeof f, duracaoSeg - posSeg); snprintf(r, sizeof r, "\xe2\x88\x92%s", f); }
-        l2 = txt_linha(TXT_ILHA_NOME, r, 243, 242, 239, 128);
-        txt_desenhar_alpha(l1, cx, yBarra + 32.0f, a * (1.0f - cheio));
+        // Seek with only the bar: the SAME "1:20:21 / 2:37:00" at the right
+        // as the full OSD (official SeekOverlay), not elapsed left / remaining
+        // right — the time no longer jumps sides when the rest comes back.
+        TxtLinha l2 = txt_linha(TXT_ILHA_NOME, t2, 243, 242, 239, 128);
+        TxtLinha l1 = txt_linha(TXT_ILHA_NOME, t1, 243, 242, 239, 235);
+        float xr = cx + cw - l2.w, y = yBarra + 32.0f;
+        txt_desenhar_alpha(l2, xr, y, a * (1.0f - cheio));
+        txt_desenhar_alpha(l1, xr - 8.0f - l1.w, y, a * (1.0f - cheio));
 #ifdef NV_TPK
         if (vooAtivo && !scrubbing)
-          plrui_anel(cx + l1.w + 26.0f, yBarra + 32.0f + l1.h * 0.5f, 24.0f, 0, agora, a * (1.0f - cheio));
+          plrui_anel(xr - 8.0f - l1.w - 24.0f, y + l1.h * 0.5f, 24.0f, 0, agora, a * (1.0f - cheio));
 #endif
-        txt_desenhar_alpha(l2, cx + cw - l2.w, yBarra + 32.0f, a * (1.0f - cheio));
       }
     }
   }

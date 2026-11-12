@@ -52,6 +52,8 @@ typedef struct {
      col_extra_definir: e a marca que permite reinjeta-la depois de cada
      reconstrucao sem duplicar. */
   int extra;
+  /* Collection.pinToTop da conta: o Nuvio poe a colecao acima de toda fileira ordenada. */
+  int fixa;
   int frames, hideTitle, nSources;
   /* FORMA DO CARTAO da pasta (COL_FORMA_*): o `tileShape` que o editor de
      colecoes do app web grava por pasta. Ver col_forma_texto. */

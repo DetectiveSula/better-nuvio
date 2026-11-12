@@ -17,15 +17,20 @@ static void tecla(SDL_Keycode k) {
   perfil_evento(&e);
 }
 
-static void abrir_com_dados(int nDias, int nDestaques) {
+// The 30-day dashboard (perfil_painel.inc): focus opens on TODAY in the chart,
+// so the left edge is day 0, reached by walking back through the days.
+static void abrir_com_dados(int nTopo) {
   PerfilDados d;
   memset(&d, 0, sizeof d);
   snprintf(d.nome, sizeof d.nome, "Test");
-  d.plays = 5; d.nDias = nDias; d.nDestaques = nDestaques;
-  for (int i = 0; i < nDestaques; i++) snprintf(d.destaques[i].titulo, sizeof d.destaques[i].titulo, "T%d", i);
+  d.minutos = 90; d.nDias = 30; d.cobertura = PF_COB_NUVIO;
+  d.nObras = nTopo; d.nTopo = nTopo;
+  for (int i = 0; i < nTopo; i++) { snprintf(d.obras[i].titulo, sizeof d.obras[i].titulo, "T%d", i); d.topo[i] = i; }
+  perfil_iniciar();
   perfil_abrir();                         // opens first, as the router does; data arrives after
   perfil_definir_dados(&d);
 }
+static void ate_dia0(void) { for (int i = 0; i < PERFIL_DIAS - 1; i++) tecla(SDLK_LEFT); }
 
 // Friends come from socialvis (the same feed the Friends card reads).
 static void com_amigos(int n) {
@@ -46,34 +51,39 @@ int main(void) {
   dados_iniciar("deploy/app/art");
   ajustes_dir(dados_dir());
 
-  abrir_com_dados(30, 3);                 // calendar column, first day
-  tecla(SDLK_LEFT);
+  abrir_com_dados(3);                     // chart, focus on today
+  assert(secao == 0 && dia == PERFIL_DIAS - 1);
+  ate_dia0();                             // walking back stays inside the page
+  assert(!perfil_quer_sair() && dia == 0);
+  tecla(SDLK_LEFT);                       // day 0: the edge
   assert(perfil_quer_sair());             // the router opens the bar
   assert(perfil_aberto());                // ...and the page must stay alive under it
 
-  abrir_com_dados(0, 3);                  // no calendar: the cards column is the edge
-  assert(secao == 1);
+  abrir_com_dados(3);                     // posters row: the first poster is the edge
+  tecla(SDLK_DOWN);
+  assert(secao == 1 && item == 0);
+  tecla(SDLK_RIGHT); tecla(SDLK_LEFT);
+  assert(!perfil_quer_sair() && item == 0);
   tecla(SDLK_LEFT);
   assert(perfil_quer_sair());
   assert(perfil_aberto());
 
-  com_amigos(2);                          // friends-only: no days, no cards, 2 friends
-  abrir_com_dados(0, 0);
-  assert(secao == 2 && rostosCabem() == 2);
-  tecla(SDLK_RIGHT);                      // second face
-  tecla(SDLK_LEFT);                       // back to the first face: still inside
-  assert(!perfil_quer_sair() && amigo == 0);
-  tecla(SDLK_LEFT);                       // first face, nothing to the left: the edge
-  assert(perfil_quer_sair());
-  assert(perfil_aberto());
-
-  com_amigos(0);                          // nothing at all: 0 days, 0 cards, 0 friends
-  abrir_com_dados(0, 0);
+  com_amigos(2);                          // the Friends pill (UP from the chart)
+  abrir_com_dados(0);
+  assert(rostosCabem() == 2);
+  tecla(SDLK_UP);
+  assert(secao == 2);
   tecla(SDLK_LEFT);
   assert(perfil_quer_sair());
   assert(perfil_aberto());
 
-  abrir_com_dados(30, 3);                 // Back is still the way out to Home
+  com_amigos(0);                          // nothing watched, no friends
+  abrir_com_dados(0);
+  ate_dia0(); tecla(SDLK_LEFT);
+  assert(perfil_quer_sair());
+  assert(perfil_aberto());
+
+  abrir_com_dados(3);                     // Back is still the way out to Home
   tecla(SDLK_AC_BACK);
   assert(perfil_quer_sair());
   assert(!perfil_aberto());

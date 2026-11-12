@@ -607,6 +607,10 @@ int  gfx_efeitos_leves(void);
 void gfx_definir_efeitos_minimos(int minimos);
 int  gfx_efeitos_minimos(void);
 
+#include "card_depth_policy.h"
+extern int gfx_card_superficie_atual;
+// Scope one draw; never leak the surface to the next card or another scene.
+#define gfx_card_para(surface, ...) do { int nv_card_previous=gfx_card_superficie_atual; gfx_card_superficie_atual=(surface); gfx_rect(__VA_ARGS__); gfx_card_superficie_atual=nv_card_previous; } while(0)
 void gfx_rect(GfxRect r, GLuint tex, GfxModo modo, float foco,
               float parx, float pary, float raio,
               float cr, float cg, float cb, float ca);
@@ -663,7 +667,7 @@ void gfx_chrome_dens(float out[3]);
 void gfx_vidro_material(GfxRect r, float raio, float dens, float a);
 // 1 while drawing a glass LAYER above the screen (sidebar): earlier glasses it
 // covers no longer force it flat (set/cleared by the caller around the draw).
-extern int gfx_vidro_camada;
+extern int gfx_vidro_camada; // 0 page, 1 overlay, 2 no blur, 3 reserved background-only overlay
 // O mesmo com "Interface de vidro" desligada: a cor lisa (sr,sg,sb) a `sa`.
 void gfx_vidro_ou_solido(GfxRect r, float raio, float dens, float a,
                          float sr, float sg, float sb, float sa);
@@ -673,6 +677,8 @@ void gfx_vidro_sujar(void);
 // Detail title <-> episodes (#205): this frame's glass backdrop may reuse the
 // capture of the same crossfade step (>= 0); -1 (reset every frame) = exact.
 void gfx_vidro_fundo_passo(int passo);
+// Reserve a background-only overlay in screen-layout coordinates before drawing the page.
+void gfx_vidro_fundo_reservar(GfxRect r);
 // Capturas e passadas de desfoque do quadro corrente (zeradas em gfx_novo_quadro).
 extern int gfx_vidro_capturas, gfx_vidro_passadas;
 // Blur writes and framebuffer copy area, in drawable screens per frame.
@@ -756,6 +762,11 @@ void gfx_anel(GfxRect r, float raio, float esp,
 // volta, 0 = topo) por `frac` voltas no sentido horario. Um quad (GFX_ANEL).
 void gfx_arco(GfxRect r, float esp, float ini, float frac,
               float cr, float cg, float cb, float ca);
+// Setor de anel centrado em (cx, cy): entre os raios r0 e r1 (px), de `ini`
+// por `frac` voltas (0 = topo, horario). Um gfx_arco com o quad cortado na
+// caixa do setor (setor.h): e a fatia do relogio de 24 h do Perfil.
+void gfx_setor(float cx, float cy, float r0, float r1, float ini, float frac,
+               float cr, float cg, float cb, float ca);
 // Painel opaco grande de cor com canto arredondado: clear tesourado no miolo,
 // faixa de borda pelo shader (mesmo pixel de gfx_cor; bem mais barato na GPU).
 void gfx_cor_painel(GfxRect r, float raio, float cr, float cg, float cb, float ca);

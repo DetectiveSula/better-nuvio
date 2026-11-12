@@ -22,7 +22,7 @@
 #define PS_FUNDO_LUZ       3
 #define PS_FUNDO_PROJETOR  4
 
-#define PSEST_PAREDE_MAX 12
+#define PSEST_PAREDE_MAX 36   // four distinct posters per moving column
 
 typedef struct {
   float luz[6];        // cor do perfil em foco (rgb) e do vizinho (rgb)

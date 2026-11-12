@@ -412,6 +412,10 @@ float badge_desenhar(float x, float y, const char *texto, BadgeEstilo estilo, fl
     case BADGE_SOBRE_REALCE: {
       float t = ajustes_acento_tinta(NULL, NULL, NULL);
       fr = fg = fb = t; fa = 0.12f; c = ajustes_tinta_foco2(); break; }
+    case BADGE_NOVO_EPISODIO:
+      fr = 0x1D / 255.0f; fg = 0x4E / 255.0f; fb = 0xD8 / 255.0f; fa = 1.0f; c = 255; break;
+    case BADGE_NOVA_TEMPORADA:
+      fr = 0xB4 / 255.0f; fg = 0x53 / 255.0f; fb = 0x09 / 255.0f; fa = 1.0f; c = 255; break;
     default: break;
   }
   l = txt_linha(TXT_CAPTION2, texto, c, c, c, 255);

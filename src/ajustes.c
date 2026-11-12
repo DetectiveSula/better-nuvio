@@ -3,6 +3,8 @@
 // cancela. A lista mostra valor e chevron, a ficha explica alcance e padrao.
 // IDs, chaves persistidas e indices de valores continuam os legados.
 #include "ajustes.h"
+#include "settings_expansion_policy.h"
+#include "postplay_preview.h"
 #include "legfontes.h"
 #include "logrede.h"
 #include "jsw.h"
@@ -42,6 +44,7 @@
 #include "listas.h"
 #include "idioma.h"
 #include "resolver_policy.h"
+#include "catordem.h"
 // Settings are English without changing the stored app or metadata language.
 #define i18n(s) idioma_ingles(s)
 #include "idiomacod.h"
@@ -63,6 +66,9 @@
 #include "ltv.h"
 #include "guia.h"
 #include "perfilinfantil.h"
+#include "familia.h"
+// Stage H: fallback for subset-linked tests that leave familia*.c out; the app links the real one.
+__attribute__((weak)) void familia_ajuste_mudou(void) {}
 #include "traktauth.h"
 #include "trakt.h"
 #include "simklauth.h"
@@ -115,6 +121,7 @@
 #include "abertura.h"
 #include "apoio.h"
 #include "telefoneui.h"
+#include "menu.h"
 #include "dts/dts_hls_tpk.h"
 #ifdef NV_ANDROID
 #include "android.h"
@@ -142,7 +149,15 @@ static int ajTelaCheia(void) {
 #endif
 }
 // Mobile "Lista": o cabecalho desce abaixo do selo e do relogio, como nas outras telas.
-static float ajPaginaTopo(void) { return ajTelaCheia() && !ajustes_layout_lista() ? 0.0f : 112.0f / ajustes_tamanho_ajustes(); }
+static float ajPaginaTopo(void) {
+  float topo = 112.0f, px, py, pw, ph;
+  if (ajTelaCheia() && !ajustes_layout_lista()) return 0.0f;
+  // Portrait phone: the menu's full-width header bar (menu_pilula_rect, real
+  // px) is taller than the TV reservation; start the page below it, as Search
+  // and Profile do. TV keeps 112.
+  if (ajRetrato() && menu_pilula_rect(&px, &py, &pw, &ph)) topo = fmaxf(topo, py + ph + 20.0f);
+  return topo / ajustes_tamanho_ajustes();
+}
 static float ajPaginaMargem(void) { return ajTelaCheia() ? 0.0f : (ajRetrato() ? 48.0f : 40.0f) / ajustes_tamanho_ajustes(); }
 static GfxRect ajTelaR(void) { return (GfxRect){0, 0, NV_VTELA_W, NV_VTELA_H}; }
 #define AJ_ESCALA_FIM() gfx_escala_sair(ajEscalaAnt_)
@@ -732,6 +747,16 @@ typedef enum {
   AJ_CW_DIAS, // Android Trakt days cap: 0 All, otherwise 7..365; per-profile.
   AJ_RESOLVE_LINKS, AJ_RESOLVE_PROVIDER, AJ_RESOLVE_PREPARE, AJ_RESOLVE_LIMIT,
   AJ_TB_CACHED_ADD, // append-only, explicit cached-account-item opt-in
+  // Stage H Family Watching (familia.h): the Home row with other profiles'
+  // latest activity, and this profile's consent to appear in it. Both per
+  // profile, Off by default, portable Better keys (ajustes_better_map.inc).
+  AJ_FAMILIA, AJ_FAMILIA_PARTILHAR,
+  // Local settings expansion; original numeric bindings remain unchanged.
+  AJ_MENU_OCULTAR_PILULA, AJ_DET_TRAILER_ESPERA,
+  AJ_POSPLAY_RECOM, AJ_POSPLAY_PERCENT, AJ_AINDA_EPISODIOS, AJ_LEG_AUTO_COMPLETA,
+  AJ_FILTRO_MIN_GB, AJ_FILTRO_MAX_RESULT, AJ_FILTRO_POR_RES, AJ_FILTRO_POR_QUAL, AJ_FILTRO_SORT, AJ_FILTRO_REQUIRED_GROUPS,
+  AJ_POSPLAY_TRAILER, AJ_POSPLAY_TRAILER_ESPERA,
+  AJ_TMDB_CHAVE_LOCAL, // append-only credential action; never a sync binding
   AJ_N
 } OpcaoId;
 _Static_assert(DEBRID_RD == 0 && DEBRID_TB == 1 && DEBRID_PM == 2 && DEBRID_AD == 3,
@@ -929,7 +954,9 @@ static const char *V_POSTER_PROV[] = { "Desligado", "SpatialPosters", "RPDB", "M
 // O app oficial tem `homeLayout` (layoutPreferences.js) com "modern", "grid" e
 // "classic", que a conta guarda como selected_layout = MODERN | GRID | CLASSIC.
 // Moderna = modern e Padrao = classic (destaque contido, fileiras num fundo
-// liso), mas a escolha e LOCAL: a Dinamica nao tem par na conta, e gravar
+// liso). Sync between Better Nuvio devices uses better_nuvio/homeLayoutLocal;
+// the official tv document is never used: Dynamic has no official equivalent.
+// The official schema must not receive this Native enum; gravar
 // "DINAMICA" num enum que o app web valida faria os outros aparelhos cairem no
 // padrao. Ver somenteDesteAparelho.
 //
@@ -1367,9 +1394,10 @@ static const char *JF_ALFA_SENHA =
   "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-@!#$%&*+=?/ ";
 
 static const char *V_MANTER_PRAZO[] = { "2 min", "5 min", "10 min", "30 min", "Sem limite" };
-static const char *V_AMIGOS_ESTILO[] = { "Feed de cartões", "Ao vivo em destaque", "Histórias com cartaz", "Faixa de presença", "Cartaz primeiro", "Rostos clássicos" };
+static const char *V_AMIGOS_ESTILO[] = { "Card feed", "Large landscape", "Portrait stories", "Presence strip", "Poster first", "Classic square" };
 static const char *V_CONEXOES[] = { "Automático", "Ligado", "Desligado" };
 static const char *V_GUIA_FONTE[] = { "Todas as fontes", "Xtream", "M3U", "Stalker", "Addons" };
+static const char *V_FILTER_SORT[]={"Original order","Resolution","Quality","Size: smallest first","Size: largest first","Preferred tags"};
 static const Opcao OPCOES[AJ_N] = {
   ESC("Qualidade máxima",           V_QUALIDADE, 4),
   ESC("Dolby Vision",               V_LIGA, 2),
@@ -1877,6 +1905,23 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Prepare links", V_LIGA, 2),
   NUM("Links to prepare", 0, 5, 1, ""),
   ESC("Allow cached TorBox additions", V_LIGA, 2),
+  ESC("Family Watching", V_LIGA, 2),             // familyWatchingLocal
+  ESC("Share my watching activity", V_LIGA, 2),  // familyShareActivityLocal
+  ESC("Hide modern sidebar pill", V_LIGA, 2),
+  NUM("Detail trailer delay", 0, 300, 1, " s"),
+  ESC("Post-play recommendations", V_LIGA, 2),
+  NUM("Show recommendations at", 0, 100, 1, "%"),
+  NUM("Are you still watching?", 0, 20, 1, " episodes"),
+  ESC("Automatically load full subtitles", V_LIGA, 2),
+  NUM("Minimum source size",0,1000,1," GB"),
+  NUM("Maximum results",0,10000,1,""),
+  NUM("Per-resolution limit",0,10000,1,""),
+  NUM("Per-quality limit",0,10000,1,""),
+  ESC("Sort results",V_FILTER_SORT,6),
+  ACAO("Required release groups"),
+  ESC("Post-play trailer preview", V_LIGA, 2),
+  NUM("Post-play trailer delay",0,300,1," s"),
+  ACAO("TMDB API key on this device"),
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -2214,6 +2259,13 @@ static const char *CHAVE[] = {
   "resolvePlayableLinksLocal", "preferredResolverProviderLocal",
   "-preparePlayableLinks", "playableLinkPreparationLimitLocal",
   "torboxCachedAddLocal",
+  "familyWatchingLocal", "familyShareActivityLocal",
+  "hideModernSidebarPillLocal", "detailTrailerDelayTenthsLocal",
+  "postPlayRecommendationsLocal", "postPlayThresholdPercentLocal",
+  "stillWatchingEpisodeCountLocal", "automaticFullSubtitlesLocal",
+  "-filterMinGB", "-filterMaxResults", "-filterResolutionLimit", "-filterQualityLimit", "-filterSort", "-filterRequiredGroups",
+  "postPlayTrailerLocal", "postPlayTrailerDelayTenthsLocal",
+  "-tmdbApiKeyDevice",
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -2343,6 +2395,7 @@ static void pstTesteRecolher(void);
 static const char *pstTexto(int op);
 static void uxNotificar(const char *s);
 static int gravar(void);
+static int ajBetterExplicitPerfil;
 static int dePerfil(int i);
 static int perfilGravarVetor(int perfil, const int *v);
 static int perfilLerVetor(int perfil, int *v, char *tem);
@@ -2500,9 +2553,14 @@ static int faRetornarFolha;
 static int ajFalhaBackend(int op) {
   return op == AJ_FALHA_PROVEDORES || op == AJ_FALHA_ADDONS ||
          (op >= AJ_FALHA_RD_LIMITE && op <= AJ_FALHA_AD_LIMITE) || op == AJ_FALHA_ADDON_LIMITE ||
-         op == AJ_FILTRO_TAM_MAX;
+         op == AJ_FILTRO_TAM_MAX || (op>=AJ_FILTRO_MIN_GB&&op<=AJ_FILTRO_SORT);
 }
+static unsigned *ajFilterNumber(FonteFiltroConfig *cfg,int op) {
+  switch(op){case AJ_FILTRO_MIN_GB:return &cfg->minGB;case AJ_FILTRO_MAX_RESULT:return &cfg->maxResultados;case AJ_FILTRO_POR_RES:return &cfg->porResolucao;case AJ_FILTRO_POR_QUAL:return &cfg->porQualidade;case AJ_FILTRO_SORT:return &cfg->ordenar;default:return &cfg->maxGB;}
+}
+static int ajFilterNumberOp(int op){return op==AJ_FILTRO_TAM_MAX||(op>=AJ_FILTRO_MIN_GB&&op<=AJ_FILTRO_SORT);}
 static int ajFalhaValor(int op) {
+  if(ajFilterNumberOp(op)){FonteFiltroConfig cfg;fontefalha_filtro(&cfg);return (int)*ajFilterNumber(&cfg,op);}
   if (op == AJ_FILTRO_TAM_MAX) { FonteFiltroConfig cfg; fontefalha_filtro(&cfg); return (int)cfg.maxGB; }
   if (op == AJ_FALHA_PROVEDORES) return fontefalha_provedores() ? 0 : 1;
   if (op == AJ_FALHA_ADDONS) return fontefalha_addons() ? 0 : 1;
@@ -2516,8 +2574,8 @@ static void ajFalhaEspelhar(void) {
 }
 static int ajFalhaDefinir(int op, int novo) {
   int ok;
-  if (op == AJ_FILTRO_TAM_MAX) {
-    FonteFiltroConfig cfg; fontefalha_filtro(&cfg); cfg.maxGB = (unsigned)novo;
+  if (ajFilterNumberOp(op)) {
+    FonteFiltroConfig cfg; fontefalha_filtro(&cfg); *ajFilterNumber(&cfg,op) = (unsigned)novo;
     ok = fontefalha_filtro_definir(&cfg);
   }
   else if (op == AJ_FALHA_PROVEDORES) ok = fontefalha_definir_provedores(novo == 0);
@@ -2525,7 +2583,7 @@ static int ajFalhaDefinir(int op, int novo) {
   else if (op >= AJ_FALHA_RD_LIMITE && op <= AJ_FALHA_AD_LIMITE)
     ok = fontefalha_provedor_definir_limite(op - AJ_FALHA_RD_LIMITE, novo);
   else ok = faAddonEditar[0] && fontefalha_addon_definir_limite(faAddonEditar, novo);
-  if (ok) { ajFalhaEspelhar(); sync_proteger_ajustes_locais(); }
+  if (ok) { ajFalhaEspelhar(); if(ajFilterNumberOp(op))stream_filtro_atualizar(); sync_proteger_ajustes_locais(); }
   return ok;
 }
 // These rows are views of player.txt, not independent Settings values.
@@ -3422,6 +3480,16 @@ int ajustes_selo_visto(void) { return valor[AJ_SELO_VISTO] != 1; }
 int ajustes_selo_visto_modo(void) { return valor[AJ_SELO_VISTO] == 1 ? 0 : valor[AJ_SELO_VISTO] == 2 ? 2 : 1; }
 int ajustes_ocultar_filmes_vistos(void) { return lig(AJ_OCULTAR_FILMES_VISTOS); }
 int ajustes_bib_home(void) { return lig(AJ_BIB_HOME); }
+int ajustes_posplay_trailer(void) { return lig(AJ_POSPLAY_TRAILER); }
+Uint32 ajustes_posplay_trailer_espera_ms(void) { return nv_settings_delay_ms(valor[AJ_POSPLAY_TRAILER_ESPERA],25); }
+int ajustes_menu_ocultar_pilula(void) { return lig(AJ_MENU_OCULTAR_PILULA); }
+Uint32 ajustes_trailer_detalhe_espera_ms(void) { return nv_settings_delay_ms(valor[AJ_DET_TRAILER_ESPERA],25); }
+int ajustes_posplay_recomendacoes(void) { return lig(AJ_POSPLAY_RECOM); }
+int ajustes_posplay_percent(void) { int v=valor[AJ_POSPLAY_PERCENT];return v>=0&&v<=100?v:0; }
+int ajustes_ainda_episodios(void) { int v=valor[AJ_AINDA_EPISODIOS];return v>=0&&v<=20?v:0; }
+int ajustes_legenda_automatica_completa(void) { return lig(AJ_LEG_AUTO_COMPLETA); }
+int ajustes_familia(void) { return lig(AJ_FAMILIA); }
+int ajustes_familia_partilhar(void) { return lig(AJ_FAMILIA_PARTILHAR); }
 void ajustes_definir_ocultar_filmes_vistos(int ligado) {
   valor[AJ_OCULTAR_FILMES_VISTOS] = ligado ? 0 : 1;
   AJ_COM_ORIGEM(AJLOG_CENTRAL, gravar());
@@ -3882,10 +3950,14 @@ float ajustes_expandir_poster_atraso(void) { return (float)valor[AJ_EXPANDIR_ATR
 int   ajustes_navegacao_horizontal_rapida(void) { return lig(AJ_NAV_RAPIDA); }
 int   ajustes_borda_foco(void) { return lig(AJ_BORDA_FOCO); }
 
+unsigned ajustes_profundidade_superficies(void) {
+  const int ops[]={AJ_PROF_POSTERS,AJ_PROF_CW,AJ_PROF_EPS,AJ_PROF_ELENCO,AJ_PROF_TRAILERS};unsigned mask=0;
+  for(int i=0;i<5;i++)if(lig(ops[i]))mask|=1u<<i;return mask;
+}
 int   ajustes_profundidade(void)      { return lig(AJ_PROF); }
-float ajustes_profundidade_borda(void)     { return valor[AJ_PROF_BORDA] / 100.0f; }
-float ajustes_profundidade_brilho(void)    { return valor[AJ_PROF_BRILHO] / 100.0f; }
-float ajustes_profundidade_cobertura(void) { return valor[AJ_PROF_COBERTURA] / 100.0f; }
+float ajustes_profundidade_borda(void)     { return nv_card_depth_strength(valor[AJ_PROF_BORDA]); }
+float ajustes_profundidade_brilho(void)    { return nv_card_depth_strength(valor[AJ_PROF_BRILHO]); }
+float ajustes_profundidade_cobertura(void) { return nv_card_depth_strength(valor[AJ_PROF_COBERTURA]); }
 
 int   ajustes_largura_poster_dp(void) { return valor[AJ_LARGURA_DP]; }
 int   ajustes_raio_poster_dp(void)    { return valor[AJ_RAIO_DP]; }
@@ -3907,6 +3979,9 @@ float ajustes_conteudo_x(void) {
 // interface: a borda ja esta em px da tela REAL.
 float ajustes_rail_largura_fixa(void) {
   float borda;
+#ifdef NV_TOUCH_UI
+  if (layout_modo_mobile() && NV_LAYOUT_REAL_H > NV_LAYOUT_REAL_W) return 0.0f;
+#endif
   // Layout Dinamica: a barra e a pilula da Apple TV (menu.c), sem rail fixa.
   if (ajustes_home_layout() == HOME_LAYOUT_DINAMICA) return 0.0f;
   if (ajustes_rail_recolhida() || ajustes_menu_topo()) return 0.0f;
@@ -4384,6 +4459,35 @@ static int debGravarArquivo(const char *nome, const char *texto) {
   if (ok) dados_marcar_sujo(0);
   return ok;
 }
+static char tmdbLocal[33];
+static int tmdbLocalValida(const char *key) {
+  if(!key || !key[0]) return 1;
+  if(strlen(key)!=32) return 0;
+  return strspn(key,"0123456789abcdefABCDEF")==32;
+}
+static void tmdbLocalCarregar(void) {
+  char name[128],*text=NULL;
+  memset(tmdbLocal,0,sizeof tmdbLocal);
+  if(debNomePerfil(name,sizeof name,"tmdb-key")) text=dados_ler(name);
+  if(text) {
+    if(tmdbLocalValida(text)) snprintf(tmdbLocal,sizeof tmdbLocal,"%s",text);
+    memset(text,0,strlen(text));free(text);
+  }
+  desc_tmdb_local_definir(tmdbLocal);
+}
+static int tmdbLocalDefinir(const char *text) {
+  char name[128];
+  if(!tmdbLocalValida(text)) return 0;
+  if(!debNomePerfil(name,sizeof name,"tmdb-key")) return 0;
+  // Empty is an explicit local removal; the package/account fallback survives.
+  if(!debGravarArquivo(name,text ? text : "")) return 0;
+  tmdbLocalCarregar();
+  // Do not reuse a completed empty response fetched before a key existed.
+  // Invalid-title path clears only the request/results. A full session reset
+  // would also drop the current account's MDBList credential override.
+  extras_pedir(NULL,0,0);
+  return 1;
+}
 static int debGravarEm(const char *nome, const DebridConta *conta) {
   char out[4 * 256];
   size_t u = 0;
@@ -4435,6 +4539,7 @@ void ajustes_provedores_abrir_sessao(void) {
     if (t) { if (!strcmp(t, "1\n")) valor[AJ_PROVEDORES_ESCOPO] = 1; free(t); }
   }
   debCarregar();
+  tmdbLocalCarregar();
   if (ajustes_provedores_arquivo(nome, sizeof nome, "fontefalha")) fontefalha_arquivo(nome);
   ajFalhaEspelhar();
   ajSombra[AJ_PROVEDORES_ESCOPO] = valor[AJ_PROVEDORES_ESCOPO];
@@ -4798,6 +4903,7 @@ static const char *URL_ALFA =
   "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:/.-_?=&%#+~@!,;|";
 
 void ajustes_dir(const char *dir) {
+  ajustes_better_loading();
   FILE *f;
   char caminho[600], linha[96];
   int viuLingua[3] = { 0, 0, 0 };
@@ -4848,6 +4954,7 @@ void ajustes_dir(const char *dir) {
     ajEpgMemoriaAplicar();
     legenda2_atualizar_offset_manual(ajustes_leg2_atraso());
     ajSombraSync();
+    ajustes_better_boot();
     return;
   }
   { int viuIdioma = 0, viuAuto = 0, idiomaGravado = IDIOMA_EN, autoGravado = 0;
@@ -5227,6 +5334,7 @@ void ajustes_dir(const char *dir) {
   legenda2_atualizar_offset_manual(ajustes_leg2_atraso());
   ppReconciliar();
   ajSombraSync();   // o que veio do disco nao e mudanca de ninguem
+  ajustes_better_boot();
 }
 
 static int gravar(void) {
@@ -5282,6 +5390,7 @@ static int gravar(void) {
     memcpy(antes, valorPadrao, sizeof antes);
     perfilLerVetor(edPerfil, antes, tem);
     for (k = 0; k < AJ_N; k++) if (dePerfil(k) && ajustes_escopo(k) == 2 && antes[k] != valor[k]) mudouConta = 1;
+    ajustes_compartilhados_edicao(edPerfil, antes, valor);
     perfilGravarVetor(edPerfil, valor);
     if (mudouConta) sync_marcar_ajustes_pendentes_perfil(edPerfil);
   }
@@ -5292,6 +5401,8 @@ static int gravar(void) {
   // Provedor de poster ou idioma da interface mudaram? So reconfigura se a
   // configuracao final for outra (reconfigurar zera a memoria de falhas).
   pstAplicar();
+  ajustes_compartilhados_observar();
+  ajustes_better_observar();
   return 1;
 }
 
@@ -6007,6 +6118,8 @@ int ajustes_aplicar_blob(const char *json) {
 // exigiria adivinhar a feature e o `type`, e um blob com forma errada e pior
 // que uma chave a menos.
 static int somenteDesteAparelho(int op) {
+  /* New controls have no approved remote owner or account schema mapping. */
+  if(op>=AJ_MENU_OCULTAR_PILULA && op<=AJ_LEG_AUTO_COMPLETA)return 1;
   if(op>=AJ_RESOLVE_LINKS && op<=AJ_RESOLVE_LIMIT)return 1;
   if (ajLegendaPrincipal(op) || ajLegendaSecundaria(op)) return 1;
   if (op >= AJ_FALHA_PROVEDORES && op < AJ_N) return 1;
@@ -6167,6 +6280,7 @@ static int somenteDesteAparelho(int op) {
     case AJ_SELO_VISTO:     /* o web nao tem a escolha */
     case AJ_OCULTAR_FILMES_VISTOS: /* por perfil desta TV; fora do blob da conta */
     case AJ_BIB_HOME:       /* #507: idem */
+    case AJ_FAMILIA: case AJ_FAMILIA_PARTILHAR: /* Stage H: per profile; portable via the Better map only */
     case AJ_REACAO_CREDITOS: /* o web nao tem a pergunta */
     case AJ_PAUSA_COMENTARIOS: /* o web nao tem os comentarios do Trakt no painel de pausa */
     case AJ_PAUSA_NOTAS: /* nem as notas */
@@ -6264,6 +6378,10 @@ static void nomePerfil(char *dst, size_t tam, int perfil) {
 // Grava o vetor `v` (um valor por opcao) como copia do perfil: so chaves
 // dePerfil, nunca um arquivo pela metade. 1 se gravou.
 static int perfilGravarVetor(int perfil, const int *v) {
+  int betterBefore[AJ_N];char betterPresent[AJ_N];
+  memcpy(betterBefore,valorPadrao,sizeof betterBefore);
+  perfilLerVetor(perfil,betterBefore,betterPresent);
+  ajustes_better_perfil_antes(perfil,betterBefore);
   char nome[32], buf[AJ_N * 56];
   size_t p = 0;
   int i;
@@ -6282,7 +6400,9 @@ static int perfilGravarVetor(int perfil, const int *v) {
     p += (size_t)k;
   }
   nomePerfil(nome, sizeof nome, perfil);
-  return dados_gravar(nome, buf);
+  int betterOk=dados_gravar(nome, buf);
+  if(betterOk)ajustes_better_perfil_gravado(perfil,betterBefore,v);
+  return betterOk;
 }
 
 // Le a copia do perfil: tem[i] = 1 para cada chave dePerfil presente e v[i] o
@@ -6366,7 +6486,7 @@ int ajustes_perfil_restaurar(int perfil) {
 // prefixo e pelo sufixo "-pN.txt". Os compartilhados ("debrid.txt") nao tem o
 // hifen e ficam.
 static void provedoresPrivadosEsquecer(void) {
-  static const char *const base[] = { "debrid-", "provider-scope-", "fontefalha-", "fontesmortas-" };
+  static const char *const base[] = { "debrid-", "provider-scope-", "fontefalha-", "fontesmortas-", "tmdb-key-" };
   const char *pasta = dados_dir();
   struct dirent *e;
   DIR *d;
@@ -6488,7 +6608,12 @@ static int levarParaPerfil(const int *src, const char *tem, int destino) {
     if (escopoDe(i) == ESC_PERFIL_CONTA) mudouConta++;
   }
   if (ativo) aplicarVetorAtivo(dst, NULL);
-  else if (!perfilGravarVetor(destino, dst)) return -1;
+  else {
+    ajBetterExplicitPerfil++;
+    int betterOk=perfilGravarVetor(destino,dst);
+    ajBetterExplicitPerfil--;
+    if(!betterOk)return -1;
+  }
   if (mudouConta) sync_marcar_ajustes_pendentes_perfil(destino);
   printf("[ajustes] ajustes levados ao perfil %d: %d mudaram (%d da conta, pendentes)\n", destino, mudou, mudouConta);
   fflush(stdout);
@@ -6512,6 +6637,19 @@ int ajustes_restaurar_padrao_perfil(int perfil) {
 
 int ajustes_edicao_perfil(void) { return edPerfil; }
 
+// Stage H Family Watching: another profile's consent, from its own per-profile
+// copy on this device (ajustes-p<N>.txt, which the Better sync fills when that
+// profile's portable settings are applied). Missing = never consented = 0.
+int ajustes_familia_partilha_perfil(int perfil) {
+  int v[AJ_N]; char tem[AJ_N];
+  if (perfil <= 0) return 0;
+  if (edPerfil == perfil) return valor[AJ_FAMILIA_PARTILHAR] == 0;
+  if (perfil == perfis_ativo()) return (edPerfil ? edSalvo[AJ_FAMILIA_PARTILHAR] : valor[AJ_FAMILIA_PARTILHAR]) == 0;
+  memcpy(v, valorPadrao, sizeof v); memset(tem, 0, sizeof tem);
+  if (!perfilLerVetor(perfil, v, tem) || !tem[AJ_FAMILIA_PARTILHAR]) return 0;
+  return v[AJ_FAMILIA_PARTILHAR] == 0;
+}
+
 int ajustes_edicao_iniciar(int perfil) {
   int v[AJ_N], i;
   char tem[AJ_N];
@@ -6520,10 +6658,12 @@ int ajustes_edicao_iniciar(int perfil) {
   memcpy(edSalvo, valor, sizeof edSalvo);
   memcpy(v, valor, sizeof v);                 // o que o perfil nao tem partiu do que a TV usa
   perfilLerVetor(perfil, v, tem);
+  ajustes_better_editor_begin();
   edPerfil = perfil;
   for (i = 0; i < AJ_N; i++) if (dePerfil(i)) valor[i] = v[i];
   reaplicarEfeitosPerfil();
   printf("[ajustes] editando os ajustes do perfil %d (ativo: %d)\n", perfil, perfis_ativo());
+  ajustes_better_editor_ready();
   fflush(stdout);
   return 1;
 }
@@ -6531,9 +6671,11 @@ int ajustes_edicao_iniciar(int perfil) {
 void ajustes_edicao_encerrar(void) {
   int i, alvo = edPerfil;
   if (!alvo) return;
+  ajustes_better_editor_observar();
   perfilGravarVetor(alvo, valor);
   edPerfil = 0;
   for (i = 0; i < AJ_N; i++) if (dePerfil(i)) valor[i] = edSalvo[i];
+  ajustes_better_editor_end();
   gravar();
   reaplicarEfeitosPerfil();
   printf("[ajustes] edicao do perfil %d encerrada\n", alvo);
@@ -6559,7 +6701,9 @@ void ajustes_padroes_infantis(int perfil) {
   perfilLerVetor(perfil, v, tem);
   for (i = 0; i < AJ_N; i++) if (!tem[i]) v[i] = valor[i];
   for (i = 0; i < (int)(sizeof P / sizeof *P); i++) v[P[i].op] = P[i].v;
+  ajBetterExplicitPerfil++;
   perfilGravarVetor(perfil, v);
+  ajBetterExplicitPerfil--;
 }
 
 // Onde esta o valor de `chave` dentro de [ini,fim): *vi aponta o primeiro
@@ -6755,7 +6899,13 @@ static int foraDestaPlataforma(int op) {
   // Os limites dos provedores sao editados dentro da folha de ordem.
   if (op >= AJ_FALHA_RD_LIMITE && op <= AJ_FALHA_AD_LIMITE) return 1;
   // Only the shared parent appears in the category; these editors are its children.
-  if (op == AJ_FILTRO_TAM_MAX || op == AJ_FILTRO_GRUPOS) return 1;
+  if(op==AJ_POSPLAY_TRAILER || op==AJ_POSPLAY_TRAILER_ESPERA){
+#ifndef NV_ANDROID
+    return 1;
+#endif
+  }
+  if (op == AJ_FILTRO_TAM_MAX || op == AJ_FILTRO_GRUPOS ||
+      (op >= AJ_FILTRO_MIN_GB && op <= AJ_FILTRO_REQUIRED_GROUPS)) return 1;
 #ifndef NV_TOUCH_UI
   if (op == AJ_INTERFACE_MODO) return 1;
 #endif
@@ -6952,6 +7102,11 @@ int ajustes_pediu_relogio(void) { int v = pediuRelogio; pediuRelogio = 0; return
 // guia; nada no disco ou na conta depende do rotulo.
 static const char *rotuloNovo(int op) {
   switch (op) {
+    case AJ_ICONE_APP: return "App Icon & Banner";
+    case AJ_FILTROS_FONTES: return "Filters & Sorting";
+    case AJ_PROF_BORDA: return "Edge glow";
+    case AJ_PROF_BRILHO: return "Top sheen strength";
+    case AJ_PROF_COBERTURA: return "Edge coverage";
     case AJ_FONTE_HDR: return "Dolby Vision e HDR";
     case AJ_ATMOS: return "Preferir som Dolby Atmos";
     case AJ_FONTE_MANUAL: return "Escolher a fonte você mesmo";
@@ -6970,7 +7125,7 @@ static const char *rotuloNovo(int op) {
     case AJ_TMDB_IDIOMA: return "Idioma dos dados do título";
     case AJ_HERO_FUNDO: return "Imagem de fundo do destaque";
     case AJ_GRAD_CLASSICO: return "Realce antigo no cartaz em foco";
-    case AJ_LARGURA_DP: return "Largura do cartaz";
+    case AJ_LARGURA_DP: return "Poster card width";
     case AJ_RAIO_DP: return "Cantos do cartaz";
     case AJ_TMDB_LIGADO: return "Dados do TMDB";
     case AJ_MDB_LIGADO: return "Notas do MDBList";
@@ -7230,6 +7385,7 @@ static const char *textoLeitura(int op) {
   }
   if (op == AJ_FANART_CHAVE) return fanartMascarada();
   if (op == AJ_SEEKR_CHAVE) return seekrMascarada();
+  if (op == AJ_TMDB_CHAVE_LOCAL) return tmdbLocal[0] ? "Configured on this device" : desc_chave_tmdb_reserva()[0] ? "Using account or app key" : "Not configured";
   if (op == AJ_SEEKR_TESTAR) return skTesteTexto();
   if (op == AJ_SELOS_PACOTE_ADD) return spAddTexto();
   if (op == AJ_URL_M3U_ADD || op == AJ_URL_XMLTV_ADD) return urlAddTexto();
@@ -7435,6 +7591,18 @@ static const char *textoLeitura(int op) {
 // ela continua no lugar, apagada e sem setas: a dependencia fica visivel em vez
 // de a linha sumir.
 static int inativa(int op) {
+  if(op==AJ_AINDA_EPISODIOS)return !ajustes_proximo_auto();
+  if(op==AJ_MENU_OCULTAR_PILULA)return ajustes_menu_topo()||(!ajustes_rail_moderna()&&ajustes_home_layout()!=HOME_LAYOUT_DINAMICA);
+  if(op==AJ_POSPLAY_TRAILER)return !postplay_preview_supported();
+  if(op==AJ_POSPLAY_TRAILER_ESPERA)return !postplay_preview_supported()||!ajustes_posplay_trailer();
+  if (op == AJ_ICONE_APP && !apoiador_ativo()) return 1;
+  if (op == AJ_LEG_FORCADA && ajustes_legenda_automatica_completa()) return 1;
+  if (op == AJ_POSPLAY_PERCENT && !ajustes_posplay_recomendacoes()) return 1;
+  if (op == AJ_DET_TRAILER_ESPERA && !ajustes_trailer_auto()) return 1;
+  if(op==AJ_ADDONS_PRINCIPAL && fil_tem_projecao())return 1;
+#ifdef NV_ANDROID
+  if(op==AJ_FIL_LIMITE)return 1;
+#endif
   if(op==AJ_TB_CACHED_ADD)return !ajustes_resolver_ativo()||ajustes_resolver_provedor()!=DEBRID_TB;
   if(op==AJ_RESOLVE_LINKS)return !resolver_politica_mascara();
   if(op>=AJ_RESOLVE_PROVIDER&&op<=AJ_RESOLVE_LIMIT)
@@ -7566,7 +7734,7 @@ static int maisContar(int sec, char *resumo, size_t n) {
     int op = TELA[i].op;
     if (TELA[i].tipo != IT_OPC) continue;
     if ((op == AJ_PERFIL_PESQ || op == AJ_PERFIL_EDITAR) && !recomenda_ativo()) continue;
-    if (op == AJ_ICONE_APP && !apoiador_ativo()) continue;
+    /* Icon entry is visible but remains supporter-gated. */
     if (resumo && u + 4 < n && k < 6) {
       const char *r = i18n(rotuloOpcao(op));
       u += (size_t)snprintf(resumo + u, n - u, "%s%s", k ? ", " : "", r);
@@ -7584,8 +7752,7 @@ static int visivel(int i) {
   if (i >= 0 && i < AJ_N_TELA && TELA[i].tipo == IT_OPC &&
       (TELA[i].op == AJ_CW_CONCLUIDO || TELA[i].op == AJ_CW_MINIMO || TELA[i].op == AJ_CW_PROXIMO)) return 0;
   if (i >= 0 && i < AJ_N_TELA && TELA[i].tipo == IT_OPC && TELA[i].op == AJ_FALHA_ADDON_LIMITE) return 0;
-  if (i >= 0 && i < AJ_N_TELA && TELA[i].tipo == IT_OPC &&
-      TELA[i].op == AJ_ICONE_APP && !apoiador_ativo()) return 0;
+
   if (i < 0 || i >= AJ_N_TELA) return 0;
   if (TELA[i].tipo == IT_ROT) {
     int j;
@@ -7667,6 +7834,12 @@ static void focarOpcao(int op) {
 // separado de proposito: as duas perguntas sao diferentes e juntas viram um
 // paragrafo que ninguem le do sofa.
 static const char *ajudaOpcaoBase(int op) {
+  if(op==AJ_ADDONS_PRINCIPAL && fil_tem_projecao())return "Synced Home rows follow this profile's addon configuration. The device override is preserved for fallback when no valid synced configuration is available.";
+#ifdef NV_ANDROID
+  if(op==AJ_FIL_LIMITE)return "Enabled Home rows load automatically within the platform memory budget. The old local quota is retained for recovery.";
+#endif
+  if(op==AJ_FAMILIA)return "Shows a Home row with what the other profiles on this account watched most recently. Only profiles that share their watching activity appear; PIN-locked and child profiles never do, and the row is hidden on a child profile. Selecting a card opens the title under this profile. Off by default.";
+  if(op==AJ_FAMILIA_PARTILHAR)return "Lets the other profiles on this account see this profile's latest movie or episode in their Family Watching row. Nothing is copied to them. Off by default. Ignored for PIN-locked and child profiles.";
   if(op==AJ_TB_CACHED_ADD)return "Off keeps read-only mode. On can add verified cached torrents to your TorBox account and may start a download if provider cache changes. Requires autoplay and a fresh provider cache check. Failed or timed-out additions require manual confirmation.";
   if(op==AJ_RESOLVE_LINKS)return "Resolve cached playable links automatically. Off by default. Configure TorBox or Premiumize first. Real-Debrid and AllDebrid remain available through an explicit manual override.";
   if(op==AJ_RESOLVE_PROVIDER)return "Choose a configured resolver. An unavailable saved preference falls back to the first eligible provider without changing the saved value.";
@@ -7758,7 +7931,24 @@ static const char *ajudaOpcaoBase(int op) {
     case AJ_DV: case AJ_ATMOS: return "Preferência para fontes compatíveis. O formato disponível também depende do arquivo e da TV.";
     case AJ_LEG_SYNC_AUTO: return "Ajusta a legenda automaticamente. Desligue para manter a escolhida. Vale só nesta TV.";
     case AJ_LEG_SYNC_AUDIO: return "Compara as falas do áudio com a legenda externa para acertar o atraso. Só onde o player entrega o áudio decodificado e sem passthrough; vale só nesta TV.";
-    case AJ_LEG_FORCADA: return "Quando o áudio já está no idioma da legenda, liga só a legenda forçada desse idioma (falas em outra língua e placas), ou nenhuma se o arquivo não tiver. Desligado, liga a legenda completa como antes.";
+    case AJ_FILTRO_MIN_GB: return "Minimum known source size in decimal GB. Zero disables the minimum. Sources with unknown sizes remain eligible.";
+    case AJ_FILTRO_MAX_RESULT: return "Maximum matching video sources after filtering and sorting. Zero keeps all matching sources.";
+    case AJ_FILTRO_POR_RES: return "Maximum results for each known resolution after filtering and sorting. Zero is unlimited. Unknown resolution has its own group quota.";
+    case AJ_FILTRO_POR_QUAL: return "Maximum results for each known quality after filtering and sorting. Zero is unlimited. Unknown quality has its own group quota.";
+    case AJ_FILTRO_SORT: return "Choose the displayed source order. Preferred tags rank first; ties keep addon order. Existing autoplay quality and provider safeguards still apply.";
+    case AJ_FILTRO_REQUIRED_GROUPS: return "Only allow these release groups, separated by commas. Empty allows any group. Matching is case-insensitive and exact.";
+    case AJ_POSPLAY_TRAILER: return "Muted IMDb trailer previews in focused post-play cards. Uses a separate software player; never replaces the main video. Android only, unavailable on low-memory devices. Off by default.";
+    case AJ_POSPLAY_TRAILER_ESPERA: return "Wait before loading a muted post-play trailer. Focus changes, closing the panel and backgrounding cancel the preview. The poster stays visible on failure.";
+    case AJ_TMDB_CHAVE_LOCAL: return "Enter your 32-character TMDB API key (v3). Kept privately on this device for the selected account and profile; never synchronised. Leave blank to remove the local key and use an available account or app key. Requires TMDB to be enabled.";
+    case AJ_MENU_OCULTAR_PILULA: return "Hide the modern or Dynamic sidebar icon pill while navigation is closed. Requires sidebar navigation. Left/Back and the pointer edge still reveal navigation.";
+    case AJ_DET_TRAILER_ESPERA: return "Wait before starting the automatic trailer after the detail page settles. Stored in tenths of a second.";
+    case AJ_POSPLAY_RECOM: return "Show movie recommendations near the end of playback. Requires available recommendations from enabled TMDB or Trakt services. Episode autoplay is configured separately.";
+    case AJ_POSPLAY_PERCENT: return "Playback percentage before movie recommendations appear. Zero retains the existing credits policy.";
+    case AJ_AINDA_EPISODIOS: return "Requires Play next episode automatically. Ask for confirmation after this many consecutive episodes before starting another. Zero disables the prompt.";
+    case AJ_LEG_AUTO_COMPLETA: return "Automatically select full subtitles using the saved preference or app language. Explicit None and title choices are respected. Off restores the existing forced-subtitle policy.";
+    case AJ_LEG_FORCADA:
+      if(ajustes_legenda_automatica_completa())return "Turn off Automatically load full subtitles to use the forced-only subtitle policy. Explicit None and saved title choices are always respected.";
+      return "Quando o áudio já está no idioma da legenda, liga só a legenda forçada desse idioma (falas em outra língua e placas), ou nenhuma se o arquivo não tiver. Desligado, liga a legenda completa como antes.";
     case AJ_LEG_MOSTRAR: return valor[op] ? "Todas as legendas, com detalhes" : "Recomendadas";
     case AJ_LEG_LINGUA2: return "Segunda legenda, mostrada no alto da tela junto com a principal. Só arquivos SRT/VTT dos addons. \"Da conta\" segue o que está no seu perfil.";
     case AJ_LEG2_POS: return "No topo, a segunda legenda fica no alto da tela. Junto da principal, ela fica logo acima da principal, no pé da tela.";
@@ -7837,7 +8027,7 @@ static const char *ajudaOpcaoBase(int op) {
     case AJ_FONTE_PRECARREGAR: return "Carrega alguns segundos de vídeo ao abrir um título e prepara o próximo episódio perto dos créditos. O Play reaproveita o buffer. Usa mais dados e pode adicionar arquivos ao debrid mesmo sem assistir. Não marca episódios como vistos.";
     case AJ_FONTE_REPOR: return "Quantas outras fontes o automático tenta quando a escolhida não abre. Cada tentativa pode adicionar um arquivo na sua conta de debrid.";
     case AJ_FALHA_PROVEDORES: return "Se o vídeo não iniciar a tempo ou der erro, tenta os provedores Debrid configurados na ordem escolhida. O limite de cada provedor conta links distintos de todos os add-ons, incluindo o primeiro. Parar ou Voltar cancela as tentativas.";
-    case AJ_FILTROS_FONTES: return "Selecione os valores que deseja filtrar. As alterações são salvas na hora e valem antes dos limites de links.";
+    case AJ_FILTROS_FONTES: return "Filter and rank video sources before selection. Required and excluded tags are hard rules; preferred tags rank matching sources first. Zero limits are unlimited. Live TV is unchanged.";
     case AJ_FILTRO_TAM_MAX: return "Acima deste tamanho, a fonte é removida antes de contar as tentativas. Zero significa sem limite.";
     case AJ_FILTRO_GRUPOS: return "Digite grupos separados por vírgulas. Vazio remove o filtro.";
     case AJ_FALHA_PROVEDOR_ORDEM: return "Suba ou desça os provedores Debrid e ajuste o total de links de cada um. O primeiro provedor tenta seus links antes do próximo. Provedores sem chave são ignorados.";
@@ -7891,9 +8081,10 @@ static const char *ajudaOpcaoBase(int op) {
     case AJ_ITENS_FILEIRA: return "Quantos títulos cada fileira da Home mostra antes do Ver tudo. Mais itens usam mais memória: em TV com 1 GB de memória a Home pode ficar mais lenta ou fechar. Se o app fechar depois de você aumentar, ele volta sozinho ao valor anterior. Aumentar vale na próxima vez que o app abrir.";
     case AJ_FIL_ORDEM: return "Abre a lista de fileiras para reordenar, ligar, desligar e escolher o card de cada uma. É lá que dá para ver de onde cada fileira vem.";
     case AJ_RAIL: return "A barra de navegação da esquerda fica sempre aberta, ou recolhida até você ir até ela.";
-    case AJ_ABAS_ESTILO: return "Chips: uma fileira de botões, como sempre. Menu suspenso: escolha Filmes ou Séries e depois o catálogo numa lista. Barra central: uma pílula de vidro no centro do alto da tela. Páginas: um catálogo por página; Esquerda e Direita trocam de página. Vale para este perfil.";
+    case AJ_AMIGOS_ESTILO: return "Changes Family Watching card size and presentation: Card feed, Large landscape, Portrait stories, Presence strip, Poster first or Classic square. The original Friends row also retains its style preference.";
+    case AJ_ABAS_ESTILO: return "Changes the tabs inside streaming collections: Chips, Dropdown, Centre bar, Pages or Top menu. Open a collection containing multiple catalogues to see the selected style. This does not change the main navigation tabs.";
     case AJ_MENU_TOPO: return "Na lateral: o menu fica na esquerda, como sempre. No topo: o menu vira uma barra no alto da tela e o conteúdo usa a largura toda. Para cima no primeiro item da tela chega à barra e Para baixo volta. Vale para este perfil.";
-    case AJ_RAIL_MODERNA: return "Troca a barra lateral pela versão nova, com ícones maiores. Ela ignora a escolha entre recolhida e fixa.";
+    case AJ_RAIL_MODERNA: return "Uses a floating icon sidebar in Modern Home. Turn it off for a docked side drawer. Default Home keeps its docked menu and Dynamic Home keeps its Apple TV sidebar.";
     case AJ_RAIL_BLUR: return "Desfoca a arte atrás da barra lateral moderna em vez de usar um fundo sólido.";
 #ifndef NV_ANDROID
     case AJ_TECLADO_ANDROID: return "Automático: a grade do Nuvio; o teclado da TV abre pelo botão Teclado da TV ou com OK no campo. Do app: só a grade do Nuvio, o teclado da TV nunca abre sozinho. Do sistema: o teclado da TV abre direto em todo campo; Voltar mostra a grade. Vale só nesta TV.";
@@ -8299,7 +8490,7 @@ static const char *efeitoOpcao(int op) {
       return (op == AJ_TRAKT ? traktauth_estado() == TRA_LIGADO : simklauth_estado() == SMK_LIGADO)
         ? "conectado — OK desconecta"
         : "OK abre o vínculo, com QR e código. As setas laterais não fazem nada nesta linha.";
-    case AJ_ADDONS: case AJ_DISCORD: case AJ_PLUGINS:
+    case AJ_ADDONS: case AJ_DISCORD: case AJ_PLUGINS: case AJ_PERFIL_ATIVO:
       return "OK abre. As setas laterais não fazem nada nesta linha.";
     // 2.0.3 (M2): o "O que muda" das linhas do mockup v3 e das que dependem
     // de outra (a pessoa liga e nao ve nada: #232, #177, #229).
@@ -8546,20 +8737,24 @@ static int filCmpFora(const void *pa, const void *pb) {
 #define AJ_FIL_DESTAQUE (-2)
 
 static void filMontarLista(void) {
-  int i, n = fil_n();
+  int i, n = fil_n(), previous = filFoco>=0 && filFoco<filListaN ? filLista[filFoco] : -1;
+  const char *keys[FIL_MAX]; int order[FIL_MAX];
+  for(i=0;i<n;i++)keys[i]=fil_chave(i);
+  int count=fil_unir(keys,n,order,FIL_MAX);
   filListaN = 0; filSep = -1;
   if (filAba == 0) {
     filLista[filListaN++] = AJ_FIL_DESTAQUE;
-    for (i = 0; i < n; i++) {
-      int e = fil_estado(i);
-      if (e == FIL_FORA) continue;
-      if (e == FIL_NA_FILA && filSep < 0) filSep = filListaN;
-      filLista[filListaN++] = i;
-    }
+    // Partition by actual state, never by where the first queued row appeared.
+    for(int state=FIL_NA_HOME;state<=FIL_NA_FILA;state++)
+      for(i=0;i<count;i++)if(fil_estado(order[i])==state) {
+        if(state==FIL_NA_FILA && filSep<0)filSep=filListaN;
+        filLista[filListaN++]=order[i];
+      }
   } else {
     for (i = 0; i < n; i++) if (fil_estado(i) == FIL_FORA) filLista[filListaN++] = i;
     qsort(filLista, (size_t)filListaN, sizeof *filLista, filCmpFora);
   }
+  for(i=0;i<filListaN;i++)if(filLista[i]==previous){filFoco=i;break;}
   if (filFoco >= filListaN) filFoco = filListaN - 1;
   if (filFoco < 0) filFoco = 0;
 }
@@ -8770,6 +8965,10 @@ static void eventoFileiras(SDL_Keycode k) {
     int idx = filIdx(filFoco);
     if (filIdx(filFoco) == AJ_FIL_DESTAQUE) { hcAbrir(); return; }
     if (n < 1) return;
+    if(idx>=0 && catordem_estado(fil_chave(idx))>=0 && (filAba==1 || filCampo<2)) {
+      filAvisar("Managed by your synced profile. Native preferences are kept for offline recovery.");
+      return;
+    }
     if (filAba == 1 && filCampo == FIL_CAMPO_REGUA) { filCampo = 0; return; }   // OK na regua A-Z volta para a linha
     if (filAba == 1) {
       // ADICIONAR. Cabe: entra na home. Nao cabe: entra na fila, e a tela diz.
@@ -9164,108 +9363,41 @@ static const char *faResumo(int provedores) {
 // Shared, exclusion-only filters. Category checkboxes save atomically as soon
 // as OK/tap toggles one; size uses the existing explicit-confirmation editor.
 // Every edit reads the saved config first, so another field is never lost.
-static int ffCategoria = -1, ffFoco, ffValorFoco;
-static const int FF_CATEGORIA[9] = {
-  FONTEFILTRO_RESOLUCAO, FONTEFILTRO_QUALIDADE, -1,
-  FONTEFILTRO_VISUAL, FONTEFILTRO_AUDIO, FONTEFILTRO_CANAIS,
-  FONTEFILTRO_ENCODE, FONTEFILTRO_LINGUAS, -1
-};
-static const char *ffNome(int linha) {
-  if (linha < 0 || linha >= 9) return "";
-  if (linha == 2) return "Tamanho máximo da fonte";
-  if (linha == 8) return "Grupos de lançamento excluídos";
-  return fontefiltro_rotulo(FF_CATEGORIA[linha]);
+static int ffCategoria=-1,ffModo,ffFoco,ffValorFoco,ffGrupoObrigatorio;
+#define FF_ROWS 29
+static const char *FF_DIMENSIONS[]={"resolutions","qualities","visual tags","audio tags","channels","encodes","languages"};
+static uint64_t *ffMask(FonteFiltroConfig *c){return ffModo==0?c->preferir:ffModo==1?c->exigir:c->excluir;}
+static const char *ffNome(int row){
+  static char name[100];static const char *fixed[]={"Maximum results","Sort results","Per-resolution limit","Per-quality limit","Minimum source size","Maximum source size"};
+  if(row<0||row>=FF_ROWS)return "";if(row<6)return fixed[row];
+  if(row==27)return "Required release groups";if(row==28)return "Excluded release groups";
+  snprintf(name,sizeof name,"%s %s",(const char*[]){"Preferred","Required","Excluded"}[(row-6)%3],FF_DIMENSIONS[(row-6)/3]);return name;
 }
-static int ffBits(uint64_t bits) {
-  int n = 0;
-  while (bits) { bits &= bits - 1; n++; }
-  return n;
+static int ffRootOp(int row){static const int ops[]={AJ_FILTRO_MAX_RESULT,AJ_FILTRO_SORT,AJ_FILTRO_POR_RES,AJ_FILTRO_POR_QUAL,AJ_FILTRO_MIN_GB,AJ_FILTRO_TAM_MAX};return row>=0&&row<6?ops[row]:-1;}
+static int ffBits(uint64_t b){int n=0;while(b){b&=b-1;n++;}return n;}
+static const char *ffValor(int row){
+  static char text[180];FonteFiltroConfig c;fontefalha_filtro(&c);
+  if(row>=0&&row<6){unsigned v=*ajFilterNumber(&c,ffRootOp(row));if(row==1)return V_FILTER_SORT[v<6?v:0];if(!v)return row==4?"No minimum":"Unlimited";snprintf(text,sizeof text,"%u%s",v,row>=4?" GB":"");return text;}
+  if(row==27){if(!c.gruposObrigatorios[0])return "Any release group";snprintf(text,sizeof text,"%s",c.gruposObrigatorios);return text;}
+  if(row==28){if(!c.grupos[0])return "No exclusions";snprintf(text,sizeof text,"%s",c.grupos);return text;}
+  if(row>=6&&row<27){int k=(row-6)/3,mode=(row-6)%3;int n=ffBits((mode==0?c.preferir:mode==1?c.exigir:c.excluir)[k]);if(!n)return "None selected";snprintf(text,sizeof text,"%d selected",n);return text;}
+  return "";
 }
-static const char *ffValor(int linha) {
-  static char texto[160]; FonteFiltroConfig cfg;
-  fontefalha_filtro(&cfg);
-  if (linha == 2) {
-    if (!cfg.maxGB) return i18n("Sem limite de tamanho");
-    snprintf(texto, sizeof texto, "%u GB", cfg.maxGB);
-  } else if (linha == 8) {
-    if (!cfg.grupos[0]) return i18n("Nenhuma exclusão");
-    snprintf(texto, sizeof texto, "%s", cfg.grupos);
-  } else {
-    int n = linha >= 0 && linha < 9 ? ffBits(cfg.excluir[FF_CATEGORIA[linha]]) : 0;
-    if (!n) return i18n("Nenhuma exclusão");
-    snprintf(texto, sizeof texto, i18n("%d valores filtrados"), n);
-  }
-  return texto;
+static const char *ffResumo(void){static char text[80];FonteFiltroConfig c;fontefalha_filtro(&c);int n=0;for(int k=0;k<FONTEFILTRO_N;k++)n+=ffBits(c.preferir[k])+ffBits(c.exigir[k])+ffBits(c.excluir[k]);n+=!!c.minGB+!!c.maxGB+!!c.maxResultados+!!c.porResolucao+!!c.porQualidade+!!c.ordenar+!!c.grupos[0]+!!c.gruposObrigatorios[0];snprintf(text,sizeof text,n==1?"%d filter or sorting rule active":"%d filter and sorting rules active",n);return text;}
+static void ffAbrir(void){if(!ajOpcaoDisponivel(AJ_FILTROS_FONTES))return;uxCancelar();faRetornarFolha=0;frAberta=6;ffCategoria=-1;ffModo=ffFoco=ffValorFoco=0;}
+static void ffGruposDefinir(const char *text){FonteFiltroConfig c;fontefalha_filtro(&c);char *dst=ffGrupoObrigatorio?c.gruposObrigatorios:c.grupos;if(!fontefiltro_grupos_normalizar(text,dst,sizeof c.grupos)||!fontefalha_filtro_definir(&c)){uxNotificar("Could not save release groups; the previous values were kept.");return;}sync_proteger_ajustes_locais();stream_filtro_atualizar();uxNotificar("Release groups saved on this device.");}
+static void ffEscolher(void){
+  // Only while the Filters sheet is really open (it refuses to open while
+  // another profile's settings are being edited); restored from 2bb366167.
+  if(frAberta!=6||teclado_aberto())return;
+  FonteFiltroConfig c;fontefalha_filtro(&c);
+  if(ffCategoria>=0){uint64_t b=fontefiltro_bit(ffCategoria,ffValorFoco);if(!b)return;ffMask(&c)[ffCategoria]^=b;if(!fontefalha_filtro_definir(&c)){uxNotificar("Could not save filters; previous values were kept.");return;}sync_proteger_ajustes_locais();stream_filtro_atualizar();return;}
+  if(ffFoco<6){frAberta=0;ajFalhaEspelhar();uxAbrirEditor(ffRootOp(ffFoco));faRetornarFolha=6;return;}
+  if(ffFoco>=27){ffGrupoObrigatorio=ffFoco==27;stCampo=ffGrupoObrigatorio?AJ_FILTRO_REQUIRED_GROUPS:AJ_FILTRO_GRUPOS;teclado_contexto("Integrations · Filters & Sorting");teclado_abrir_com(ffNome(ffFoco),"Comma-separated release groups. Empty removes this rule.",TECLADO_LONGO,"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789, ._-+",ffGrupoObrigatorio?c.gruposObrigatorios:c.grupos);teclado_permitir_vazio(1);return;}
+  ffCategoria=(ffFoco-6)/3;ffModo=(ffFoco-6)%3;ffValorFoco=0;
 }
-static const char *ffResumo(void) {
-  static char texto[80]; FonteFiltroConfig cfg; int n = 0;
-  fontefalha_filtro(&cfg);
-  for (int c = 0; c < FONTEFILTRO_N; c++) n += ffBits(cfg.excluir[c]);
-  n += cfg.maxGB > 0;
-  if (cfg.grupos[0]) { n++; for (const char *p = cfg.grupos; *p; p++) n += *p == ','; }
-  if (!n) return i18n("Nenhum filtro");
-  snprintf(texto, sizeof texto, i18n("%d filtros ativos"), n);
-  return texto;
-}
-static void ffAbrir(void) {
-  if (!ajOpcaoDisponivel(AJ_FILTROS_FONTES)) return;
-  uxCancelar(); faRetornarFolha = 0; frAberta = 6;
-  ffCategoria = -1; ffFoco = ffValorFoco = 0;
-}
-static void ffGruposDefinir(const char *texto) {
-  FonteFiltroConfig cfg; fontefalha_filtro(&cfg);
-  if (!fontefiltro_grupos_normalizar(texto, cfg.grupos, sizeof cfg.grupos)) {
-    uxNotificar("Grupos inválidos: use nomes separados por vírgulas."); return;
-  }
-  if (!fontefalha_filtro_definir(&cfg)) {
-    uxNotificar("Não foi possível salvar. O valor anterior foi mantido."); return;
-  }
-  sync_proteger_ajustes_locais();
-  uxNotificar("Ajuste salvo nesta TV.");
-}
-static void ffEscolher(void) {
-  if (frAberta != 6 || teclado_aberto()) return;
-  if (ffCategoria >= 0) {
-    uint64_t bit = fontefiltro_bit(ffCategoria, ffValorFoco);
-    FonteFiltroConfig cfg; fontefalha_filtro(&cfg);
-    if (!bit) return;
-    cfg.excluir[ffCategoria] ^= bit;
-    if (!fontefalha_filtro_definir(&cfg))
-      uxNotificar("Não foi possível salvar. O valor anterior foi mantido.");
-    else { sync_proteger_ajustes_locais(); uxNotificar("Ajuste salvo nesta TV."); }
-    return;
-  }
-  if (ffFoco == 2) {
-    frAberta = 0; ajFalhaEspelhar(); uxAbrirEditor(AJ_FILTRO_TAM_MAX);
-    faRetornarFolha = 6;
-  } else if (ffFoco == 8) {
-    static const char *const alfabeto =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789, ._-+";
-    FonteFiltroConfig cfg; char contexto[160]; fontefalha_filtro(&cfg);
-    snprintf(contexto, sizeof contexto, "%s · %s", i18n("Fontes e addons"), i18n("Filtros das fontes"));
-    teclado_contexto(contexto); stCampo = AJ_FILTRO_GRUPOS;
-    teclado_abrir_com("Grupos de lançamento excluídos", "Ex.: YTS, EZTV, RARBG. Vazio remove o filtro.",
-                      TECLADO_LONGO, alfabeto, cfg.grupos);
-    teclado_permitir_vazio(1);
-  } else {
-    ffCategoria = FF_CATEGORIA[ffFoco]; ffValorFoco = 0;
-  }
-}
-static void ffVoltar(void) {
-  if (frAberta != 6 || teclado_aberto()) return;
-  if (ffCategoria >= 0) ffCategoria = -1;
-  else frAberta = 0;
-}
-static void ffEvento(SDL_Keycode k) {
-  int *foco = ffCategoria >= 0 ? &ffValorFoco : &ffFoco;
-  int n = ffCategoria >= 0 ? fontefiltro_opcoes_n(ffCategoria) : 9;
-  if (k == SDLK_ESCAPE || k == SDLK_AC_BACK || k == SDLK_BACKSPACE || k == SDLK_DELETE || k == SDLK_LEFT) {
-    ffVoltar(); return;
-  }
-  if (k == SDLK_UP && *foco > 0) (*foco)--;
-  if (k == SDLK_DOWN && *foco + 1 < n) (*foco)++;
-  if (k == SDLK_RETURN || k == SDLK_KP_ENTER) ffEscolher();
-}
+static void ffVoltar(void){if(frAberta!=6||teclado_aberto())return;if(ffCategoria>=0)ffCategoria=-1;else frAberta=0;}
+static void ffEvento(SDL_Keycode k){int *f=ffCategoria>=0?&ffValorFoco:&ffFoco;int n=ffCategoria>=0?fontefiltro_opcoes_n(ffCategoria):FF_ROWS;if(k==SDLK_ESCAPE||k==SDLK_AC_BACK||k==SDLK_BACKSPACE||k==SDLK_DELETE||k==SDLK_LEFT){ffVoltar();return;}if(k==SDLK_UP&&*f>0)(*f)--;if(k==SDLK_DOWN&&*f+1<n)(*f)++;if(k==SDLK_RETURN||k==SDLK_KP_ENTER)ffEscolher();}
 
 static int frFoco;
 static int frCol;               // folha da ordem: 0 = subir, 1 = descer
@@ -9451,6 +9583,7 @@ static void hcAbrir(void) {
   const char *f = fil_hero_fonte();
   int i;
   hcAberta = 1; hcBusca[0] = 0; hcFoco = 0; hcMontar();
+  hcFoco = f[0] == '*' && !f[1] ? 2 : 1;
   for (i = 0; i < hcN; i++)
     if (hcL[i].tipo == HC_CAT && !strcmp(fil_chave(hcL[i].idx), f)) { hcFoco = i; break; }
 }
@@ -9599,7 +9732,8 @@ static void notaLigarPar(int op) {
   if (mdb) valor[AJ_MDB_LIGADO] = 0;
 }
 static int ajOrigemDireto = AJLOG_AJUSTES;   // quem chamou: a tela, ou a Central via ajustes_rapido_passo
-static int ajFonteConfirmar(void *u) { (void)u; return gravar(); }
+static int ajBetterFonteTransaction;
+static int ajFonteConfirmar(void *u) { (void)u;ajBetterFonteTransaction++;int ok=gravar();ajBetterFonteTransaction--;return ok; }
 static int ajFonteAplicar(int op, int novo) {
   int slot = ajFonteSlot(op), base = ajFonteBase(op), n = legfontes_n();
   int anterior = legfontes_selecionada(slot);
@@ -9722,6 +9856,11 @@ static int definirValorDireto(int op, int novo) {
   }
   if (op == AJ_ICONE_APP) iconeapp_aplicar_plataforma();
   if (op == AJ_CW_FONTE || op == AJ_SALVOS_DEST || op == AJ_SOCIAL) desc_repetir();
+  // Stage H: switching Family Watching on also unhides its Home slot (the old
+  // Friends row may have been hidden), in place, for the active profile only.
+  if (op == AJ_FAMILIA && !edPerfil && ajustes_familia() && fil_mostrar_chave("social_activity"))
+    printf("[familia] Family Watching on: its Home row was hidden, now shown\n");
+  if (op == AJ_FAMILIA || op == AJ_FAMILIA_PARTILHAR) familia_ajuste_mudou();
   // A fonte decide so esta fileira: refaz-la, alem do ciclo completo (#244).
   if (op == AJ_CW_FONTE || op == AJ_CW_PROXIMO || op == AJ_CW_DIAS) desc_refazer_continuar();
   if (op == AJ_CW_ORDEM || op == AJ_CW_NAO_EXIBIDOS || op == AJ_CW_CONCLUIDO || op == AJ_CW_MINIMO || op == AJ_CW_RETIDO_TAMBEM)
@@ -9850,6 +9989,10 @@ static void eventoTela(const SDL_Event *e) {
       if (TELA[focoItem].tipo == IT_MAIS) maisAberto[secAtual] = !maisAberto[secAtual];
       return;
     }
+    // Switch Profile > Profile (a readout): OK opens the profile tools (scope,
+    // admin PIN, edit or copy another profile's settings, kids). Since the
+    // Stage A sidebar the TV had no other way in; portrait phones keep the chip.
+    if (focoOp == AJ_PERFIL_ATIVO) { pfAbrir(); return; }
     if (OPCOES[focoOp].tipo != OP_ACAO) { uxAbrirEditor(focoOp); return; }
     // O contexto da modal de digitacao, se esta acao abrir uma: "Secao · Bloco".
     { char kc[200]; const char *b = uxBloco(focoOp);
@@ -9996,6 +10139,12 @@ static void eventoTela(const SDL_Event *e) {
       stCampo = focoOp;
       teclado_abrir_com("Chave do Seekr", "Chave pessoal: seekr.tv. Vazio apaga.",
                         90, SEEKR_ALFA, NULL);
+      return;
+    }
+    if (focoOp == AJ_TMDB_CHAVE_LOCAL) {
+      stCampo=focoOp;
+      teclado_abrir_com("TMDB API key on this device","Enter a TMDB v3 API key. Blank removes the local key.",32,"0123456789abcdefABCDEF",NULL);
+      teclado_tipo(TECLADO_TIPO_SENHA);teclado_mascarar(1);
       return;
     }
     if (focoOp == AJ_SEEKR_TESTAR) { skTesteIniciar(); return; }
@@ -10157,6 +10306,7 @@ void ajustes_atualizar(float dt, Uint32 agora) {
       else if (stCampo == PF_CAMPO) { if (pfDigitado(teclado_texto())) r = TECLADO_NADA; }
       else if (stCampo == AJ_FANART_CHAVE)    fanartDefinir(teclado_texto());
       else if (stCampo == AJ_SEEKR_CHAVE)     { seekrDefinir(teclado_texto()); atomic_store_explicit(&skTeste, 0, memory_order_release); }
+      else if (stCampo == AJ_TMDB_CHAVE_LOCAL) uxNotificar(tmdbLocalDefinir(teclado_texto()) ? "TMDB key saved on this device. Reopen the film to refresh recommendations." : "Could not save the TMDB key. Use a 32-character v3 API key and a signed-in profile.");
       else if (stCampo == AJ_SELOS_PACOTE_ADD) spAdicionar(teclado_texto());
       else if (stCampo == AJ_URL_M3U_ADD || stCampo == AJ_URL_XMLTV_ADD)
         urlAdicionar(stCampo == AJ_URL_M3U_ADD ? LTV_URL_M3U : LTV_URL_XMLTV, teclado_texto());
@@ -10165,7 +10315,7 @@ void ajustes_atualizar(float dt, Uint32 agora) {
         int e = curadoria_definir_url(teclado_texto());
         uxNotificar(e ? "Ajuste salvo nesta TV." : "endereço inválido");
       }
-      else if (stCampo == AJ_FILTRO_GRUPOS) ffGruposDefinir(teclado_texto());
+      else if (stCampo == AJ_FILTRO_GRUPOS || stCampo == AJ_FILTRO_REQUIRED_GROUPS) ffGruposDefinir(teclado_texto());
       else if (stCampo == AJ_FONTE_REGEX_PADRAO) {
         int e = fonteregra_definir_regex(teclado_texto());
         protegerLocais();
@@ -10333,6 +10483,12 @@ static int nValores(int op) {
 // Texto do valor de uma linha. Buffer estatico porque so uma linha e desenhada
 // por vez dentro de desenhaLinha.
 static const char *textoValor(int op) {
+  static char expansionText[96];
+  if(op==AJ_LARGURA_DP||op==AJ_RAIO_DP||op==AJ_PROF_BORDA||op==AJ_PROF_COBERTURA||op==AJ_DET_TRAILER_ESPERA||op==AJ_POSPLAY_TRAILER_ESPERA||op==AJ_POSPLAY_PERCENT||op==AJ_AINDA_EPISODIOS){uxValorTexto(op,valor[op],expansionText,sizeof expansionText);return expansionText;}
+  if(op==AJ_ADDONS_PRINCIPAL && fil_tem_projecao())return "Synced profile";
+#ifdef NV_ANDROID
+  if(op==AJ_FIL_LIMITE)return "Automatic";
+#endif
   if(op==AJ_RESOLVE_LINKS)return ajustes_resolver_ativo()?"On":"Off";
   if(op==AJ_RESOLVE_PREPARE)return valor[AJ_RESOLVE_LIMIT]>0?"On":"Off";
   if(op==AJ_RESOLVE_PROVIDER){int p=ajustes_resolver_provedor();return p<0?"No eligible provider":debrid_servico_nome(p);}
@@ -10348,7 +10504,8 @@ static const char *textoValor(int op) {
   if (ajFalhaBackend(op)) {
     int v = ajFalhaValor(op);
     if (op == AJ_FALHA_PROVEDORES || op == AJ_FALHA_ADDONS) return i18n(V_LIGA[v]);
-    if (op == AJ_FILTRO_TAM_MAX) {
+    if(op==AJ_FILTRO_SORT)return V_FILTER_SORT[v>=0&&v<6?v:0];
+    if (op == AJ_FILTRO_TAM_MAX || op == AJ_FILTRO_MIN_GB) {
       if (!v) return i18n("Sem limite de tamanho");
       snprintf(buf, sizeof buf, "%d GB", v); return buf;
     }
@@ -10807,6 +10964,9 @@ typedef enum {
 } AjPreview;
 
 static AjPreview familiaPreviaOpcao(int op) {
+  if(op==AJ_MENU_OCULTAR_PILULA)return AJPV_HOME;
+  if(op==AJ_DET_TRAILER_ESPERA)return AJPV_DETALHE;
+  if((op>=AJ_POSPLAY_RECOM&&op<=AJ_LEG_AUTO_COMPLETA)||op==AJ_POSPLAY_TRAILER||op==AJ_POSPLAY_TRAILER_ESPERA)return AJPV_REPRO;
   if (ajLegendaPrincipal(op) || op == AJ_LEG1_RESTAURAR || ajLegendaSecundaria(op)) return AJPV_REPRO;
   switch (op) {
     case AJ_LEG_CONTORNO_COR:
@@ -10842,6 +11002,7 @@ static AjPreview familiaPreviaOpcao(int op) {
     case AJ_PS_FUNDO: case AJ_PS_CONTINUAR: case AJ_DESCOBRIR: case AJ_ROTULOS:
     case AJ_NOME_ADDON: case AJ_SUFIXO_TIPO: case AJ_OCULTAR_NLANC: case AJ_MURAL_TITULOS:
     case AJ_NOTAS_HOME: case AJ_GRAD_CLASSICO: case AJ_SELO_VISTO: case AJ_OCULTAR_FILMES_VISTOS: case AJ_BIB_HOME: case AJ_TITULO_FIL:
+    case AJ_FAMILIA: case AJ_FAMILIA_PARTILHAR:
       return AJPV_HOME;
     case AJ_CW_LIGADO: case AJ_CW_OK: case AJ_CW_FONTE:
     case AJ_CW_ESTILO: case AJ_CW_THUMB: case AJ_CW_BLUR_PROX:
@@ -10887,7 +11048,7 @@ static AjPreview familiaPreviaOpcao(int op) {
     case AJ_TMDB_BASICO: case AJ_TMDB_FICHA: case AJ_TMDB_DATAS:
     case AJ_TMDB_ELENCO: case AJ_TMDB_PROD: case AJ_TMDB_REDES:
     case AJ_TMDB_EPS: case AJ_TMDB_TRAILERS: case AJ_TMDB_MAIS:
-    case AJ_TMDB_COL: case AJ_TMDB_CW:
+    case AJ_TMDB_COL: case AJ_TMDB_CW: case AJ_TMDB_CHAVE_LOCAL:
       return AJPV_TMDB;
     case AJ_MDB_LIGADO: case AJ_MDB_CHAVE: case AJ_MDB_TRAKT:
     case AJ_MDB_IMDB: case AJ_MDB_TMDB: case AJ_MDB_LETTER:
@@ -11437,3 +11598,5 @@ int ajustes_rapido_cor_definir(int i) {
   ajOrigemDireto = AJLOG_AJUSTES;
   return r;
 }
+
+#include "ajustes_better.inc"

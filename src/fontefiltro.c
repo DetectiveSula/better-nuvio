@@ -2,6 +2,7 @@
 #include "linguas.h"
 #include <ctype.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
@@ -226,11 +227,11 @@ int fontefiltro_grupos_normalizar(const char *csv, char *saida, unsigned n) {
 }
 
 int fontefiltro_config_validar(const FonteFiltroConfig *cfg) {
-  char grupos[512];
-  if (!cfg || cfg->maxGB > FONTEFILTRO_MAX_GB || !memchr(cfg->grupos,0,sizeof cfg->grupos)) return 0;
+  char grupos[512],required[512];
+  if (!cfg || cfg->maxGB > FONTEFILTRO_MAX_GB || cfg->minGB > FONTEFILTRO_MAX_GB || cfg->maxResultados>10000 || cfg->porResolucao>10000 || cfg->porQualidade>10000 || cfg->ordenar>5 || !memchr(cfg->gruposObrigatorios,0,sizeof cfg->gruposObrigatorios) || !memchr(cfg->grupos,0,sizeof cfg->grupos)) return 0;
   for (int c = 0; c < FONTEFILTRO_N; c++)
-    if (cfg->excluir[c] & ~((UINT64_C(1) << fontefiltro_opcoes_n(c))-1)) return 0;
-  return fontefiltro_grupos_normalizar(cfg->grupos,grupos,sizeof grupos);
+    if ((cfg->excluir[c]|cfg->preferir[c]|cfg->exigir[c]) & ~((UINT64_C(1) << fontefiltro_opcoes_n(c))-1)) return 0;
+  return fontefiltro_grupos_normalizar(cfg->grupos,grupos,sizeof grupos) && fontefiltro_grupos_normalizar(cfg->gruposObrigatorios,required,sizeof required);
 }
 
 /* Apenas texto de metadados: URLs e legendas nao sao tags da faixa de audio.
@@ -484,9 +485,16 @@ int fontefiltro_permite(const FonteFiltroConfig *cfg, const FonteFiltroDados *d)
     uint64_t v = d->valores[c] & (fontefiltro_desconhecido(c)-1);
     if (c == FONTEFILTRO_LINGUAS) v |= d->valores[c] & fontefiltro_desconhecido(c);
     if (!v) v = fontefiltro_desconhecido(c);
+    if (cfg->exigir[c] && !(v & cfg->exigir[c])) return 0;
     if (c == FONTEFILTRO_LINGUAS) {
       if ((v & cfg->excluir[c]) == v) return 0;
     } else if (v & cfg->excluir[c]) return 0;
+  }
+  if (cfg->minGB && d->tamanhoBytes && d->tamanhoBytes < (uint64_t)cfg->minGB * UINT64_C(1000000000)) return 0;
+  if (cfg->gruposObrigatorios[0]) {
+    int found=0;size_t len=strlen(d->grupo);
+    for(const char *p=cfg->gruposObrigatorios;*p;) {const char *a=p;while(*p&&*p!=',')p++;if(len && (size_t)(p-a)==len && !strncasecmp(a,d->grupo,len))found=1;if(*p)p++;}
+    if(!found)return 0;
   }
   if (cfg->maxGB && d->tamanhoBytes > (uint64_t)cfg->maxGB * UINT64_C(1000000000)) return 0;
   if (d->grupo[0]) {
@@ -502,4 +510,64 @@ int fontefiltro_permite(const FonteFiltroConfig *cfg, const FonteFiltroDados *d)
     }
   }
   return 1;
+}
+
+int fontefiltro_pontuacao(const FonteFiltroConfig *c,const FonteFiltroDados *d) {
+  if(!c||!d||d->naoVod)return 0;
+  int score=0;for(int k=0;k<FONTEFILTRO_N;k++){uint64_t v=d->valores[k];if(!v)v=fontefiltro_desconhecido(k);if(c->preferir[k]&v)score++;}
+  return score;
+}
+static int filtroPrimeiroBit(uint64_t value){int n=0;if(!value)return 63;while(!(value&1)){value>>=1;n++;}return n;}
+static int filtroAntes(const FonteFiltroConfig *c,const FonteFiltroDados *a,const FonteFiltroDados *b) {
+  if(a->naoVod||b->naoVod)return 0;
+  int x=fontefiltro_pontuacao(c,a),y=fontefiltro_pontuacao(c,b);if(x!=y)return x>y;
+  if(c->ordenar==1||c->ordenar==2){int k=c->ordenar==1?FONTEFILTRO_RESOLUCAO:FONTEFILTRO_QUALIDADE;
+    x=filtroPrimeiroBit(a->valores[k] & (fontefiltro_desconhecido(k)-1));y=filtroPrimeiroBit(b->valores[k] & (fontefiltro_desconhecido(k)-1));return x<y;}
+  if(c->ordenar==3||c->ordenar==4){if(!a->tamanhoBytes||!b->tamanhoBytes)return a->tamanhoBytes&&!b->tamanhoBytes;return c->ordenar==3?a->tamanhoBytes<b->tamanhoBytes:a->tamanhoBytes>b->tamanhoBytes;}
+  return 0;
+}
+/* Stable O(n log n) ordering; live rows remain barriers in mixed requests.
+ * Allocation failure retains input order rather than dropping sources. */
+static void filtroOrdenar(const FonteFiltroConfig *c,const FonteFiltroDados *d,int *out,int n){
+  int active=c->ordenar>=1&&c->ordenar<=4;
+  for(int k=0;k<FONTEFILTRO_N;k++)active|=c->preferir[k]!=0;
+  if(n<2||!active)return;
+  int *tmp=malloc((size_t)n*sizeof *tmp);if(!tmp)return;
+  for(int start=0;start<n;){
+    if(d[out[start]].naoVod){start++;continue;}
+    int end=start;while(end<n&&!d[out[end]].naoVod)end++;
+    int len=end-start;
+    for(int width=1;width<len;width=width>len/2?len:width*2){
+      for(int lo=start;lo<end;){
+        int mid=lo+(end-lo<width?end-lo:width);
+        int hi=mid+(end-mid<width?end-mid:width),a=lo,b=mid,k=lo;
+        while(a<mid&&b<hi){
+          if(filtroAntes(c,&d[out[b]],&d[out[a]]))tmp[k++]=out[b++];
+          else tmp[k++]=out[a++];
+        }
+        while(a<mid)tmp[k++]=out[a++];while(b<hi)tmp[k++]=out[b++];
+        memcpy(out+lo,tmp+lo,(size_t)(hi-lo)*sizeof *out);lo=hi;
+      }
+    }
+    start=end;
+  }
+  free(tmp);
+}
+int fontefiltro_selecionar(const FonteFiltroConfig *c,const FonteFiltroDados *d,int n,const unsigned char *ok,int *out) {
+  if(!c||!d||!out||n<=0||!fontefiltro_config_validar(c))return 0;
+  int count=0;
+  for(int i=0;i<n;i++)if((!ok||ok[i])&&fontefiltro_permite(c,&d[i]))out[count++]=i;
+  filtroOrdenar(c,d,out,count);
+  unsigned res[64]={0},quality[64]={0};int kept=0;unsigned vod=0;
+  for(int j=0;j<count;j++) {
+    int i=out[j];if(d[i].naoVod){out[kept++]=i;continue;}
+    uint64_t r=d[i].valores[FONTEFILTRO_RESOLUCAO] & (fontefiltro_desconhecido(FONTEFILTRO_RESOLUCAO)-1);
+    uint64_t q=d[i].valores[FONTEFILTRO_QUALIDADE] & (fontefiltro_desconhecido(FONTEFILTRO_QUALIDADE)-1);
+    int ri=filtroPrimeiroBit(r),qi=filtroPrimeiroBit(q);
+    if(c->maxResultados&&vod>=c->maxResultados)continue;
+    if(c->porResolucao&&res[ri]>=c->porResolucao)continue;
+    if(c->porQualidade&&quality[qi]>=c->porQualidade)continue;
+    res[ri]++;quality[qi]++;vod++;out[kept++]=i;
+  }
+  return kept;
 }

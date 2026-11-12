@@ -27,6 +27,7 @@ char *rede_baixar(const char *u, int s) { (void)u; (void)s; return NULL; }
 int cwo_conta_a_seguir(const char *id) { (void)id; return 0; }
 void cwo_conta_trocar(const char *a, const char *b) { (void)a; (void)b; }
 void cwo_marcar_estreia(const char *id, long long ms) { (void)id; (void)ms; }
+void cwo_marcar_estreia_cru(const char *id, const char *cru) { (void)id; (void)cru; }
 int cwo_virada_aceita(long long e, long long a) { (void)e; (void)a; return 1; }
 int ajustes_tmdb_cw(void) { return 0; }
 const char *desc_chave_tmdb(void) { return ""; }

@@ -64,6 +64,13 @@ void cwo_corte(int principal, int nFut, int max, int *nPrincipal, int *nFuturos)
 // tempo; protegida por trava.
 void      cwo_marcar_estreia(const char *id, long long ms);
 long long cwo_estreia(const char *id);   // CWO_SEM_DATA se nao registrada
+// Stage E (official release rules, epdata.h): the raw add-on `released`, the
+// seed's last-watched instant and season, and the release alert computed
+// from them at call time. Seed season -1 = unknown.
+void cwo_marcar_estreia_cru(const char *id, const char *cru);
+int  cwo_estreia_cru(const char *id, char *dst, size_t cap);
+void cwo_marcar_semente(const char *id, long long vistoMs, int temporadaSemente);
+int  cwo_alerta(const char *id, int temporada, long long agoraMs, int *novaTemporada);
 
 // --- Quem esta na fileira de futuros (escrito por descoberta.c, lido pela home)
 // montarContinuar decide UMA vez quem e futuro e publica os ids aqui antes de

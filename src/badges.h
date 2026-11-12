@@ -85,7 +85,10 @@ int badges_cor_selo(const char *id,float *r,float *g,float *b);
 // a nota em texto logo depois. badge_imdb devolve a largura do par.
 typedef enum {
   BADGE_NEUTRO = 0, BADGE_APAGADO, BADGE_REALCE, BADGE_REALCE_CHEIO,
-  BADGE_SOBRE_REALCE
+  BADGE_SOBRE_REALCE,
+  // Stage E, regular Nuvio's Continue Watching release badges: solid
+  // #1D4ED8 (New Episode) and #B45309 (New Season), primary (white) text.
+  BADGE_NOVO_EPISODIO, BADGE_NOVA_TEMPORADA
 } BadgeEstilo;
 #define BADGE_H      28.0f
 #define BADGE_PADX   12.0f

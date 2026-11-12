@@ -2,16 +2,12 @@
 # Native offline regression and English/German PNG proof; no user data touched.
 set -eu
 cd "$(dirname "$0")/.."
-output=${1:-/Volumes/ExternalSSD/tmp/rev/dicacreditos-png}
+output=${1:-${TMPDIR:-/tmp}/dicacreditos-png}
 phase=${2:-after}
 mkdir -p "$output"
 work=$(mktemp -d "${TMPDIR:-/tmp}/nuvio-dicacreditos.XXXXXX")
 trap 'rm -rf "$work"' EXIT
 flags=(-DNV_SHOT_HOOKS)
-if [ "$phase" = before ]; then
-  git show c92539ccad18b81a95994c24b3591860e8567fed:src/posplay.c > "$work/posplay.c"
-  flags+=("-DNV_POSPLAY_SOURCE=\"$work/posplay.c\"")
-fi
 sources=()
 for source in src/*.c src/dts/*.c; do
   if [ "$source" != src/main.c ] && [ "$source" != src/posplay.c ]; then sources+=("$source"); fi

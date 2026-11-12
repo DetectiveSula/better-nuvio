@@ -108,6 +108,79 @@ static void addon(Legenda *l, const char *idioma, const char *nome, const char *
 
 static const char *SRT_EN =
   "1\n00:00:08,000 --> 00:00:30,000\nWe never planned to come back here.\nNot after what happened in the valley.\n\n";
+
+// Optional focused consumer checks: draw the real secondary renderer into the
+// framebuffer, one preference at a time. No emulator/account/provider required.
+static void secondaryFrame(void) {
+  LegendasGeo g = {.videoW = 1920, .videoH = 1080, .alpha = 1,
+                   .pos = 12, .baseY = 1000, .junto = ajustes_leg2_junto()};
+  glBindFramebuffer(GL_FRAMEBUFFER, fbo); glViewport(0, 0, LW, LH);
+  // A black subtitle background is invisible over an entirely black frame.
+  // Use a neutral video-like surface so background opacity is measurable too.
+  glClearColor(.35f, .4f, .45f, 1); glClear(GL_COLOR_BUFFER_BIT);
+  txt_novo_quadro(); legendasui_desenhar_secundaria(&g); ler();
+  assert(glGetError() == GL_NO_ERROR);
+}
+static void secondaryPreferenceChecks(void) {
+  static const struct { const char *key; int value; } cases[] = {
+    {"legenda2PosLocal", 1}, {"legenda2EscalaLocal", 11},
+    {"legenda2CorLocal", 2}, {"legenda2FundoLocal", 5},
+    {"legenda2BordaLocal", 1}, {"legenda2FonteLocal", 4},
+    {"legenda2OpacidadeLocal", 3}, {"legenda2PosicaoLocal", 8},
+    {"legenda2NegritoLocal", 1}, {"legenda2CorBordaLocal", 3}
+  };
+  unsigned char *baseline = malloc(sizeof quadro); assert(baseline);
+  VideoLegendaEstilo primary = *player_leg_estilo();
+  for (unsigned i = 0; i < sizeof cases / sizeof cases[0]; i++)
+    assert(ajustes_shot_valor(cases[i].key, 0));
+  // Verify every explicit choice reaches the style consumed by the renderer.
+  // Inherit choices can intentionally look identical to an explicit choice.
+  for (int field = 0; field < 9; field++) {
+    const char *keys[] = {"legenda2EscalaLocal", "legenda2CorLocal",
+      "legenda2FundoLocal", "legenda2BordaLocal", "legenda2FonteLocal",
+      "legenda2OpacidadeLocal", "legenda2PosicaoLocal",
+      "legenda2NegritoLocal", "legenda2CorBordaLocal"};
+    const int counts[] = {27, 7, 6, 4, TXT_FAMILIA_N + 1, 5, 9, 3, 7};
+    for (int v = 1; v < counts[field]; v++) {
+      VideoLegendaEstilo result;
+      assert(ajustes_shot_valor(keys[field], v));
+      ajustes_leg2_estilo(&primary, &result);
+      int actual[] = {result.tamanho, result.cor, result.fundo, result.borda,
+        result.familia, result.opacidade, result.posicao, result.negrito,
+        result.corBorda};
+      int expected = field == 0 ? 50 + (v - 1) * 10 :
+                     field == 7 ? v == 1 : v - 1;
+      assert(actual[field] == expected);
+      assert(!memcmp(&primary, player_leg_estilo(), sizeof primary));
+    }
+    assert(ajustes_shot_valor(keys[field], 0));
+    printf("PASS every secondary style choice reaches consumer: %s (%d choices)\n",
+           keys[field], counts[field]);
+  }
+  assert(ajustes_leg2_definir_atraso(0));
+  secondaryFrame(); memcpy(baseline, quadro, sizeof quadro);
+  assert(brancos(0, 0, LW, LH) > 2000);
+  for (unsigned i = 0; i < sizeof cases / sizeof cases[0]; i++) {
+    assert(ajustes_shot_valor(cases[i].key, cases[i].value));
+    secondaryFrame();
+    if (!memcmp(baseline, quadro, sizeof quadro)) {
+      fprintf(stderr, "No secondary render effect: %s=%d\n", cases[i].key, cases[i].value);
+      abort();
+    }
+    assert(!memcmp(&primary, player_leg_estilo(), sizeof primary));
+    assert(ajustes_shot_valor(cases[i].key, 0));
+    secondaryFrame(); assert(!memcmp(baseline, quadro, sizeof quadro));
+    printf("PASS secondary renderer pixels and restoration: %s\n", cases[i].key);
+  }
+  // Use the real persisted/manual-offset path, not a renderer-only style field.
+  assert(ajustes_leg2_definir_atraso(60000));
+  secondaryFrame(); assert(brancos(0, 0, LW, LH) == 0);
+  assert(ajustes_leg2_definir_atraso(0));
+  secondaryFrame(); assert(!memcmp(baseline, quadro, sizeof quadro));
+  assert(!memcmp(&primary, player_leg_estilo(), sizeof primary));
+  puts("PASS secondary delay removes out-of-window cue and restores it");
+  free(baseline);
+}
 static int baixar(const char *url, long maxBytes, unsigned prazoMs,
                   int (*parar)(void *), void *u, char **corpo, long *n) {
   (void)url; (void)maxBytes; (void)prazoMs; (void)parar; (void)u;
@@ -171,7 +244,7 @@ int main(int argc, char **argv) {
     // empilhada e com estilo proprio; vazio = padrao (no topo, igual a principal).
     { const char *e = getenv("NUVIO_SHOT_LEG2"); int p2 = 0, t2 = 0, c2 = 0, f2 = 0, b2 = 0;
       if (e && sscanf(e, "%d %d %d %d %d", &p2, &t2, &c2, &f2, &b2) == 5)
-        fprintf(f, "legenda2PosLocal %d\nlegenda2TamanhoLocal %d\nlegenda2CorLocal %d\nlegenda2FundoLocal %d\nlegenda2BordaLocal %d\n", p2, t2, c2, f2, b2); }
+        fprintf(f, "legenda2PosLocal %d\nlegenda2EscalaLocal %d\nlegenda2CorLocal %d\nlegenda2FundoLocal %d\nlegenda2BordaLocal %d\n", p2, t2, c2, f2, b2); }
     fclose(f);
     ajustes_dir(getenv("NUVIO_DADOS")); }
   ajustes_iniciar();
@@ -221,6 +294,8 @@ int main(int argc, char **argv) {
   { int prim = brancos(200, 700, 1720, 1060);
     fprintf(stderr, "bottom band white pixels (primary): %d\n", prim);
     assert(prim > 2000); }         // and the primary is still there, at the bottom
+
+  if (getenv("NUVIO_SHOT_LEG2_MATRIX")) secondaryPreferenceChecks();
 
   estado(1); quadros(30);
   salvar("legendas-duas-com-controles");
@@ -290,13 +365,17 @@ int main(int argc, char **argv) {
   quadros(30);
   salvar("legendas-mais-opcoes-addons");
   // Read the real persisted preference, including both manual-delay endpoints.
-  player_dir(getenv("NUVIO_DADOS"));
   { char nome[700]; const int offsets[] = { 60000, -60000, 15000, 60001 };
     for (int j = 0; j < 4; j++) {
       snprintf(nome, sizeof nome, "%s/player.txt", getenv("NUVIO_DADOS"));
-      FILE *f = fopen(nome, "w"); assert(f); fprintf(f, "leg_atraso %d\n", offsets[j]); fclose(f);
+      FILE *f = fopen(nome, "w"); assert(f);
+      // Current-format offsets include the sign marker. Legacy files without
+      // it intentionally migrate their sign and have a separate regression.
+      fprintf(f, "leg_atraso %d\nleg_atraso_sinal 1\n", offsets[j]); fclose(f);
+      // A cached reader must be reset for each simulated application restart.
+      player_dir(getenv("NUVIO_DADOS"));
       player_leg_estilo()->atrasoMs = 0;
-      player_abrir(0, NULL);
+      player_leg_estilo_carregar();
       assert(player_leg_estilo()->atrasoMs == (j == 3 ? 0 : offsets[j]));
     }
   }

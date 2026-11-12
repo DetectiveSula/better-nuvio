@@ -1,0 +1,7 @@
+{
+  "src/streams.c": {
+    "before": "16dae028a3853e72cc690283d98f8d81bfa5f3db1ffa447e1376f4f981c6a062",
+    "after": "affea263021e9bda3f474e04a389f4f30f46911d6bbda32cd9e11cb94b3d8cd3",
+    "reason": "Pinned DebridStreamPresentation parity: hide current provider-confirmed uncached raw VOD torrents in UI only; preserve bindings, resolver/manual pipeline, Unknown/Error/direct/live sources and explicit Cached/source filters. Coverage: tests/stream_cache_filter.c."
+  }
+}

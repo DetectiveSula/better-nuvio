@@ -68,6 +68,9 @@ unsigned long long ajustes_sync_hash(void) {
   return h;
 }
 
+#include "ajustes_official.inc"
+#include "ajustes_shared.inc"
+
 static char *ajustesExtras(void) {
   Jsw w;
   jsw_iniciar(&w); jsw_obj_ini(&w);

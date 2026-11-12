@@ -46,7 +46,11 @@ static void uxListarDiferencas(void) {
 }
 static int uxRequisito(int op) {
   switch (op) {
-    case AJ_PROXIMO_CONTAGEM: return AJ_PROXIMO_AUTO;
+    case AJ_MENU_OCULTAR_PILULA: return ajustes_menu_topo()?-1:AJ_RAIL_MODERNA;
+    case AJ_POSPLAY_PERCENT: return AJ_POSPLAY_RECOM;
+    case AJ_DET_TRAILER_ESPERA: return AJ_DET_TRAILER_AUTO;
+    case AJ_POSPLAY_TRAILER_ESPERA: return AJ_POSPLAY_TRAILER;
+    case AJ_PROXIMO_CONTAGEM: case AJ_AINDA_EPISODIOS: return AJ_PROXIMO_AUTO;
     case AJ_FONTE_GRUPO_SESSOES: return AJ_FONTE_GRUPO;
     case AJ_LINK_PRAZO: return AJ_LINK_REUSAR;
     case AJ_VIDRO_CONTORNO: case AJ_VIDRO_OPAC: case AJ_VIDRO_FOSCO: case AJ_VIDRO_QUALIDADE: return AJ_VIDRO;
@@ -425,6 +429,8 @@ static int uxEvento(SDL_Keycode k) {
   if (focoIndice && !ajRetrato()) {
     int dest = uxIndice;
     if (uxVoltar(k) || k == SDLK_LEFT) { sair = 1; return 1; }
+    // Preserve top-menu navigation after restoring the TV category sidebar.
+    if (k == SDLK_UP && dest == 0 && ajustes_menu_topo()) { sair = 1; return 1; }
     uxTopo = -1;
     if (k == SDLK_UP && dest > 0) dest--;
     if (k == SDLK_DOWN && dest < nSecoes + 1) dest++;

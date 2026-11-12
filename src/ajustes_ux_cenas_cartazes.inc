@@ -220,11 +220,12 @@ static int ajcNovaCartazes(int sec, int op) {
       ajc_cartaz(x, y, w, h, 4, 1);
       for (i = 0; i < n; i++) {
         float s = (i + 0.5f) / n, d = s < 0.5f ? s : 1 - s, d2 = s * per, px, py;
-        int on = d * 2 <= v;
+        int on; (void)d;
         if (d2 < w) { px = x + d2; py = y; }
         else if (d2 < w + h) { px = x + w; py = y + (d2 - w); }
         else if (d2 < 2 * w + h) { px = x + w - (d2 - w - h); py = y + h; }
         else { px = x; py = y + h - (d2 - 2 * w - h); }
+        on = v >= .99f || (py-y)/h <= v+.06f; /* Top only / Half / Full outline. */
         ajc_bolinha(px, py, on ? 7 : 4, 1, 1, 1, on ? 0.95f : 0.18f);
       }
       ajc_progresso(170, 300, 300, v, 1);
@@ -232,7 +233,7 @@ static int ajcNovaCartazes(int sec, int op) {
       return 1;
     }
     case AJ_PROF_POSTERS: case AJ_PROF_CW: case AJ_PROF_EPS: case AJ_PROF_ELENCO: case AJ_PROF_TRAILERS: {
-      float k = ajcLig(op), pos = ajc_fase(2.6f);
+      float k = ajustes_profundidade() && ajcLig(op), pos = ajc_fase(2.6f);
       int i;
       if (op == AJ_PROF_POSTERS) {
         for (i = 0; i < 5; i++) {

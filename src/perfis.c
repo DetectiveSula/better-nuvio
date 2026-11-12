@@ -189,6 +189,52 @@ static void gravarCache(void) {
   dados_gravar(ARQ_LISTA, buf);
 }
 
+int perfis_aplicar_edicao(int indice,const char *nome,const char *foto) {
+  if(!nome || !nome[0] || !foto || strlen(nome)>=sizeof lista[0].nome ||
+     strlen(foto)>=sizeof lista[0].avatarUrl)return 0;
+  for(int i=0;i<n;i++)if(lista[i].indice==indice){
+    limpo(lista[i].nome,sizeof lista[i].nome,nome);
+    limpo(lista[i].avatarUrl,sizeof lista[i].avatarUrl,foto);
+    gravarCache();return 1;
+  }
+  return 0;
+}
+
+// Cor "#RRGGBB" e fundo (URL ou "" = fundo padrao) confirmados pela conta.
+// NULL deixa o campo como esta. Mesmas regras de tamanho do cache.
+static int corValida(const char *c) {
+  if (!c || strlen(c) != 7 || c[0] != '#') return 0;
+  for (int i = 1; i < 7; i++) if (!strchr("0123456789abcdefABCDEF", c[i])) return 0;
+  return 1;
+}
+int perfis_aplicar_aparencia(int indice, const char *cor, const char *fundo) {
+  if ((cor && !corValida(cor)) || (fundo && strlen(fundo) >= sizeof lista[0].fundoUrl)) return 0;
+  for (int i = 0; i < n; i++) if (lista[i].indice == indice) {
+    if (cor) limpo(lista[i].corHex, sizeof lista[i].corHex, cor);
+    if (fundo) limpo(lista[i].fundoUrl, sizeof lista[i].fundoUrl, fundo);
+    gravarCache(); return 1;
+  }
+  return 0;
+}
+int perfis_aplicar_pin(int indice, int ligado) {
+  for (int i = 0; i < n; i++) if (lista[i].indice == indice) {
+    lista[i].temPin = ligado ? 1 : 0; gravarCache(); return 1;
+  }
+  return 0;
+}
+int perfis_aplicar_remocao(int indice) {
+  // Nunca o perfil 1, o principal nem o que esta em uso: o editor tambem os
+  // recusa, e apagar o ativo deixaria o app sincronizando um indice sem dono.
+  if (indice <= 1 || indice == atomic_load(&ativo) || n <= 1) return 0;
+  for (int i = 0; i < n; i++) if (lista[i].indice == indice) {
+    if (lista[i].primario) return 0;
+    memmove(&lista[i], &lista[i + 1], (size_t)(n - i - 1) * sizeof lista[0]);
+    n--; memset(&lista[n], 0, sizeof lista[n]);
+    gravarCache(); return 1;
+  }
+  return 0;
+}
+
 // Le um campo ate o proximo TAB ou fim de linha e avanca `*p`.
 static void campo(const char **p, char *dst, size_t tam) {
   const char *s = *p;
@@ -396,7 +442,7 @@ publicar:
   memcpy(lista, tmp, sizeof lista); n = novos;
   snprintf(dono, sizeof dono, "%s", novoDono);
   if (publicarCache) gravarCache();
-  printf("[perfis] %d perfil(is), dono=%s, ativo=%d\n", n, dono, ativo);
+  { char fp[9]; printf("[perfis] %d perfil(is), dono=conta %s, ativo=%d\n", n, sessao_impressao(dono, fp), ativo); }
   int quantidade = n;
   perfis_sessao_destravar();
   return quantidade;
@@ -472,10 +518,16 @@ int           perfis_principal(void) {
 // mesmo assim. Desligado, vale so o que a conta diz: `uses_primary_addons=true`
 // continua sendo respeitado, porque foi a pessoa que marcou isso no app web, e
 // um ajuste desta TV nao deve desfazer a escolha da conta.
+int perfis_home_config(void) {
+  const ContaPerfil *p=perfis_item_ativo();
+  return p && !p->primario && p->usaAddonsDoPrimario ? 1 : perfis_ativo();
+}
+
 int perfis_ativo_addons(void) {
   const ContaPerfil *p = perfis_item_ativo();
   int a = perfis_ativo();
   if (a == 1) return 1;
+  if (fil_tem_projecao()) return perfis_home_config(); // valid shared profile rows select their actual addon source
   return ((p && p->usaAddonsDoPrimario) || ajustes_addons_do_principal()) ? 1 : a;
 }
 

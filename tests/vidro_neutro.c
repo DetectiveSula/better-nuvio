@@ -114,8 +114,9 @@ int main(int argc, char **argv) {
     if (k == 2) salvar(dir, "vidro-branco.bmp");
   }
 
-  // Settle a small region, then open a distant panel after foreground drew.
-  // Both the miss and the following regional frame must use backdrop only.
+  // Settle a small region, then open a distant navigation overlay after
+  // foreground drew. Reserve it before content, as app/menu now do. The old
+  // unreserved miss sampled foreground (the reproduced sidebar defect).
   {
     GfxRect small = { 100, 40, 300, 90 }, expanded = { 1100, 250, 600, 600 };
     double miss[3], settled[3];
@@ -128,9 +129,12 @@ int main(int argc, char **argv) {
     }
     for (int i = 0; i < 2; i++) {
       quadro(.5f);
+      gfx_vidro_fundo_reservar(expanded);
       gfx_vidro_painel(small, .3f, .8f, 1);
       gfx_cor((GfxRect){1000, 200, 800, 800}, 0, 0, 1, 0, 1);
+      gfx_vidro_camada=3;
       gfx_vidro_painel(expanded, .06f, .8f, 1);
+      gfx_vidro_camada=0;
       media(1250, 400, 200, 200, i ? settled : miss);
     }
     neutro("regional miss excludes foreground", miss);
@@ -172,6 +176,34 @@ int main(int argc, char **argv) {
     confere(d[1] > e[1] + 12.0, "barra do topo, vidro sem fosco, deixa o fundo passar");
     confere(e[1] < 60.0 && d[1] < 200.0, "barra sem fosco segue escura o bastante para o texto");
     salvar(dir, "barra-fosco-off.bmp");
+  }
+  // Cast/Ratings must not enter the sidebar's reserved backdrop, including
+  // its first frame and a full-screen foreground veil on a later frame.
+  {
+    GfxRect overlay={40,80,320,800};
+    double baseline[3],actual[3];
+    setenv("NUVIO_SHOT_VIDRO_FOSCO","1",1);ajustes_teste_vidro_env();
+    for(int frame=0;frame<5;frame++) {
+      quadro(.5f);
+      gfx_vidro_painel((GfxRect){1500,100,200,90},.2f,.8f,1);
+    }
+    for(int frame=0;frame<4;frame++) {
+      quadro(.5f);
+      gfx_vidro_fundo_reservar(overlay);
+      gfx_cor((GfxRect){800,100,40,40},0,.2f,.2f,.2f,1);
+      if(frame==1) gfx_cor((GfxRect){40,80,320,800},0,1,0,1,1);
+      if(frame==2) gfx_cor((GfxRect){0,0,1920,1080},0,1,1,1,1);
+      if(frame==3) gfx_cor((GfxRect){40,80,320,800},0,0,1,0,1);
+      gfx_vidro_camada=3;
+      gfx_vidro_material(overlay,.04f,.86f,1);
+      gfx_vidro_camada=0;
+      media(100,300,180,350,actual);
+      if(!frame) memcpy(baseline,actual,sizeof baseline);
+      for(int channel=0;channel<3;channel++)
+        confere(fabs(actual[channel]-baseline[channel])<1.0,
+                "reserved overlay excludes Cast/Ratings/veil on first and subsequent frames");
+      confere(gfx_vidro_com_fonte>0,"reserved overlay retains real blur");
+    }
   }
   printf("vidro_neutro: %s\n", falhas ? "FALHA" : "ok");
   return falhas ? 1 : 0;

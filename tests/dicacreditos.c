@@ -1,4 +1,7 @@
-// Render the real islands and inspect their actual material/hint draw bounds.
+// Render the real post-play cards and inspect the actual text draw bounds.
+// Official Nuvio layout (12/11): the compact next-episode / post-credits /
+// still-watching card at the bottom-right. Every text line must stay inside
+// the card in all 31 languages and 3 UI scales, and the card on screen.
 #include "plrui.h"
 #include "ajustes.h"
 #include "idiomacod.h"
@@ -9,40 +12,24 @@
 #include <stdlib.h>
 #include <string.h>
 
-static GfxRect island;
-static int failures, hints, language, kind;
+static int failures, texts, language, kind;
 static float scale;
-static void recordMaterial(GfxRect r, float radius, float alpha);
-static float recordHints(const char *const *keys, const char *const *labels,
-                         int n, float x, float y, int right, float alpha);
-#define plrui_material_video recordMaterial
-#define plrui_dicas_video recordHints
-#ifndef NV_POSPLAY_SOURCE
-#define NV_POSPLAY_SOURCE "../src/posplay.c"
-#endif
-#include NV_POSPLAY_SOURCE
-#undef plrui_material_video
-#undef plrui_dicas_video
+static GfxRect card;
+static void recordText(TxtLinha l, float x, float y, float alpha);
+#define txt_desenhar_alpha recordText
+#include "../src/posplay.c"
+#undef txt_desenhar_alpha
 
-static void recordMaterial(GfxRect r, float radius, float alpha) {
-  island = r;
-  plrui_material_video(r, radius, alpha);
-}
-static float recordHints(const char *const *keys, const char *const *labels,
-                         int n, float x, float y, int right, float alpha) {
-  float width = plrui_dicas_video(keys, labels, n, x, y, right, alpha);
-  if (alpha > 0 && x >= 0) {
-    float left = right ? x - width : x;
-    hints++;
-    if (left < island.x + 28 - .01f || left + width > island.x + island.w - 28 + .01f ||
-        y - 15 < island.y || y + 15 > island.y + island.h - 28 + .01f ||
-        island.x < 40 || island.x + island.w > NV_VTELA_W - 40 + .01f) {
-      fprintf(stderr, "FAIL lang=%d island=%d scale=%.2f hints-right=%.1f limit=%.1f\n",
-              language, kind, scale, left + width, island.x + island.w - 28);
-      failures++;
-    }
+static void recordText(TxtLinha l, float x, float y, float alpha) {
+  txt_desenhar_alpha(l, x, y, alpha);
+  if (alpha <= 0 || l.w <= 0 || card.w <= 0) return;
+  texts++;
+  if (x < card.x + 19 || x + l.w > card.x + card.w - 19 + .01f ||
+      y < card.y || y + l.h > card.y + card.h + .01f) {
+    fprintf(stderr, "FAIL lang=%d kind=%d scale=%.2f text x=%.1f..%.1f y=%.1f card=%.1f,%.1f %.1fx%.1f\n",
+            language, kind, scale, x, x + l.w, y, card.x, card.y, card.w, card.h);
+    failures++;
   }
-  return width;
 }
 static void savePng(const char *dir, const char *phase) {
   char path[1024];
@@ -54,7 +41,7 @@ static void savePng(const char *dir, const char *phase) {
   for (int y = 0; y < 1080; y++)
     memcpy((char *)surface->pixels + y * surface->pitch, pixels + (1079 - y) * 1920 * 4, 1920 * 4);
   snprintf(path, sizeof path, "%s/%s-%s-%s%s.png", dir, phase,
-           kind ? "series" : "movie", language == IDIOMA_EN ? "en" : "de",
+           kind == 0 ? "movie" : kind == 1 ? "series" : kind == 3 ? "credits-next" : kind == 4 ? "still" : "credits", language == IDIOMA_EN ? "en" : "de",
            scale > 1 ? "-ui150" : "");
   assert(IMG_SavePNG(surface, path) == 0);
   printf("PNG %s\n", path);
@@ -93,21 +80,32 @@ int main(int argc, char **argv) {
     for (language = 0; language < IDIOMA_N; language++) {
       assert(ajustes_shot_valor("idioma", language + 1));
       assert(ajustes_idioma() == language);
-      // Movie credits, next episode, and series credits without another episode.
-      for (kind = 0; kind < 3; kind++) {
-        posplay_shot(0, kind != 0, kind == 2 ? -1 : 1, kind == 2 ? 0 : 2, 0);
-        aguardaCena = kind != 1;
+      // 0 movie credits, 1 next episode, 2 series credits without another
+      // episode, 3 series credits with Next (two pills), 4 still watching.
+      for (kind = 0; kind < 5; kind++) {
+        posplay_shot(0, kind != 0, kind == 2 ? -1 : 1, kind == 2 ? 0 : 2, kind == 1 ? 9000 : 0);
+        aguardaCena = kind == 0 || kind == 2 || kind == 3;
+        stillWatchingPrompt = kind == 4;
+        foco = 0;
         txt_novo_quadro(); tex_novo_quadro(); gfx_novo_quadro();
         glClearColor(.14f, .18f, .22f, 1); glClear(GL_COLOR_BUFFER_BIT);
-        hints = 0;
+        // First pass records the card, second checks the text against it.
+        card = (GfxRect){0}; texts = 0;
         posplay_desenhar(1000, 0);
-        assert(hints == 1);
-        if (s != 1 && kind < 2 && (language == IDIOMA_EN || language == IDIOMA_DE))
+        card = posplay_shot_cartao();
+        posplay_desenhar(1000, 0);
+        assert(texts >= 2);
+        { float s = gfx_escala_ui(), vw = 1920.0f / s, vh = 1080.0f / s;
+          if (card.x < 40 || card.x + card.w > vw - 40 + .01f || card.y + card.h > vh - 40 + .01f) {
+            fprintf(stderr, "FAIL lang=%d kind=%d scale=%.2f card off screen\n", language, kind, scale);
+            failures++;
+          } }
+        if (s != 1 && (language == IDIOMA_EN || language == IDIOMA_DE))
           savePng(argv[1], argv[2]);
       }
     }
   }
-  printf("%s: 31 languages, 3 islands/states, 3 UI scales; %d violations\n",
+  printf("%s: 31 languages, 5 card states, 3 UI scales; %d violations\n",
          failures ? "FAIL" : "PASS", failures);
   tex_encerrar(); txt_encerrar(); gfx_encerrar();
   SDL_GL_DeleteContext(context); SDL_DestroyWindow(window); SDL_Quit();

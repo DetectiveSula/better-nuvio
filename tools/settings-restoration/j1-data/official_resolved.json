@@ -1,0 +1,3051 @@
+{
+"0": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "nuvio_performance_mode_enabled",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "min_buffer_ms",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "max_buffer_ms",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "buffer_for_playback_ms",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "buffer_for_playback_after_rebuffer_ms",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "target_buffer_size_mb",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "back_buffer_duration_ms",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "allow_large_target_buffer",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "buffer_budget_managed",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "use_parallel_connections",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "parallel_connection_count",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "parallel_chunk_size_kb",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "min_buffer_ms",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "max_buffer_ms",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "buffer_for_playback_ms",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "buffer_for_playback_after_rebuffer_ms",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "target_buffer_size_mb",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "back_buffer_duration_ms",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "allow_large_target_buffer",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "use_parallel_connections",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "parallel_connection_count",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "parallel_chunk_size_kb",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "buffer_budget_managed",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"1": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "buffer_engine_enabled",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"2": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "parallel_network_enabled",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"3": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "min_buffer_ms",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "max_buffer_ms",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+}
+],
+"4": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "max_buffer_ms",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+}
+],
+"5": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "buffer_for_playback_ms",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+}
+],
+"6": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "buffer_for_playback_after_rebuffer_ms",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+}
+],
+"7": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "back_buffer_duration_ms",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+}
+],
+"8": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "buffer_budget_managed",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"9": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "target_buffer_size_mb",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "target_buffer_size_mb",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "target_buffer_size_mb",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "use_parallel_connections",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "parallel_connection_count",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "parallel_chunk_size_kb",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+}
+],
+"10": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "allow_large_target_buffer",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "target_buffer_size_mb",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+}
+],
+"11": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "vod_cache_enabled",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "back_buffer_duration_ms",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+}
+],
+"12": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "vod_cache_size_mode",
+"type": "string",
+"official_sync": "excluded: device-local in official"
+}
+],
+"13": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "vod_cache_size_mb",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+}
+],
+"14": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "use_parallel_connections",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "use_parallel_connections",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "use_parallel_connections",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "target_buffer_size_mb",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "use_parallel_connections",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "parallel_connection_count",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "parallel_chunk_size_kb",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+}
+],
+"15": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "parallel_connection_count",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "parallel_connection_count",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "parallel_connection_count",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "target_buffer_size_mb",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "use_parallel_connections",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "parallel_connection_count",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "parallel_chunk_size_kb",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+}
+],
+"16": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "parallel_chunk_size_kb",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "parallel_chunk_size_kb",
+"type": "int",
+"official_sync": "excluded: device-local in official"
+}
+],
+"17": [],
+"18": [],
+"19": [],
+"20": [],
+"21": [],
+"22": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "continue_watching_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "continue_watching_card_style",
+"type": "string",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"23": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "use_episode_thumbnails_in_cw",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "prefer_external_meta_addon_detail",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"24": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "blur_continue_watching_next_up",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "use_episode_thumbnails_in_cw",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"25": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "next_up_from_furthest_episode",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "show_unaired_next_up",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"26": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "show_unaired_next_up",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "continue_watching_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"27": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "continue_watching_sort_mode",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"28": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "focused_poster_backdrop_expand_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "focused_poster_backdrop_trailer_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "focused_poster_backdrop_trailer_muted",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "focused_poster_backdrop_expand_delay_seconds",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"29": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "focused_poster_backdrop_expand_delay_seconds",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "focused_poster_backdrop_trailer_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "focused_poster_backdrop_trailer_muted",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"30": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "focused_poster_backdrop_trailer_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "focused_poster_backdrop_trailer_muted",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "focused_poster_backdrop_trailer_muted",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"31": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "focused_poster_backdrop_trailer_muted",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"32": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "poster_card_width_dp",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "poster_card_height_dp",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"33": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "poster_card_corner_radius_dp",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "card_depth_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"34": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "modern_landscape_posters_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "modern_hero_full_screen_backdrop",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"35": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "always_show_landscape_clearlogo",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "continue_watching_sort_mode",
+"type": "string",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "poster_card_width_dp",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "poster_card_height_dp",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "poster_card_corner_radius_dp",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "custom_poster_url_pattern",
+"type": "string",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"36": [],
+"37": [],
+"38": [
+{
+"store": "DebridSettingsDataStore",
+"feature": "debrid_settings",
+"profile": true,
+"key": "debrid_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "AmbientModeDataStore",
+"feature": "ambient_mode_settings",
+"profile": true,
+"key": "ambient_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "profile store, feature not synced"
+},
+{
+"store": "AnimeSkipSettingsDataStore",
+"feature": "animeskip_settings",
+"profile": true,
+"key": "animeskip_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "MDBListSettingsDataStore",
+"feature": "mdblist_settings",
+"profile": true,
+"key": "mdblist_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "TmdbSettingsDataStore",
+"feature": "tmdb_settings",
+"profile": true,
+"key": "tmdb_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "SentrySettingsDataStore",
+"feature": null,
+"profile": false,
+"key": "enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "device/global store (not synced)"
+}
+],
+"39": [],
+"40": [],
+"41": [],
+"42": [],
+"43": [],
+"44": [],
+"45": [],
+"46": [
+{
+"store": "DebridSettingsDataStore",
+"feature": "debrid_settings",
+"profile": true,
+"key": "cloud_library_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"47": [
+{
+"store": "DebridSettingsDataStore",
+"feature": "debrid_settings",
+"profile": true,
+"key": "debrid_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "AmbientModeDataStore",
+"feature": "ambient_mode_settings",
+"profile": true,
+"key": "ambient_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "profile store, feature not synced"
+},
+{
+"store": "AnimeSkipSettingsDataStore",
+"feature": "animeskip_settings",
+"profile": true,
+"key": "animeskip_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "MDBListSettingsDataStore",
+"feature": "mdblist_settings",
+"profile": true,
+"key": "mdblist_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "TmdbSettingsDataStore",
+"feature": "tmdb_settings",
+"profile": true,
+"key": "tmdb_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "SentrySettingsDataStore",
+"feature": null,
+"profile": false,
+"key": "enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "device/global store (not synced)"
+}
+],
+"48": [],
+"49": [
+{
+"store": "DebridSettingsDataStore",
+"feature": "debrid_settings",
+"profile": true,
+"key": "instant_playback_preparation_limit",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"50": [
+{
+"store": "DebridSettingsDataStore",
+"feature": "debrid_settings",
+"profile": true,
+"key": "instant_playback_preparation_limit",
+"type": "int",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"51": [],
+"52": [],
+"53": [
+{
+"store": "DebridSettingsDataStore",
+"feature": "debrid_settings",
+"profile": true,
+"key": "stream_preferences",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"54": [
+{
+"store": "DebridSettingsDataStore",
+"feature": "debrid_settings",
+"profile": true,
+"key": "stream_preferences",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"55": [
+{
+"store": "DebridSettingsDataStore",
+"feature": "debrid_settings",
+"profile": true,
+"key": "stream_preferences",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"56": [
+{
+"store": "DebridSettingsDataStore",
+"feature": "debrid_settings",
+"profile": true,
+"key": "stream_preferences",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"57": [
+{
+"store": "DebridSettingsDataStore",
+"feature": "debrid_settings",
+"profile": true,
+"key": "stream_preferences",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"58": [],
+"59": [
+{
+"store": "ThemeDataStore",
+"feature": "theme_settings",
+"profile": true,
+"key": "amoled_mode",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "ThemeDataStore",
+"feature": "theme_settings",
+"profile": true,
+"key": "amoled_surfaces_mode",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "ThemeDataStore",
+"feature": "theme_settings",
+"profile": true,
+"key": "amoled_surfaces_mode",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"60": [
+{
+"store": "ThemeDataStore",
+"feature": "theme_settings",
+"profile": true,
+"key": "amoled_surfaces_mode",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "ThemeDataStore",
+"feature": "theme_settings",
+"profile": true,
+"key": "settings_ui_style",
+"type": "string",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"61": [],
+"62": [
+{
+"store": "ThemeDataStore",
+"feature": "theme_settings",
+"profile": true,
+"key": "selected_font",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"63": [],
+"64": [],
+"65": [],
+"66": [],
+"67": [
+{
+"store": "TraktSettingsDataStore",
+"feature": "trakt_settings",
+"profile": true,
+"key": "library_source_mode",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"68": [
+{
+"store": "TraktSettingsDataStore",
+"feature": "trakt_settings",
+"profile": true,
+"key": "watch_progress_source",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"69": [
+{
+"store": "TraktSettingsDataStore",
+"feature": "trakt_settings",
+"profile": true,
+"key": "more_like_this_source",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"70": [
+{
+"store": "TraktSettingsDataStore",
+"feature": "trakt_settings",
+"profile": true,
+"key": "continue_watching_days_cap",
+"type": "int",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"71": [
+{
+"store": "TraktSettingsDataStore",
+"feature": "trakt_settings",
+"profile": true,
+"key": "show_meta_comments",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"72": [
+{
+"store": "TraktSettingsDataStore",
+"feature": "trakt_settings",
+"profile": true,
+"key": "simkl_anime_id_preference",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"73": [],
+"74": [
+{
+"store": "DebugSettingsDataStore",
+"feature": null,
+"profile": false,
+"key": "account_tab_enabled",
+"type": "boolean",
+"official_sync": "device/global store (not synced)"
+}
+],
+"75": [
+{
+"store": "DebugSettingsDataStore",
+"feature": null,
+"profile": false,
+"key": "sync_code_features_enabled",
+"type": "boolean",
+"official_sync": "device/global store (not synced)"
+}
+],
+"76": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "compose_highlighter_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"77": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "enable_buffer_logs",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"78": [],
+"79": [],
+"80": [],
+"81": [],
+"82": [],
+"83": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "subtitle_use_forced_subtitles",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"84": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "subtitle_show_only_preferred_languages",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"85": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "subtitle_strip_sdh",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"86": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "subtitle_size",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"87": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "subtitle_vertical_offset",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"88": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "subtitle_bold",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"89": [],
+"90": [],
+"91": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "subtitle_outline_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"92": [],
+"93": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "subtitle_hdr_style_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"94": [],
+"95": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "subtitle_hdr_brightness",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"96": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "subtitle_hdr_dim_player_controls",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"97": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "use_libass",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"98": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "libass_render_mode",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"99": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "libass_render_scale",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"100": [
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_delay_seconds",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"101": [],
+"102": [],
+"103": [
+{
+"store": "DebridSettingsDataStore",
+"feature": "debrid_settings",
+"profile": true,
+"key": "debrid_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "AmbientModeDataStore",
+"feature": "ambient_mode_settings",
+"profile": true,
+"key": "ambient_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "profile store, feature not synced"
+},
+{
+"store": "AnimeSkipSettingsDataStore",
+"feature": "animeskip_settings",
+"profile": true,
+"key": "animeskip_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "MDBListSettingsDataStore",
+"feature": "mdblist_settings",
+"profile": true,
+"key": "mdblist_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "TmdbSettingsDataStore",
+"feature": "tmdb_settings",
+"profile": true,
+"key": "tmdb_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "SentrySettingsDataStore",
+"feature": null,
+"profile": false,
+"key": "enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "device/global store (not synced)"
+}
+],
+"104": [
+{
+"store": "TmdbSettingsDataStore",
+"feature": "tmdb_settings",
+"profile": true,
+"key": "tmdb_modern_home_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"105": [
+{
+"store": "TmdbSettingsDataStore",
+"feature": "tmdb_settings",
+"profile": true,
+"key": "tmdb_enrich_continue_watching",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"106": [],
+"107": [
+{
+"store": "TmdbSettingsDataStore",
+"feature": "tmdb_settings",
+"profile": true,
+"key": "tmdb_use_artwork",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"108": [
+{
+"store": "TmdbSettingsDataStore",
+"feature": "tmdb_settings",
+"profile": true,
+"key": "tmdb_use_basic_info",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"109": [
+{
+"store": "TmdbSettingsDataStore",
+"feature": "tmdb_settings",
+"profile": true,
+"key": "tmdb_use_details",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"110": [
+{
+"store": "TmdbSettingsDataStore",
+"feature": "tmdb_settings",
+"profile": true,
+"key": "tmdb_use_credits",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"111": [
+{
+"store": "TmdbSettingsDataStore",
+"feature": "tmdb_settings",
+"profile": true,
+"key": "tmdb_use_productions",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"112": [
+{
+"store": "TmdbSettingsDataStore",
+"feature": "tmdb_settings",
+"profile": true,
+"key": "tmdb_use_networks",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"113": [
+{
+"store": "TmdbSettingsDataStore",
+"feature": "tmdb_settings",
+"profile": true,
+"key": "tmdb_use_episodes",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"114": [
+{
+"store": "TmdbSettingsDataStore",
+"feature": "tmdb_settings",
+"profile": true,
+"key": "tmdb_use_trailers",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"115": [
+{
+"store": "TmdbSettingsDataStore",
+"feature": "tmdb_settings",
+"profile": true,
+"key": "tmdb_use_more_like_this",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"116": [
+{
+"store": "TmdbSettingsDataStore",
+"feature": "tmdb_settings",
+"profile": true,
+"key": "tmdb_use_collections",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"117": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "preferred_audio_language",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"118": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "secondary_preferred_audio_language",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"119": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "skip_silence",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"120": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "night_mode",
+"type": "string",
+"match": "property",
+"official_sync": "excluded: device-local in official"
+}
+],
+"121": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "remember_audio_delay_per_device",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"122": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "decoder_priority",
+"type": "int",
+"match": "property",
+"official_sync": "excluded: device-local in official"
+}
+],
+"123": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "downmix_enabled",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"124": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "audio_output_channels",
+"type": "string",
+"match": "property",
+"official_sync": "excluded: device-local in official"
+}
+],
+"125": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "downmix_enabled",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "maintain_original_audio_on_downmix",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"126": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "downmix_lfe_level",
+"type": "string",
+"match": "property",
+"official_sync": "excluded: device-local in official"
+}
+],
+"127": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "tunneling_enabled",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"128": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "force_optical_passthrough",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"129": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "episode_options_overlay_style",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"130": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "random_episode_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "home_imdb_ratings_visibility",
+"type": "string",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"131": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "blur_unwatched_episodes",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "episode_options_overlay_style",
+"type": "string",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"132": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "detail_imdb_ratings_visibility",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"133": [
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_delay_seconds",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"134": [
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_play_in_background",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_pause_on_scroll",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"135": [
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_pause_on_scroll",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_allow_4k",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"136": [
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_delay_seconds",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_play_in_background",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"137": [
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_allow_4k",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "blur_unwatched_episodes",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"138": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "detail_page_trailer_button_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"139": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "prefer_external_meta_addon_detail",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "hide_unreleased_content",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"140": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "show_full_release_date",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "next_up_from_furthest_episode",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"141": [
+{
+"store": "StreamBadgeSettingsDataStore",
+"feature": "stream_badge_settings",
+"profile": true,
+"key": "show_file_size_badges",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"142": [],
+"143": [],
+"144": [
+{
+"store": "StreamBadgeSettingsDataStore",
+"feature": "stream_badge_settings",
+"profile": true,
+"key": "show_badges_in_player",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"145": [],
+"146": [
+{
+"store": "StreamBadgeSettingsDataStore",
+"feature": "stream_badge_settings",
+"profile": true,
+"key": "show_addon_logo",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"147": [
+{
+"store": "DebridSettingsDataStore",
+"feature": "debrid_settings",
+"profile": true,
+"key": "debrid_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "AmbientModeDataStore",
+"feature": "ambient_mode_settings",
+"profile": true,
+"key": "ambient_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "profile store, feature not synced"
+},
+{
+"store": "AnimeSkipSettingsDataStore",
+"feature": "animeskip_settings",
+"profile": true,
+"key": "animeskip_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "MDBListSettingsDataStore",
+"feature": "mdblist_settings",
+"profile": true,
+"key": "mdblist_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "TmdbSettingsDataStore",
+"feature": "tmdb_settings",
+"profile": true,
+"key": "tmdb_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "SentrySettingsDataStore",
+"feature": null,
+"profile": false,
+"key": "enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "device/global store (not synced)"
+}
+],
+"148": [
+{
+"store": "MDBListSettingsDataStore",
+"feature": "mdblist_settings",
+"profile": true,
+"key": "mdblist_api_key",
+"type": "string",
+"match": "property",
+"official_sync": "credential (separate RPC)"
+}
+],
+"149": [
+{
+"store": "MDBListSettingsDataStore",
+"feature": "mdblist_settings",
+"profile": true,
+"key": "mdblist_show_on_hero",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"150": [
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_delay_seconds",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"151": [],
+"152": [],
+"153": [],
+"154": [],
+"155": [],
+"156": [],
+"157": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "stream_auto_play_mode",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"158": [],
+"159": [],
+"160": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "stream_auto_play_selected_addons",
+"type": "stringSet",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"161": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "stream_auto_play_selected_plugins",
+"type": "stringSet",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"162": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "stream_auto_play_timeout_seconds",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"163": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "preload_next_episode_sources",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"164": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "stream_reuse_last_link_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"165": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "stream_reuse_last_link_cache_hours",
+"type": "int",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"166": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "stream_auto_play_next_episode_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"167": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "stream_auto_play_next_episode_fallback_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"168": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "next_episode_threshold_mode",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"169": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "next_episode_threshold_percent_v2",
+"type": "float",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"170": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "next_episode_threshold_minutes_before_end_v2",
+"type": "float",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"171": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "still_watching_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"172": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "still_watching_episode_threshold",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"173": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "stream_auto_play_prefer_bingegroup_next_episode",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"174": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "stream_auto_play_reuse_binge_group",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"175": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "post_play_recommendations_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"176": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "post_play_movie_threshold_percent",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"177": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "modern_hero_full_screen_backdrop",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "hero_section_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"178": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "classic_focus_gradient_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "focused_poster_backdrop_expand_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "focused_poster_backdrop_trailer_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "focused_poster_backdrop_trailer_muted",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"179": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "hero_section_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "discover_location",
+"type": "string",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "last_non_off_discover_location",
+"type": "string",
+"official_sync": "excluded: device-local in official"
+}
+],
+"180": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "poster_labels_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "catalog_addon_name_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"181": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "catalog_addon_name_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "catalog_type_suffix_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"182": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "catalog_type_suffix_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "classic_focus_gradient_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"183": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "hide_unreleased_content",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "show_full_release_date",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"184": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "home_imdb_ratings_visibility",
+"type": "string",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "detail_imdb_ratings_visibility",
+"type": "string",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"185": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "modern_sidebar_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "modern_sidebar_blur_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"186": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "modern_sidebar_blur_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "modern_landscape_posters_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"187": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "sidebar_collapsed_by_default",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "modern_sidebar_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"188": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "sidebar_collapsed_by_default",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "modern_sidebar_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"189": [],
+"190": [],
+"191": [],
+"192": [],
+"193": [],
+"194": [],
+"195": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "fast_horizontal_navigation_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "fast_horizontal_navigation_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"196": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "fast_horizontal_navigation_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "smooth_bring_into_view_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"197": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "fast_horizontal_navigation_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "smooth_bring_into_view_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"198": [
+{
+"store": "ProfileDataStore",
+"feature": null,
+"profile": false,
+"key": "startup_splash_enabled",
+"type": "boolean",
+"official_sync": "device/global store (not synced)"
+}
+],
+"199": [
+{
+"store": "ProfileDataStore",
+"feature": null,
+"profile": false,
+"key": "remember_last_profile_enabled",
+"type": "boolean",
+"official_sync": "device/global store (not synced)"
+}
+],
+"200": [
+{
+"store": "ProfileDataStore",
+"feature": null,
+"profile": false,
+"key": "confirm_exit_enabled",
+"type": "boolean",
+"official_sync": "device/global store (not synced)"
+}
+],
+"201": [],
+"202": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "fast_horizontal_navigation_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "playback_issue_reports_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"203": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "fast_horizontal_navigation_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "smooth_bring_into_view_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"204": [],
+"205": [],
+"206": [],
+"207": [],
+"208": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "frame_rate_matching_mode",
+"type": "string",
+"match": "property",
+"official_sync": "excluded: device-local in official"
+}
+],
+"209": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "resolution_matching_enabled",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"210": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "dv7_handling_mode",
+"type": "string",
+"match": "property",
+"official_sync": "excluded: device-local in official"
+}
+],
+"211": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "experimental_dv7_to_dv81_preserve_mapping_enabled",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"212": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "experimental_dv5_to_dv81_enabled",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"213": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "strip_hdr10plus_sei",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"214": [
+{
+"store": "DeviceLocalPlayerPreferences",
+"feature": null,
+"profile": false,
+"key": "transparent_letterbox",
+"type": "boolean",
+"official_sync": "device/global store (not synced)"
+}
+],
+"215": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "exo_chapters_enabled",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"216": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "mpv_hardware_decode_mode",
+"type": "string",
+"match": "property",
+"official_sync": "excluded: device-local in official"
+}
+],
+"217": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "mpv_hi10p_gnext_software_fallback_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"218": [
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_delay_seconds",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"219": [],
+"220": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "player_preference",
+"type": "string",
+"match": "property",
+"official_sync": "excluded: device-local in official"
+}
+],
+"221": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "internal_player_engine",
+"type": "string",
+"match": "property",
+"official_sync": "excluded: device-local in official"
+}
+],
+"222": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "auto_switch_internal_player_on_error",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"223": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "external_player_forward_subtitles",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"224": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "external_player_send_skip_segments",
+"type": "boolean",
+"official_sync": "excluded: device-local in official"
+}
+],
+"225": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "skip_intro_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"226": [],
+"227": [],
+"228": [],
+"229": [],
+"230": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "loading_overlay_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"231": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "show_player_loading_status",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"232": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "pause_overlay_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"233": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "osd_clock_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"234": [
+{
+"store": "PlayerSettingsDataStore",
+"feature": "player_settings",
+"profile": true,
+"key": "parental_guide_enabled",
+"type": "boolean",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"235": [
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_delay_seconds",
+"type": "int",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"236": [
+{
+"store": "AmbientModeDataStore",
+"feature": "ambient_mode_settings",
+"profile": true,
+"key": "ambient_timeout_minutes",
+"type": "int",
+"match": "property",
+"official_sync": "profile store, feature not synced"
+}
+],
+"237": [],
+"238": [],
+"239": [],
+"240": [],
+"241": [
+{
+"store": "DebridSettingsDataStore",
+"feature": "debrid_settings",
+"profile": true,
+"key": "debrid_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "AmbientModeDataStore",
+"feature": "ambient_mode_settings",
+"profile": true,
+"key": "ambient_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "profile store, feature not synced"
+},
+{
+"store": "AnimeSkipSettingsDataStore",
+"feature": "animeskip_settings",
+"profile": true,
+"key": "animeskip_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "TrailerSettingsDataStore",
+"feature": "trailer_settings",
+"profile": true,
+"key": "trailer_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "MDBListSettingsDataStore",
+"feature": "mdblist_settings",
+"profile": true,
+"key": "mdblist_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "TmdbSettingsDataStore",
+"feature": "tmdb_settings",
+"profile": true,
+"key": "tmdb_enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+},
+{
+"store": "SentrySettingsDataStore",
+"feature": null,
+"profile": false,
+"key": "enabled",
+"type": "boolean",
+"match": "property",
+"official_sync": "device/global store (not synced)"
+}
+],
+"242": [],
+"243": [],
+"244": [],
+"245": [],
+"246": [],
+"247": [],
+"248": [],
+"249": [
+{
+"store": "ThemeDataStore",
+"feature": "theme_settings",
+"profile": true,
+"key": "selected_theme",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"250": [],
+"251": [],
+"252": [],
+"253": [],
+"254": [],
+"255": [],
+"256": [],
+"257": [],
+"258": [
+{
+"store": "ThemeDataStore",
+"feature": "theme_settings",
+"profile": true,
+"key": "settings_ui_style",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"259": [],
+"260": [],
+"261": [
+{
+"store": "LayoutPreferenceDataStore",
+"feature": "layout_settings",
+"profile": true,
+"key": "continue_watching_card_style",
+"type": "string",
+"match": "property",
+"official_sync": "exported in \"tv\" blob"
+}
+],
+"262": [],
+"263": [],
+"264": [],
+"265": [],
+"266": [],
+"267": [],
+"268": [],
+"269": [],
+"270": [],
+"271": [],
+"272": [],
+"273": [],
+"274": [],
+"275": [],
+"276": [],
+"277": [],
+"278": [],
+"279": [],
+"280": [],
+"281": [],
+"282": [],
+"283": [],
+"284": [],
+"285": [],
+"286": [],
+"287": [],
+"288": [],
+"289": [],
+"290": [],
+"291": [],
+"292": [],
+"293": [],
+"294": [],
+"295": [],
+"296": [],
+"297": [],
+"298": [],
+"299": [],
+"300": [],
+"301": [],
+"302": [],
+"303": [],
+"304": [],
+"305": [],
+"306": [],
+"307": [],
+"308": [],
+"309": [],
+"310": [],
+"311": [],
+"312": [],
+"313": [],
+"314": [],
+"315": [],
+"316": [],
+"317": [],
+"318": [],
+"319": [],
+"320": [],
+"321": [],
+"322": [],
+"323": [],
+"324": [],
+"325": [],
+"326": [],
+"327": [],
+"328": [],
+"329": [],
+"330": [],
+"331": [],
+"332": [],
+"333": [],
+"334": [],
+"335": [],
+"336": [],
+"337": [],
+"338": [],
+"339": [],
+"340": [],
+"341": [],
+"342": [],
+"343": [],
+"344": [],
+"345": [],
+"346": [],
+"347": [],
+"348": [],
+"349": [],
+"350": [],
+"351": [],
+"352": [],
+"353": []
+}

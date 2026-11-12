@@ -95,3 +95,29 @@ WEAK char *nuvem_addon_alternar(const char *query, int enabled, const char *bear
   if (status) *status = 503;
   return NULL;
 }
+
+// Stage I/J settings bridge and later account hooks, for harnesses that link
+// sync.c without ajustes.c. Weak: a test that links the real module wins.
+WEAK void ajustes_better_contexto(void) {}
+WEAK void ajustes_better_observar(void) {}
+WEAK int  ajustes_better_passo(void) { return 0; }
+WEAK void ajustes_better_ciclo(uint64_t session) { (void)session; }
+WEAK void ajustes_better_esquecer(void) {}
+WEAK int  ajustes_compartilhados_resposta(const char *r, char **out) { (void)r; if (out) *out = NULL; return 0; }
+WEAK const char *ajustes_compartilhados_motivo(void) { return ""; }
+WEAK void ajustes_compartilhados_contexto(void) {}
+WEAK void ajustes_compartilhados_esquecer(void) {}
+WEAK void ajustes_compartilhados_observar(void) {}
+WEAK int  ajustes_compartilhados_pendentes(void) { return 0; }
+WEAK int  ajustes_compartilhados_aplicar(const char *json) { (void)json; return 0; }
+WEAK int  ajustes_compartilhados_mesclar(const char *base, char **out) { (void)base; if (out) *out = NULL; return 0; }
+WEAK void ajustes_compartilhados_confirmar(const char *sent) { (void)sent; }
+WEAK int  ajustes_cw_fonte(void) { return 0; }
+WEAK int  ajustes_edicao_perfil(void) { return 0; }
+WEAK void ajustes_edicao_encerrar(void) {}
+WEAK int  ajustes_migrar_escopo(void) { return 0; }
+WEAK void perfil_infantil_esquecer(void) {}
+int perfis_ativo(void);
+// Real rule (perfis.c): the active profile, or 1 when it borrows the primary's add-ons.
+WEAK int  perfis_home_config(void) { return perfis_ativo(); }
+WEAK int  syncprog_reenviar_deletes(void) { return 0; }

@@ -77,6 +77,12 @@ static void escoposPorValor(void) {
       v >= AJ_TEMA_DINAMICA ? "Só este perfil, nesta TV" : "Conta/perfil"));
   assert(!strcmp(uxEscopoValor(AJ_TMDB_IDIOMA, 0), "Só este perfil, nesta TV"));
   assert(!strcmp(uxEscopoValor(AJ_TMDB_IDIOMA, 1), "Conta/perfil"));
+  /* Home layout is a J4 binding; without an armed Better Nuvio upload scope
+   * (here: no session) the panel keeps the honest local label. */
+  assert(ajustes_better_op_vinculada(AJ_HOME_LAYOUT));
+  assert(!ajustes_better_op_vinculada(AJ_PULAR_CREDITOS));
+  assert(!ajustes_better_envia());
+  assert(!strcmp(uxEscopo(AJ_HOME_LAYOUT), "Só este perfil, nesta TV"));
   /* "Da conta" muda a origem efetiva, nao retira a escolha do perfil. */
   assert(dePerfil(AJ_LEG_LINGUA) && dePerfil(AJ_AUD_LINGUA));
   assert(!strcmp(uxEscopoValor(AJ_LEG_LINGUA, 0), "Conta/perfil"));

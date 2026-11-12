@@ -1,9 +1,16 @@
 // Glifos complementares: SVG Lucide embarcado, rasterizado no pacote para OpenGL.
 static const char *ajVisualIcone(int op) {
+  if(op==AJ_TMDB_CHAVE_LOCAL)return "aj_key-round";
+  if(op==AJ_FAMILIA||op==AJ_FAMILIA_PARTILHAR)return "aj_users";
   if(op==AJ_TB_CACHED_ADD)return "aj_link";
   if(op>=AJ_RESOLVE_LINKS&&op<=AJ_RESOLVE_LIMIT)return "aj_link";
   if (ajLegendaPrincipal(op) || op == AJ_LEG1_RESTAURAR || ajLegendaSecundaria(op)) return "aj_captions";
   switch (op) {
+    case AJ_MENU_OCULTAR_PILULA: return "aj_panel-left";
+    case AJ_DET_TRAILER_ESPERA: case AJ_POSPLAY_TRAILER_ESPERA: return "aj_clock";
+    case AJ_POSPLAY_TRAILER: case AJ_POSPLAY_RECOM: case AJ_POSPLAY_PERCENT: return "aj_play";
+    case AJ_AINDA_EPISODIOS: return "aj_clock";
+    case AJ_LEG_AUTO_COMPLETA: return "aj_captions";
     case AJ_COLECAO_EXIBICAO: return "aj_layout-dashboard";
     case AJ_HOME_LAYOUT: return "aj_layout-dashboard";
     case AJ_LANDSCAPE: return "aj_layout-dashboard";

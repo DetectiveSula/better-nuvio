@@ -53,3 +53,6 @@ int main(void) {
   }
   puts("addons_sync_ui: ok (empty list, 128 addons, remote, pointer, busy)");
 }
+
+// addonsui.c asks for the English settings text; the strings pass through here.
+const char *idioma_ingles(const char *s) { return s; }

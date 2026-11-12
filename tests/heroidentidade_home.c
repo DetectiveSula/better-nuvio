@@ -57,7 +57,10 @@ int main(void) {
   const char *a, *b;
   char esperadoA[512];
   int i;
-  ajustes_aplicar_blob("{\"continueWatchingEnabled\":true}");
+  // The focused art test uses the static Native defaults (CW enabled).
+  // Applying a whole account blob here pulled in unrelated sync/player
+  // transports; those are covered by the isolated settings/CW suites.
+  assert(ajustes_cw_ligado());
   // Dois episodios (Continuar assistindo) e dois filmes sem backdrop, que caem
   // no fundo do metahub montado pelo id — os dois caminhos do buffer unico.
   for (i = 0; i < 4; i++) {

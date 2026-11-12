@@ -129,9 +129,19 @@ static void at_sha256_hex(const unsigned char *buf, size_t n, char *hex65) {
 }
 #endif
 
+#ifdef NV_ANDROID
+#ifndef NDEBUG
+#define AT_BETTER_PREVIEW 1
+#define AT_URL "https://api.github.com/repos/DetectiveSula/better-nuvio/releases?per_page=30"
+#else
+#define AT_URL "https://api.github.com/repos/DetectiveSula/better-nuvio/releases/latest"
+#endif
+#define AT_PAGINA "https://github.com/DetectiveSula/better-nuvio/releases"
+#else
 #define AT_URL   "https://api.github.com/repos/iqui27/nuvio-native-legacy/releases/latest"
-#define AT_ARQ   "atualizacao-vista.txt"
 #define AT_PAGINA "https://github.com/iqui27/nuvio-native-legacy/releases"
+#endif
+#define AT_ARQ   "atualizacao-vista.txt"
 #define AT_APPID  NV_APP_ID
 #define AT_LUNA_PUB "/usr/bin/luna-send-pub"
 #define AT_LOG_INST "/tmp/nuvio-instalar.log"
@@ -209,7 +219,7 @@ static Uint32 abriuEm;
 // "Atualizar o aplicativo" nos Ajustes: a ilha mostra a consulta e a resposta
 // (mockup v2-upd-procurando / v2-upd-em-dia). So a pedida, nunca a da agenda.
 static int manualIlha;
-static char tagNova[32];          // "1.0.54", vazio se nao ha nada mais novo
+static char tagNova[96];          // Includes the full Better Nuvio preview tag.
 static char notas[6144];          // texto ja limpo, linhas separadas por \n
 // URL do .ipk da release. Vazia quando a release nao anexou um (ou quando este
 // alvo nao sabe instalar, e ai nem se procura).
@@ -228,7 +238,7 @@ static char soVer[32];
 // avisa e deixa tentar de novo.
 static char apkUrl[512];
 static char apkHash[80];
-static char apkVer[32];
+static char apkVer[96];
 static int  apkPerm;
 #endif
 
@@ -464,6 +474,10 @@ static int acharAnexo(const char *corpo, char *dst, size_t tam, char *hash, size
 }
 #endif
 
+#ifdef AT_BETTER_PREVIEW
+#include "atualizacao_better.inc"
+#endif
+
 #ifdef NV_ANDROID
 // Match the installed variant exactly. Pointer width follows the running
 // process, including 32-bit Fire OS on 64-bit hardware.
@@ -477,7 +491,11 @@ static int acharAnexo(const char *corpo, char *dst, size_t tam, char *hash, size
 #define AT_APK_SUFIXO "-android.apk"
 #endif
 static int acharApk(const char *corpo, char *dst, size_t tam, char *hash, size_t tamHash) {
+#ifdef AT_BETTER_PREVIEW
+  return at_better_apk(corpo, dst, tam, hash, tamHash);
+#else
   return acharAnexo(corpo, dst, tam, hash, tamHash, AT_APK_SUFIXO);
+#endif
 }
 #endif
 
@@ -552,7 +570,7 @@ static void limparNotas(const char *md, char *dst, size_t tam) {
 static int fioConsulta(void *arg) {
   char *corpo;
   static char body[8192];          // so um fio de consulta por vez (emCurso)
-  char tag[48] = "";
+  char tag[96] = "";
   char lIpk[512] = "", lIpkH[80] = "";
 #ifdef NV_TPK
   char lSo[512] = "", lSoH[80] = "";
@@ -569,7 +587,18 @@ static int fioConsulta(void *arg) {
   return 0;  // hosted app e sempre current
 #endif
   corpo = rede_baixar(AT_URL, 12);
-  if (!corpo) { printf("[atualizacao] sem resposta do GitHub\n"); fflush(stdout); }
+#ifdef AT_BETTER_PREVIEW
+  if (corpo) {
+    int validList = js_array_valido(corpo);
+    char *selected = at_better_release(corpo);
+    free(corpo); corpo = selected;
+    // An empty valid release list means no compatible update, not a failure.
+    if (!corpo && validList) snprintf(tag,sizeof tag,"v%s",NV_VERSAO);
+  }
+#endif
+  if (!corpo) {
+    if (!tag[0]) { printf("[atualizacao] sem resposta do GitHub\n"); fflush(stdout); }
+  }
   else {
     textoJson(corpo, "tag_name", tag, sizeof tag);
     textoJson(corpo, "body", body, sizeof body);
@@ -832,7 +861,7 @@ static void apkFalhou(void) {
 }
 
 static int fioInstalarApk(void *arg) {
-  char dir[600] = "", nome[96], rel[128], arq[600] = "", hex[65] = "", ver[32], hash[80];
+  char dir[600] = "", nome[128], rel[160], arq[600] = "", hex[65] = "", ver[96], hash[80];
   char *buf = NULL;
   long n = 0;
   int ok = 0, r;
@@ -1098,7 +1127,7 @@ void atualizacao_mostrar_se_houver(void) {
 
 // Fecha e ANOTA a versao vista: o cartao e uma vez por tag.
 static void fechar(void) {
-  char s[40];
+  char s[104];
   aberto = 0;
   snprintf(s, sizeof s, "%s\n", tagNova);
   dados_gravar(AT_ARQ, s);

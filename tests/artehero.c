@@ -9,6 +9,9 @@ __attribute__((unused)) static int falhouSempre(const char *u) { (void)u; return
 __attribute__((unused)) static int falhouTmdbVirtual(const char *u) {
   return u && strstr(u, "nuvio.invalid/arte/tmdb") != NULL;   // tmdb e tmdbalt
 }
+static int falhouLogoVirtual(const char *u) {
+  return u && strstr(u, "nuvio.invalid/arte/tmdblogo/") != NULL;
+}
 // Duble de artereserva: "estas duas urls sao o mesmo arquivo".
 static const char *igualA, *igualB;
 __attribute__((unused)) static int igualDuble(const char *a, const char *b) {
@@ -550,6 +553,12 @@ int main(void) {
   { CatItem vazio = item("", "", "tt-logo-empty");
     snprintf(vazio.tipo, sizeof vazio.tipo, "%s", "movie");
     artehero_logo_sessao_iniciar(&vazio);
+    // Missing addon artwork now has a virtual TMDB fallback, even before
+    // metadata enrichment. Exercise it before simulating its definitive failure.
+    const char *fallback = artehero_logo_sessao(&vazio);
+    assert(fallback && strstr(fallback, "/arte/tmdblogo/") &&
+           strstr(fallback, "tt-logo-empty"));
+    artehero_definir_falhou(falhouLogoVirtual);
     assert(artehero_logo_sessao(&vazio) == NULL);
     snprintf(vazio.logo, sizeof vazio.logo,
              "%s", "https://image.tmdb.org/t/p/w500/logo-first.png");
@@ -566,6 +575,7 @@ int main(void) {
                "%s", "https://image.tmdb.org/t/p/w500/logo-series.png");
       assert(!strcmp(artehero_logo_sessao(&outroTipo),
                      "https://image.tmdb.org/t/p/w1280/logo-series.png")); }
+    artehero_definir_falhou(NULL);
   }
   { CatItem falha = item("", "", "tt-logo-fail");
     snprintf(falha.tipo, sizeof falha.tipo, "%s", "movie");

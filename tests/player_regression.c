@@ -171,7 +171,7 @@ static void testar(void) {
   // ajustes.c le o ajustes.txt de verdade, e nesta bancada ele esta em ingles
   // (ingles=1), entao o rotulo saia "S2E4" e o teste morria aqui. Perguntar ao
   // proprio ajustes tira a maquina da conta.
-  assert(strstr(player_linha_episodio(), ajustes_idioma_ingles() ? "S2E4" : "T2E4"));
+  assert(strstr(player_linha_episodio(), ajustes_idioma_ingles() ? "S2 E4" : "T2E4"));
   assert(strstr(player_linha_episodio(),"Episódio 24"));
   assert(player_proximo_episodio()&&player_proximo_episodio()->temporada==2&&player_proximo_episodio()->episodio==5);
   paraLegendas();teclaPlayer(SDLK_RETURN);

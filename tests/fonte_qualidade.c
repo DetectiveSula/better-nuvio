@@ -33,7 +33,7 @@ static void cfg(int prio, int hdr, int dv) {
   char c[300]; FILE *f;
   snprintf(c, sizeof c, "%s/ajustes.txt", dirAj);
   f = fopen(c, "w"); assert(f);
-  fprintf(f, "fontePrioridadeLocal %d\nfonteHdrLocal %d\ndolbyVision %d\n", prio, hdr, dv);
+  fprintf(f, "qualidade 0\nfontePrioridadeLocal %d\nfonteHdrLocal %d\ndolbyVision %d\n", prio, hdr, dv);
   fclose(f);
   ajustes_dir(dirAj);
   assert(ajustes_fonte_prioridade() == prio && ajustes_fonte_hdr() == hdr && ajustes_dolby_vision() == !dv);
@@ -79,6 +79,25 @@ int main(void) {
     assert(!strcmp(vence(m, 2), "720p"));
     stream_definir_lista(m, 1);
     assert(stream_automatico() == -1);
+  }
+
+  // Maximum quality is a preference, not a hard source exclusion. Exercise
+  // every persisted choice against the actual automatic selector, including
+  // the only-source-above-ceiling fallback observed during device testing.
+  { Stream m[3];
+    const int heights[] = {2160, 1080, 720};
+    const char *labels[] = {"Ceiling 4k", "Ceiling 1080p", "Ceiling 720p"};
+    const int winners[] = {0, 0, 1, 2};
+    for (int i = 0; i < 3; i++) deb(&m[i], labels[i], heights[i], 0, 0);
+    for (int choice = 0; choice < 4; choice++) {
+      char path[300]; snprintf(path, sizeof path, "%s/ajustes.txt", dirAj);
+      FILE *f = fopen(path, "w"); assert(f);
+      fprintf(f, "qualidade %d\nfontePrioridadeLocal 0\n", choice);
+      fclose(f); ajustes_dir(dirAj);
+      assert(!strcmp(vence(m, 3), labels[winners[choice]]));
+      assert(!strcmp(vence(m, 1), labels[0]));
+    }
+    cfg(0, 0, 0);
   }
 
   // 1) A LISTA DO DONO, sem medida nenhuma (hosts=0 na C9).
@@ -179,15 +198,14 @@ int main(void) {
     { Stream e[2] = { m[1], m[0] }; assert(!strcmp(vence(e, 2), "Torrentio 4k HDR10")); }  // empate: ordem da lista
     stream_definir_tela(-1, -1);
   }
-  // Perfil 5 (sem base HDR10) em MP4 NA LG toca como DV de verdade (a TV aciona o
-  // DV nativo no MP4), entao nao e mais rebaixado abaixo do HDR10; em MKV, com o
-  // DV desligado em Ajustes ou fora da LG continua atras do HDR10 (cor lavada).
-  // Este arquivo compila streams.c como o host (LG). Ver tests/fonte_lg_mp4.c.
+  // Current production safety policy deliberately ranks Profile 5 below HDR10,
+  // even in MP4: it has no HDR10 base. Do not restore the obsolete MP4-first
+  // expectation while testing these preferences (nivelHdr / aplicarMp4Primeiro).
   { Stream m[2];
     deb(&m[0], "Torrentio 4k DV Profile 5", 2160, 1, 1);
     deb(&m[1], "Torrentio 4k HDR10", 2160, 0, 0);
-    cfg(0, 0, 0); assert(!strcmp(vence(m, 2), "Torrentio 4k DV Profile 5"));
-    cfg(1, 0, 0); assert(!strcmp(vence(m, 2), "Torrentio 4k DV Profile 5"));
+    cfg(0, 0, 0); assert(!strcmp(vence(m, 2), "Torrentio 4k HDR10"));
+    cfg(1, 0, 0); assert(!strcmp(vence(m, 2), "Torrentio 4k HDR10"));
     cfg(0, 0, 1); assert(!strcmp(vence(m, 2), "Torrentio 4k HDR10"));
     deb(&m[0], "Torrentio 4k DV Profile 5", 2160, 0, 1);   // MKV
     cfg(0, 0, 0); assert(!strcmp(vence(m, 2), "Torrentio 4k HDR10"));

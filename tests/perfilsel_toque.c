@@ -5,6 +5,8 @@
 
 static ContaPerfil ps[2] = {{.indice = 1}, {.indice = 2, .temPin = 1}};
 static int selecionado = 1, total = 2;
+static int touchHold;
+int ponteiro_ok_longo(void){return touchHold;}
 const ContaPerfil *perfis_item(int i) { return i >= 0 && i < total ? &ps[i] : NULL; }
 int perfis_n(void) { return total; }
 PerfilAcao perfis_acao(int i) { return ps[i].temPin ? PERFIL_ACAO_PIN : PERFIL_ACAO_ENTRAR; }
@@ -54,4 +56,5 @@ int main(void) {
   repetir = 0; perfisRetentar(0, 0); assert(!repetir);
   total = 0; perfisRetentar(0, 0); assert(repetir);
   puts("perfilsel toque: PIN, bloqueio durante preparo, identidade e retentativa ok");
+  return 0;
 }

@@ -222,8 +222,11 @@ static void quadroNumero(void) {
 static void tocarAlvo(PonteiroFn focar, PonteiroFn ativar, int a, int b) {
   const PonteiroAlvo *v;
   int n = ponteiro_teste_lista(&v), alvo = -1;
+  // A row also registers a whole-row target with the limit column's id
+  // ("tapping the row edits its limit"); tap the smallest match, the button.
   for (int i = 0; i < n; i++)
-    if (v[i].focar == focar && v[i].ativar == ativar && v[i].a == a && v[i].b == b) { alvo = i; break; }
+    if (v[i].focar == focar && v[i].ativar == ativar && v[i].a == a && v[i].b == b &&
+        (alvo < 0 || v[i].w * v[i].h < v[alvo].w * v[alvo].h)) alvo = i;
   assert(alvo >= 0);
   float x = v[alvo].x + v[alvo].w * 0.5f, y = v[alvo].y + v[alvo].h * 0.5f;
   assert(x >= 0 && x < NV_LAYOUT_REAL_W && y >= 0 && y < NV_LAYOUT_REAL_H);

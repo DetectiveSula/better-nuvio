@@ -14,10 +14,19 @@ static GLuint ligado;
 static float cor[4];
 static unsigned char pixelsUpload[128 * 128 * 4];
 int nv_grad_ativo;
+int perftv_enabled,perftv_blur,perftv_glass;
+void ajustes_acento(float*r,float*g,float*b){*r=*g=*b=1;}
+float ajustes_suavizar_degrades(void){return 0;}
+int ajustes_vidro(void){return 0;}
+int ajustes_vidro_fosco(void){return 0;}
+int ajustes_vidro_qualidade(void){return 1;}
 float nv_acento_viva[3], nv_grad_viva[3][3], nv_tempo_viva;
 float nv_ambiente_viva[4][3], nv_ambiente_forca;
 int ajustes_profundidade(void) { return 0; }
 float ajustes_profundidade_brilho(void) { return 0; }
+float ajustes_profundidade_borda(void) { return 0; }
+float ajustes_profundidade_cobertura(void) { return 0; }
+unsigned ajustes_profundidade_superficies(void) { return 0; }
 
 void teste_glGenTextures(GLsizei n, GLuint *t) {
   tentativas += n;
@@ -25,7 +34,7 @@ void teste_glGenTextures(GLsizei n, GLuint *t) {
   while (n-- > 0) *t++ = (GLuint)++gerados;
 }
 void teste_glDeleteTextures(GLsizei n, const GLuint *t) {
-  assert(n == 1 && t && *t > 0); apagados += n;
+  assert(n >= 0); if(n)assert(t); for(int i=0;i<n;i++)if(t[i]>0)apagados++; /* GL permits bulk deletion and zero handles. */
 }
 void teste_glBindTexture(GLenum target, GLuint t) { assert(target == GL_TEXTURE_2D); ligado = t; }
 void teste_glTexImage2D(GLenum target, GLint level, GLint internalformat,

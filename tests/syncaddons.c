@@ -32,6 +32,7 @@
 #include "debrid.h"
 #include "stub_perfisessao.h"
 #include <pthread.h>
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -85,8 +86,18 @@ const char *dados_cliente_id(void) { return "tv-teste"; }
 
 // ------------------------------------------------------------ perfis dublados
 
-int  perfis_ativo(void)          { return 1; }
-int  perfis_ativo_addons(void)   { return 1; }
+static int homeScope,scopePull1,scopePull2,homePushes;
+int  perfis_ativo(void) { return homeScope?2:1; }
+int  perfis_ativo_addons(void) { return homeScope && catordem_tem_ordem()?2:1; }
+int perfis_home_config(void) { return homeScope?2:1; }
+// Updated service boundaries: no open profile editor or pending progress work.
+int ajustes_cw_fonte(void) { return 0; }
+int ajustes_edicao_perfil(void) { return 0; }
+void ajustes_edicao_encerrar(void) {}
+int ajustes_migrar_escopo(void) { return 0; }
+void perfil_infantil_esquecer(void) {}
+int syncprog_reenviar_deletes(void) { return 0; }
+
 int  perfis_n(void)              { return 1; }
 int  perfis_precisa_escolher(void) { return 0; }
 const char *perfis_dono(void)    { return "dono-a"; }
@@ -134,6 +145,11 @@ char *sessao_tabela(const char *t, const char *q, int *st) {
   (void)q;
   *st = 200;
   if (strcmp(t, "addons")) return strdup("[]");
+  if(homeScope){
+    if(strstr(q,"profile_id=eq.1")){scopePull1++;snprintf(conta,sizeof conta,"A");}
+    else if(strstr(q,"profile_id=eq.2")){scopePull2++;snprintf(conta,sizeof conta,"B");}
+    else assert(0);
+  }
   if (cheio) {
     static char g[130 * 90];
     size_t kk = 0;
@@ -154,8 +170,16 @@ char *sessao_tabela(const char *t, const char *q, int *st) {
   snprintf(b + k, sizeof b - k, "]");
   return strdup(b);
 }
+static int settingsPulls;
+void sync_teste_avancar_relogio(unsigned ms);
 char *sessao_rpc(const char *funcao, const char *corpo, int *st) {
   *st = 200;
+  if (!strcmp(funcao, "sync_pull_profile_settings_blob")) settingsPulls++;
+  if(homeScope && !strcmp(funcao,"sync_pull_home_catalog_settings")) {
+    assert(strstr(corpo,"\"p_profile_id\":2")&&strstr(corpo,"home_catalog_shared"));
+    return strdup("{\"items\":[{\"addon_id\":\"fixture.addon\",\"type\":\"movie\",\"catalog_id\":\"shared\",\"order\":0,\"enabled\":true}]}");
+  }
+  if(!strcmp(funcao,"sync_push_home_catalog_settings"))homePushes++;
   if (!strcmp(funcao, "sync_push_addons")) {
     const char *p;
     char nova[32];
@@ -292,6 +316,21 @@ void addons_esquecer(void) {}
 void agenda_esquecer(void) {}
 void lembrete_esquecer_todos(void) {}
 int  ajustes_aplicar_blob(const char *j) { (void)j; return 0; }
+void ajustes_compartilhados_contexto(void) {}
+void ajustes_better_contexto(void) {}
+void ajustes_better_observar(void) {}
+int ajustes_better_passo(void) { return 0; }
+void ajustes_better_ciclo(uint64_t g) { (void)g; }
+void ajustes_better_esquecer(void) {}
+void ajustes_compartilhados_observar(void) {}
+void ajustes_compartilhados_esquecer(void) {}
+int ajustes_compartilhados_pendentes(void) { return 0; }
+int ajustes_compartilhados_validar(const char *j) { (void)j; return 1; }
+int ajustes_compartilhados_resposta(const char *j, char **s) { (void)j; *s=NULL; return 0; }
+const char *ajustes_compartilhados_motivo(void) { return "fixture"; }
+int ajustes_compartilhados_aplicar(const char *j) { (void)j; return 0; }
+int ajustes_compartilhados_mesclar(const char *b, char **s) { (void)b; *s=NULL; return 0; }
+void ajustes_compartilhados_confirmar(const char *j) { (void)j; }
 void ajustes_definir_ocultar_nao_lancados(int l) { (void)l; }
 int  ajustes_mesclar_blob(const char *b, char **s) { (void)b; *s = NULL; return 0; }
 void ajustes_tmdb_idioma_relatar(const char *b) { (void)b; }
@@ -368,7 +407,15 @@ int main(int argc, char **argv) {
   contaLer();
   printf("-- cenario %s%s%s (conta no inicio: %s)\n", cen, argc > 2 ? " " : "", argc > 2 ? argv[2] : "", conta);
 
-  if (!strcmp(cen, "cheio")) {
+  if(!strcmp(cen,"home-scope")) {
+    homeScope=1;sync_iniciar();ateTerminar();
+    if(sync_estado()==SYNC_RODANDO)ateTerminar(); // the final pass can enqueue the newly scoped cycle
+    confere("fresh profile home rows fetched using selected profile scope",catordem_tem_ordem());
+    printf("  home scope counters primary=%d selected=%d effective=%d state=%d\n",scopePull1,scopePull2,perfis_ativo_addons(),sync_estado());
+    confere("new home authority re-reads addons from matching profile",scopePull1>0&&scopePull2>0&&perfis_ativo_addons()==2);
+    confere("correct addon source replaces device primary fallback",nTv==1&&strstr(tv[0].url,"b.exemplo"));
+    confere("no home or addon settings uploaded",!homePushes&&!pushes);
+  } else if (!strcmp(cen, "cheio")) {
     int i, total = argc > 2 ? atoi(argv[2]) : 100;
     cheio = 1; nContaN = total;
     for (i = 0; i < total; i++) contaN[i] = i;
@@ -393,6 +440,31 @@ int main(int argc, char **argv) {
     sync_esquecer_usuario();
     confere("logout clears pending manual request", !sync_manual_addons_rodando());
     confere("logout clears manual result", sync_manual_addons_estado(NULL, NULL, NULL) == 0);
+  } else if (!strcmp(cen, "primeiroplano")) {
+    // Resume / player close: ProfileSettingsSyncService foreground timing.
+    snprintf(conta, sizeof conta, "AB");
+    sync_iniciar(); ateTerminar();
+    confere("arranque le os ajustes da conta uma vez", settingsPulls == 1);
+    sync_pedir_atualizacao(agora, "voltou ao primeiro plano");
+    confere("menos de 1 min depois do ultimo ciclo: nao rele", sync_periodico(agora += 16) == 0 && settingsPulls == 1);
+    sync_teste_avancar_relogio(61000);
+    sync_pedir_atualizacao(agora, "voltou ao primeiro plano");
+    confere("voltou ao primeiro plano: espera 2,5 s", sync_periodico(agora += 16) == 0);
+    sync_teste_avancar_relogio(2400);
+    confere("ainda nao aos 2,4 s", sync_periodico(agora += 16) == 0);
+    sync_teste_avancar_relogio(200);
+    confere("aos 2,6 s parte o ciclo", sync_periodico(agora += 16) == 1);
+    ateTerminar();
+    confere("e rele os ajustes e a ordem da Home", settingsPulls == 2);
+    // Player closed after a long session: app.c skips sync_periodico while it
+    // is open, then requests the refresh on the closing frame.
+    sync_teste_avancar_relogio(45u * 60u * 1000u);
+    sync_pedir_atualizacao(agora, "player fechado");
+    sync_teste_avancar_relogio(2600);
+    confere("player fechado: rele depois de 2,5 s", sync_periodico(agora += 16) == 1);
+    ateTerminar();
+    confere("terceira leitura dos ajustes", settingsPulls == 3);
+    confere("pedido consumido: nada mais parte", sync_periodico(agora += 16) == 0);
   } else if (!strcmp(cen, "periodico")) {
     unsigned fim;
     snprintf(conta, sizeof conta, "AB");

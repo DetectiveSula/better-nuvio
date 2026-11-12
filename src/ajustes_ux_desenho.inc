@@ -411,7 +411,10 @@ static float aj2ListaWRef(void) {
 // opcao em foco fica a esquerda, grande, com kicker, titulo e descricao
 // embaixo (sem ilha); a LISTA compacta numa ilha a direita. A coluna da arte
 // comeca depois da ilha do menu recolhida; arte 44% do que sobra, 36 de vao.
-#define AJ2_CORPO (AJ2_TOPO + AJ_CAB_PAGINA / gfx_escala_txt())   // 2.0.2: abaixo do cabecalho da pagina
+// 2.0.2: abaixo do cabecalho da pagina. Portrait phone: gfx_escala_txt() is
+// now doubled there (gfx.c), which pulled the list up into the header; the
+// header itself is not divided, so the body keeps its full height below it.
+#define AJ2_CORPO (AJ2_TOPO + (ajRetrato() ? AJ_CAB_PAGINA : AJ_CAB_PAGINA / gfx_escala_txt()))
 static float ajSidebarWidth(void) { return fminf(430.0f, NV_VTELA_W * 0.29f); }
 static float aj2ArteX(void) { return aj2X0() + (ajRetrato() ? 0.0f : ajSidebarWidth() + 28.0f); }
 static float aj2ArteW(void) { return (NV_VTELA_W - AJ2_MARGEM - aj2ArteX()) * 0.44f; }
@@ -540,7 +543,12 @@ static void ajToqueBotoes(float direita, float yc, float a) {
 // mais larga que a do mockup das cores).
 #define AJ_REGUA_FILA 72.0f
 #define AJ_REGUA_H (4.0f * AJ_REGUA_FILA + 4.0f)
-#define AJ2_FUNDO_BAIXO 237.75f   // 4 + cartao (10 + 150,75 + 10 + 29 + 10) + 24
+// Use the same responsive card width as the renderer. The old fixed 150px
+// thumbnail height let wide/full-screen previews paint over the following row.
+static float ajFundoBaixo(void) {
+  float cw = (aj2ListaR().w - 36.0f - 60.0f - 32.0f) / 3.0f;
+  return 4.0f + 10.0f + (cw - 20.0f) * 9.0f / 16.0f + 10.0f + 29.0f + 10.0f + 24.0f;
+}
 static int aj2FocoNaLista(int i) { return i == focoItem && !focoIndice && !uxCabLayout && uxIndice >= 2; }
 // A REGUA EM FILEIRAS: a ordem da TELA (ajustes.c, REGUA_*); o valor gravado
 // continua o indice de V_TEMA. ← → anda na fileira, ↑ ↓ troca de fileira na
@@ -856,7 +864,7 @@ static float ajLinhaH(int i) {
   // previa viva e as medidas da cor (aj2PreviaCor).
   if (ajPaleta(op) && ajEditandoLinha(op) && aj2FocoNaLista(i))
     baixo += op == AJ_FUNDO_DIN_COR ? 2 * AJ_REGUA_FILA + 4 : AJ_REGUA_H;
-  if (op == AJ_FUNDO && aj2FocoNaLista(i)) baixo += AJ2_FUNDO_BAIXO;
+  if (op == AJ_FUNDO && aj2FocoNaLista(i)) baixo += ajFundoBaixo();
   if (baixo > 0) return AJ2_LN_LINHA1 + 20.0f + baixo;
   if (!aj2TemInsp() && aj2FocoNaLista(i) && op != AJ_GUIA) return AJ2_LN_LINHA1 - 6.0f + ajAjudaLinhaH(op) + 18.0f;
   // 2.0.3: a linha em foco ganha a frase de beneficio embaixo do rotulo.

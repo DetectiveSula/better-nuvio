@@ -422,6 +422,8 @@ static void montarTitulos(const char *alvo) {
     // #405: a mesma janela da Busca. Todos participam do ranking antes
     // do teto global de 64: um exato no ultimo alvo nao pode ser descartado.
     for (a = 0; a < nAlvos; a++) {
+      // Owner (7 Nov 2026): search results come from Nuvio only.
+      if (!desc_busca_alvo_nuvio(a)) continue;
       int nRem = desc_busca_alvo_n(a, consulta);
       int posNovo[DESC_BUSCA_POR_ALVO], idxNovos[DESC_BUSCA_POR_ALVO], nNovos = 0;
       for (i = 0; i < nRem && i < DESC_BUSCA_POR_ALVO; i++) {

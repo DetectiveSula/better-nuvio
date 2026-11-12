@@ -1,6 +1,7 @@
 // Offline regression: completed-card artwork and merged Next Up publication.
 #include <assert.h>
 #include "progresso.h"
+#define NV_TESTE_INEDITO 1
 #include "../src/home.c"
 
 // Only persistence and rendering boundaries are stubbed; progress stays in memory.
@@ -15,10 +16,17 @@ const char *i18n(const char *s) { return s; }
 const char *idioma_mes_data(int m, const char *s) { (void)m; return s; }
 int tex_falhou(const char *u) { (void)u; return 0; }
 float tex_aspecto(const char *u) { (void)u; return 0; }
+int tex_largura_fonte(const char *u) { (void)u; return 0; }   /* width unknown yet */
 int ajustes_hero_arte_diferente(void) { return 0; }
 int ajustes_hero_fonte(void) { return 0; }
 int ajustes_cw_thumb_episodio(void) { return 1; }
 int ajustes_cw_concluido(void) { return 90; }
+// Stage E: whether the card is an unaired next-up (continuar.c); the rule
+// itself is covered by tests/stage_e_episodios.c.
+static int ineditoTeste;
+int continuar_proximo_inedito(const CatItem *ci, long long agoraMs) {
+  (void)ci; (void)agoraMs; return ineditoTeste;
+}
 int main(void) {
   CatItem a = {0};
   snprintf(a.imdb, sizeof a.imdb, "tt200");
@@ -56,6 +64,34 @@ int main(void) {
     // Genuine playback of the offered episode must still update normally.
     cat_aplicar_progresso(0, 600, 3000, 1, 2);
     assert(cat_item(0)->episodio == 2 && cat_item(0)->progresso == 20);
+  }
+  // Stage E (continueWatchingImageModel, card style): an UNAIRED next-up shows
+  // the title's landscape art first and its still only as the last resort.
+  { CatItem up = a;
+    const char *art, *still;
+    snprintf(up.imdb, sizeof up.imdb, "tt201:2:1");
+    up.temporada = 2; up.episodio = 1; up.progresso = 0;
+    snprintf(up.backdrop, sizeof up.backdrop, "https://image.tmdb.org/t/p/w780/bd201.jpg");
+    still = artehero_url_episodio(&up);
+    ineditoTeste = 0;
+    art = arte_card_retomada(&up);
+    assert(art && still && !strcmp(art, still));          /* aired: still first */
+    ineditoTeste = 1;
+    art = arte_card_retomada(&up);
+    assert(art && strcmp(art, still) && !strcmp(art, arte_por_formato(&up, 1)));
+    /* Stage E: the HERO (Automatic source) of an unaired next-up shows the
+     * show's art, never the episode "still" (the add-on's poster before air). */
+    ineditoTeste = 1;
+    { const char *h = arte_hero_do_item(&up);
+      assert(h && strcmp(h, still)); }
+    ineditoTeste = 0;
+    { const char *h = arte_hero_do_item(&up);
+      assert(h && !strcmp(h, still)); }                   /* aired: still first, as before */
+    ineditoTeste = 1;
+    up.backdrop[0] = 0; up.poster[0] = 0;                 /* no title art at all */
+    art = arte_card_retomada(&up);
+    assert(!arte_por_formato(&up, 1) ? (art && !strcmp(art, still)) : 1);
+    ineditoTeste = 0;
   }
   puts("nextup_art: ok");
   return 0;

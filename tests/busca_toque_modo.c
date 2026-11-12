@@ -41,20 +41,21 @@
 #undef spotpessoa_geracao
 #undef spotpessoa_n
 
-static int limiteAtivo;
+static int limiteAtivo, limiteN = DESC_BUSCA_POR_ALVO;
+static const char *limiteTermo = "bigg";
 static CatItem limiteRemotos[DESC_BUSCA_POR_ALVO];
 void limite_buscar(const char *t) { (void)t; }
 int limite_alvos(void) { return limiteAtivo; }
-int limite_n(int a, const char *t) { return limiteAtivo && a == 0 && !strcmp(t, "bigg") ? DESC_BUSCA_POR_ALVO : 0; }
+int limite_n(int a, const char *t) { return limiteAtivo && a == 0 && !strcmp(t, limiteTermo) ? limiteN : 0; }
 int limite_item(int a, int i, CatItem *d) {
-  if (a || i < 0 || i >= DESC_BUSCA_POR_ALVO) return 0;
+  if (a || i < 0 || i >= limiteN) return 0;
   *d = limiteRemotos[i]; return 1;
 }
 const char *limite_titulo(int a) { (void)a; return "Series"; }
 const char *limite_addon(int a) { (void)a; return "Fixture"; }
-int limite_nuvio(int a) { (void)a; return 0; }
+int limite_nuvio(int a) { (void)a; return 1; }   /* search is Nuvio-only */
 int limite_fontes(void) { return 1; }
-int limite_chegou(const char *t) { return limiteAtivo && !strcmp(t, "bigg"); }
+int limite_chegou(const char *t) { return limiteAtivo && !strcmp(t, limiteTermo); }
 void limite_pessoa_pedir(const char *t, unsigned a) { (void)t; (void)a; }
 unsigned limite_pessoa_geracao(void) { return 0; }
 int limite_pessoa_n(const char *t) { (void)t; return 0; }
@@ -81,32 +82,71 @@ static void resultadosAte24(void) {
     strcpy(consulta, "bigg"); consultaFiltrada[0] = 0;
     painel = 0; nVelho = 0;
     refiltrar();
+    // TV (mock-up): the filter tabs lead; phones have none.
+    int o = mobile ? 0 : 1;
+    assert(mobile ? !fil[0].abas : (fil[0].abas && fil[0].n == 4));
     // The first item becomes its own Best result; all other 23 stay navigable.
-    assert(nFil == 2 && fil[0].melhor && fil[0].n == 1 && fil[1].n == 23);
-    assert(focoRes.nColunas[1] == 23);
-    assert(!strcmp(cat_item(fil[1].itens[12])->imdb, "tmdb:11436"));
-    painel = 1; focoRes.fileira = 1; focoRes.coluna = 0;
+    assert(nFil == 2 + o && fil[o].melhor && fil[o].n == 1 && fil[o + 1].n == 23);
+    assert(focoRes.nColunas[o + 1] == 23);
+    assert(!strcmp(cat_item(fil[o + 1].itens[12])->imdb, "tmdb:11436"));
+    painel = 1; focoRes.fileira = o + 1; focoRes.coluna = 0;
     SDL_Event e = {0}; e.type = SDL_KEYDOWN; e.key.keysym.sym = SDLK_RIGHT;
     for (int i = 0; i < 30; i++) busca_evento(&e);
     assert(focoRes.coluna == 22);
-    assert(!strcmp(cat_item(fil[1].itens[22])->imdb, "tmdb:7023"));
+    assert(!strcmp(cat_item(fil[o + 1].itens[22])->imdb, "tmdb:7023"));
     e.key.keysym.sym = SDLK_RETURN; busca_evento(&e);
     e.type = SDL_KEYUP; busca_evento(&e); e.type = SDL_KEYDOWN;
-    assert(pedido == fil[1].itens[22]);
+    assert(pedido == fil[o + 1].itens[22]);
     assert(!strcmp(cat_item(pedido)->imdb, "tmdb:7023"));
     pedido = -1;
     focoRes.coluna = 12;
     e.key.keysym.sym = SDLK_RETURN; busca_evento(&e);
     e.type = SDL_KEYUP; busca_evento(&e); e.type = SDL_KEYDOWN;
-    assert(pedido == fil[1].itens[12]);
+    assert(pedido == fil[o + 1].itens[12]);
     assert(!strcmp(cat_item(pedido)->imdb, "tmdb:11436"));
     pedido = -1;
     // Rebuild the same term while focused: selection follows its catalogue identity.
     refiltrar();
-    assert(focoRes.fileira == 1 && focoRes.coluna == 12);
+    assert(focoRes.fileira == o + 1 && focoRes.coluna == 12);
   }
   limiteAtivo = 0;
   puts("PASS: Busca retains and opens 14th/24th results in TV and Mobile");
+}
+
+// RELEVANCE, with the order catalog.nuvio.tv really returns for "rocky"
+// (measured 7 Nov 2026, trimmed): Rocky, Rocky III, Rocky II, I Play Rocky,
+// Rocky Balboa, The Rocky Horror Picture Show, Rocky Circus (tmdb only),
+// Rocky (2021, tmdb only), plus Creed. Expected: the IMDb-known titles that
+// are/start with "rocky" in add-on order, then the obscure ones, then the
+// article match, the later-word match and Creed.
+static void relevanciaRocky(void) {
+  static const char *const t[] = { "Creed", "Rocky", "Rocky III", "Rocky II", "I Play Rocky", "Rocky Balboa",
+                                   "The Rocky Horror Picture Show", "Rocky Circus", "Rocky" };
+  static const char *const id[] = { "tt3076658", "tt0075148", "tt0084602", "tt0079817", "tt11995650", "tt0479143",
+                                    "tt0073629", "tmdb:1372116", "tmdb:636901" };
+  memset(limiteRemotos, 0, sizeof limiteRemotos);
+  for (int i = 0; i < 9; i++) {
+    snprintf(limiteRemotos[i].imdb, sizeof limiteRemotos[i].imdb, "%s", id[i]);
+    snprintf(limiteRemotos[i].titulo, sizeof limiteRemotos[i].titulo, "%s", t[i]);
+    strcpy(limiteRemotos[i].tipo, "movie");
+  }
+  limiteTermo = "rocky"; limiteN = 9; limiteAtivo = 1;
+  for (int mobile = 0; mobile <= 1; mobile++) {
+    CatItem base = {0};
+    strcpy(base.imdb, "tt0000555"); strcpy(base.titulo, "Unrelated"); strcpy(base.tipo, "movie");
+    cat_definir_tudo(&base, 1, NULL, 0); cat_quadro();
+    layout_modo_definir(mobile);
+    strcpy(consulta, "rocky"); consultaFiltrada[0] = 0; painel = 0; nVelho = 0;
+    refiltrar();
+    int o = mobile ? 0 : 1;
+    assert(fil[o].melhor && !strcmp(cat_item(fil[o].itens[0])->imdb, "tt0075148"));
+    static const char *const ordem[] = { "tt0084602", "tt0079817", "tt0479143", "tmdb:1372116", "tmdb:636901",
+                                         "tt0073629", "tt11995650", "tt3076658" };
+    assert(fil[o + 1].n == 8);
+    for (int i = 0; i < 8; i++) assert(!strcmp(cat_item(fil[o + 1].itens[i])->imdb, ordem[i]));
+  }
+  limiteAtivo = 0; limiteTermo = "bigg"; limiteN = DESC_BUSCA_POR_ALVO;
+  puts("PASS: Busca: Rocky series first in add-on order, obscure same-name titles after");
 }
 
 static int temIme, temVoz, temCel, vozIniciada;
@@ -174,5 +214,6 @@ int main(void) {
   }
   puts("PASS: Busca drag, mic navigation and automatic system keyboard modes");
   resultadosAte24();
+  relevanciaRocky();
   return 0;
 }

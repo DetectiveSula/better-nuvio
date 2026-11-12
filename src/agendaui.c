@@ -224,9 +224,12 @@ static int agColunaUnica(void) {
 // mes comecar na mesma coluna do titulo. A rail fixa (144 reais) entra
 // dividida pela escala: a tela virtual e menor.
 #define AG_MARGEM 80.0f
+// A ESQUERDA e a DIREITA do Mes sao as da Lista (c1): o titulo em 96 reais e a
+// borda da ilha em 56 reais da direita. AG_MARGEM so batia com o titulo na
+// escala 1,2 — na de 1920 o mes saia 14 px a esquerda do titulo.
 static float agX(void) { return ajustes_rail_largura_fixa() / agEscala() +
-                              (agColunaUnica() ? 48.0f / agEscala() : AG_MARGEM); }
-static float agFim(void) { return NV_TELA_W - (agColunaUnica() ? 48.0f / agEscala() : AG_MARGEM); }
+                              (agColunaUnica() ? 48.0f : 96.0f) / agEscala(); }
+static float agFim(void) { return NV_TELA_W - (agColunaUnica() ? 48.0f : 56.0f) / agEscala(); }
 #define AG_LISTA_Y     218.0f   // reserva uma faixa abaixo do subtitulo para os controles
 #define AG_EST_W        96.0f   // coluna de datas
 #define AG_EIXO_GAP     28.0f
@@ -618,18 +621,75 @@ static void dataSelecionada(char *dst, size_t tam) {
   dataIso(calAno, calMes, calDia, dst, tam);
 }
 
-static int eventosDoDia(int *indices, int max) {
-  char iso[12];
-  int i, n = 0;
-  dataSelecionada(iso, sizeof iso);
-  for (i = 0; i < agenda_n(); i++) {
-    const AgItem *it = agenda_lista(i);
-    if (temData(it) && !strcmp(it->dataProx, iso)) {
-      if (indices && n < max) indices[n] = i;
-      ++n;
+// UM EPISODIO NA GRADE DO MES: a serie (indice em agenda_lista) e o episodio
+// daquele dia. A grade do Cinemeta (agenda_grade_entre) da todos os episodios
+// do mes; a serie cuja grade ainda nao chegou entra pelo proximo episodio do
+// registro, como antes — a tela nunca fica com MENOS do que tinha.
+typedef struct {
+  int  item;
+  int  temporada, episodio;
+  char nome[120];
+  char data[12];
+} AgDiaEv;
+
+static int indiceSerie(const char *imdb) {
+  int j;
+  for (j = 0; j < agenda_n(); j++)
+    if (!strcmp(agenda_lista(j)->imdb, imdb)) return j;
+  return -1;
+}
+
+static int eventosEntre(const char *ini, const char *fim, AgDiaEv *out, int max) {
+  static AgGradeEp g[256];
+  int ng, n = 0, i, j, k;
+  if (agenda_n() <= 0) return 0;   // nada seguido: nem consulta a grade
+  ng = agenda_grade_entre(ini, fim, g, 256);
+  for (i = 0; i < ng && n < max; i++) {
+    int item = indiceSerie(g[i].imdb);
+    if (item < 0) continue;
+    out[n].item = item;
+    out[n].temporada = g[i].ep.temporada;
+    out[n].episodio = g[i].ep.episodio;
+    snprintf(out[n].nome, sizeof out[n].nome, "%s", g[i].ep.nome);
+    snprintf(out[n].data, sizeof out[n].data, "%s", g[i].ep.data);
+    n++;
+  }
+  for (j = 0; j < agenda_n() && n < max; j++) {
+    const AgItem *it = agenda_lista(j);
+    int dup = 0;
+    if (!temData(it) || strcmp(it->dataProx, ini) < 0 || strcmp(it->dataProx, fim) > 0) continue;
+    // A MESMA serie no MESMO dia ja veio da grade: o TMDB e o Cinemeta podem
+    // numerar diferente, entao a comparacao e por dia, nao por episodio.
+    for (k = 0; k < n && !dup; k++) dup = out[k].item == j && !strcmp(out[k].data, it->dataProx);
+    if (dup) continue;
+    out[n].item = j;
+    out[n].temporada = it->temporada;
+    out[n].episodio = it->episodio;
+    snprintf(out[n].nome, sizeof out[n].nome, "%s", it->nomeEp);
+    snprintf(out[n].data, sizeof out[n].data, "%s", it->dataProx);
+    n++;
+  }
+  // Ordem: dia, depois a ordem da lista (lembrete primeiro), depois episodio.
+  for (i = 1; i < n; i++) {
+    AgDiaEv t = out[i];
+    for (j = i; j > 0; j--) {
+      const AgDiaEv *a = &out[j - 1];
+      int c = strcmp(a->data, t.data);
+      if (c < 0 || (c == 0 && (a->item < t.item ||
+                               (a->item == t.item && a->episodio <= t.episodio)))) break;
+      out[j] = out[j - 1];
     }
+    out[j] = t;
   }
   return n;
+}
+
+static int eventosDoDia(AgDiaEv *out, int max) {
+  static AgDiaEv lixo[AG_MAX];
+  char iso[12];
+  dataSelecionada(iso, sizeof iso);
+  if (!out) { out = lixo; max = AG_MAX; }
+  return eventosEntre(iso, iso, out, max);
 }
 
 // PONTEIRO (#99). Poe o foco pelas MESMAS variaveis que as setas mexem em
@@ -1068,7 +1128,8 @@ void agendaui_evento(const SDL_Event *e) {
     return;
   }
   if (vistaMes) {
-    int itens[AG_MAX], qtd = eventosDoDia(itens, AG_MAX);
+    static AgDiaEv itens[AG_MAX];
+    int qtd = eventosDoDia(itens, AG_MAX);
     if (focoCabecalho) {
       int ordemLista[] = { AG_CAB_ANTERIOR, AG_CAB_HOJE, AG_CAB_PROXIMO,
                            AG_CAB_LISTA, AG_CAB_MES };
@@ -1094,7 +1155,7 @@ void agendaui_evento(const SDL_Event *e) {
       if (ok && !e->key.repeat) {
         switch (focoCabecalho) {
           case AG_CAB_LISTA: vistaMes = 0; calPainel = 0; focoCabecalho = 0; break;
-          case AG_CAB_MES: vistaMes = 1; calPainel = 0; focoCabecalho = 0; break;
+          case AG_CAB_MES: vistaMes = 1; calPainel = 0; focoCabecalho = 0; agenda_grade_pedir(); break;
           case AG_CAB_HOJE: {
             const char *h = agenda_hoje();
             selecionaData(agenda_ano(h), agenda_mes(h), agenda_dia(h));
@@ -1118,7 +1179,7 @@ void agendaui_evento(const SDL_Event *e) {
         else calPainel = 0;
       } else if (k == SDLK_DOWN && calEvento < qtd - 1) calEvento++;
       else if (ok && !e->key.repeat && calEvento < qtd)
-        abrirModal(itens[calEvento]);
+        abrirModal(itens[calEvento].item);
       return;
     }
     if (k == SDLK_UP && calCelula < 7) {
@@ -1162,6 +1223,7 @@ void agendaui_evento(const SDL_Event *e) {
     }
     if (ok && !e->key.repeat) {
       vistaMes = focoCabecalho == AG_CAB_MES;
+      if (vistaMes) agenda_grade_pedir();
       focoCabecalho = 0;
       calPainel = 0;
     }
@@ -1239,7 +1301,9 @@ void agendaui_atualizar(float dt, Uint32 agora) {
   notH = (reduz || notH <= 0.0f) ? notHAlvo : anim_mola(notH, notHAlvo, dt, 18.0f);
   if (foco >= n) foco = n > 0 ? n - 1 : 0;
   for (i = 0; i < n && i < AG_MAX; i++) {
-    float a = (i == foco) ? 1.0f : 0.0f;
+    // Com o foco no seletor Lista/Mes a linha fica so MARCADA (onde o foco
+    // volta), nao focada: um foco por tela.
+    float a = (i == foco) ? (focoCabecalho ? 0.3f : 1.0f) : 0.0f;
     animFoco[i] = reduz ? a
                         : anim_mola(animFoco[i], a, dt,
                                     a > animFoco[i] ? NV_MOLA_FOCO : NV_MOLA_DESFOCO);
@@ -1395,7 +1459,7 @@ static void capital(char *dst, size_t tam, const char *s) {
   snprintf(dst, tam, "%s%s", up, s + n);
 }
 
-// A DATA CURTA da linha: "Hoje", "Qui 17", "Qua 4/11" (outro mes leva o mes).
+// A DATA CURTA da linha: "Hoje", "Qui 17", "Qua 4 nov" (outro mes leva o mes).
 static void dataLinha(const AgItem *it, char *dst, size_t tam) {
   char sem[24];
   const char *hj = agenda_hoje();
@@ -1404,8 +1468,10 @@ static void dataLinha(const AgItem *it, char *dst, size_t tam) {
   if (!temData(it)) return;
   if (agenda_dias(it->dataProx) == 0) { snprintf(dst, tam, "%s", i18n("Hoje")); return; }
   capital(sem, sizeof sem, i18n(agenda_semana_nome(agenda_semana(it->dataProx))));
+  // OUTRO MES leva o mes POR EXTENSO CURTO ("Qua 4 nov", "Wed 4 Nov"): o antigo
+  // "4/11" e dia/mes, que em ingles se le 11 de abril.
   if (hj && (agenda_mes(hj) != m || agenda_ano(hj) != agenda_ano(it->dataProx)))
-    snprintf(dst, tam, "%s %d/%d", sem, d, m);
+    snprintf(dst, tam, "%s %d %s", sem, d, idioma_mes_curto(ajustes_idioma(), m - 1));
   else
     snprintf(dst, tam, "%s %d", sem, d);
 }
@@ -1425,9 +1491,9 @@ static void linhaEpisodio(const AgItem *it, char *dst, size_t tam) {
   dst[0] = 0;
   if (it->dataProx[0] && it->temporada > 0 && it->episodio > 0) {
     if (it->nomeEp[0])
-      snprintf(dst, tam, "T%d E%d \xc2\xb7 %s", it->temporada, it->episodio, it->nomeEp);
+      snprintf(dst, tam, i18n("T%d E%d · %s"), it->temporada, it->episodio, it->nomeEp);
     else
-      snprintf(dst, tam, "T%d E%d", it->temporada, it->episodio);
+      snprintf(dst, tam, i18n("T%d E%d"), it->temporada, it->episodio);
     return;
   }
   if (it->dataUlt[0]) {
@@ -1450,8 +1516,35 @@ static void linhaEpisodio(const AgItem *it, char *dst, size_t tam) {
 // quando ha; senao o CARTAZ inteiro, nitido e centrado, sobre a copia desfocada
 // dele mesmo — cortar um cartaz em pe para 16:9 mostraria so o meio do rosto.
 // Sem nada carregado, o retangulo neutro (e o que fica por baixo do esvanecer).
+// SEM ARTE NENHUMA (nem paisagem nem cartaz): um fundo levemente no realce com
+// a INICIAL do nome — ou o icone de TV, sem nome — no lugar do retangulo cinza
+// mudo, que parecia defeito de carga ("TV Show", BlueStacks do dono, 12/11).
+static void arteVazia(GfxRect r, const char *titulo, float raio, float a) {
+  float ar, ag, ab;
+  ajustes_acento(&ar, &ag, &ab);
+  gfx_cor(r, raio, 0.14f + ar * 0.10f, 0.15f + ag * 0.10f, 0.17f + ab * 0.10f, a);
+  if (titulo && titulo[0]) {
+    char cru[8], ini[16];
+    size_t n = 1;
+    TxtLinha t;
+    while (titulo[n] && ((unsigned char)titulo[n] & 0xC0) == 0x80 && n < 4) n++;
+    memcpy(cru, titulo, n); cru[n] = 0;
+    maiusc(ini, sizeof ini, cru);
+    t = txt_linha(r.h > P(200) ? TXT_TITULO2 : TXT_HEADLINE, ini, 225, 228, 235, 255);
+    txt_desenhar_alpha(t, r.x + (r.w - t.w) * 0.5f, r.y + (r.h - t.h) * 0.5f, 0.55f * a);
+  } else {
+    float lado = r.h * 0.4f;
+    gfx_icone((GfxRect){ r.x + (r.w - lado) * 0.5f, r.y + (r.h - lado) * 0.5f, lado, lado },
+              "aj_tv-minimal-play", 0.85f, 0.87f, 0.9f, 0.5f * a);
+  }
+}
+
 static void arteItem(GfxRect r, const AgItem *it, float raioPx, float a) {
   float raio = raioPx / r.h;
+  if (it && !it->fundo[0] && !it->poster[0] && a > 0.001f) {
+    arteVazia(r, it->titulo, raio, a);
+    return;
+  }
   gfx_cor(r, raio, 0.16f, 0.17f, 0.19f, a);
   if (!it || a <= 0.001f) return;
   if (it->fundo[0]) {
@@ -1587,7 +1680,7 @@ static void desenhaEsquerda(const AgC1 *L, float a) {
       int d = agenda_dia(it->dataProx), m = agenda_mes(it->dataProx);
       snprintf(sem, sizeof sem, "%s", i18n(agenda_semana_nome(agenda_semana(it->dataProx))));
       if (hj && (agenda_mes(hj) != m || agenda_ano(hj) != agenda_ano(it->dataProx)))
-        snprintf(dl, sizeof dl, "%s %d/%d", sem, d, m);
+        snprintf(dl, sizeof dl, "%s %d %s", sem, d, idioma_mes_curto(ajustes_idioma(), m - 1));
       else snprintf(dl, sizeof dl, "%s %d", sem, d);
       agenda_falta(it->dataProx, falta, sizeof falta);
       snprintf(cru, sizeof cru, falta[0] ? "%s \xc2\xb7 %s" : "%s", dl, falta);
@@ -1694,7 +1787,16 @@ static float segC1(float xDir, float yc, int desenhar) {
     GfxRect ir = { x, yc - h * 0.5f, w[k], h };
     if (!ctxAberto) ponteiro_alvo(ir.x, ir.y, ir.w, ir.h, ponteiroCab, NULL, id[k], 0);
     if (branco) gfx_cor(ir, 0.5f, 1, 1, 1, 1.0f);
-    else if (ativo) gfx_cor(ir, 0.5f, 1, 1, 1, 0.12f);
+    else if (ativo) gfx_cor(ir, 0.5f, 1, 1, 1, 0.16f);
+    // A VISTA ATIVA leva um traco embaixo do rotulo, com ou sem foco: antes,
+    // com o foco no outro segmento, o branco do foco parecia a vista escolhida
+    // e a ativa virava cinza (captura -cabecalho).
+    if (ativo) {
+      float tw = w[k] - padX * 2.0f, th = P(telefone ? agTelefonePx(4) : 3);
+      GfxRect tr = { x + padX + tw * 0.2f, ir.y + ir.h - th - P(telefone ? agTelefonePx(6) : 1.5f), tw * 0.6f, th };
+      if (branco) gfx_cor(tr, 0.5f, 0.07f, 0.07f, 0.07f, 0.85f);
+      else gfx_cor(tr, 0.5f, ar / 255.0f, ag / 255.0f, ab / 255.0f, 0.95f);
+    }
     if (branco)
       txC1(estilo, fonte, rot[k], 17, 17, 17, x + padX,
            telefone ? ir.y + (ir.h - hC1(estilo, fonte, corpo, 17)) * .5f : ir.y + padY, corpo, telefone ? w[k] - padX * 2 : P(300), 1.0f);
@@ -1809,7 +1911,8 @@ static void metaTelefone(const AgItem *it, char *meta, size_t tam) {
     dataLinha(it, dl, sizeof dl);
     u = (size_t)snprintf(meta, tam, "%s", dl);
     if (it->temporada > 0 && it->episodio > 0 && u < tam)
-      u += (size_t)snprintf(meta + u, tam - u, " \xc2\xb7 T%d E%d", it->temporada, it->episodio);
+      { char te[32]; snprintf(te, sizeof te, i18n("T%d E%d"), it->temporada, it->episodio);
+        u += (size_t)snprintf(meta + u, tam - u, " \xc2\xb7 %s", te); }
     if (selo[0] && u < tam) u += (size_t)snprintf(meta + u, tam - u, " \xc2\xb7 %s", selo);
     if (it->rede[0] && u < tam) snprintf(meta + u, tam - u, " \xc2\xb7 %s", it->rede);
   } else {
@@ -1896,7 +1999,8 @@ static void linhaC1(const AgC1 *L, const AgItem *it, float y, float f) {
         if (fal[0] && u < sizeof meta) u += (size_t)snprintf(meta + u, sizeof meta - u, " \xc2\xb7 %s", fal);
       }
       if (it->temporada > 0 && it->episodio > 0 && u < sizeof meta)
-        u += (size_t)snprintf(meta + u, sizeof meta - u, " \xc2\xb7 T%d E%d", it->temporada, it->episodio);
+        { char te[32]; snprintf(te, sizeof te, i18n("T%d E%d"), it->temporada, it->episodio);
+          u += (size_t)snprintf(meta + u, sizeof meta - u, " \xc2\xb7 %s", te); }
       if (it->rede[0] && u < sizeof meta)
         snprintf(meta + u, sizeof meta - u, " \xc2\xb7 %s", it->rede);
     } else {
@@ -2834,35 +2938,38 @@ static void desenhaBarraCalendario(float x, float xDir) {
     botaoAgenda(centro, mes, 1, focandoMes, 0);
     botaoAgenda(prox, "›", focoCabecalho == AG_CAB_PROXIMO, focoCabecalho == AG_CAB_PROXIMO, 0);
   }
-  { float w = 94.0f * u, gap = 8.0f * u;
-    GfxRect lista = { xDir - w * 2.0f - gap, y, w, h };
-    GfxRect mes = { xDir - w, y, w, h };
-    if (!ctxAberto) {
-      ponteiro_alvo(lista.x, lista.y, lista.w, lista.h, ponteiroCab, NULL, AG_CAB_LISTA, 0);
-      ponteiro_alvo(mes.x, mes.y, mes.w, mes.h, ponteiroCab, NULL, AG_CAB_MES, 0);
-    }
-    botaoAgenda(lista, i18n("Lista"), !vistaMes, focoCabecalho == AG_CAB_LISTA,
-                !vistaMes && focoCabecalho != AG_CAB_LISTA);
-    botaoAgenda(mes, i18n("Mês"), vistaMes, focoCabecalho == AG_CAB_MES,
-                vistaMes && focoCabecalho != AG_CAB_MES);
-  }
+  // O MESMO seletor segmentado da Lista (segC1), no lugar de duas pilulas
+  // soltas: a troca de vista nao muda de cara ao trocar de vista.
+  segC1(xDir, y + h * 0.5f, 1);
 }
 
-static void desenhaDiaCalendario(GfxRect r, int dia, int mesmoMes,
-                                 int hoje, int eventos, int selecionado) {
+// UM DIA DA GRADE. `estado`: 0 nada, 1 o dia escolhido com o foco FORA da
+// grade (no cabecalho), 2 o dia em foco. Antes o dia escolhido ficava com cara
+// de foco mesmo com o foco no seletor Lista/Mes — dois focos na tela.
+//
+// HOJE e um CIRCULO de realce atras do numero (o ponto antes do numero se
+// confundia com o ponto de episodio). Os episodios saem ESCRITOS na celula —
+// o nome da serie, ate onde couber, e "+N mais" —, nao como pontos de 5 px.
+static void desenhaDiaCalendario(GfxRect r, int dia, int mesmoMes, int hoje,
+                                 const AgDiaEv *evs, int eventos, int estado) {
   float ar, ag, ab;
   int cor = mesmoMes ? 232 : 116;
-  char num[8], qtd[16];
+  int selecionado = estado == 2;
+  char num[8], qtd[32];
   TxtLinha t;
   ajustes_acento(&ar, &ag, &ab);
   if (ajustes_vidro()) {
-    gfx_cor(r, 0.14f, 1, 1, 1, selecionado ? 0.12f : 0.035f);
+    gfx_cor(r, 0.14f, 1, 1, 1, selecionado ? 0.12f : estado ? 0.08f
+                                : eventos > 0 && mesmoMes ? 0.06f : 0.035f);
     if (selecionado) gfx_vidro_foco(r, 0.14f, 1.0f, 1.0f);
+    else if (estado) gfx_anel(r, 0.14f, 1.5f, 1, 1, 1, 0.28f);
   } else {
-    gfx_cor(r, 0.14f, selecionado ? ar : 0.13f,
-            selecionado ? ag : 0.14f, selecionado ? ab : 0.16f,
+    float base = eventos > 0 && mesmoMes ? 0.16f : 0.13f;
+    gfx_cor(r, 0.14f, selecionado ? ar : base,
+            selecionado ? ag : base + 0.01f, selecionado ? ab : base + 0.03f,
             selecionado ? 0.32f : 0.92f);
     if (selecionado) gfx_anel(r, 0.14f, 2.0f, ar, ag, ab, 0.9f);
+    else if (estado) gfx_anel(r, 0.14f, 1.5f, ar, ag, ab, 0.35f);
   }
   snprintf(num, sizeof num, "%d", dia);
   if (agColunaUnica()) {
@@ -2886,44 +2993,63 @@ static void desenhaDiaCalendario(GfxRect r, int dia, int mesmoMes,
     }
     return;
   }
-  t = txt_linha(TXT_HERO_SEC, num,
-                hoje ? (int)(ar * 255.0f) : cor,
-                hoje ? (int)(ag * 255.0f) : cor,
-                hoje ? (int)(ab * 255.0f) : cor, 255);
-  txt_desenhar_alpha(t, r.x + 14.0f + (hoje ? 12.0f : 0.0f), r.y + 10.0f, 1.0f);
-  if (hoje)
-    gfx_cor((GfxRect){ r.x + 14.0f, r.y + 20.0f, 7.0f, 7.0f }, 0.5f, ar, ag, ab, 1.0f);
-  if (eventos > 0) {
-    int i, vis = eventos > 3 ? 3 : eventos;
-    for (i = 0; i < vis; i++)
-      gfx_cor((GfxRect){ r.x + 14.0f + i * 11.0f, r.y + r.h - 14.0f,
-                         5.0f, 5.0f }, 0.5f, ar, ag, ab, 0.9f);
-    if (eventos > 3) {
-      snprintf(qtd, sizeof qtd, "+%d", eventos - 3);
-      t = txt_linha(TXT_MINI, qtd, 190, 190, 193, 255);
-      txt_desenhar_alpha(t, r.x + r.w - t.w - 10.0f, r.y + r.h - t.h - 7.0f, 1.0f);
-    }
-  }
+  t = txt_linha(TXT_HERO_SEC, num, hoje ? 17 : cor, hoje ? 17 : cor, hoje ? 17 : cor, 255);
+  { float nx = r.x + 14.0f, ny = r.y + 10.0f;
+    if (hoje) {
+      float lado = t.h + 8.0f;
+      if (lado < t.w + 14.0f) lado = t.w + 14.0f;
+      gfx_cor((GfxRect){ nx - 6.0f, ny - 4.0f, lado, t.h + 8.0f }, 0.5f,
+              ar * 0.25f + 0.75f, ag * 0.25f + 0.75f, ab * 0.25f + 0.75f, 1.0f);
+      txt_desenhar_alpha(t, nx - 6.0f + (lado - t.w) * 0.5f, ny, 1.0f);
+    } else txt_desenhar_alpha(t, nx, ny, 1.0f);
+    if (eventos > 0) {
+      float y = ny + t.h + 8.0f, fim = r.y + r.h - 6.0f;
+      float lh = altLinha(TXT_AJ_ESTADO, 220) + 2.0f, a = mesmoMes ? 1.0f : 0.55f;
+      int cabem = (int)((fim - y) / lh), i, vis;
+      if (cabem < 1) cabem = 1;
+      vis = eventos <= cabem ? eventos : cabem - 1;
+      for (i = 0; i < vis; i++, y += lh) {
+        const AgItem *it = agenda_lista(evs[i].item);
+        TxtLinha l;
+        if (!it) continue;
+        gfx_cor((GfxRect){ r.x + 14.0f, y + (lh - 2.0f) * 0.5f - 3.0f, 6.0f, 6.0f }, 0.5f, ar, ag, ab, 0.95f * a);
+        l = txt_linha_corta(TXT_AJ_ESTADO, it->titulo[0] ? it->titulo : i18n("Série"),
+                            226, 228, 233, 255, r.w - 34.0f);
+        txt_desenhar_alpha(l, r.x + 23.0f, y, a);
+      }
+      if (vis < eventos) {
+        snprintf(qtd, sizeof qtd, i18n("+%d mais"), eventos - vis);
+        t = txt_linha_corta(TXT_AJ_ESTADO, qtd, 160, 164, 172, 255, r.w - 34.0f);
+        txt_desenhar_alpha(t, r.x + 23.0f, y, a);
+      }
+    } }
 }
 
-static void desenhaEventoCalendario(GfxRect r, const AgItem *it, int foco) {
-  char ep[220];
+// O EPISODIO de uma linha do painel do dia: o do PROPRIO dia (a grade do mes
+// traz episodios que nao sao o proximo da serie), "T3 E9 · The Last Empress".
+static void episodioDoDia(const AgDiaEv *ev, char *dst, size_t tam) {
+  dst[0] = 0;
+  if (ev->temporada > 0 && ev->episodio > 0) {
+    if (ev->nome[0])
+      snprintf(dst, tam, i18n("T%d E%d · %s"), ev->temporada, ev->episodio, ev->nome);
+    else snprintf(dst, tam, i18n("T%d E%d"), ev->temporada, ev->episodio);
+  } else snprintf(dst, tam, "%s", i18n("Próximo episódio"));
+}
+
+// A LINHA DO PAINEL DO DIA: cartaz 2:3, nome, episodio no realce e, embaixo,
+// rede · duracao e o lembrete — o que o painel de 600 px vazios nao dizia.
+// A duracao so vale para o episodio que o registro descreve (o proximo).
+static void desenhaEventoCalendario(GfxRect r, const AgDiaEv *ev, int foco) {
+  const AgItem *it = agenda_lista(ev->item);
+  char ep[220], meta[160];
   TxtLinha t, subt;
   GfxRect cartaz;
-  float ar, ag, ab;
+  float ar, ag, ab, tx, tw;
+  if (!it) return;
   ajustes_acento(&ar, &ag, &ab);
   gfx_cor(r, 0.16f, 1, 1, 1, foco ? 0.095f : 0.035f);
   if (foco) gfx_vidro_foco(r, 0.16f, 1.0f, 1.0f);
-  const float u = agColunaUnica() ? P(1) : 1.0f;
-  cartaz = (GfxRect){ r.x + 9.0f * u, r.y + 7.0f * u, 38.0f * u, r.h - 14.0f * u };
-  if (it->poster[0] && !agColunaUnica()) {
-    GLuint tex = tex_obter_larg(it->poster, 42);
-    if (tex) {
-      gfx_tex_aspect_atual = cartaz.w / cartaz.h;
-      gfx_rect(cartaz, tex, GFX_CARD, 0, 0, 0, 12.0f / cartaz.h, 0, 0, 0, 1.0f);
-      gfx_tex_aspect_atual = 0.0f;
-    }
-  }
+  episodioDoDia(ev, ep, sizeof ep);
   if (agColunaUnica()) {
     cartaz = (GfxRect){r.x + P(agTelefonePx(14)), r.y + P(agTelefonePx(14)),
                        P(agTelefonePx(76)), r.h - P(agTelefonePx(28))};
@@ -2939,22 +3065,50 @@ static void desenhaEventoCalendario(GfxRect r, const AgItem *it, int foco) {
          foco ? 250 : 224, foco ? 250 : 224, foco ? 250 : 224,
          r.x + P(agTelefonePx(112)), r.y + P(agTelefonePx(14)),
          agTelefonePx(40), r.w - P(agTelefonePx(132)), 1);
-    linhaEpisodio(it, ep, sizeof ep);
-    if (!ep[0]) snprintf(ep, sizeof ep, "%s", i18n("Próximo episódio"));
     txC1(TXT_G28R, 28, ep, (int)(ar * 220), (int)(ag * 220), (int)(ab * 220),
          r.x + P(agTelefonePx(112)), r.y + P(agTelefonePx(78)), agTelefonePx(32),
          r.w - P(agTelefonePx(132)), 1);
     return;
   }
+  cartaz = (GfxRect){ r.x + 10.0f, r.y + 10.0f, (r.h - 20.0f) * 2.0f / 3.0f, r.h - 20.0f };
+  if (!it->poster[0]) arteVazia(cartaz, it->titulo, 10.0f / cartaz.h, 1.0f);
+  else gfx_cor(cartaz, 10.0f / cartaz.h, 0.16f, 0.17f, 0.19f, 1.0f);
+  if (it->poster[0]) {
+    GLuint tex = tex_obter_larg(it->poster, cartaz.w);
+    if (tex) {
+      gfx_tex_aspect_atual = cartaz.w / cartaz.h;
+      gfx_rect(cartaz, tex, GFX_CARD, 0, 0, 0, 10.0f / cartaz.h, 0, 0, 0, 1.0f);
+      gfx_tex_aspect_atual = 0.0f;
+    }
+  }
+  tx = cartaz.x + cartaz.w + 14.0f;
+  tw = r.x + r.w - 12.0f - tx;
   t = txt_linha_corta(TXT_HERO_SEC, it->titulo[0] ? it->titulo : i18n("Série"),
-                      foco ? 250 : 224, foco ? 250 : 224, foco ? 250 : 224, 255,
-                      r.w - 68.0f);
-  txt_desenhar_alpha(t, r.x + 58.0f, r.y + 9.0f, 1.0f);
-  linhaEpisodio(it, ep, sizeof ep);
-  if (!ep[0]) snprintf(ep, sizeof ep, "%s", i18n("Próximo episódio"));
-  subt = txt_linha_corta(TXT_CAPTION2, ep, (int)(ar * 220), (int)(ag * 220),
-                         (int)(ab * 220), 255, r.w - 68.0f);
-  txt_desenhar_alpha(subt, r.x + 58.0f, r.y + 12.0f + t.h, 1.0f);
+                      foco ? 250 : 232, foco ? 250 : 232, foco ? 250 : 232, 255, tw);
+  txt_desenhar_alpha(t, tx, r.y + 11.0f, 1.0f);
+  subt = txt_linha_corta(TXT_AJ_ESTADO, ep, (int)(ar * 60 + 180), (int)(ag * 60 + 180),
+                         (int)(ab * 60 + 180), 255, tw);
+  txt_desenhar_alpha(subt, tx, r.y + 15.0f + t.h, 1.0f);
+  { float y = r.y + 19.0f + t.h + subt.h, x = tx;
+    int proprio = ev->temporada == it->temporada && ev->episodio == it->episodio;
+    meta[0] = 0;
+    if (it->rede[0] && proprio && it->duracao > 0)
+      snprintf(meta, sizeof meta, "%s \xc2\xb7 %d min", it->rede, it->duracao);
+    else if (it->rede[0]) snprintf(meta, sizeof meta, "%s", it->rede);
+    else if (proprio && it->duracao > 0) snprintf(meta, sizeof meta, "%d min", it->duracao);
+    if (it->lembrete) {
+      float lado = altLinha(TXT_ILHA_HORA, 160);
+      gfx_icone((GfxRect){ x, y + 1.0f, lado - 2.0f, lado - 2.0f }, "sino", ar, ag, ab, 1.0f);
+      x += lado + 4.0f;
+      t = txt_linha_corta(TXT_ILHA_HORA, i18n("Lembrete ativo"),
+                          (int)(ar * 255), (int)(ag * 255), (int)(ab * 255), 255, r.x + r.w - 12.0f - x);
+      txt_desenhar_alpha(t, x, y, 1.0f);
+      x += t.w + 10.0f;
+    }
+    if (meta[0] && x < r.x + r.w - 40.0f) {
+      t = txt_linha_corta(TXT_ILHA_HORA, meta, 150, 153, 162, 255, r.x + r.w - 12.0f - x);
+      txt_desenhar_alpha(t, x, y, 1.0f);
+    } }
 }
 
 typedef struct {
@@ -3031,7 +3185,9 @@ static void desenhaCalendarioMensal(void) {
   const float celW = M.celW, celH = M.celH, espacX = M.espacX, espacY = M.espacY;
   const float u = agColunaUnica() ? P(1) : 1.0f;
   char datas[42][12], selecionada[12], rot[112], tmp[96];
-  int cont[42] = { 0 }, total[AG_MAX], nTotal, i, c, linha;
+  int cont[42] = { 0 }, nTotal, c, linha;
+  const AgDiaEv *primeiroEv[42];
+  static AgDiaEv total[AG_MAX];
   static const int DIAS[] = { 0,1,2,3,4,5,6 };
   float ar, ag, ab;
   GfxRect painel = M.painel;
@@ -3054,12 +3210,15 @@ static void desenhaCalendarioMensal(void) {
     }
     dataIso(ano, mes, dia, datas[c], sizeof datas[c]);
   }
-  for (i = 0; i < agenda_n(); i++) {
-    const AgItem *it = agenda_lista(i);
-    if (!temData(it)) continue;
-    for (c = 0; c < 42; c++)
-      if (!strcmp(it->dataProx, datas[c])) { ++cont[c]; break; }
-  }
+  // TODOS os episodios das 6 semanas, de uma vez; cada celula aponta para o
+  // primeiro dela (a lista sai em ordem de dia).
+  { static AgDiaEv mesEv[256];
+    int nMes = eventosEntre(datas[0], datas[41], mesEv, 256), k = 0;
+    for (c = 0; c < 42; c++) {
+      while (k < nMes && strcmp(mesEv[k].data, datas[c]) < 0) k++;
+      primeiroEv[c] = &mesEv[k];
+      while (k + cont[c] < nMes && !strcmp(mesEv[k + cont[c]].data, datas[c])) cont[c]++;
+    } }
 
   // O mes e navegavel por setas no topo; as colunas seguem o calendario local
   // (domingo a sabado), e as datas adjacentes ficam visiveis como contexto.
@@ -3086,7 +3245,8 @@ static void desenhaCalendarioMensal(void) {
 #endif
         ponteiro_alvo(cel.x, cel.y, cel.w, cel.h, ponteiroDia, NULL, c, 0);
     }
-    desenhaDiaCalendario(cel, dia, mesmoMes, hoje, cont[c], c == calCelula && !calPainel);
+    desenhaDiaCalendario(cel, dia, mesmoMes, hoje, primeiroEv[c], cont[c],
+                         c != calCelula || calPainel ? 0 : focoCabecalho ? 1 : 2);
   }
 
   // A coluna de detalhe transforma os pontos do calendario em algo acionavel:
@@ -3105,7 +3265,13 @@ static void desenhaCalendarioMensal(void) {
                                        painel.w - 44.0f);
     txt_desenhar_alpha(titulo, painel.x + 22.0f, painel.y + 18.0f, 1.0f); }
   nTotal = eventosDoDia(total, AG_MAX);
-  snprintf(tmp, sizeof tmp, i18n(nTotal == 1 ? "%d episódio" : "%d episódios"), nTotal);
+  if (nTotal == 0) snprintf(tmp, sizeof tmp, "%s", i18n("Nada vai ao ar neste dia"));
+  else snprintf(tmp, sizeof tmp, i18n(nTotal == 1 ? "%d episódio" : "%d episódios"), nTotal);
+  if (!strcmp(selecionada, h ? h : "")) {
+    char cru[96];
+    snprintf(cru, sizeof cru, "%s \xc2\xb7 %s", i18n("Hoje"), tmp);
+    snprintf(tmp, sizeof tmp, "%s", cru);
+  }
   if (agColunaUnica())
     txC1(TXT_G28R, 28, tmp, 150, 153, 162, painel.x + P(22), painel.y + P(agTelefonePx(84)),
          agTelefonePx(28), painel.w - P(44), 1);
@@ -3113,6 +3279,22 @@ static void desenhaCalendarioMensal(void) {
                                     painel.w - 44.0f);
     txt_desenhar_alpha(sub, painel.x + 22.0f, painel.y + 66.0f, 1.0f); }
   if (nTotal == 0) {
+    // O DIA VAZIO aponta o proximo: "A SEGUIR" e a primeira estreia depois
+    // dele, com o dia — em vez de 600 px de painel em branco.
+    static AgDiaEv prox[64];
+    int np = agColunaUnica() ? 0 : eventosEntre(selecionada, "9999-12-31", prox, 64);
+    if (np > 0) {
+      GfxRect eventos = agMesEventos(&M), r;
+      char quando[64], cru[96];
+      float y = eventos.y + 8.0f;
+      dataCurtaIso(prox[0].data, quando, sizeof quando);
+      snprintf(cru, sizeof cru, "%s \xc2\xb7 %s", i18n("A seguir"), quando);
+      maiusc(rot, sizeof rot, cru);
+      kicker(rot, 150, 153, 162, painel.x + 22.0f, y, 1.0f);
+      y += altLinha(TXT_MINI, 150) + 10.0f;
+      r = (GfxRect){ painel.x + 12.0f, y, painel.w - 24.0f, 112.0f };
+      desenhaEventoCalendario(r, &prox[0], 0);
+    }
 #ifdef NV_TOUCH_UI
     if (agColunaUnica()) gfx_sem_recorte();
 #endif
@@ -3120,7 +3302,7 @@ static void desenhaCalendarioMensal(void) {
   }
   { GfxRect eventos = agMesEventos(&M);
     float y = eventos.y;
-    float passo = 78.0f * u;
+    float passo = (agColunaUnica() ? 78.0f : 120.0f) * u;
     int maxLinhas = (int)(eventos.h / passo);
     int inicio = calEvento - maxLinhas / 2;
     if (maxLinhas < 1) maxLinhas = 1;
@@ -3136,7 +3318,7 @@ static void desenhaCalendarioMensal(void) {
     }
 #endif
     for (linha = inicio; linha < nTotal && linha < inicio + maxLinhas; linha++, y += passo) {
-      GfxRect r = { painel.x + 12.0f * u, y, painel.w - 24.0f * u, 70.0f * u };
+      GfxRect r = { painel.x + 12.0f * u, y, painel.w - 24.0f * u, (agColunaUnica() ? 70.0f : 112.0f) * u };
       if (agColunaUnica()) r.h = P(agTelefonePx(142));
       int emFoco = calPainel && linha == calEvento;
 #ifdef NV_TOUCH_UI
@@ -3150,7 +3332,7 @@ static void desenhaCalendarioMensal(void) {
         if (r.y + r.h > painel.y + painel.h - 4.0f) break;
         if (!ctxAberto) ponteiro_alvo(r.x, r.y, r.w, r.h, ponteiroEvento, NULL, linha, inicio);
       }
-      desenhaEventoCalendario(r, agenda_lista(total[linha]), emFoco);
+      desenhaEventoCalendario(r, &total[linha], emFoco);
     }
 #ifdef NV_TOUCH_UI
     if (agColunaUnica()) gfx_sem_recorte();
