@@ -18,7 +18,13 @@ if [ -z "$corpo" ]; then echo "fonteauto: stream_primeira_boa sumiu de streams.c
 if printf '%s' "$corpo" | grep -q 'pthread_create'; then
   echo "fonteauto: stream_primeira_boa voltou a criar fios (issue #130)"; exit 1
 fi
-if ! printf '%s' "$corpo" | grep -q 'fonteauto_primeira'; then
+# primeiraComGratis (12 Nov 2026) is the same serial loop with free checks for
+# bare TorBox hashes that are not in the account; it must stay thread-free too.
+if ! printf '%s' "$corpo" | grep -q 'fonteauto_primeira\|primeiraComGratis'; then
   echo "fonteauto: stream_primeira_boa nao passa por fonteauto_primeira"; exit 1
+fi
+gratis=$(awk '/^static int primeiraComGratis\(/,/^}/' src/streams.c)
+if printf '%s' "$gratis" | grep -q 'pthread_create'; then
+  echo "fonteauto: primeiraComGratis criou fios (issue #130)"; exit 1
 fi
 echo "fonteauto: contrato de streams.c ok"

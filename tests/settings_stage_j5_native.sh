@@ -17,7 +17,8 @@ for source in src/*.c src/dts/*.c; do
  case "$source" in src/main.c|src/ajustes.c|src/nuvem.c)continue;;esac
  sources+=("$source")
 done
-flags=(-fno-omit-frame-pointer)
+# Engine suite: keeps the pre-automatic explicit opt-in (src/ajustes.h NV_SYNC_AUTO).
+flags=(-fno-omit-frame-pointer -DNV_SYNC_AUTO=0)
 if [ "${SANITIZE:-0}" = 1 ]; then flags+=(-fsanitize=address,undefined); fi
 cc "${flags[@]}" "${sources[@]}" tests/settings_stage_j5_native.c -Isrc -Itests -I"$work" -o "$work/test" -O0 -g -pthread \
  -I/opt/homebrew/include -I/opt/homebrew/include/SDL2 -L/opt/homebrew/lib \

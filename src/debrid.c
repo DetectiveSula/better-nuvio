@@ -792,9 +792,11 @@ static int resolverRD(const char *infoHash, int fileIdx, char *url, unsigned n,
 
 // `soCache` 1 = add_only_if_cached (o automatico); 0 = a pessoa escolheu o
 // torrent fora de cache e o TorBox deve BAIXAR — e o "P2P" do TorBox.
+static void tbBibEsquecer(void);
 static char *tbCriarComOpcoes(const char *chaveTB,const char *magnet,int soCache,int noZip,int *st) {
   char url[300], auth[260], corpo[1200];
   const char *cab[3];
+  tbBibEsquecer();   // the account library is about to change
   snprintf(url, sizeof url, TB "/torrents/createtorrent");
   snprintf(auth, sizeof auth, "Authorization: Bearer %s", chaveTB);
   cab[0] = auth;
@@ -1741,36 +1743,124 @@ static int cacheTBItemLink(const char *item,const char *hash,int file,char *url,
   int fid=selected?cacheIdRaiz(selected,"id"):-1;
   return id>0 && fid>=0 && ready && contextoVale() && debrid_tb_link(0,id,fid,url,size);
 }
-static int resolverExistente(int provider,const char *hash,int file,char *url,unsigned size,int *absent) {
+// ONE LIBRARY SCAN PER SEARCH (12 Nov 2026). Autoplay checks the queue one
+// link at a time, and every hash-carrying link used to page the whole TorBox
+// library again (up to 8 x 100 items, bypass_cache) only to learn the torrent
+// is not in the account: 7 links = 28 s before "Checking the source" ended.
+// The listing is now read once and reused for the same search (debrid context
+// session + search generation), the same TorBox key, for at most 60 s. A
+// TorBox add clears it. Only hashes and the matching items' JSON are kept in
+// memory; nothing is written to disk or logged beyond counts.
+#define TBBIB_TTL_S 60
+typedef struct { char hash[41]; char *item; } TbBibItem;
+static pthread_mutex_t tbBibTrava = PTHREAD_MUTEX_INITIALIZER;
+static struct {
+  int valida, completa, n, cap;
+  uint64_t sessao; unsigned busca; unsigned long long chave; time_t quando;
+  TbBibItem *v;
+} tbBib;
+static unsigned long long tbBibChave(const char *k) {
+  unsigned long long x = 1469598103934665603ULL;
+  for (; k && *k; k++) x = (x ^ (unsigned char)*k) * 1099511628211ULL;
+  return x;
+}
+static void tbBibLimparSemTrava(void) {
+  for (int i = 0; i < tbBib.n; i++) free(tbBib.v[i].item);
+  free(tbBib.v);
+  memset(&tbBib, 0, sizeof tbBib);
+}
+static void tbBibEsquecer(void) {
+  pthread_mutex_lock(&tbBibTrava); tbBibLimparSemTrava(); pthread_mutex_unlock(&tbBibTrava);
+}
+// Requires tbBibTrava. Same search, same key, still fresh.
+static int tbBibValeSemTrava(const DebridContexto *c, unsigned long long k) {
+  return tbBib.valida && c && tbBib.sessao == c->sessao && tbBib.busca == c->busca &&
+         tbBib.chave == k && time(NULL) - tbBib.quando >= 0 && time(NULL) - tbBib.quando <= TBBIB_TTL_S;
+}
+// Reads the library (same pages, limits and validation as before) into the
+// snapshot. Returns 1 when a usable snapshot exists afterwards.
+// `fresco`: the TorBox add path re-reads every time (an item it just added can
+// take a moment to appear) and refreshes the snapshot for the links after it.
+static int tbBibCarregar(int fresco) {
+  const DebridContexto *c = contextoDoFio();
+  unsigned long long k = tbBibChave(chaveDoFio(STB));
+  pthread_mutex_lock(&tbBibTrava);
+  if (!fresco && tbBibValeSemTrava(c, k)) { pthread_mutex_unlock(&tbBibTrava); return 1; }
+  pthread_mutex_unlock(&tbBibTrava);
+  TbBibItem *v = NULL; int n = 0, cap = 0, completa = 0, valid = 1, pages = 0;
+  struct timespec a, b; clock_gettime(CLOCK_MONOTONIC, &a);
+  for (int page = 0; page < 8 && contextoVale(); page++) {
+    char route[160]; int status = 0, count = 0;
+    snprintf(route, sizeof route, "torrents/mylist?offset=%d&limit=100&bypass_cache=true", page * 100);
+    char *response = get_auth(TB, route, STB, &status), success[16];
+    pages++;
+    if (!ok2xx(response, status) || !cacheJsonValido(response) || !cacheRawRaiz(response, "success", success, sizeof success) || strcmp(success, "true")) { free(response); valid = 0; break; }
+    char *data = malloc(strlen(response) + 1);
+    if (!data || !cacheRawRaiz(response, "data", data, strlen(response) + 1) || *data != '[') { free(data); free(response); valid = 0; break; }
+    for (const char *p = js_raiz_array(data); p; p = js_prox(js_fim(p))) {
+      char itemHash[48], normalized[41]; count++;
+      if (*p != '{' || !js_texto_raiz_em(p, js_fim(p), "hash", itemHash, sizeof itemHash) || !cacheHash(itemHash, normalized)) { valid = 0; continue; }
+      if (n == cap) { int nc = cap ? cap * 2 : 128; TbBibItem *t = realloc(v, (size_t)nc * sizeof *t); if (!t) { valid = 0; break; } v = t; cap = nc; }
+      size_t len = (size_t)(js_fim(p) - p); char *item = malloc(len + 1);
+      if (!item) { valid = 0; break; }
+      memcpy(item, p, len); item[len] = 0;
+      memcpy(v[n].hash, normalized, sizeof v[n].hash); v[n].item = item; n++;
+    }
+    free(data); free(response);
+    if (count < 100) { completa = valid; break; }
+  }
+  clock_gettime(CLOCK_MONOTONIC, &b);
+  long ms = (long)((b.tv_sec - a.tv_sec) * 1000 + (b.tv_nsec - a.tv_nsec) / 1000000);
+  printf("[debrid] TorBox library read%s: %d item(s), %d page(s), %s, %ld ms\n",
+         fresco ? " (fresh, add path)" : " once for this search", n, pages, completa ? "complete" : valid ? "partial (over 800 items)" : "incomplete", ms);
+  fflush(stdout);
+  if (!contextoVale() || (!completa && !n)) {
+    for (int i = 0; i < n; i++) free(v[i].item);
+    free(v); return 0;
+  }
+  pthread_mutex_lock(&tbBibTrava);
+  tbBibLimparSemTrava();
+  tbBib.v = v; tbBib.n = n; tbBib.cap = cap; tbBib.completa = completa; tbBib.valida = 1;
+  tbBib.sessao = c ? c->sessao : 0; tbBib.busca = c ? c->busca : 0; tbBib.chave = k; tbBib.quando = time(NULL);
+  pthread_mutex_unlock(&tbBibTrava);
+  return 1;
+}
+// Copies of the items for `h` (a torrent can appear more than once). The
+// caller frees each item and the array.
+static int tbBibProcurar(const char *h, char ***out, int *completa) {
+  int k = 0;
+  *out = NULL; *completa = 0;
+  pthread_mutex_lock(&tbBibTrava);
+  if (tbBib.valida) {
+    *completa = tbBib.completa;
+    for (int i = 0; i < tbBib.n; i++) if (!strcmp(tbBib.v[i].hash, h)) k++;
+    if (k && (*out = calloc((size_t)k, sizeof **out))) {
+      int j = 0;
+      for (int i = 0; i < tbBib.n && j < k; i++) if (!strcmp(tbBib.v[i].hash, h)) (*out)[j++] = strdup(tbBib.v[i].item);
+      k = j;
+    } else if (k) k = 0;
+  }
+  pthread_mutex_unlock(&tbBibTrava);
+  return k;
+}
+static int resolverExistente(int provider,const char *hash,int file,char *url,unsigned size,int *absent,int fresco) {
   if(absent)*absent=0;if(url&&size)url[0]=0;
   char h[41];if(!url||!size||!cacheHash(hash,h))return 0;
-  DebridContexto context;int opened=contextoAbrir(&context),ok=0,allValid=1,foundAny=0;
+  DebridContexto context;int opened=contextoAbrir(&context),ok=0;
   if(provider==STB && debrid_servico_disponivel(STB)) {
-    for(int page=0;page<8 && contextoVale();page++) {
-      char route[160];int status=0,count=0,valid=1,found=0;
-      snprintf(route,sizeof route,"torrents/mylist?offset=%d&limit=100&bypass_cache=true",page*100);
-      char *response=get_auth(TB,route,STB,&status),success[16];
-      if(!ok2xx(response,status)||!cacheJsonValido(response)||!cacheRawRaiz(response,"success",success,sizeof success)||strcmp(success,"true")){free(response);break;}
-      char *data=malloc(strlen(response)+1);
-      if(!data||!cacheRawRaiz(response,"data",data,strlen(response)+1)||*data!='['){free(data);free(response);break;}
-      for(const char *p=js_raiz_array(data);p;p=js_prox(js_fim(p))) {
-        char itemHash[48],normalized[41];count++;
-        if(*p!='{'||!js_texto_raiz_em(p,js_fim(p),"hash",itemHash,sizeof itemHash)||!cacheHash(itemHash,normalized)){valid=0;continue;}
-        if(strcmp(normalized,h))continue;found=1;
-        size_t len=(size_t)(js_fim(p)-p);char *item=malloc(len+1);if(!item){valid=0;break;}
-        memcpy(item,p,len);item[len]=0;ok=cacheTBItemLink(item,h,file,url,size,0);free(item);if(ok)break;
-      }
-      free(data);free(response);
-      if(found)foundAny=1;if(!valid)allValid=0;
-      if(ok)break;
-      if(count<100){if(absent)*absent=allValid&&!foundAny;break;}
+    if(contextoVale() && tbBibCarregar(fresco)) {
+      char **items=NULL;int complete=0,found=tbBibProcurar(h,&items,&complete);
+      for(int i=0;i<found && !ok && contextoVale();i++) if(items[i]) ok=cacheTBItemLink(items[i],h,file,url,size,0);
+      for(int i=0;i<found;i++) free(items[i]);
+      free(items);
+      if(!found && absent)*absent=complete;
     }
   } else if(provider==SPM && debrid_servico_disponivel(SPM))ok=resolverPM(h,file,url,size)==1;
   if(!contextoVale()){ok=0;if(absent)*absent=0;}if(!ok)url[0]=0;
   if(opened)debrid_contexto_sair();return ok;
 }
 int debrid_resolver_existente(int provider,const char *hash,int file,char *url,unsigned size,int *outside) {
-  if(outside)*outside=0;return resolverExistente(provider,hash,file,url,size,NULL);
+  if(outside)*outside=0;return resolverExistente(provider,hash,file,url,size,NULL,0);
 }
 static pthread_mutex_t tbAdicaoTrava=PTHREAD_MUTEX_INITIALIZER;
 static int tbOptInAtual(uint64_t profile) { return nv_perfil_sessao_atual(profile) && contextoVale() && ajustes_torbox_adicionar_cache() && debrid_servico_disponivel(STB); }
@@ -1798,7 +1888,7 @@ int debrid_torbox_resolver_compativel(const char *hash,int file,char *url,unsign
   uint64_t profile=nv_perfil_sessao_ler();
   pthread_mutex_lock(&tbAdicaoTrava);
   if(!tbOptInAtual(profile))goto done;
-  ok=resolverExistente(STB,h,file,url,size,&absent);if(ok||!absent||!tbOptInAtual(profile))goto done;
+  ok=resolverExistente(STB,h,file,url,size,&absent,1);if(ok||!absent||!tbOptInAtual(profile))goto done;
   // Fresh provider evidence immediately before the only mutating operation.
   int cache=debrid_cache_consultar(STB,h);
   if(cache!=1){if(outside && cache==0)*outside=1;goto done;}

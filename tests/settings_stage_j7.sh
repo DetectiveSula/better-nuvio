@@ -18,6 +18,13 @@ for source in src/*.c src/dts/*.c; do
 done
 flags=(-fno-omit-frame-pointer -DNV_J7_TESTE)
 if [ "${J7_READONLY_TEST:-0}" = 1 ]; then flags+=(-DNV_VALIDATION_READONLY); fi
+# Superseded (owner decision, 12 Nov 2026): settings sync is automatic, so the
+# J7a "default Off" and arming scenarios no longer describe the product. The
+# two-device coverage moved to tests/settings_sync_auto.sh; only the read-only
+# validation check below still applies here.
+if [ "${J7_READONLY_TEST:-0}" != 1 ]; then
+ echo "SKIP: J7a arming suite superseded by tests/settings_sync_auto.sh (automatic settings sync)"; exit 0
+fi
 if [ "${J7_LOGIN_TEST:-0}" = 1 ]; then
  [ "${J7_READONLY_TEST:-0}" = 1 ] || { echo "Login test requires read-only test"; exit 2; }
  flags+=(-DNV_VALIDATION_LOGIN)

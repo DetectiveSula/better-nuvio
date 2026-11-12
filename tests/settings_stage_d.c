@@ -176,7 +176,9 @@ int main(int argc,char **argv) {
   snprintf(options[0].provedor,sizeof options[0].provedor,"Other addon");snprintf(options[1].provedor,sizeof options[1].provedor,"Preferred addon");
   configure(1,1,0,0,1,0,0,0);const char *order[]={"Preferred addon","Other addon"};fonteregra_ordem_definir(order,2);assert(ajustes_fonte_ordem_uso()==FR_ORDEM_ESTRITA);
   stream_definir_lista(options,2);stream_cache_verificar();assert(stream_primeira_boa_sessao(8,nv_perfil_sessao_ler())==1);fonteregra_ordem_definir(NULL,0);
-  load();stream_cache_verificar();
+  /* The library listing is reused within one search (autoplay speed): the
+   * emptied fixture library is a new search. */
+  debrid_nova_busca();load();stream_cache_verificar();
   noItem=1;char url[512];int outside=0;assert(!resolver_politica_resolver(-1,H1,0,url,sizeof url,&outside)&&!outside&&!url[0]&&!mutations);noItem=0;expectLabel(&lista[0],"Cached");
   for(linkMode=1;linkMode<=3;linkMode++){assert(!resolver_politica_resolver(-1,H1,0,url,sizeof url,&outside)&&!outside&&!url[0]&&!mutations);expectLabel(&lista[0],"Cached");}linkMode=0;
   rotateKey=1;load();stream_cache_verificar();assert(!lista[0].cacheConsultaServico);

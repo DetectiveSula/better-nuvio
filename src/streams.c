@@ -137,6 +137,18 @@ static int streamUrlPronta(const Stream *s);
 static int cacheConfirmado(const Stream *s) {
   return stream_cache_estado(s)==1 && !s->urlP2P && !s->naoVideo;
 }
+// LINK DO ADDON COM HASH (AIOStreams "TB Instant"): url http do proprio addon e
+// o hash so em hashTorrent (stream_parse.c), para a evidencia de cache. O link
+// e tocavel por si; o resolvedor nativo so devolve URL quando o item ja existe
+// na conta TorBox. Mandar estes links ao resolvedor (Stage D) deixava todo
+// torrent em cache fora da conta em "nenhuma fonte serve" — o autoplay parou
+// para quem usa AIOStreams. Eles voltam a ser conferidos como link direto; o
+// "Uncached" do provedor (streamForaCache) continua tirando-os do automatico,
+// e streamUrlPronta segue estrita: um por vez, nunca na corrida paralela (#130).
+static int streamLinkDoAddon(const Stream *s) {
+  return !s->infoHash[0] && s->hashTorrent[0] && !strncmp(s->url, "http", 4) &&
+         s->debridServico <= 0 && !s->urlP2P;
+}
 static void cacheConfirmar(Stream *s) {
   s->emCache = 1;
   s->cacheNegado = 0;
@@ -1724,6 +1736,10 @@ static int playlistVazia(const char *url, const char *cabecalhos) {
 typedef struct {
   unsigned geracao; _Atomic int abortou; unsigned rodada; int antecipada; uint64_t sessao;
   FonteFiltroConfig filtro;
+  // Last check was a bare torrent hash, cached on the service but not in the
+  // account, with cached additions Off: it could never play, so it does not
+  // use up one of the automatic attempts (serial loop only).
+  int gratis;
 } Conferencia;
 // A CONFERENCIA DA CORRIDA PARALELA mora no heap, com contagem: os fios de
 // fonteparalela que ainda conferem quando ela volta continuam lendo e
@@ -1799,6 +1815,7 @@ static int verificarUma(int i, Conferencia *c) {
   snprintf(infoHash, sizeof infoHash, "%s", cacheHashDa(&lista[i]));
   snprintf(addon, sizeof addon, "%s", lista[i].provedor);
   fileIdx = lista[i].fileIdx; cached = cacheConfirmado(&lista[i]);alreadyResolved=lista[i].debridServico>0;
+  if (streamLinkDoAddon(&lista[i])) infoHash[0] = 0; // conferido como link direto
   pthread_mutex_unlock(&verTrava);
 
   if(infoHash[0] && url[0] && cached && alreadyResolved)return 1;
@@ -1808,13 +1825,14 @@ static int verificarUma(int i, Conferencia *c) {
   if (infoHash[0]) {
     // Cache annotation is read-only; playback now also needs an actual URL.
     int fora=0;
+    c->gratis=0;
     if(streamResolverCache(infoHash,fileIdx,url,sizeof url,&fora)) {
       pthread_mutex_lock(&verTrava);
       if(nv_perfil_sessao_atual(c->sessao)&&listaGeracao==c->geracao&&i<n) {
         snprintf(lista[i].url,sizeof lista[i].url,"%s",url);lista[i].debridServico=ajustes_resolver_provedor()+1;cacheConfirmar(&lista[i]);ok=1;
       } else c->abortou=1;
       pthread_mutex_unlock(&verTrava);
-    }
+    } else if(!fora && !ajustes_torbox_adicionar_cache()) c->gratis=1;
   } else if (!url[0]) {
     ok = 0;
   } else {
@@ -1911,6 +1929,25 @@ static void falhouUma(int i, void *u) {
   nv_perfil_sessao_destravar();
 }
 
+// TORBOX INSTANT (12 Nov 2026): AIOStreams sends many entries as bare hashes.
+// With "Allow cached TorBox additions" Off those can only play when already in
+// the account, and 8 of them used to fill every automatic attempt, so the
+// add-on's own playable links further down were never tried ("Could not open
+// the source"). Such checks are free; `limite` counts the real ones.
+static int primeiraComGratis(const int *fila, int n, int limite, Conferencia *c, int *tocadas) {
+  int q, conta = 0, pagas = 0, gratis = 0, escolhida = -1;
+  for (q = 0; q < n && pagas < limite; q++) {
+    conta++;
+    c->gratis = 0;
+    if (verificarOuParar(fila[q], c)) { escolhida = fila[q]; break; }
+    if (c->gratis) gratis++; else pagas++;
+    falhouUma(fila[q], c);
+    if (c->abortou) break;
+  }
+  if (gratis) printf("[fonte] %d torrent(s) not in the TorBox account skipped without using an attempt (cached additions Off)\n", gratis);
+  if (tocadas) *tocadas = conta;
+  return escolhida;
+}
 // URLs (so o host importa) para aquecer.c abrir a conexao antes: as primeiras
 // fontes da lista que o automatico tentaria. Torrent sem link entra pela API do
 // debrid, que e o host que a resolucao vai pedir. Nunca resolve nada.
@@ -2208,7 +2245,9 @@ static int streamUrlPronta(const Stream *s) {
   return s->url[0] && !streamForaCache(s) &&
     (!cacheHashDa(s)[0] || s->debridServico>0 || s->urlP2P);
 }
-static int streamPrecisaResolver(const Stream *s) { return cacheHashDa(s)[0] && !streamUrlPronta(s); }
+static int streamPrecisaResolver(const Stream *s) {
+  return cacheHashDa(s)[0] && !streamUrlPronta(s) && !streamLinkDoAddon(s);
+}
 static int falhaCandidatas(unsigned geracao, int escolhida, int primeira, FonteFalhaCandidata **saida,
                            Stream **fontes, int *quantidade) {
   int total, nf = 0, pref = -1, livres = 0;
@@ -2647,7 +2686,7 @@ int stream_preparo_resolver(StreamPreparo *p, int (*cancelado)(void *), void *ct
     if (!ok || !url[0] || !fontefalha_url_registrar(p->politica, url)) continue;
     Stream ready=*s;snprintf(ready.url,sizeof ready.url,"%s",url);
     ready.debridServico=(r.servico>=0?r.servico:streamPrecisaResolver(s)?ajustes_resolver_provedor():s->debridServico-1)+1;ready.urlP2P=0;
-    if(cacheHashDa(s)[0])cacheConfirmar(&ready);
+    if(cacheHashDa(s)[0]&&!streamLinkDoAddon(s))cacheConfirmar(&ready);
     p->fontes[r.indice]=ready;
     if(!resultado){*fonte=ready;if(indice)*indice=r.indice;resultado=1;}
     if(++prepared >= (limit?limit:1))break;
@@ -2668,8 +2707,9 @@ int stream_preparo_renovar(StreamPreparo *p, int indice, int (*cancelado)(void *
   int ok = 0, fora = 0;
   long corpo = -1;
   debrid_contexto_entrar(&p->debrid);
-  if (cacheHashDa(s)[0] && !ajustes_resolver_limite()){debrid_contexto_sair();return 0;}
-  if (cacheHashDa(s)[0]) {
+  int nativo = cacheHashDa(s)[0] && !streamLinkDoAddon(s);
+  if (nativo && !ajustes_resolver_limite()){debrid_contexto_sair();return 0;}
+  if (nativo) {
     int servico = s->debridServico - 1;
     ok = servico >= 0
        ? streamResolverServicoCache(servico, s->infoHash, s->fileIdx, url, sizeof url, &fora)
@@ -2681,7 +2721,7 @@ int stream_preparo_renovar(StreamPreparo *p, int indice, int (*cancelado)(void *
   debrid_contexto_sair();
   if (!ok || !url[0] || !nv_perfil_sessao_atual(p->sessaoPerfil) || (cancelado && cancelado(ctx))) return 0;
   *fonte = *s; snprintf(fonte->url, sizeof fonte->url, "%s", url);
-  if (cacheHashDa(s)[0]) cacheConfirmar(fonte);
+  if (nativo) cacheConfirmar(fonte);
   p->fontes[indice] = *fonte;
   return 1;
 }
@@ -2707,10 +2747,11 @@ int stream_falha_aplicar_sessao(int indice, unsigned geracao, int servico,
   if (nv_perfil_sessao_atual(sessao) && geracao == listaGeracao &&
       indice >= 0 && indice < n && url && *url &&
       strlen(url) < sizeof lista[indice].url) {
+    int nativo = cacheHashDa(&lista[indice])[0] && !streamLinkDoAddon(&lista[indice]);
     memmove(lista[indice].url, url, strlen(url) + 1);
     lista[indice].debridServico = servico + 1;
     lista[indice].urlP2P = 0;
-    if (cacheHashDa(&lista[indice])[0]) cacheConfirmar(&lista[indice]);
+    if (nativo) cacheConfirmar(&lista[indice]);
     ok = 1;
   }
   pthread_mutex_unlock(&verTrava);
@@ -2735,6 +2776,7 @@ int stream_primeira_boa_sessao(int tentativas, uint64_t sessao) {
   fontefalha_filtro(&c.filtro);
   Uint32 tVerif = 0;
   tentativas = fonteauto_tentativas(modo, tentativas);
+  int filaLonga = modo == FONTEAUTO_MELHOR && !ajustes_torbox_adicionar_cache();
   pthread_mutex_lock(&verTrava);
   if (!nv_perfil_sessao_atual(sessao)) { pthread_mutex_unlock(&verTrava); return -1; }
   total = n;
@@ -2784,7 +2826,9 @@ int stream_primeira_boa_sessao(int tentativas, uint64_t sessao) {
     { FonteFiltroConfig user;fontefalha_filtro(&user);streamUserRestrict(lista,ordem,excl,pts,total,&user,acima,grp,rk,&posPref); }
   if (lgMp4Primeiro()) mp4PrimeiroNaFaixa(ordem, pts, grp, excl, total);
     pthread_mutex_unlock(&verTrava);
-    nf = fonteauto_fila_o(modo, total, posPref, pts, acima, excl, grp, rk, ordemUso, tentativas, fila);
+    // Free checks (primeiraComGratis) need room behind the paid attempts.
+    nf = fonteauto_fila_o(modo, total, posPref, pts, acima, excl, grp, rk, ordemUso,
+                          filaLonga ? VER_MAX : tentativas, fila);
     for (q = 0; q < nf; q++) fila[q] = ordem[fila[q]];
     free(ordem); }
   free(pts); free(acima); free(excl); free(grp); free(rk);
@@ -2847,15 +2891,15 @@ int stream_primeira_boa_sessao(int tentativas, uint64_t sessao) {
                                          20000, soltarConf);
       tocadas = t1;
       if (escolhida < 0 && !d->c.abortou && nf > kk) {
-        escolhida = fonteauto_primeira(fila + kk, nf - kk, verificarOuParar, falhouUma, &d->c, &t2);
+        escolhida = primeiraComGratis(fila + kk, nf - kk, tentativas - t1, &d->c, &t2);
         tocadas += t2;
       }
       if (d->c.abortou) c.abortou = 1;
       soltarConf(d);
     } else
-      escolhida = fonteauto_primeira(fila, nf, verificarOuParar, falhouUma, &c, &tocadas);
+      escolhida = primeiraComGratis(fila, nf, tentativas, &c, &tocadas);
   } else
-  escolhida = fonteauto_primeira(fila, nf, verificarOuParar, falhouUma, &c, &tocadas);
+  escolhida = primeiraComGratis(fila, nf, tentativas, &c, &tocadas);
   pthread_mutex_lock(&verTrava);
   if (c.abortou || !nv_perfil_sessao_atual(c.sessao) || listaGeracao != c.geracao ||
       (escolhida >= 0 && (escolhida >= n || excedeDecoder(&lista[escolhida])))) escolhida = -1;

@@ -138,7 +138,9 @@ void ajustes_better_contexto(void){
  if(jbDefs(valor,1,defs)){home_definition(&defs[JB_N]);c->account=bna_open(defs,JB_N+1);}free(defs);
  if(!c->account){free(c);return;}c->cached=bna_cached(c->account);c->restoreLocal=c->cached&&jbForeign(c->profile,c->owner);
  /* Persist the unobserved local baseline, without marking defaults as edits. */
- if(!bna_writes(c->account,bna_writes_enabled(c->account))||!jbRead(c->observed)){bna_close(c->account);free(c);return;}
+ /* Automatic sync (owner decision, 12 Nov 2026): uploads are on for every signed-in profile.
+  * NV_SYNC_AUTO=0 is a test-only build keeping the old explicit opt-in for the J4/J5 engine suites. */
+ if(!bna_writes(c->account,NV_SYNC_AUTO?1:bna_writes_enabled(c->account))||!jbRead(c->observed)){bna_close(c->account);free(c);return;}
  BnValue anchor[JB_N],native[JB_N],changes[JB_N];const char *changedKeys[JB_N];size_t n=0;memcpy(native,c->observed,sizeof native);
  int anchored=jbAnchor(c->profile,valor,anchor,0);
  if(jbHasBoot&&owned)for(size_t i=0;i<JB_N;i++)if(jbMap[i].op!=AJ_LEG2_FONTE)jbEncode(jbMap[i].op,jbBoot[jbMap[i].op],0,&native[i]);

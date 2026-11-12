@@ -842,6 +842,11 @@ void ajustes_better_observar(void);
 int ajustes_better_passo(void);
 void ajustes_better_ciclo(uint64_t session);
 void ajustes_better_esquecer(void);
+/* Automatic settings sync (owner decision, 12 Nov 2026). 0 only in test builds
+ * that exercise the J4/J5/J6 engines with the old explicit opt-in. */
+#ifndef NV_SYNC_AUTO
+#define NV_SYNC_AUTO 1
+#endif
 int ajustes_better_writes(int enabled);
 // Home-row edits on this profile currently reach the account (J4/J5 uploads on).
 int ajustes_better_envia(void);

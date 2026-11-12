@@ -567,7 +567,11 @@ int main(void) {
   CONFERE(nTrakt == 2 && nCinemeta == 1 && nTmdb == 0,
           "Trakt (next+last) e Cinemeta para completar (tr=%d cm=%d tm=%d)", nTrakt, nCinemeta, nTmdb);
   { const AgItem *r = agenda_registro("tt10986410");
-    CONFERE(r && !strcmp(r->dataProx, "2026-09-22"), "data do Trakt no fuso da TV: [%s]", r ? r->dataProx : "");
+    // O EPISODIO DO TRAKT, O DIA DA LISTA (12/11/2026): o Trakt escolhe T4E8 e
+    // daria 22/09 no fuso da TV, mas o /meta que o Cinemeta trouxe para
+    // completar e o mesmo corpo da lista de episodios, e la o cartao diz 23
+    // (2026-09-23T08:00Z). A Agenda diz o dia do cartao.
+    CONFERE(r && !strcmp(r->dataProx, "2026-09-23"), "dia do cartao da lista, nao o do Trakt: [%s]", r ? r->dataProx : "");
     CONFERE(r && !strcmp(r->dataUlt, "2026-09-15"), "ultimo do Trakt no fuso da TV: [%s]", r ? r->dataUlt : "");
     CONFERE(r && !strcmp(r->sinopse, "As Greyhounds enfrentam um reves (Trakt)."), "sinopse do Trakt: [%s]", r ? r->sinopse : "");
     CONFERE(r && r->duracao == 52, "runtime do Trakt, veio %d", r ? r->duracao : -1);

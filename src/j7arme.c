@@ -76,7 +76,7 @@ static void salvar(void) {
   dados_gravar(J7_ARQ, t);
 }
 // An expiry beyond now + window (clock moved back or edited file) is invalid.
-static int valido(int perfil, int escopo) {
+__attribute__((unused)) static int valido(int perfil, int escopo) {
   long long t = agora();
   for (int i = 0; i < nArmado; i++)
     if (armado[i].perfil == perfil && armado[i].escopo == escopo && armado[i].ate > t && armado[i].ate <= t + J7_JANELA_S + 60) return 1;
@@ -93,15 +93,13 @@ static int limparVencidos(void) {
   return mudou;
 }
 
+// Settings sync is automatic (owner decision, 12 Nov 2026): any signed-in
+// account/profile may upload its J4/J5 and J6 edits. Enrolment and arming are
+// kept only as debug diagnostics; the read-only validation build still refuses.
 static int permite(const char *owner, int profile, int escopo) {
-  int ok;
+  (void)escopo;
   if (NV_VALIDATION_READONLY_ENABLED) return 0;
-  if (!owner || !*owner || profile <= 0) return 0;
-  pthread_mutex_lock(&trava);
-  carregar();
-  ok = dono && dono == hashDono(owner) && valido(profile, escopo);
-  pthread_mutex_unlock(&trava);
-  return ok;
+  return owner && *owner && profile > 0;
 }
 int j7arme_permite_j4(const char *owner, int profile) { return permite(owner, profile, J7_J4); }
 int j7arme_permite_j6(const char *owner, int profile) { return permite(owner, profile, J7_J6); }
@@ -317,8 +315,9 @@ void j7arme_passo(void) {
     printf("[j7] a conta de teste inscrita saiu: uploads de teste desligados e inscricao apagada\n");
   }
   if (mudou) salvar();
-  int q4 = !NV_VALIDATION_READONLY_ENABLED && dono && h == dono && valido(p, J7_J4);
-  int q6 = !NV_VALIDATION_READONLY_ENABLED && dono && h == dono && valido(p, J7_J6), quer = q4 | (q6 << 1);
+  // Automatic sync: uploads follow the signed-in account, not the test arming.
+  int q4 = !NV_VALIDATION_READONLY_ENABLED && h && p > 0;
+  int q6 = q4, quer = q4 | (q6 << 1);
   pthread_mutex_unlock(&trava);
   if (quer != ultAplicado || h != ultDono || p != ultPerfil || reavaliar) {
     // Independent: arming J4/J5 never grants J6 (official "tv") writes.

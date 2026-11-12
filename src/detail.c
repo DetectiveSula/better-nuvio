@@ -4790,8 +4790,25 @@ static void heroWeb(float a, float desloc) {
   // some, e o hero fica exatamente como era.
   char agLinha[200] = "";
   { const CatItem *ciAg = cat_item(idx);
-    if (ehSerie() && ciAg && ciAg->imdb[0])
+    if (ehSerie() && ciAg && ciAg->imdb[0]) {
+      // The tag must say the SAME day as the episode card below it: TMDB's
+      // next_episode_to_air.air_date (the network's local day) and the
+      // add-on's `released` (Cinemeta/TVDB UTC instant) can differ by a day,
+      // and the list is what the owner reads (12 Nov 2026). Cheap: only the
+      // next episode's card is compared; the record changes once.
+      const AgItem *agR = agenda_registro(ciAg->imdb);
+      if (agR && agR->temporada > 0 && agR->episodio > 0 && agR->dataProx[0]) {
+        int agT = agR->temporada, agE = agR->episodio, nEpAg = cat_n_episodios(idx);
+        for (int k = 0; k < nEpAg; k++) {
+          const CatEp *epAg = cat_episodio(idx, k);
+          if (epAg && epAg->temporada == agT && epAg->episodio == agE) {
+            agenda_alinhar_episodio(ciAg->imdb, agT, agE, epAg->dataIso);
+            break;
+          }
+        }
+      }
       agenda_frase(ciAg->imdb, agLinha, sizeof agLinha);
+    }
     // Owner (7 Nov 2026): no "Notify when available" tag on the carousel
     // cards; the full details page keeps it (and its reminder button).
     else if (!carro && ciAg && !strcmp(ciAg->tipo, "movie") && temLembrar())

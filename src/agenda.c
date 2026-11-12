@@ -59,6 +59,11 @@ typedef struct {
   char genero[48];
   // Arte de paisagem (still do proximo episodio ou backdrop). 17o campo.
   char fundo[512];
+  // THE EPISODE LIST'S OWN DAY for (tEp, eEp), fields 18-20. Set by
+  // agenda_alinhar_episodios; while the next episode is still that pair, a
+  // TMDB refresh keeps this day instead of its own `air_date`.
+  char dataEp[12];
+  int  tEp, eEp;
 } AgReg;
 
 static AgReg cache[AG_CACHE_MAX];
@@ -94,6 +99,7 @@ static int perfilCarregado = -1;
 static char hojeForcado[12];
 static pthread_mutex_t trava = PTHREAD_MUTEX_INITIALIZER;
 static int fioVivo;
+static int versaoFio;   // bumped when rows change (agenda_versao)
 
 // ---------------------------------------------------------------------------
 // datas
@@ -391,13 +397,14 @@ static void gravarCache(void) {
     limpo(fu, sizeof fu, cache[i].fundo);
     usado += (size_t)snprintf(txt + usado, cap - usado,
                               "%s\t%s\t%s\t%d\t%d\t%d\t%s\t%s\t%s\t%lld"
-                              "\t%s\t%s\t%s\t%d\t%d\t%s\t%s\n",
+                              "\t%s\t%s\t%s\t%d\t%d\t%s\t%s\t%s\t%d\t%d\n",
                               cache[i].imdb, t, po, cache[i].situacao,
                               cache[i].temporada, cache[i].episodio, ne,
                               cache[i].dataProx, cache[i].dataUlt,
                               cache[i].visto,
                               si, cache[i].tipoEp, re,
-                              cache[i].duracao, cache[i].temporadas, ge, fu);
+                              cache[i].duracao, cache[i].temporadas, ge, fu,
+                              cache[i].dataEp, cache[i].tEp, cache[i].eEp);
     if (usado + AG_LINHA_BYTES >= cap) break;
   }
   dados_gravar_leve(arquivo("agenda"), txt);
@@ -433,7 +440,11 @@ static void lerCache(void) {
     q = campo(q, n, sizeof n); r.temporadas = atoi(n);
     q = campo(q, r.genero, sizeof r.genero);
     q = campo(q, r.fundo, sizeof r.fundo);
+    q = campo(q, r.dataEp, sizeof r.dataEp);
+    q = campo(q, n, sizeof n); r.tEp = atoi(n);
+    q = campo(q, n, sizeof n); r.eEp = atoi(n);
     (void)q;
+    if (!ehIso(r.dataEp) || r.tEp <= 0 || r.eEp <= 0) { r.dataEp[0] = 0; r.tEp = r.eEp = 0; }
     if (r.imdb[0]) cache[nCache++] = r;
     while (*p && *p != '\n') p++;
     if (*p == '\n') p++;
@@ -571,7 +582,15 @@ void agenda_registrar(const char *imdb, const char *titulo, const char *poster,
   // acabou), e manter a data velha e exatamente a mentira que este modulo
   // existe para nao contar.
   if (dataProx && ehIso(dataProx)) {
-    snprintf(r->dataProx, sizeof r->dataProx, "%.10s", dataProx);
+    // The episode list already told us this episode's day: it wins over the
+    // TMDB/Trakt/Cinemeta-summary day for the same episode. A different
+    // episode drops the pin (the list will pin that one when it loads).
+    if (r->dataEp[0] && r->tEp == temporada && r->eEp == episodio)
+      snprintf(r->dataProx, sizeof r->dataProx, "%s", r->dataEp);
+    else {
+      snprintf(r->dataProx, sizeof r->dataProx, "%.10s", dataProx);
+      if (r->tEp != temporada || r->eEp != episodio) { r->dataEp[0] = 0; r->tEp = r->eEp = 0; }
+    }
     r->temporada = temporada; r->episodio = episodio;
     if (nomeEp) snprintf(r->nomeEp, sizeof r->nomeEp, "%s", nomeEp);
   } else if (statusCru && statusCru[0]) {
@@ -633,6 +652,60 @@ void agenda_registrar_fundo(const char *imdb, const char *url) {
     gravarCache();
   }
   pthread_mutex_unlock(&trava);
+}
+
+int agenda_alinhar_episodio(const char *imdb, int temporada, int episodio,
+                            const char *released) {
+  char id[24], dia[12];
+  AgReg *r;
+  int k;
+  // Raw `released` only: CatEp.data is already the translated long form.
+  if (temporada <= 0 || episodio <= 0 || !released || !ehIso(released)) return 0;
+  snprintf(dia, sizeof dia, "%.10s", released);
+  serieDe(id, sizeof id, imdb);
+  if (!id[0]) return 0;
+  pthread_mutex_lock(&trava);
+  r = acharTrancado(id);
+  if (!r || r->temporada != temporada || r->episodio != episodio || !r->dataProx[0] ||
+      (!strcmp(r->dataEp, dia) && r->tEp == temporada && r->eEp == episodio &&
+       !strcmp(r->dataProx, dia))) {
+    pthread_mutex_unlock(&trava);
+    return 0;
+  }
+  snprintf(r->dataEp, sizeof r->dataEp, "%s", dia);
+  r->tEp = temporada; r->eEp = episodio;
+  snprintf(r->dataProx, sizeof r->dataProx, "%s", dia);
+  // Same rule as agenda_registrar: a reminder follows the date it shows.
+  for (k = 0; k < nLembretes; k++)
+    if (!lembretes[k].filme && !strcmp(lembretes[k].imdb, id) &&
+        strcmp(lembretes[k].data, r->dataProx)) {
+      snprintf(lembretes[k].data, sizeof lembretes[k].data, "%s", r->dataProx);
+      lembretes[k].avisado = 0;
+      gravarLembretes();
+    }
+  cacheSujo = 1;
+  gravarCache();
+  versaoFio++;   // the Schedule remounts on agenda_versao()
+  pthread_mutex_unlock(&trava);
+  return 1;
+}
+
+int agenda_alinhar_episodios(const char *imdb, const CatEp *eps, int n) {
+  char id[24];
+  AgReg *r;
+  int i, t = 0, e = 0;
+  if (!eps || n <= 0) return 0;
+  serieDe(id, sizeof id, imdb);
+  if (!id[0]) return 0;
+  pthread_mutex_lock(&trava);
+  r = acharTrancado(id);
+  if (r) { t = r->temporada; e = r->episodio; }
+  pthread_mutex_unlock(&trava);
+  if (t <= 0 || e <= 0) return 0;
+  for (i = 0; i < n; i++)
+    if (eps[i].temporada == t && eps[i].episodio == e)
+      return agenda_alinhar_episodio(id, t, e, eps[i].dataIso);
+  return 0;
 }
 
 const AgItem *agenda_registro(const char *imdb) {
@@ -1414,6 +1487,7 @@ static int cinemetaLer(AgBusca *b, const char *corpo, const char *hoje) {
   int achouAlgo = 0;
   int pT = 0, pE = 0, maxT = 0;
   char pData[12] = "", pNome[120] = "", pSin[400] = "", uData[12] = "";
+  char mesmoEp[12] = "";   // this meta's day for the episode an earlier source chose
   if (!m || !(m = strchr(m, '{'))) return 0;
   fim = js_fim(m);
   s[0] = 0;
@@ -1452,6 +1526,8 @@ static int cinemetaLer(AgBusca *b, const char *corpo, const char *hoje) {
     int e = (int)js_num(v, vf, "episode", 0.0);
     if (t > maxT) maxT = t;
     js_texto_raiz_em(v, vf, "released", rel, sizeof rel);
+    if (b->prox && b->dataProx[0] && t == b->temp && e == b->ep && ehIso(rel))
+      snprintf(mesmoEp, sizeof mesmoEp, "%.10s", rel);
     if (t > 0 && ehIso(rel) && ehIso(hoje)) {
       snprintf(dia, sizeof dia, "%.10s", rel);
       if (strcmp(dia, hoje) >= 0) {
@@ -1472,6 +1548,12 @@ static int cinemetaLer(AgBusca *b, const char *corpo, const char *hoje) {
     v = js_prox(vf);
   }
   if (b->temporadas <= 0) b->temporadas = maxT;
+  // SAME DAY AS THE EPISODE LIST. This /meta (Nuvio catalog, else Cinemeta) is
+  // the body the title page's episode list is built from, and the list shows
+  // the first 10 characters of `released`. When TMDB/Trakt already chose the
+  // next episode, its day here wins over their `air_date`/`first_aired`, so
+  // the Schedule never says 2 December for a card that says 3 December.
+  if (mesmoEp[0]) snprintf(b->dataProx, sizeof b->dataProx, "%s", mesmoEp);
   // A lista de videos e a grade inteira que o Cinemeta conhece: nenhum futuro
   // nela E a afirmacao de que nao ha proximo — desde que tenha vindo uma
   // `videos` (corpo sem ela nao afirma nada).
@@ -1558,7 +1640,6 @@ static char filaPoster[AG_MAX][NV_ARTE_URL_MAX];
 static long filaTmdb[AG_MAX];
 static int  nFila;
 static char filaHoje[12];
-static int  versaoFio;
 
 static void *fioAgenda(void *arg) {
   int i;

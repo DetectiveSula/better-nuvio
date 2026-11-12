@@ -4941,6 +4941,20 @@ void ajustes_dir(const char *dir) {
   f = fopen(caminho, "r");
   if (!f) {
     efeitos720Migrar(0);
+    // Fresh install: it already starts on today's defaults, so every one-time
+    // migration below counts as done. Without these markers the SECOND launch
+    // ran them all and reset choices made (or received from the account) since
+    // the first launch; with automatic settings sync that reset would then be
+    // uploaded and undo the same choices on every other TV of the profile.
+    { static const char *const feitas[] = {
+        RES_ARQ_MIGRADA, "trailer-1310.txt", "ajustesescala-203.txt", "ajustesescala-205.txt",
+        "perfilfundo-20.txt", "aparencia-20.txt", "profundidade-205.txt", "ampliarUi-206.txt",
+        "idiomas-206.txt" };
+      char marca[640];
+      FILE *m;
+      for (size_t k = 0; k < sizeof feitas / sizeof feitas[0]; k++) dados_gravar(feitas[k], "1\n");
+      snprintf(marca, sizeof marca, "%s/envio-151.txt", dirAjustes);
+      if ((m = fopen(marca, "w"))) { fputs("1\n", m); fclose(m); } }
     // Nunca gravou nada: o idioma nasce automatico (o padrao de valor[]).
     valor[AJ_IDIOMA] = 0;
     performanceAutoMigrar();

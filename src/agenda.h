@@ -58,6 +58,7 @@
 #define NV_AGENDA_H
 
 #include <stddef.h>
+#include "catalogo.h"   // CatEp (agenda_alinhar_episodios)
 
 #define AG_MAX 120
 
@@ -131,6 +132,22 @@ void agenda_registrar_extra(const char *imdb, const char *sinopse,
 // A arte de paisagem (still do episodio ou backdrop) no MESMO registro.
 // Vazio nao apaga o que ja estava; sem registro nao cria.
 void agenda_registrar_fundo(const char *imdb, const char *url);
+
+// THE EPISODE'S OWN AIR DATE WINS (owner, 12 Nov 2026). The next-episode date
+// comes from TMDB `next_episode_to_air.air_date` (the network's local day),
+// while the episode list shows the add-on's `released` for that same episode
+// (Nuvio catalog or Cinemeta/TVDB, often a UTC instant one day later). The
+// list is what the owner reads as the truth, so when it arrives with the
+// record's next (season, episode) and a date, that day replaces the TMDB one
+// and stays pinned across later TMDB refreshes of the same episode. `eps` is
+// the list exactly as published (CatEp.dataIso = raw `released`); the day is
+// the first 10 characters, as desc_data_extenso shows it. Returns 1 when the
+// record changed. No record = nothing created.
+int agenda_alinhar_episodios(const char *imdb, const CatEp *eps, int n);
+// The same for ONE episode of the list (the detail page walks its own list):
+// aligns only when (temporada, episodio) is the record's next episode.
+int agenda_alinhar_episodio(const char *imdb, int temporada, int episodio,
+                            const char *released);
 
 // Registro guardado, ou NULL. O ponteiro vale ate a proxima escrita — copie
 // se for atravessar um quadro.

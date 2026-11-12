@@ -124,7 +124,8 @@ static void aj6Effects(int op){
 static void aj6Context(void){
  if(!aj6Loaded||!sessao_logada()||edPerfil)return;pthread_mutex_lock(&aj6Lock);
  if(aj6Current()){pthread_mutex_unlock(&aj6Lock);return;}
- aj6Ready=0;aj6Permission=0;aj6Profile=perfis_ativo();snprintf(aj6Owner,sizeof aj6Owner,"%s",sessao_usuario());aj6Session=nv_perfil_sessao_ler();aj6Initial(aj6State,valor);
+ /* Automatic sync (owner decision, 12 Nov 2026): J6 uploads on for every signed-in profile. */
+ aj6Ready=0;aj6Permission=NV_SYNC_AUTO;aj6Profile=perfis_ativo();snprintf(aj6Owner,sizeof aj6Owner,"%s",sessao_usuario());aj6Session=nv_perfil_sessao_ler();aj6Initial(aj6State,valor);
  int read=aj6Read(aj6Owner,aj6Profile,aj6State);
  if(read>=0){aj6Ready=1;if(read)for(size_t i=0;i<AJ6_N;i++){valor[aj6Map[i].op]=aj6State[i].observed;aj6Effects(aj6Map[i].op);}aj6Save(aj6Owner,aj6Profile,aj6State);}
  pthread_mutex_unlock(&aj6Lock);

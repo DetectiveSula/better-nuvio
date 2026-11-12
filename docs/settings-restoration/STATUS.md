@@ -3296,3 +3296,64 @@ arming, backend write, Fire TV action, commit, push or publication was performed
 The earlier pending-install note is superseded by this installation evidence.
 Actual sidebar and configured live recommendation behaviour still await retesting.
 Evidence: `build/details-device-followup-20261108/apk/bluestacks-installed.json`.
+
+## Automatic settings sync — 12 November 2026
+
+Owner decision: settings and layout "should automatically sync" between TVs. This
+replaces the J4/J5/J6 default-Off policy and the J7 debug-arming requirement.
+
+* **Cause found:** release Android compiled `j7arme_permite_j4/j6` to a constant 0
+  (`src/j7arme.h`), and the J4/J5 and J6 permissions had no UI and defaulted Off.
+  The release app on BlueStacks logged 18 J4/J5 and 5 J6 edits waiting with uploads off;
+  `[bn-sync] ... 0 campo(s) recebidos` meant no TV had ever uploaded the `better_nuvio` blob.
+* **Change:** every build lets the signed-in account/profile upload (`src/j7arme.h`,
+  `src/j7arme.c` `permite`/`j7arme_passo`); J4/J5 writes start On per context
+  (`src/ajustes_better.inc`) and J6 permission starts On (`src/ajustes_official.inc`),
+  through `NV_SYNC_AUTO` (`src/ajustes.h`, 1 by default; 0 only in the J4/J6 engine
+  suites). The read-only validation build still refuses. Merge rules are unchanged:
+  only fields edited on this TV, against a fresh pull, with the existing conflict rules.
+* **Bug fixed on the way:** a fresh install returned from `ajustes_dir` before writing
+  the one-time migration markers, so its second launch reset theme/logo colour/depth/
+  scale/profile background etc. With sync on, that reset would have uploaded and undone
+  the same choices on every TV. Fresh installs now mark those migrations as done.
+* **Still read-only:** regular Nuvio's `home_catalog_shared` row order (Stage G). Better
+  Nuvio's own Home layout (J5) syncs through `better_nuvio`.
+* **Known:** the retired key `trailerDetalheSomLocal` (#509) is normalised Off once per
+  boot if another TV stores it On; this converges after one upload.
+* **Tests:** new `tests/settings_sync_auto.sh` (two devices, no arming, plus read-only
+  build). `settings_stage_j7.sh` default-Off/arming flow retired (read-only mode kept).
+  Stage B guard gained `sync-auto-wiring.json` for the `ajustes_dir` addition.
+  `settings_stage_i.sh` fails on consumer lines in `descoberta.c`/`extras.c`, which
+  predates this change.
+* No device install, live backend contact, commit or push.
+
+## Autoplay speed: one TorBox library read per search — 12 November 2026
+
+BlueStacks log: "Checking the source" took 28.1 s; 7 hash-carrying links each paged
+the whole TorBox library (`resolverExistente`, up to 8 x 100, bypass_cache) and failed
+silently before the 8th played. The existing-item lookup now reads the library once per
+search (debrid session + search generation, same TorBox key, 60 s at most) and reuses
+it for every link; a TorBox add clears it, and the add-if-cached path always re-reads
+(an item it just added can appear late). New logs: `[debrid] TorBox library read …`
+(counts, pages, ms) and one `[resolver] …` line per check (path, result, ms; never the
+hash). Test: `tests/torbox_library_once.sh`; Stage D, TorBox cached add, debrid,
+TorBox AIO, Stage C and the TB add-on-link autoplay suite pass (Stage D now starts a new
+search before emptying its fixture library). Debug APK
+`build/android/Nuvio-2.0.8-android-autoplay-speed-debug.apk` (SHA-256 `c5c9dbcc…bff9`)
+installed on BlueStacks only. The "P2P | Not Cached" link counted as cached is not
+fixed yet: it needs the new logs from a real run.
+
+## TorBox Instant: bare hashes no longer use up autoplay attempts — 12 November 2026
+
+BlueStacks: "Could not open the source" on every play. AIOStreams (TorBox Instant) sent
+53 sources; the top 8 by score were bare torrent hashes, cached on TorBox but not in the
+account. With "Allow cached TorBox additions" Off (default) they cannot play, they used
+all 8 automatic attempts, and the playable add-on links below were never tried. Such
+checks are now free (`primeiraComGratis` in `src/streams.c`, still serial, #130); real
+attempts keep the usual limit, and the queue holds up to `VER_MAX` (16) when cached
+additions are Off. Log: `[fonte] N torrent(s) not in the TorBox account skipped …`.
+Test: `tests/autoplay_instant_hashes.sh`; `tests/fonteauto.sh` guard accepts the new
+serial loop. Debug APK `build/android/Nuvio-2.0.8-android-instant-debug.apk`
+(SHA-256 `95fd2b9e…f128`) installed on BlueStacks only. Pre-existing failures at HEAD
+(link errors/guards): fonteparalela, autoplay_alvo, fontesmortas, fontesmortas_orcamento,
+fontecache_vod, fontefalha_worker, fontefalha_playback, fonte_ordem_addon.

@@ -15,6 +15,7 @@
 // counts, HTTP codes and 64-bit fingerprints only.
 #ifndef NV_J7ARME_H
 #define NV_J7ARME_H
+#include "validation_readonly.h"
 
 #if (defined(NV_ANDROID) && !defined(NDEBUG)) || defined(NV_J7_TESTE)
 #define NV_J7_ARME 1
@@ -55,12 +56,10 @@ const char *j7arme_resultado(void);
 // Inline so that builds without arming need no extra source file and Android
 // release contains no arming code at all.
 static inline int j7arme_permite_j4(const char *owner, int profile) {
-  (void)owner; (void)profile;
-#ifdef NV_ANDROID
-  return 0;   // release Android: J4/J5/J6 can never upload, whatever flags are stored
-#else
-  return 1;   // other platforms: the existing explicit permissions decide
-#endif
+  // Settings sync is automatic (owner decision, 12 Nov 2026): every build lets the
+  // signed-in account/profile upload; the read-only validation build still refuses.
+  if (NV_VALIDATION_READONLY_ENABLED) return 0;
+  return owner && *owner && profile > 0;
 }
 static inline int j7arme_permite_j6(const char *owner, int profile) { return j7arme_permite_j4(owner, profile); }
 static inline void j7arme_pedir(int fase, const char *token) { (void)fase; (void)token; }

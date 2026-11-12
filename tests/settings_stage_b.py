@@ -69,6 +69,8 @@ stage_j4=json.loads((ROOT/'tests/fixtures/settings-restoration/stage-j4-wiring.j
 assert set(stage_j4)=={'function:gravar','function:ajustes_dir'}
 stage_j5=json.loads((ROOT/'tests/fixtures/settings-restoration/stage-j5-wiring.json').read_text())
 assert set(stage_j5)=={'function:ajustes_dir'}
+sync_auto=json.loads((ROOT/'tests/fixtures/settings-restoration/sync-auto-wiring.json').read_text())
+assert set(sync_auto)=={'function:ajustes_dir'}
 expansion=json.loads((ROOT/'tests/fixtures/settings-restoration/expansion-wiring.json').read_text())
 assert set(expansion)=={'function:visivel','function:definirValorDireto','src/ajustes_ux_padrao.inc','src/ajustes_scenes.inc','src/streams.c','src/fontefalha.c'}
 for path,digest in contract.items():
@@ -110,6 +112,11 @@ for path,digest in contract.items():
             lines=iter(stage_j5[path]['after'].splitlines())
             assert all(any(line==candidate for candidate in lines) for line in digest.splitlines()), path
             digest=stage_j5[path]['after']
+        if path in sync_auto:
+            assert sync_auto[path]['before']==digest and sync_auto[path]['reason']
+            lines=iter(sync_auto[path]['after'].splitlines())
+            assert all(any(line==candidate for candidate in lines) for line in digest.splitlines()), path
+            digest=sync_auto[path]['after']
         if path in expansion:
             assert expansion[path]["before"]==digest and expansion[path]["reason"]
             digest=expansion[path]["after"]
