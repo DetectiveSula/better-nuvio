@@ -44,7 +44,7 @@ int main(int argc,char **argv){
   for(size_t i=0;i<JB_N;i++){BnValue v;if(!jbEncode(jbMap[i].op,valor[jbMap[i].op],1,&v))fprintf(stderr,"BAD BINDING %s value %d kind %d n %d\n",jbMap[i].key,valor[jbMap[i].op],OPCOES[jbMap[i].op].tipo,OPCOES[jbMap[i].op].n);}
   abort();
  }
- assert(jbCurrent&&JB_N==93);assert(!bna_writes_enabled(jbCurrent->account));
+ assert(jbCurrent&&JB_N==214);assert(!bna_writes_enabled(jbCurrent->account));
  /* Existing 90-binding checkpoints grow without resetting old edits or
   * turning the new Home layout baseline into an upload. */
  BnEngine *legacy=calloc(1,sizeof *legacy),*expanded=calloc(1,sizeof *expanded);
@@ -59,7 +59,9 @@ int main(int argc,char **argv){
  free(legacy);free(expanded);free(prior);
  puts("PASS: 90-binding checkpoint migration retains existing pending edits; Home layout starts unobserved without a default upload");
  for(size_t i=0;i<JB_N;i++){
-  int op=jbMap[i].op;assert(!strcmp(CHAVE[op],jbMap[i].key)&&dePerfil(op));
+  /* Full sync (12 Nov 2026): device-wide bindings sit from JB_PERFIL_FIM on, and
+   * store-backed ones use the stored key without its "-". */
+  int op=jbMap[i].op;assert(!strcmp(CHAVE[op][0]=='-'?CHAVE[op]+1:CHAVE[op],jbMap[i].key)&&(dePerfil(op)||i>=JB_PERFIL_FIM));
   printf("J4_BINDING %s %d %lld %lld %d\n",jbMap[i].key,(int)defs[i].type,(long long)defs[i].min,(long long)defs[i].max,OPCOES[op].tipo==OP_NUMERO?OPCOES[op].passo:0);assert(OPCOES[op].tipo==OP_NUMERO||OPCOES[op].tipo==OP_ESCOLHA);
   int n=OPCOES[op].tipo==OP_NUMERO?OPCOES[op].min:0;
   int max=OPCOES[op].tipo==OP_NUMERO?OPCOES[op].max:nValores(op)-1;
@@ -70,7 +72,7 @@ int main(int argc,char **argv){
   int step=1;
   for(;n<=max;n+=step){BnValue v;int decoded=-999;assert(jbEncode(op,n,0,&v));assert(jbDecode(op,v,&decoded)&&decoded==n);}
  }
- puts("PASS: all 93 IDs/keys, profile scopes, integer ranges (including values between UI steps) and every local dropdown value round trip");
+ puts("PASS: all 214 IDs/keys, profile scopes, integer ranges (including values between UI steps) and every local dropdown value round trip");
  int original[AJ_N];memcpy(original,valor,sizeof original);
  assert(ajustes_better_writes(1));ajustes_better_ciclo(nv_perfil_sessao_ler());assert(!betterPushes); // no defaults
  for(size_t i=0;i<JB_N;i++){
@@ -81,7 +83,10 @@ int main(int argc,char **argv){
  assert(gravar());ajustes_better_ciclo(nv_perfil_sessao_ler());assert(betterPushes==1&&betterCloud);
  BnDoc sent;char *envelope=malloc(strlen(betterCloud)+40);assert(envelope);sprintf(envelope,"[{\"settings_json\":%s}]",betterCloud);
  BnEngine *e=calloc(1,sizeof *e);assert(e&&bn_init(e,sessao_usuario(),perfis_ativo(),dados_cliente_id(),defs,JB_N));assert(bnc_response(e,envelope,&sent));free(envelope);
- assert(sent.count==JB_N);for(size_t i=0;i<JB_N;i++){int found=0;for(size_t j=0;j<sent.count;j++)found|=!strcmp(sent.fields[j].key,jbMap[i].key);assert(found);}
+ /* Store-backed bindings (stage 2a) read their store, not a direct value[] write:
+  * settings_sync_auto covers them through their real setters. */
+ {size_t esperados=0;for(size_t i=0;i<JB_N;i++){if(jbLoja(jbMap[i].op))continue;esperados++;int found=0;for(size_t j=0;j<sent.count;j++)found|=!strcmp(sent.fields[j].key,jbMap[i].key);assert(found);}
+  assert(sent.count>=esperados);}
  for(int k=0;k<3;k++)ajustes_better_ciclo(nv_perfil_sessao_ler());assert(betterPushes==1&&!pushes);
  puts("PASS: every binding captured through real Native save, original-format Better payload, no defaults or loops and no Stage I writes");
  for(size_t i=0;i<sent.count;i++){
@@ -104,7 +109,7 @@ int main(int argc,char **argv){
  free(betterCloud);betterCloud=NULL;assert(bn_json(e,&sent,&betterCloud));serverSave();ajustes_better_ciclo(nv_perfil_sessao_ler());jbNextApply=0;ajustes_better_passo();
  assert(!strcmp(legfontes_escolha_id(LEGFONTE_SECUNDARIA),"0123456789abcdef.ttf")&&legfontes_selecionada(LEGFONTE_SECUNDARIA)==-1);
  before=betterPushes;ajustes_better_ciclo(nv_perfil_sessao_ler());assert(before==betterPushes);
- puts("PASS: all 93 reject invalid conversions; missing custom font IDs remain preferences with bundled fallback, no import or echo");
+ puts("PASS: all 214 reject invalid conversions; missing custom font IDs remain preferences with bundled fallback, no import or echo");
  assert(ajustes_better_writes(0));int wanted=!valor[AJ_HERO_GENERO];
  blockCheckpoint(argv[1],"bn-checkpoint-v1-settings-test-p1.json",1);blockCheckpoint(argv[1],"ajustes-p1.txt",1);
  valor[AJ_HERO_GENERO]=wanted;assert(gravar());jbNextApply=0;ajustes_better_passo();assert(valor[AJ_HERO_GENERO]==wanted);

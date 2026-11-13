@@ -14,6 +14,8 @@
 // GPU: packaged artwork is blurred once per opening into an owned 96x54
 // texture. Shared frosted sheets read it even with glass disabled; no live blur.
 #include "novidades_cartao.h"
+#include "novidadesfila.h"
+#include "novidades20.h"
 #include "dicascontrole.h"
 #include "novidades201.h"
 #include "novidades202.h"
@@ -180,7 +182,7 @@ __attribute__((unused)) static void novArteDesfocada(int numero, GfxRect r, floa
 
 // ======================================================= O CONTEUDO DA VERSAO
 // Para a proxima versao: um src/novidades/<versao>.inc novo, trocado aqui.
-#include "novidades/208.inc"
+#include "novidades/better102.inc"
 #define CT NOV_ATUAL
 
 static const char *artePorNumero(int n) {
@@ -326,11 +328,14 @@ static void montar(void) {
   ESCALA_FIM();
 }
 
-static int paginaApoio(void) { return nPagNov; }
+/* Better Nuvio (owner, 12 Nov 2026): no "Support the project" page; the last
+ * news page is the final one. paginaApoio() is the LAST page index. */
+#define NOV_APOIO 0
+static int paginaApoio(void) { return nPagNov - 1 + NOV_APOIO; }
 
 int novcartao_aberto(void) { return aberto; }
 int novcartao_pagina(void) { return pagina; }
-int novcartao_paginas(void) { montar(); return nPagNov + 1; }
+int novcartao_paginas(void) { montar(); return nPagNov + NOV_APOIO; }
 int novcartao_foco(void) { return foco; }
 int novcartao_cenas(void) { montar(); return nCen; }
 int novcartao_itens_visiveis(void) { montar(); return nVis; }
@@ -382,8 +387,12 @@ void novcartao_abrir(void) { comecar(0.0f); }
 // Os cartoes antigos ficam vistos: nenhum abre depois deste (nem antes, no
 // mesmo quadro — o app.c chama esta decisao primeiro).
 static void marcarAntigos(void) {
-  static const char *const ANTIGOS[] = { N202_ARQ, N201_ARQ };
+  static const char *const ANTIGOS[] = { N202_ARQ, N201_ARQ, N20_ARQ, NF_ARQ_180 };
   int i;
+  // Better Nuvio (12 Nov 2026): Nuvio Legacy's 2.0 tour and the older cards
+  // never open on their own; this card is the only What's new. Retire the old
+  // queue the way the 2.0 tour did, then mark the tour itself as seen.
+  novidadesfila_preparar();
   for (i = 0; i < (int)(sizeof ANTIGOS / sizeof *ANTIGOS); i++) {
     char *s = dados_ler(ANTIGOS[i]);
     if (s) free(s);
@@ -395,15 +404,16 @@ static void primeiraVez(void) {
   char *s;
   if (decidido) return;
   decidido = 1;
+  // Better Nuvio (12 Nov 2026): no 2.0-tour marker means a fresh install (every
+  // earlier Better Nuvio run wrote it). A fresh install sees neither Nuvio
+  // Legacy's 2.0 tour nor this card; an update shows this card once.
+  s = dados_ler(N20_ARQ);
+  int nova = !s;
+  free(s);
   marcarAntigos();
   s = dados_ler(CT.arquivo);
   if (s) { free(s); return; }
-  // Sem a marca do guia da 2.0 o guia abre agora (novidades20_primeira_vez,
-  // no mesmo quadro): ele ja conta o app inteiro, e um segundo cartao em
-  // seguida seria demais. Fica visto.
-  s = dados_ler("novidades-20-guia.txt");
-  if (!s) { dados_gravar(CT.arquivo, "1\n"); return; }
-  free(s);
+  if (nova) { dados_gravar(CT.arquivo, "1\n"); return; }
   comecar(0.0f);
 }
 
@@ -688,7 +698,7 @@ static void rodape(float y0, float altura, float a) {
   float yBase = y0 + altura - padLista();
   const char *rot[2];
   float w[2], xd = textoX() + textoW(), tracos;
-  int i, nPag = nPagNov + 1;
+  int i, nPag = nPagNov + NOV_APOIO;
   rot[0] = i18n(pagina ? "Voltar" : "Agora não");
   rot[1] = i18n(pagina >= paginaApoio() ? "Concluir" : "Continuar");
   for (i = 0; i < 2; i++) w[i] = botao_largura(rot[i], NULL, i == 1);
@@ -764,8 +774,8 @@ static void desenharCorpo(void) {
   if (!fundoFosco) gfx_definir_efeitos_minimos(1);
   if (compacto()) {
     int p = (int)pag, q = p < paginaApoio() ? p + 1 : p;
-    float hp = p < paginaApoio() ? alturaPag[p] : N_H;
-    float hq = q < paginaApoio() ? alturaPag[q] : N_H;
+    float hp = p < nPagNov ? alturaPag[p] : N_H;
+    float hq = q < nPagNov ? alturaPag[q] : N_H;
     float t = pag - (float)p;
     // A pagina maior precisa caber enquanto estiver visivel (visPagina).
     t = hp > hq ? anim_clamp((t - 0.625f) / 0.375f, 0, 1)
@@ -790,7 +800,7 @@ static void desenharCorpo(void) {
   // translucida mostraria uma camada atraves da outra): os codigos sao o assunto.
   if (!compacto()) {
     desenhaPrevia(N_X + N_PAD, y0 + N_PAD, a);
-    { float rec = anim_clamp(pag - (float)(paginaApoio() - 1), 0.0f, 1.0f);
+    if (NOV_APOIO) { float rec = anim_clamp(pag - (float)(paginaApoio() - 1), 0.0f, 1.0f);
       if (rec > 0.004f)
         gfx_cor((GfxRect){ N_X + N_PAD, y0 + N_PAD, PV_W, PV_H }, PV_RAIO / PV_H, 0.052f, 0.055f, 0.064f,
                 0.55f * sai3(rec) * a); }
@@ -800,7 +810,7 @@ static void desenharCorpo(void) {
     float al, dx;
     if (fabsf(pag - (float)i) >= 1.0f) continue;
     visPagina(i, &al, &dx);
-    if (i < paginaApoio()) paginaNovidades(i, y0, a * al, dx);
+    if (i < nPagNov) paginaNovidades(i, y0, a * al, dx);
     else paginaApoioDesenho(y0, a * al, dx);
   }
   rodape(y0, altura, a);
@@ -827,7 +837,7 @@ static int novTelefoneCena(float *dentro) {
 }
 static float novTelefoneConteudo(float x, float y, float w, float a) {
   float inicio = y;
-  if (pagina < paginaApoio()) {
+  if (pagina < nPagNov) {
     char titulo[96];
     snprintf(titulo, sizeof titulo, i18n("Novidades da %s"), CT.versao);
     y += telefonecartao_titulo(titulo, x, y, w, a);

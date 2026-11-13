@@ -3357,3 +3357,84 @@ serial loop. Debug APK `build/android/Nuvio-2.0.8-android-instant-debug.apk`
 (SHA-256 `95fd2b9e…f128`) installed on BlueStacks only. Pre-existing failures at HEAD
 (link errors/guards): fonteparalela, autoplay_alvo, fontesmortas, fontesmortas_orcamento,
 fontecache_vod, fontefalha_worker, fontefalha_playback, fonte_ordem_addon.
+
+## Personal preferences follow the account — 12 November 2026
+
+Owner: settings went back to defaults after a reinstall. 270 of 435 settings were only on
+the TV (Android backup off). 55 per-profile personal preferences with no other owner now
+join the `better_nuvio` bindings (JB_N 93 -> 148; `ajustes_better_map.inc`, reviewed in
+`stage-j4-bindings.json`): subtitle/audio languages, trailers, ratings shown, skip intro/
+recap/credits, post-play, source behaviour and size limits, profile screen, background,
+TorBox cached additions, TV guide order and others. They restore on reinstall and follow
+the account. Kept per TV on purpose: quality, Dolby Vision, Atmos, HDR preference,
+interface size/scale/upscaling, glass/blur, memory, salvosDestino (separate "chosen"
+flag), hide-unreleased (Stage G) and tmdb_language (official). Device-wide settings
+(subtitle style, autoplay mode, filters, app language, external player) are not per
+profile and are not covered yet.
+On an existing TV, a new binding absent from the saved anchor compares with the factory
+default and is recorded as default -> current, so a customised value uploads once and
+defaults never upload. Tests: `settings_sync_auto.sh` gained upgrade and reinstall steps;
+J4/J5/J5-native/J6/A/C/D/catordem and the J7 read-only check pass. Stage B's file guard
+fails on src/debrid.c and src/streams.c (1.0.1 changes) before its long-standing
+src/perfis.c failure. Debug APK `build/android/Nuvio-2.0.8-android-personal-sync-debug.apk`
+(SHA-256 `3e2197a0…d7c8`) installed on BlueStacks; not committed or released.
+
+## User guide refresh — 12 November 2026
+
+Settings › About › User guide (`design/guia-de-uso/guia.json` -> `tools/guia_inc.py` ->
+`src/ajustes_ux_guia_dados.inc`) now has 110 entries (was 104). Checked every Settings
+target against the Android and Samsung settings trees and runtime visibility.
+Removed: LG Magic Remote. Rewritten: new Settings categories, updating from GitHub
+releases, MP4/Cached/Dubbed (no LG Dolby Vision claim), DTS/TrueHD (Samsung converts,
+Android decodes), watched rule (its percentage control is hidden, so no Settings button),
+App language (Settings and guide stay in English), Saved tabs (adds Schedule), Explore
+(moods and neighbourhoods), send log and no-sound (no LG buttons). New: settings follow
+your account, Family Watching, Filters and sorting, TorBox/Premiumize resolution,
+skip intro/recap/credits, after the movie (post-play and "still watching"), edit profiles.
+25 new strings in idioma_tab.h; the 28 sister tables carry the English value because
+Settings and the guide always render English (`#define i18n(s) idioma_ingles(s)`).
+`tools/idiomas.py` and `settings_stage_a.sh` pass. Not yet seen on a TV.
+
+## What's new card for Better Nuvio 1.0.2 — 12 November 2026
+
+Settings › About now has "What's new" (was "What's new in 2.0", which opened Nuvio
+Legacy's 2.0 tour). It opens the per-version card, now `src/novidades/better102.inc`
+("What's new in Better Nuvio 1.0.2": settings on every TV, TorBox Instant, user guide,
+schedule date, look kept on a new install, cached TorBox additions; 3 visuals). It
+shows once after an update; a fresh install sees neither it nor the Legacy 2.0 tour
+(the card marks the tour and the old queue as seen). Owner request: the "Support the
+project" page (Nuvio Legacy donations and Discord) is removed from the card
+(`NOV_APOIO 0`) and the Settings › About row is hidden. Card strings: English in all
+29 tables. Tests: novidades_cartao, novidades_cartao_shot (31 languages x 5 platforms,
+no truncation), novidades_fila, ajustes_ux_dados, settings_stage_a, idiomas pass.
+
+## Full settings sync — 13 November 2026
+
+Owner: "all settings should sync"; keep hardware settings per TV; keys and logins sync.
+* Stage 1: 45 more main-file settings (8 per-profile, 37 device-wide: autoplay mode,
+  app language, font, clock, screensaver, Live TV, etc.). Device-wide ones are kept per
+  profile in the account (`JB_PERFIL_FIM`); a switch of profile neither copies nor loses
+  them (`jbDispositivo`, anchor edit only when new to the TV). Side effects run as in
+  Settings (language, sizes, font, polls, guide, add-ons).
+* Stage 2a: 21 store-backed settings (main subtitle style, failure policy, filter
+  numbers), read from the mirrors and applied through `ajLegendaDefinir`/`ajFalhaDefinir`.
+* Auto-play rules (allowed add-ons/plugins, name filter) now upload into the official
+  document (`fonteregra_mesclar`) when changed on this TV; the account's copy applies
+  otherwise (the old whole-TV `ajustes-locais.txt` marker no longer blocks it).
+* Stages 2b/3: `src/ajustes_better_arquivos.inc` syncs data files as base64url parts
+  (the engine refuses secret-looking names, control characters and "://"): debrid,
+  TMDB, Fanart, Seekr and poster keys, P2P address, failure policy/filters/orders,
+  add-on order, Live TV accounts (bundle of index + credential files), Live TV lists,
+  Jellyfin/Emby/Plex. Encoded, not encrypted. A file new to a profile waits for the
+  first download (`bna_pulled`) and takes the account's copy when there is one.
+* Stays per TV: interface resolution, visual effects, image memory/quality, buffer,
+  tunneling, interface mode, keyboard, mic button, DTS conversion, audio offset, glass,
+  blur, gradients, upscaling, guide memory, HDR brightness, disk cache, P2P cache, app
+  icon, external players, LG-only DV options, debug tools; Library source and TV guide
+  sources (pending), Hide unreleased and title-data language (owned elsewhere); main
+  subtitle font; per-add-on failure limit; Home row limit (memory).
+* Bindings 93 -> 214, plus 146 file parts. Tests: settings_sync_auto (device-wide
+  profiles, stores, auto-play rules incl. official change winning, files incl. fresh TV
+  not overwriting), J4/J5/J5-native/J6/A/D, ajustes_ux_dados, bnaccount, fontefalha,
+  fonteregra(+oficial), iptv_accounts, jellyfin, ltv, plex, posterprov, seekr, p2p,
+  ajustes_sync pass. settings_stage_i fails as before (descoberta.c/extras.c).

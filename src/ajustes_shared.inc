@@ -205,6 +205,12 @@ static int ajSharedEncoded(const char *feature,const char *key,const char *type,
 // Preserve established read-only account source rules, badges and language
 // preferences. Feature boundaries prevent similarly named Native extensions
 // from being imported. Missing languages retain their current account value.
+/* Auto-play rules (allowed add-ons/plugins, source-name filter) are official keys
+ * under player_settings, applied from the account above. Full sync (12 Nov 2026):
+ * a local change since the last application or upload is merged back into the
+ * official document (fonteregra_mesclar replaces only keys the account has). */
+static _Atomic unsigned ajFrBase, ajFrEnviada;
+static int ajFrPendente(void){return fonteregra_versao()!=atomic_load(&ajFrBase);}
 static void ajSharedReadOnly(const char *json) {
   char *player=ajSharedFeature(json,"player_settings");
   if (player) {
@@ -223,8 +229,10 @@ static void ajSharedReadOnly(const char *json) {
         if (!i) snprintf(contaLegLing,sizeof contaLegLing,"%s",text);
       }
     }
-    char *protected=dados_ler("ajustes-locais.txt");
-    if (!protected || protected[0]!='1') {
+    /* Full sync (12 Nov 2026): the account's rules apply unless this TV has its own
+     * unsent rule change (that one is merged back instead). The old whole-TV
+     * "local settings" marker no longer blocks them. */
+    if (!ajFrPendente()) {
       // The legacy source-rule importer is tolerant; give it only correctly
       // typed original fields, never a malformed list that would clear filters.
       const char *keys[]={"stream_auto_play_regex","stream_auto_play_selected_addons","stream_auto_play_selected_plugins"};
@@ -247,9 +255,9 @@ static void ajSharedReadOnly(const char *json) {
       }
       jsw_obj_fim(&w); const char *rules=jsw_texto_final(&w);
       if (rules) fonteregra_do_blob(rules);
+      atomic_store(&ajFrBase,fonteregra_versao());   /* what the account has; not a local edit */
       jsw_livre(&w);
     }
-    free(protected);
     free(player);
   }
   char *badges=ajSharedFeature(json,"stream_badge_settings");
@@ -328,6 +336,7 @@ void ajustes_compartilhados_contexto(void) {
   pthread_mutex_lock(&ajSharedMutex);
   if (ajSharedCurrent()) { pthread_mutex_unlock(&ajSharedMutex); return; }
   snprintf(ajSharedOwner,sizeof ajSharedOwner,"%s",owner); ajSharedProfile=profile;
+  atomic_store(&ajFrBase,fonteregra_versao()); atomic_store(&ajFrEnviada,0u);   /* only edits from now on upload */
   contaTmdbLing[0]=contaLegLing[0]=0;
   for (size_t i=0;i<AJ_SHARED_N;i++) ajSharedState[i]=(AjSharedField){valor[ajSharedMap[i].op],-1,0,valor[ajSharedMap[i].op]==0};
   ajSharedFollow=ajSharedRead(owner,profile,ajSharedState);
@@ -381,7 +390,7 @@ void ajustes_compartilhados_observar(void) {
 int ajustes_compartilhados_pendentes(void) {
   int n=0; pthread_mutex_lock(&ajSharedMutex);
   if (ajSharedCurrent()) for (size_t i=0;i<AJ_SHARED_N;i++) n+=ajSharedState[i].pending;
-  pthread_mutex_unlock(&ajSharedMutex); return n+aj6Pending();
+  pthread_mutex_unlock(&ajSharedMutex); return n+aj6Pending()+ajFrPendente();
 }
 // One privacy-safe line per account document: counts and official field names
 // only (never values, owner, tokens or other features' contents).
@@ -478,10 +487,15 @@ int ajustes_compartilhados_mesclar(const char *base, char **out) {
   if (n && p) *out=ajJsonMerge(base,base+strlen(base),p,p+strlen(p));
   jsw_livre(&patch);
   char *typed=NULL;int extra=aj6Merge(*out?*out:base,&typed);if(typed){free(*out);*out=typed;n+=extra;}
+  if(ajFrPendente()){char *rules=NULL;unsigned v=fonteregra_versao();int m=fonteregra_mesclar(*out?*out:base,&rules);
+    if(rules){free(*out);*out=rules;n+=m;atomic_store(&ajFrEnviada,v);printf("[ajustes-conta] enviando regras do auto-play (%d campo(s))\n",m);}
+    else atomic_store(&ajFrBase,v);   /* already equal to the account: nothing to send */
+  }
   return *out ? n : 0;
 }
 void ajustes_compartilhados_confirmar(const char *sent) {
   if (!ajustes_compartilhados_validar(sent)) return;
+  if (atomic_load(&ajFrEnviada)) atomic_store(&ajFrBase, atomic_load(&ajFrEnviada));
   aj6Ack(sent);
   pthread_mutex_lock(&ajSharedMutex);
   if (ajSharedCurrent()) for (size_t i=0;i<AJ_SHARED_N;i++) {

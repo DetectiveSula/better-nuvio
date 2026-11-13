@@ -64,7 +64,11 @@ static void instalacaoNova(void) {
   assert(existe(novcartao_arquivo()));
   assert(!novidades202_aberto() && !novidades201_aberto());
   assert(existe(N202_ARQ) && existe(N201_ARQ));
-  puts("PASS: instalacao nova: o guia da 2.0 abre, este cartao fica visto (e os antigos)");
+  // Better Nuvio: Nuvio Legacy's 2.0 tour never opens on its own either.
+  assert(existe(N20_ARQ));
+  novidades20_primeira_vez();
+  assert(!novidades20_aberto());
+  puts("PASS: instalacao nova: nem o guia da 2.0 nem este cartao abrem; todos ficam vistos");
 }
 
 static void vindoDa202(void) {
@@ -90,25 +94,25 @@ static void vindoDa203(void) {
   dados_gravar("novidades-20-guia.txt", "1\n");
   dados_gravar("novidades-203.txt", "1\n");
   quadroHome(1, 0, 0);
-  assert(novcartao_aberto() && !existe("novidades-208.txt"));
+  assert(novcartao_aberto() && !existe("novidades-better-102.txt"));
   tecla(SDLK_ESCAPE);
-  assert(existe("novidades-203.txt") && existe("novidades-208.txt"));
+  assert(existe("novidades-203.txt") && existe("novidades-better-102.txt"));
   novaSessao();
   quadroHome(1, 0, 0);
   assert(!novcartao_aberto());
   puts("PASS: vindo da 2.0.3: marca independente, abre uma vez");
 }
 
-// The 2.0.4 marker must not hide the 2.0.8 card.
+// The 2.0.4 marker must not hide the Better Nuvio 1.0.2 card.
 static void vindoDa204(void) {
   limpar();
   dados_gravar("novidades-20-guia.txt", "1\n");
   dados_gravar("novidades-203.txt", "1\n");
   dados_gravar("novidades-204.txt", "1\n");
   quadroHome(1, 0, 0);
-  assert(novcartao_aberto() && !existe("novidades-208.txt"));
+  assert(novcartao_aberto() && !existe("novidades-better-102.txt"));
   tecla(SDLK_ESCAPE);
-  assert(existe("novidades-204.txt") && existe("novidades-208.txt"));
+  assert(existe("novidades-204.txt") && existe("novidades-better-102.txt"));
   novaSessao();
   quadroHome(1, 0, 0);
   assert(!novcartao_aberto());
@@ -171,7 +175,7 @@ static void paginas(void) {
   n = novcartao_paginas();
   assert(n >= 2);
   assert(novcartao_pagina() == 0 && novcartao_foco() == 1);
-  // OK em Continuar anda ate "Apoie o projeto"; Concluir fecha e grava.
+  // OK em Continuar anda ate a ultima pagina de novidades; Concluir fecha e grava.
   for (i = 1; i < n; i++) { tecla(SDLK_RETURN); assert(novcartao_aberto() && novcartao_pagina() == i); }
   // Voltar (tecla) volta uma pagina; OK em Voltar tambem.
   tecla(SDLK_ESCAPE);
@@ -192,27 +196,27 @@ static void paginas(void) {
   assert(novcartao_foco() == 1);
   tecla(SDLK_ESCAPE);
   assert(!novcartao_aberto());
-  printf("PASS: %d paginas (a ultima e Apoie o projeto); Continuar, Voltar e Concluir\n", n);
+  printf("PASS: %d paginas (sem Apoie o projeto); Continuar, Voltar e Concluir\n", n);
 }
 
 static void plataformas(void) {
   int lg, tpk, wgt, and;
   novcartao_teste_plataforma(NOV_LG);
   lg = novcartao_itens_visiveis();
-  assert(novcartao_cenas() == 4);   // Four illustrated highlights on every platform.
+  assert(novcartao_cenas() == 3);   // Three illustrated highlights on every platform.
   novcartao_teste_plataforma(NOV_TPK);
   tpk = novcartao_itens_visiveis();
-  assert(novcartao_cenas() == 4);
+  assert(novcartao_cenas() == 3);
   novcartao_teste_plataforma(NOV_WGT);
   wgt = novcartao_itens_visiveis();
-  assert(novcartao_cenas() == 4);
+  assert(novcartao_cenas() == 3);
   novcartao_teste_plataforma(NOV_ANDROID);
   and = novcartao_itens_visiveis();
-  assert(novcartao_cenas() == 4);
-  assert(lg == 29 && tpk == 31 && wgt == 28 && and == 32);
-  assert(novcartao_paginas() >= 3 && novcartao_paginas() <= 24);  // itens e apoio
+  assert(novcartao_cenas() == 3);
+  assert(lg == 6 && tpk == 6 && wgt == 6 && and == 6);   // Better Nuvio 1.0.2: none platform-specific
+  assert(novcartao_paginas() >= 2 && novcartao_paginas() <= 24);  // itens e apoio
   novcartao_teste_plataforma(NOV_OUTRAS);
-  assert(novcartao_itens_visiveis() == 35);
+  assert(novcartao_itens_visiveis() == 6);
   assert(novcartao_paginas() >= 2);
   novcartao_teste_plataforma(0);
   printf("PASS: itens por plataforma: LG %d, .tpk %d, .wgt %d, Android %d\n", lg, tpk, wgt, and);
@@ -241,7 +245,7 @@ static void espacamento(void) {
   assert(txt_iniciar("deploy/app", 1)); // so TTF; sem janela ou contexto GL
   novcartao_teste_plataforma(NOV_OUTRAS);
   novcartao_abrir();
-  assert(novcartao_cenas() == 4);
+  assert(novcartao_cenas() == 3);
   float primeiraAltura = novcartao_teste_altura_item(0);
   assert(primeiraAltura >= 64);
   assert(txt_rasterizadas == 0);
@@ -260,7 +264,7 @@ static void espacamento(void) {
     for (int i = 0; i < novcartao_itens_visiveis(); i++)
       assert(novcartao_teste_altura_item(i) >= 64);
     assert(txt_rasterizadas == 0);
-    assert(novcartao_paginas() >= 3 && novcartao_paginas() <= 24);
+    assert(novcartao_paginas() >= 2 && novcartao_paginas() <= 24);
     assert(txt_bloco(TXT_CAPTION, "Dúvidas, bugs e builds de teste.",
       0, 0, 0, 0, 0, 300, 28, 0, 0) <= 84);
   }
@@ -288,8 +292,8 @@ int main(int argc, char **argv) {
     else espacamento();
     return 0;
   }
-  assert(!strcmp(novcartao_versao(), "2.0.8"));
-  assert(!strcmp(novcartao_arquivo(), "novidades-208.txt"));
+  assert(!strcmp(novcartao_versao(), "Better Nuvio 1.0.2"));
+  assert(!strcmp(novcartao_arquivo(), "novidades-better-102.txt"));
   instalacaoNova();
   vindoDa202();
   vindoDa203();

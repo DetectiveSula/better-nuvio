@@ -5735,7 +5735,8 @@ void app_atualizar(float dt, Uint32 agora) {
   // e o cartao de novo, com o foco no guia.
   // Ajustes › Sobre e ajuda › Novidades 2.0: o guia por cima de Ajustes, do
   // comeco; ao fechar, Ajustes continua onde estava.
-  if (tela == TELA_AJUSTES && ajustes_pediu_novidades20()) novidades20_abrir(0);
+  // Better Nuvio: Settings › About › What's new opens the current version card.
+  if (tela == TELA_AJUSTES && ajustes_pediu_novidades20()) novcartao_abrir();
   if (tela == TELA_AJUSTES && ajustes_pediu_dicascontrole()) dicascontrole_abrir();
   if (tela == TELA_AJUSTES && ajustes_pediu_novidades()) {
     trocarTela(TELA_HOME);

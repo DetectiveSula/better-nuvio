@@ -93,12 +93,25 @@
    "t": "Os Ajustes novos",
    "ic": "settings-2",
    "novo": 1,
-   "txt": "Categorias por tarefa: Assistir, Telas e Conta e sistema. O técnico fica em Mais opções, cada interruptor diz Ligado ou Desligado, e a linha que depende de outra avisa e liga as duas com OK.",
+   "txt": "Categorias como no Nuvio oficial: Conta, Trocar perfil, Aparência, Layout, Conteúdo e descoberta, Reprodução, Integrações, Acompanhamento, Notificações, Avançado e Sobre. A busca e Ajustes alterados ficam no topo. Os Ajustes e este guia aparecem sempre em inglês.",
    "onde": "Ajustes",
    "acao": [],
    "fonte": "docs/releases/2.0.x/NOTAS.md",
    "prova": "ajustes_ux_tela.inc (TELA, MAIS); ajustes_ux_desenho.inc (aj2PilulaEstado, ajLinhaAviso)",
    "visual": "previa gerada da opcao-alvo em Ajustes"
+  },
+  {
+   "id": "c-sincronia",
+   "cap": "comecar",
+   "t": "Ajustes que seguem a conta",
+   "ic": "rotate-cw",
+   "novo": 1,
+   "txt": "Seus ajustes, o layout da Home e as preferências pessoais passam entre as TVs com a mesma conta e o mesmo perfil, e voltam depois de reinstalar. Cada TV envia só o que você mudou nela. O que depende da TV, como qualidade máxima, Dolby Vision, tamanho da interface e efeitos, fica em cada TV.",
+   "onde": "Ajustes",
+   "acao": [],
+   "fonte": "Better Nuvio 1.0.2 (12/11/2026)",
+   "prova": "ajustes_better_map.inc, ajustes_shared.inc, ajustes_official_map.inc; j7arme.h",
+   "visual": ""
   },
   {
    "id": "c-botoes",
@@ -128,19 +141,6 @@
    "fonte": "novidades170.c:1183-1184",
    "prova": "app.c:1380; spotlight.c (seções Melhor resultado, Canais ao vivo, Pesquisas recentes em novidades170.c:616-647)",
    "visual": "cenaSpot de novidades170.c (caixa e lista nas medidas do Spotlight)",
-   "novo": 0
-  },
-  {
-   "id": "c-ponteiro",
-   "cap": "comecar",
-   "t": "Apontar com o Magic Remote",
-   "ic": "mouse-pointer",
-   "txt": "Na LG, o Magic Remote funciona como um mouse: passar por cima foca e o clique vale como OK.",
-   "onde": "Em qualquer tela, nas TVs LG",
-   "acao": [],
-   "fonte": "novidades142.c:253-254",
-   "prova": "ponteiro.h; ilha.c:484; menu.c:162",
-   "visual": "Ponteiro sobre um cartaz da Home",
    "novo": 0
   },
   {
@@ -174,7 +174,7 @@
    "cap": "comecar",
    "t": "Atualizar pelo app",
    "ic": "download",
-   "txt": "O app avisa quando sai versão nova. Na LG com o Homebrew Channel, Atualizar agora instala sozinho. Sem ele, e na Samsung, o aviso mostra onde baixar.",
+   "txt": "O app confere as versões do Better Nuvio no GitHub a cada 6 horas e avisa quando sai uma nova. Na Android TV, Atualizar agora baixa a versão e o Android pede para instalar. Na Samsung, o app se atualiza sozinho.",
    "onde": "Ajustes › Sobre e ajuda › Atualizar o aplicativo",
    "acao": [
     "Abrir em Ajustes"
@@ -303,6 +303,21 @@
    "fonte": "novidades160.c:831-832 (Entre amigos)",
    "prova": "home.c:1964; commit 5e89926a (fileira de amigos, depois da 1.7.2); amigosfil",
    "visual": "Fileira de rostos com cartões deitados (amigosfil + svdesenho)"
+  },
+  {
+   "id": "h-familia",
+   "cap": "home",
+   "t": "Fileira Família assistindo",
+   "ic": "users",
+   "novo": 1,
+   "txt": "Uma fileira da Home com o que os outros perfis da conta viram por último. Só entram os perfis que compartilham a atividade; perfis com PIN ou infantis nunca entram. Vem desligada.",
+   "onde": "Ajustes",
+   "acao": [
+    "Abrir em Ajustes"
+   ],
+   "fonte": "Better Nuvio 1.0.2 (12/11/2026)",
+   "prova": "familia.c; AJ_FAMILIA, AJ_FAMILIA_PARTILHAR",
+   "visual": ""
   },
   {
    "id": "h-perfis",
@@ -498,7 +513,7 @@
    "t": "Só MP4, Em cache e Dublado",
    "ic": "filter",
    "novo": 0,
-   "txt": "Só MP4 deixa as fontes que tocam Dolby Vision na LG. Em cache mostra o que o debrid já tem pronto. Dublado separa as fontes com áudio dublado.",
+   "txt": "Só MP4 deixa apenas os arquivos MP4. Em cache mostra o que o debrid já tem pronto. Dublado separa as fontes com áudio dublado.",
    "onde": "Folha de Fontes, botões do topo",
    "acao": [
     "Ver exemplo"
@@ -506,6 +521,21 @@
    "fonte": "novidades1312.c:230-231 (Filtro MP4); Glass UI 1.8.0 (commit 7cd12a51)",
    "prova": "streams.c:1105-1120 (Só MP4, Em cache, Dublado, Sem HDR); streams.c:1988 (Fora do cache)",
    "visual": "Topo da folha com os filtros"
+  },
+  {
+   "id": "f-ordenar",
+   "cap": "fontes",
+   "t": "Filtros e ordenação",
+   "ic": "funnel",
+   "novo": 1,
+   "txt": "Uma folha para filtrar e ordenar as fontes antes da escolha: máximo de resultados, ordem, limite por resolução e por qualidade, tamanho mínimo e máximo, marcas preferidas, obrigatórias e excluídas, e grupos de lançamento.",
+   "onde": "Ajustes",
+   "acao": [
+    "Abrir em Ajustes"
+   ],
+   "fonte": "Better Nuvio 1.0.2 (12/11/2026)",
+   "prova": "AJ_FILTROS_FONTES (fontefiltro.c)",
+   "visual": ""
   },
   {
    "id": "f-texto",
@@ -585,10 +615,10 @@
   {
    "id": "f-som",
    "cap": "fontes",
-   "t": "DTS e Dolby Vision em MKV",
+   "t": "Som DTS e TrueHD",
    "ic": "audio-lines",
    "novo": 1,
-   "txt": "Na LG, o DTS que a TV recusa é convertido em estéreo ou 5.1, e Dolby Vision em MKV pode ser ligado (experimental, só LG). Na Samsung, o app avisa quando a TV não toca DTS ou TrueHD.",
+   "txt": "Algumas TVs não tocam DTS nem TrueHD. Na Samsung, o app converte o som na hora, para 5.1 ou estéreo. Na Android TV, o player usa o próprio decodificador de áudio quando a TV não dá conta.",
    "onde": "Ajustes › Reprodução › Mais opções › Som e vídeo desta TV",
    "acao": [
     "Abrir em Ajustes"
@@ -611,6 +641,21 @@
    "prova": "ajustes.c:622 (AJ_PAUSA_OVERLAY); pausao.h",
    "visual": "cenaPausa de novidades160.c",
    "novo": 0
+  },
+  {
+   "id": "f-pular",
+   "cap": "fontes",
+   "t": "Pular abertura, resumo e créditos",
+   "ic": "chevrons-down",
+   "novo": 1,
+   "txt": "Cada um pode ser pulado sozinho quando o episódio tem o trecho marcado, e o app avisa na tela. Sem marcação nada é pulado; o botão Pular continua funcionando.",
+   "onde": "Ajustes",
+   "acao": [
+    "Abrir em Ajustes"
+   ],
+   "fonte": "Better Nuvio 1.0.2 (12/11/2026)",
+   "prova": "AJ_PULAR_ABERTURA, AJ_PULAR_RESUMO, AJ_PULAR_CREDITOS",
+   "visual": ""
   },
   {
    "id": "f-velocidade",
@@ -671,15 +716,28 @@
    "visual": "Cartão de reação sobre os créditos"
   },
   {
+   "id": "f-posplay",
+   "cap": "fontes",
+   "t": "Depois do filme",
+   "ic": "clapperboard",
+   "novo": 1,
+   "txt": "Perto do fim de um filme, o vídeo vai para um canto e Mais como este mostra recomendações com fundo, sinopse e nota; ◀ ▶ trocam, Detalhes abre o título. Nos episódios, um cartão oferece o próximo e, depois de alguns seguidos, pergunta se você ainda está assistindo.",
+   "onde": "Ajustes",
+   "acao": [
+    "Abrir em Ajustes"
+   ],
+   "fonte": "Better Nuvio 1.0.2 (12/11/2026)",
+   "prova": "posplay.c; AJ_POSPLAY_RECOM, AJ_AINDA_EPISODIOS",
+   "visual": ""
+  },
+  {
    "id": "f-assistido",
    "cap": "fontes",
    "t": "Quando conta como assistido",
    "ic": "circle-check",
-   "txt": "Escolha a partir de quanto do episódio ele vira assistido e a retomada passa ao próximo.",
+   "txt": "Um título só conta como assistido depois de tocar de verdade até perto do fim. Trailer, vídeo pausado ou fechar cedo não contam.",
    "onde": "Ajustes › Reprodução › Durante e depois › Percentual assistido",
-   "acao": [
-    "Abrir em Ajustes"
-   ],
+   "acao": [],
    "fonte": "novidades132.c:145 (marcar visto com um OK)",
    "prova": "ajustes.c:855 (AJ_CW_CONCLUIDO)",
    "visual": "Barra do episódio com a marca do percentual",
@@ -699,6 +757,21 @@
    "prova": "ajustes.c:824-828 (AJ_DEBRID_*)",
    "visual": "Linhas de chave com o estado",
    "novo": 0
+  },
+  {
+   "id": "f-torbox",
+   "cap": "fontes",
+   "t": "TorBox e Premiumize resolvem os links",
+   "ic": "zap",
+   "novo": 1,
+   "txt": "Resolver links tocáveis transforma os torrents em cache dos add-ons em links pelo TorBox ou pelo Premiumize, usando o que já está na sua conta. Permitir adições em cache do TorBox também adiciona à sua conta TorBox os torrents em cache, o que o TorBox Instant precisa.",
+   "onde": "Ajustes",
+   "acao": [
+    "Abrir em Ajustes"
+   ],
+   "fonte": "Better Nuvio 1.0.2 (12/11/2026)",
+   "prova": "resolver_policy.c, debrid.c; AJ_RESOLVE_LINKS, AJ_TB_CACHED_ADD",
+   "visual": ""
   },
   {
    "id": "f-servidores",
@@ -823,7 +896,7 @@
    "cap": "legendas",
    "t": "Idioma do app",
    "ic": "globe",
-   "txt": "O Nuvio fala 28 idiomas. Automático segue a sua conta ou o idioma da TV. Não muda legenda nem áudio.",
+   "txt": "O app fala 28 idiomas. Automático segue a sua conta ou o idioma da TV. Não muda legendas nem áudio. Os Ajustes e este guia ficam sempre em inglês.",
    "onde": "Ajustes › Idiomas e legendas › Idioma do app",
    "acao": [
     "Abrir em Ajustes"
@@ -941,7 +1014,7 @@
    "cap": "salvos",
    "t": "Salvos",
    "ic": "bookmark",
-   "txt": "AZUL abre o painel com o que você guardou. As abas são Salvos, Atividade, Amigos e Avisos.",
+   "txt": "AZUL abre o painel com o que você salvou. As abas são Salvos, Avisos e Agenda, mais Atividade e Amigos quando o Social está ligado.",
    "onde": "AZUL ou CH+ na Home",
    "acao": [
     "Ver exemplo"
@@ -1031,7 +1104,7 @@
    "cap": "salvos",
    "t": "Explorar",
    "ic": "telescope",
-   "txt": "Um céu com as suas histórias: o que você viu ligado ao que vem a seguir. Setas navegam, OK abre.",
+   "txt": "Começa por climas escolhidos pelo que você assiste. Dentro de um clima, OK num cartaz abre a vizinhança dele: títulos ligados por uma pessoa, um tema, recomendações ou amigos, cada um com o seu porquê. Voltar sobe um degrau.",
    "onde": "Menu › Explorar",
    "acao": [
     "Abrir o Explorar"
@@ -1145,6 +1218,19 @@
    "prova": "ajustes.c:732 (Addons), ajustes.c:856 (perfil principal)",
    "visual": "Lista de addons com o que cada um fornece",
    "novo": 0
+  },
+  {
+   "id": "o-editar",
+   "cap": "social",
+   "t": "Editar perfis",
+   "ic": "pencil",
+   "novo": 1,
+   "txt": "Segure OK num perfil para mudar nome, avatar, cor e fundo, definir ou tirar o PIN, ou apagar o perfil. O perfil principal e o perfil em uso não podem ser apagados.",
+   "onde": "Escolha de perfil",
+   "acao": [],
+   "fonte": "Better Nuvio 1.0.2 (12/11/2026)",
+   "prova": "ProfileEditor.kt (docs/settings-restoration/PROFILE-EDITOR.md)",
+   "visual": ""
   },
   {
    "id": "v-guia",
@@ -1492,7 +1578,7 @@
    "cap": "problemas",
    "t": "Enviar registro",
    "ic": "send",
-   "txt": "Quando algo dá errado, mande o registro desta sessão para quem faz o app. Vai sem senhas nem chaves. Na LG, a tecla VERMELHA abre o painel do registro.",
+   "txt": "Quando algo dá errado, envie o registro desta sessão para quem faz o app. Ele vai sem senhas nem chaves.",
    "onde": "Ajustes › Sobre e ajuda › Enviar registro",
    "acao": [
     "Abrir em Ajustes"
@@ -1596,7 +1682,7 @@
    "t": "Sem som",
    "ic": "audio-lines",
    "novo": 1,
-   "txt": "Pode ser DTS ou TrueHD que a TV não toca. Na LG, ligue a conversão de DTS; na Samsung, prefira uma fonte Dolby.",
+   "txt": "Pode ser DTS ou TrueHD que a TV não toca. Na Samsung, ligue a conversão de DTS; se não der, escolha uma fonte Dolby.",
    "onde": "Ajustes › Reprodução › Mais opções › Som e vídeo desta TV",
    "acao": [
     "Abrir em Ajustes"

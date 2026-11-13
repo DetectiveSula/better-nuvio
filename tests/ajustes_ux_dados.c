@@ -80,7 +80,7 @@ static void escoposPorValor(void) {
   /* Home layout is a J4 binding; without an armed Better Nuvio upload scope
    * (here: no session) the panel keeps the honest local label. */
   assert(ajustes_better_op_vinculada(AJ_HOME_LAYOUT));
-  assert(!ajustes_better_op_vinculada(AJ_PULAR_CREDITOS));
+  assert(!ajustes_better_op_vinculada(AJ_BUFFER));   /* hardware: stays on each TV */
   assert(!ajustes_better_envia());
   assert(!strcmp(uxEscopo(AJ_HOME_LAYOUT), "Só este perfil, nesta TV"));
   /* "Da conta" muda a origem efetiva, nao retira a escolha do perfil. */

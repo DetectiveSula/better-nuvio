@@ -16,6 +16,7 @@ int bna_edit_many(BnAccount *,const char *const *,const BnValue *,size_t);
 /* UI polling never waits on a worker commit when nonblocking is true. */
 int bna_view(BnAccount *,const char *const *,size_t,BnValue *,unsigned char *,int nonblocking);
 int bna_cached(BnAccount *);
+int bna_pulled(BnAccount *); /* a complete account document arrived at least once */
 /* Copy J5 overrides and private unobserved baselines; only known/dirty fields upload. */
 int bna_home_seed(BnAccount *,const BnField *,size_t);
 int bna_home_view(BnAccount *,BnField *,size_t,size_t *);

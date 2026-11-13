@@ -16,4 +16,5 @@ int iptv_conta_ativar(int ativa);
 int iptv_conta_remover(IptvConta *removida);
 // Remove per-profile account registries and all native credentials/caches.
 void iptv_contas_esquecer_todas(void);
+void iptv_contas_recarregar(void);   /* settings sync rewrote the files */
 #endif

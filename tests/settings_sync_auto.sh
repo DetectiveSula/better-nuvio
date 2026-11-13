@@ -38,6 +38,24 @@ run "$work/test" a a-offline-edit J7_OFFLINE=1
 run "$work/test" a a-reconnect
 run "$work/test" b b-follow
 run "$work/test" b other-account
+mkdir "$work/fi-server" "$work/fi-a" "$work/fi-b" "$work/fi-c"
+J7_SERVER="$work/fi-server" run "$work/test" fi-a files-a
+J7_SERVER="$work/fi-server" run "$work/test" fi-b files-b
+printf '%s' 'tv-c-own-fanart-key' > "$work/fi-c/fanart.txt"
+J7_SERVER="$work/fi-server" run "$work/test" fi-c files-c
+mkdir "$work/ru-server" "$work/ru-a" "$work/ru-b"
+printf '%s' '{"features":{"player_settings":{"stream_auto_play_regex":{"type":"string","value":""},"stream_auto_play_selected_addons":{"type":"string_set","value":[]},"stream_auto_play_selected_plugins":{"type":"string_set","value":[]}}}}' > "$work/ru-server/tv-settings-test-p1.json"
+J7_SERVER="$work/ru-server" run "$work/test" ru-a rules-a
+J7_SERVER="$work/ru-server" run "$work/test" ru-b rules-b
+J7_SERVER="$work/ru-server" run "$work/test" ru-a rules-official
+mkdir "$work/st-server" "$work/st-a" "$work/st-b"
+J7_SERVER="$work/st-server" run "$work/test" st-a store-a
+J7_SERVER="$work/st-server" run "$work/test" st-b store-b
+mkdir "$work/dw-server" "$work/dw"
+J7_SERVER="$work/dw-server" run "$work/test" dw device-wide
+mkdir "$work/up-server" "$work/u" "$work/u2"
+J7_SERVER="$work/up-server" run "$work/test" u upgrade
+J7_SERVER="$work/up-server" run "$work/test" u2 reinstall
 J7_SERVER="$work/ro-server" run "$work/test-ro" r readonly
 grep '^PASS' "$log"
 if grep -E '\[(bn-sync|ajustes-oficial)\]' "$log" | grep -qE 'settings-(test|other)|"value"|https?://'; then

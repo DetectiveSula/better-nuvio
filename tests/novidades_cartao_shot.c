@@ -95,11 +95,8 @@ static void captura(const char *saida, const char *nome, float seg, int pagina) 
   novcartao_teste_relogio(seg);
   // Quadros parados: icones, texto e a copia desfocada terminam de carregar.
   for (i = 0; i < 12; i++) { quadro(0.0f); SDL_Delay(2); }
-  if (pagina == novcartao_paginas() - 1) {
-    assert(novcartao_teste_discord());
-    assert(!strcmp(apoio_url(APOIO_DISCORD), NV_URL_DISCORD));
-    assert(apoio_n() == 2 && apoio_qual(2) == -1);
-  }
+  // Better Nuvio: no "Support the project" page, so no donation or Discord codes.
+  assert(!novcartao_teste_discord());
   snprintf(cam, sizeof cam, "%s/%s.png", saida, nome);
   grava(cam);
   tecla(SDLK_ESCAPE); tecla(SDLK_ESCAPE); tecla(SDLK_ESCAPE); tecla(SDLK_ESCAPE);
@@ -119,7 +116,7 @@ static void cabeEmTodos(void) {
       ajustesDeTeste(idi, 0, 2);
       novcartao_abrir();
       n = novcartao_paginas();
-      for (p = 0; p < n - 1; p++) {
+      for (p = 0; p < n; p++) {   // Better Nuvio: every page is news (no support page)
         for (i = 0; i < 40; i++) quadro(1.0f / 60.0f);
         // Sem cenas, medir o texto da lista tambem.
         c += novcartao_teste_cortadas();
@@ -136,11 +133,11 @@ static void cabeEmTodos(void) {
           novcartao_teste_relogio(novcartao_teste_inicio_cena(cena) + 1.0f); quadro(0.0f);
           c += novcartao_teste_cortadas();
         }
-        tecla(SDLK_RETURN);
+        if (p < n - 1) tecla(SDLK_RETURN);
       }
       assert(desenhados == novcartao_itens_visiveis());
       for (i = 0; i < 40; i++) quadro(1.0f / 60.0f);
-      assert(novcartao_teste_discord());
+      assert(!novcartao_teste_discord());   // no support page in Better Nuvio
       if (novcartao_teste_folga() < 27.99f)
         printf("plataforma %u, idioma %d (%s): folga %.2f px\n", PLAT[k], idi, idioma_iso(idi), novcartao_teste_folga());
       assert(novcartao_teste_folga() >= 27.99f);   // lista exatamente cheia nao e erro de float
@@ -153,7 +150,7 @@ static void cabeEmTodos(void) {
   novcartao_teste_plataforma(0);
   if (getenv("NUVIO_SHOT_FONTE")) assert(comCorte == 0);
   printf("PASS: a lista acaba acima do rodape nos %d idiomas e 5 plataformas (%d com reticencias)\n", IDIOMA_N, comCorte);
-  puts("PASS: vaos de 12px em pt; Discord desenhado em todos os idiomas e plataformas");
+  puts("PASS: vaos de 12px em pt; sem pagina de apoio (Better Nuvio) em todos os idiomas e plataformas");
 }
 
 int main(int argc, char **argv) {
@@ -241,7 +238,7 @@ int main(int argc, char **argv) {
       }
     }
     if (!strcmp(so, "baseline")) goto fim;
-    assert(novcartao_cenas() == 4);  // Four feature visuals, absent in the old text-only card.
+    assert(novcartao_cenas() == 3);  // Three feature visuals (Better Nuvio 1.0.2).
     novcartao_teste_medir(1);
     for (int esc = 0; esc < 3; esc++) for (int idi = 0; idi < IDIOMA_N; idi++) {
       char valor[8];
@@ -250,7 +247,7 @@ int main(int argc, char **argv) {
       ajustesDeTeste(idi, 1, 2);
       novcartao_abrir();
       int n = novcartao_paginas(), total = 0;
-      for (int pg = 0; pg < n - 1; pg++) {
+      for (int pg = 0; pg < n; pg++) {
         for (int i = 0; i < 24; i++) { quadro(0); SDL_Delay(2); }
         total += novcartao_teste_desenhados();
         if (novcartao_teste_cortadas()) fprintf(stderr, "clipped: scale=%g language=%s page=%d count=%d\n", escalas[esc], idioma_iso(idi), pg, novcartao_teste_cortadas());
@@ -260,17 +257,18 @@ int main(int argc, char **argv) {
         assert(gfx_vidro_com_fonte >= 2);
         if (tex_upl_bytes) fprintf(stderr, "upload: scale=%g language=%s page=%d bytes=%ld\n", escalas[esc], idioma_iso(idi), pg, tex_upl_bytes);
         assert(tex_upl_bytes == 0);
+        if (pg == n - 1) break;
         tecla(SDLK_DOWN);
         assert(novcartao_pagina() == pg + 1);
       }
       assert(total == novcartao_itens_visiveis());
       for (int i = 0; i < 8; i++) quadro(0);
-      assert(novcartao_teste_discord());
+      assert(!novcartao_teste_discord());   // no support page in Better Nuvio
       tecla(SDLK_UP);
       assert(novcartao_pagina() == n - 2);
       novcartao_teste_esquecer();
     }
-    puts("PASS: four visuals, all languages at 85/100/130%, complete items, D-pad, zero steady blur passes");
+    puts("PASS: three visuals, all languages at 85/100/130%, complete items, D-pad, zero steady blur passes");
     goto fim;
   }
   if (!so || strcmp(so, "medir")) {
@@ -298,7 +296,7 @@ int main(int argc, char **argv) {
             snprintf(nome, sizeof nome, "%s-%s-exibicao-%d", nomes[plat], idioma_iso(idiomas[idi]), ex + 1);
             captura(saida, nome, seg, 0);
           }
-        snprintf(nome, sizeof nome, "%s-%s-apoio", nomes[plat], idioma_iso(idiomas[idi]));
+        snprintf(nome, sizeof nome, "%s-%s-ultima", nomes[plat], idioma_iso(idiomas[idi]));
         captura(saida, nome, 1.2f, novcartao_paginas() - 1);
       }
     }

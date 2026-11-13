@@ -2,7 +2,7 @@
 """Gera src/ajustes_ux_guia_dados.inc a partir de design/guia-de-uso/guia.json.
 
 O GUIA DE USO (Ajustes › Sobre e ajuda › Guia de uso) e conteudo, nao codigo:
-os 104 recursos em 12 capitulos, com o texto, o "Onde fica" e o atalho de cada
+os 110 recursos em 12 capitulos, com o texto, o "Onde fica" e o atalho de cada
 um, vem do JSON aprovado com o mockup (cada entrada tem a prova no codigo em
 "prova"). Este script so traduz o JSON para tabelas C. Mudou o JSON, rode de
 novo e mande os dois juntos:
@@ -56,6 +56,11 @@ ALVO = {
     "f-proporcao": "AJ_PROPORCAO_PADRAO", "f-servidores": "AJ_JF_LIGADO", "f-plugins": "AJ_PLUGINS",
     "l-forcada": "AJ_LEG_FORCADA", "l-segunda": "AJ_LEG_LINGUA2", "o-social": "AJ_SOCIAL",
     "a-descanso": "AJ_ESMAECER", "a-abertura": "AJ_LOGO_APP", "p-som": "AJ_DTS_AC3",
+    # Better Nuvio 1.0.2 (12/11/2026): settings follow the account, TorBox, post-play,
+    # skip segments, filters and sorting, Family Watching. f-assistido lost its button:
+    # the watched-percentage control is no longer shown.
+    "h-familia": "AJ_FAMILIA", "f-ordenar": "AJ_FILTROS_FONTES", "f-torbox": "AJ_RESOLVE_LINKS",
+    "f-pular": "AJ_PULAR_ABERTURA", "f-posplay": "AJ_POSPLAY_RECOM",
 }
 TELA = {"Abrir o Guia de TV": "GT_GUIA_TV", "Abrir a Biblioteca": "GT_BIBLIOTECA",
         "Abrir a Agenda": "GT_AGENDA", "Abrir o Explorar": "GT_EXPLORAR",
@@ -82,7 +87,7 @@ def main():
     caps = g["caps"]
     ids = [k["id"] for k in caps]
     ent = g["entradas"]
-    assert len(ent) == 104 and len(caps) == 12, (len(ent), len(caps))
+    assert len(ent) == 110 and len(caps) == 12, (len(ent), len(caps))
     for k in list(ALVO) + list(EXEMPLO) + list(VISUAL):
         assert any(e["id"] == k for e in ent), k
     out = ["// GERADO por tools/guia_inc.py a partir de design/guia-de-uso/guia.json.",

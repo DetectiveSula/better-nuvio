@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-struct BnAccount {pthread_mutex_t mutex;BnEngine engine;NvPerfilSessao session;char file[160],owner[80],device[65];int profile,writes,busy,cached;};
+struct BnAccount {pthread_mutex_t mutex;BnEngine engine;NvPerfilSessao session;char file[160],owner[80],device[65];int profile,writes,busy,cached,pulled;};
 static int current(BnAccount *a){return sessao_logada()&&nv_perfil_sessao_atual(a->session)&&perfis_ativo()==a->profile&&!strcmp(sessao_usuario(),a->owner);}
 static int persist(BnAccount *a,const BnEngine *e,int writes){
  char *s=NULL;if(!current(a)||!bnc_save(e,writes,&s))return 0;
@@ -82,7 +82,7 @@ int bna_cycle(BnAccount *a){
  if(!success(st)||!response||!current(a)){pthread_mutex_unlock(&a->mutex);printf("[bn-sync] perfil %d pull HTTP %d: nada aplicado\n",a->profile,st);goto done;}
  *next=a->engine;
  if(!bnc_response(next,response,doc)||!bn_pull(next,doc)||!persist(a,next,a->writes)){pthread_mutex_unlock(&a->mutex);printf("[bn-sync] perfil %d documento recusado ou nao gravado: nada aplicado\n",a->profile);goto done;}
- printf("[bn-sync] perfil %d pull HTTP %d: %u campo(s) recebidos\n",a->profile,st,(unsigned)doc->count);
+ printf("[bn-sync] perfil %d pull HTTP %d: %u campo(s) recebidos\n",a->profile,st,(unsigned)doc->count);a->pulled=1;
  if(bnc_legacy_j0(response))printf("[bn-sync] perfil %d documento J0 de teste: tratado como nao inicializado (mantido no servidor)\n",a->profile);
  logNames("aplicados",a->profile,&a->engine,next);
  a->engine=*next;ok=1;
@@ -114,6 +114,8 @@ int bna_view(BnAccount *a,const char *const *keys,size_t n,BnValue *values,unsig
  int ok=current(a)&&view(&a->engine,keys,n,values,known);pthread_mutex_unlock(&a->mutex);return ok;
 }
 int bna_cached(BnAccount *a){return a&&current(a)&&a->cached;}
+/* A complete account document was received at least once by this object. */
+int bna_pulled(BnAccount *a){if(!a)return 0;pthread_mutex_lock(&a->mutex);int v=current(a)&&a->pulled;pthread_mutex_unlock(&a->mutex);return v;}
 /* A stack guard captures the actual session; its engine/document can target an
  * inactive profile only in these disk-only APIs. No RPC helper is called. */
 static BnAccount *staged(int profile,const BnDef *defs,size_t n){

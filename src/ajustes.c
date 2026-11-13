@@ -485,7 +485,7 @@ typedef enum {
   // padrao 5) e brilho da interface do player (100/80/65/50%, padrao 80%). LOCAIS.
   // No fim: valor[]/CHAVE[] posicionais.
   AJ_ESMAECER, AJ_BRILHO_PLAYER,
-  // 2.0: "Novidades 2.0" (Sobre e ajuda) reabre o guia da 2.0 (novidades20.h).
+  // Better Nuvio: "Novidades" (Sobre) reabre o cartao da versao atual (novidades_cartao.h).
   // Acao. No fim: valor[]/CHAVE[] posicionais.
   AJ_NOVIDADES20,
   // RETOMADA (05/10): manter a sessao do player pausada por ate 2 min ao sair
@@ -1713,7 +1713,7 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Buscar no Cinemeta",              V_LIGA, 2),             // local: buscaCinemetaLocal
   ESC("Tela de descanso",                V_ESMAECER, 6),         // local: esmaecerLocal
   ESC("Brilho da interface no player",   V_BRILHO_PLAYER, 4),    // local: brilhoPlayerLocal
-  ACAO("Novidades 2.0"),
+  ACAO("Novidades"),
   ESC("Manter o vídeo pronto ao sair",   V_LIGA, 2),             // local: manterVideoLocal
   ESC("Estilo do descanso",              V_DESCANSO_ESTILO, 3),  // local: descansoEstiloLocal
   ESC("Títulos da vitrine",              V_DESCANSO_FONTE, 2),   // local: descansoFonteLocal
@@ -3273,6 +3273,8 @@ static int ajOpcaoDisponivel(int op) {
   if(op==AJ_IPTV_ORDEM)return iptv_contas(NULL,0)>0;
   if (op == AJ_FALHA_ADDON_LIMITE) return faAddonEditar[0] != 0;
   if (op == AJ_HDR_INTERFACE) return 0;
+  // Better Nuvio (owner, 12 Nov 2026): no "Support the project" (Nuvio Legacy donations).
+  if (op == AJ_APOIAR) return 0;
 #ifndef NV_ANDROID
   if (op == AJ_FONTE_PRECARREGAR || op == AJ_TUNNELING) return 0;
 #endif
@@ -8362,7 +8364,7 @@ static const char *ajudaOpcaoBase(int op) {
     case AJ_AVISO_LEGAL: return "Aviso legal";
     case AJ_GUIA: return "O que o Nuvio faz, em 12 capítulos. Cada recurso diz onde fica e tem um atalho para ele.";
     case AJ_DICASCONTROLE: return "Dicas do controle";
-    case AJ_NOVIDADES20: return "O tour do que mudou na 2.0, capítulo por capítulo, com o que vale neste aparelho. Abre do começo.";
+    case AJ_NOVIDADES20: return "O que mudou nesta versão do Better Nuvio. Abre do começo.";
     case AJ_APOIAR: return "Se o Nuvio te ajuda e você quiser apoiar quem faz o app, aponte a câmera do celular para um dos códigos. É opcional: nada muda no app.";
     case AJ_LOG_REDE: return "Mostra o registro desta TV numa página da sua rede: abra o endereço abaixo no celular ou no computador, na mesma rede. Sem senhas nem chaves; endereços vão cortados no host. Desligue quando terminar.";
     case AJ_ENVIAR_LOG: return "Manda os últimos 200 KB do registro desta sessão (sem senhas nem chaves) para quem faz o app. Use quando algo estiver errado agora.";

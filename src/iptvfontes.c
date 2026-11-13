@@ -200,6 +200,8 @@ int iptv_conta_remover(IptvConta *removida) {
   pthread_mutex_unlock(&trava); return ok;
 }
 
+/* Settings sync wrote this profile's account files: read them again on next use. */
+void iptv_contas_recarregar(void) { pthread_mutex_lock(&trava); perfil = -1; pthread_mutex_unlock(&trava); }
 void iptv_contas_esquecer_todas(void) {
   // Enumerate only files owned by native Live TV sources; this also removes
   // orphaned account caches if a process exited between metadata/file removal.

@@ -13,7 +13,7 @@ static int position(int op){for(size_t i=0;i<AJ6_N;i++)if(aj6Map[i].op==op)retur
 static char *single(size_t i,int value){int values[AJ6_N];for(size_t j=0;j<AJ6_N;j++){int n=0;while(!aj6Supported(j,n))n++;values[j]=n;}values[i]=value;return document(values);}
 int main(int argc,char **argv){
  setvbuf(stdout,NULL,_IOLBF,0);assert(argc==2);setenv("NUVIO_DADOS",argv[1],1);dados_iniciar(NULL);player_dir(argv[1]);legfontes_dir(argv[1]);ajustes_dir(argv[1]);fil_definir_perfil(1);login();sync_reaplicar_ajustes();
- assert(AJ6_N==40&&AJ_SHARED_N==32&&JB_N==93&&aj6Current()&&!aj6Permission);
+ assert(AJ6_N==40&&AJ_SHARED_N==32&&JB_N==214&&aj6Current()&&!aj6Permission);
  /* One owner: Stage I read-only language imports and Stage G hide_unreleased_content stay out of J6. */
  const int foreign[]={AJ_AUD_LINGUA,AJ_AUD_LINGUA2,AJ_LEG_LINGUA,AJ_LEG_LINGUA2,AJ_TMDB_IDIOMA,AJ_OCULTAR_NLANC};
  int base[AJ6_N],target[AJ6_N];size_t conversions=0;
@@ -27,7 +27,7 @@ int main(int argc,char **argv){
   int out;assert(aj6Remote("{\"features\":{}}",i,&out)==-1);assert(aj6Remote("{\"features\":[]}",i,&out)==-2);
   printf("J6_BINDING %s %s %s %s %d %d\n",CHAVE[m->op],m->feature,m->key,aj6Type(i),first,last);
  }
- printf("PASS: all 40 verified mappings (41 controls incl. the derived prepare switch), %zu lossless value conversions; 93 J4, 32 Stage I, language imports and Stage G owners disjoint\n",conversions);
+ printf("PASS: all 40 verified mappings (41 controls incl. the derived prepare switch), %zu lossless value conversions; 214 J4, 32 Stage I, language imports and Stage G owners disjoint\n",conversions);
  free(cloud);cloud=document(base);cycle();for(size_t i=0;i<AJ6_N;i++)assert(valor[aj6Map[i].op]==base[i]);assert(pushes==0&&!aj6Permission);
  for(size_t i=0;i<AJ6_N;i++)valor[aj6Map[i].op]=target[i];assert(gravar());cycle();assert(!pushes&&ajustes_compartilhados_pendentes()==0);
  for(size_t i=0;i<AJ6_N;i++)assert(aj6State[i].pending);
