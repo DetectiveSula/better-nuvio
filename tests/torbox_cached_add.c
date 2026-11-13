@@ -19,7 +19,10 @@ static void *concurrent(void *unused){(void)unused;assert(resolve());return NULL
 int main(void) {
   char temp[1024];snprintf(temp,sizeof temp,"%s/nuvio-tb-optin-XXXXXX",nvt_dir());assert(mkdtemp(temp));dir=temp;
   setenv("NUVIO_DADOS",dir,1);dados_iniciar(dir);assert(SDL_Init(SDL_INIT_TIMER)==0);
-  setup();assert(resolve());assert(compatCreateCalls==1&&compatCacheCalls>=2);
+  setup();assert(resolve());assert(compatCreateCalls==1&&compatCacheCalls==1);
+  // 13 Nov 2026, regular Nuvio's order: one read-only cache check, then the
+  // add-only-if-cached POST. No library page and no second cache check.
+  assert(compatLastApi==2);
   // No collection visibility yet: a persisted ID still prevents duplicate POSTs.
   assert(resolve()&&compatCreateCalls==1);
   int id=0;assert(!debrid_tb_adicao_claim("synthetic-tb",compatHash,&id)&&id==99);
@@ -30,8 +33,8 @@ int main(void) {
   if(geteuid()!=0){setup();char folder[1400];snprintf(folder,sizeof folder,"%s/torbox-cached-additions",dir);assert(!chmod(folder,0500));assert(!resolve()&&!compatCreateCalls);assert(!chmod(folder,0700));}
   setup();compatOptIn=0;configure(1,1,0,0,1,0,0,0);assert(!resolve()&&!compatCreateCalls);
   setup();configure(1,1,1,0,1,0,0,0);assert(!ajustes_torbox_adicionar_cache()&&!resolve()&&!compatCreateCalls);
-  setup();compatFreshResult=1;assert(!resolve()&&!compatCreateCalls); // fresh check became uncached
-  setup();compatFreshResult=2;assert(!resolve()&&!compatCreateCalls); // fresh check failed
+  setup();compatFreshResult=1;assert(resolve()&&compatCreateCalls==1&&compatCacheCalls==1); // no second check
+  setup();compatFreshResult=2;assert(resolve()&&compatCreateCalls==1&&compatCacheCalls==1);
   for(mode=1;mode<=7;mode++){int selected=mode;setup();mode=selected;assert(!resolve()&&!compatCreateCalls);}mode=0;
   setup();compatHash="invalid";assert(!resolve()&&!compatCreateCalls);
   for(int failure=1;failure<=6;failure++) {
@@ -49,9 +52,12 @@ int main(void) {
   setup();compatReadyMode=3;assert(!resolve()&&compatCreateCalls==1); // wrong hash
   setup();compatReadyMode=4;assert(resolve()&&compatCreateCalls==1); // optional hash, acknowledged ID verified
   for(int failure=1;failure<=3;failure++){setup();linkMode=failure;assert(!resolve()&&compatCreateCalls==1);assert(!resolve()&&compatCreateCalls==1);}linkMode=0;
-  for(int failure=1;failure<=3;failure++){setup();compatListMode=failure;assert(!resolve()&&!compatCreateCalls);}
-  setup();compatVisible=1;assert(resolve()&&!compatCreateCalls); // existing ready item reused
-  setup();compatDisableFresh=1;assert(!resolve()&&!compatCreateCalls);
+  // The library listing is not read before the add: its failures no longer matter.
+  for(int failure=1;failure<=3;failure++){setup();compatListMode=failure;assert(resolve()&&compatCreateCalls==1);}
+  // An item already in the account: TorBox answers the add with its own id.
+  setup();compatVisible=1;assert(resolve()&&compatCreateCalls==1);
+  assert(resolve()&&compatCreateCalls==1); // then the saved id, no second POST
+  setup();compatDisableFresh=1;assert(resolve()&&compatCreateCalls==1); // there is no second check to cut
   setup();compatDisablePost=1;assert(!resolve()&&compatCreateCalls==1); // effect may have happened, never report stale success
   compatOptIn=1;configure(1,1,0,0,1,0,0,0);assert(resolve()&&compatCreateCalls==1);
   setup();configure(1,2,0,0,1,1,1,1);assert(!resolve()&&!compatCreateCalls); // prefer PM, no hidden TB add

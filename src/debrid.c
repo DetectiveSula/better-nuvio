@@ -1896,23 +1896,37 @@ static int cacheTBPorId(int id,const char *hash,int file,char *url,unsigned size
   }
   return 0;
 }
+// REGULAR NUVIO'S ORDER (owner, 13 Nov 2026: "it feels much faster in regular
+// Nuvio"). TorboxDirectDebridResolver.kt asks TorBox three things: createtorrent
+// with add_only_if_cached (an item already in the account comes back with its
+// own id, no duplicate), mylist?id, requestdl. This path used to page the whole
+// library first (2-4 s on a 634-item account) and check the cache a second
+// time before the POST. Both are gone from the normal path:
+//   - the caller (resolver_policy.c) still checks the cache read-only once;
+//   - add_only_if_cached is the server-side guard against downloading;
+//   - the durable receipt still allows ONE POST per hash and key, and a saved
+//     id is tried directly next time.
+// Only an unconfirmed receipt (pending, corrupt, timed out) still reads the
+// library, to find an item that may have been accepted without an answer.
 int debrid_torbox_resolver_compativel(const char *hash,int file,char *url,unsigned size,int *outside) {
   if(outside)*outside=0;if(url&&size)url[0]=0;
   char h[41];if(!url||!size||!cacheHash(hash,h))return 0;
-  DebridContexto context;int opened=contextoAbrir(&context),ok=0,absent=0,id=0;
+  DebridContexto context;int opened=contextoAbrir(&context),ok=0,id=0;
   uint64_t profile=nv_perfil_sessao_ler();
   pthread_mutex_lock(&tbAdicaoTrava);
   if(!tbOptInAtual(profile))goto done;
-  ok=resolverExistente(STB,h,file,url,size,&absent,1);if(ok||!absent||!tbOptInAtual(profile))goto done;
-  // Fresh provider evidence immediately before the only mutating operation.
-  int cache=debrid_cache_consultar(STB,h);
-  if(cache!=1){if(outside && cache==0)*outside=1;goto done;}
-  if(!tbOptInAtual(profile))goto done;
   int claim=debrid_tb_adicao_claim(chaveDoFio(STB),h,&id);
   if(claim<0){printf("[resolver] Cannot persist cached-addition receipt; no TorBox item added.\n");goto done;}
-  if(claim==1) {
-    if(!tbOptInAtual(profile))goto done;
-    char magnet[160],success[16],*response;int status=0;
+  if(claim==0) {
+    if(id>0)ok=cacheTBPorId(id,h,file,url,size,profile);
+    else {
+      int absent=0;ok=resolverExistente(STB,h,file,url,size,&absent,1);
+      if(!ok)printf("[resolver] Unconfirmed cached TorBox addition; automatic retry blocked.\n");
+    }
+    goto done;
+  }
+  if(!tbOptInAtual(profile))goto done;
+  { char magnet[160],success[16],*response;int status=0;
     snprintf(magnet,sizeof magnet,"magnet:?xt=urn:btih:%s",h);
     response=contextoVale()?tbCriarComOpcoes(chaveDoFio(STB),magnet,1,1,&status):NULL; // cached-only, no ZIP
     if(ok2xx(response,status)&&cacheJsonValido(response)&&cacheRawRaiz(response,"success",success,sizeof success)&&!strcmp(success,"true")) {
@@ -1925,11 +1939,8 @@ int debrid_torbox_resolver_compativel(const char *hash,int file,char *url,unsign
     if(status==409 && outside)*outside=1;
     free(response);
     // Persist the acknowledged ID even if consent/context changed during HTTP.
-    if(id>0)debrid_tb_adicao_salvar(chaveDoFio(STB),h,id);
-  }
-  // Pending/ambiguous attempts are deliberately not POSTed again, including after restart.
+    if(id>0)debrid_tb_adicao_salvar(chaveDoFio(STB),h,id); }
   if(id>0 && tbOptInAtual(profile))ok=cacheTBPorId(id,h,file,url,size,profile);
-  else if(claim==0 && id<=0)printf("[resolver] Unconfirmed cached TorBox addition; automatic retry blocked.\n");
 done:
   if(!tbOptInAtual(profile))ok=0;if(!ok)url[0]=0;
   pthread_mutex_unlock(&tbAdicaoTrava);if(opened)debrid_contexto_sair();return ok;
