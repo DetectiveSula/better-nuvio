@@ -15,6 +15,7 @@ Outputs (idempotent; run from anywhere):
   android/.../drawable-nodpi/banner.png             320x180 Android TV banner
   deploy/app/art/icones-app/original.png            256x256 gallery, transparent
   deploy/app/art/marcas/logo-novo-marca.png         1000x746 opening mark, transparent
+  deploy/app/art/marcas/logo-novo-horizontal.png    x201 About lockup, transparent
   src/iconeapp_arte.h  (the Original hash, same recipe as tools/icones-app.sh)
 
 The logo source is read BEFORE logo-novo-marca.png is rewritten, from a pristine
@@ -163,6 +164,23 @@ def main():
     p = p.resize((round(p.width * k), round(p.height * k)), Image.LANCZOS)
     m.alpha_composite(p, ((1000 - p.width) // 2, (746 - p.height) // 2))
     salvar(m, "deploy/app/art/marcas/logo-novo-marca.png")
+
+    # About / What's new lockup (LOGO_F_HORIZONTAL): logo and NUVIO+ side by side,
+    # 201 px tall like before, trimmed to the art (drawn aspect-fit by the app).
+    S = 4
+    H = 201 * S
+    lg = logo_fonte()
+    lw = round(H * lg.width / lg.height)
+    lg = lg.resize((lw, H), Image.LANCZOS)
+    tx = letreiro(round(H * 0.50), track=0.10)
+    k = (H * 0.36) / tx.height                 # cap height ~36% of the logo, as before
+    tx = tx.resize((round(tx.width * k), round(tx.height * k)), Image.LANCZOS)
+    gap = round(H * 0.24)
+    hz = Image.new("RGBA", (lw + gap + tx.width + 4 * S, H), (0, 0, 0, 0))
+    hz.alpha_composite(lg, (0, 0))
+    hz.alpha_composite(tx, (lw + gap, (H - tx.height) // 2))
+    hz = hz.resize((round(hz.width / S), 201), Image.LANCZOS)
+    salvar(hz, "deploy/app/art/marcas/logo-novo-horizontal.png")
 
     # Original's fingerprint, the recipe of tools/icones-app.sh.
     h = hashlib.sha256()

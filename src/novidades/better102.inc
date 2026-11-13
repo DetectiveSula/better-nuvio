@@ -11,7 +11,7 @@ static const NovItem ITENS_B102[] = {
   { .icone = "aj_zap", .nome = "TorBox Instant",
     .frase = "Os links do AIOStreams voltam a tocar, a conferência da fonte ficou bem mais rápida e torrents fora da sua conta não gastam mais as tentativas.", .linhas = 6 },
   { .icone = "aj_book-open", .nome = "Guia de uso",
-    .frase = "Atualizado para o Better Nuvio: ajustes na conta, TorBox, depois do filme, pular abertura e mais.", .linhas = 5 },
+    .frase = "Atualizado para o Nuvio+: ajustes na conta, TorBox, depois do filme, pular abertura e mais.", .linhas = 5 },
   { .grupo = "Mais novidades", .icone = "aj_calendar", .nome = "Agenda",
     .frase = "A data do próximo episódio agora é a mesma da lista de episódios.", .linhas = 4 },
   { .icone = "aj_palette", .nome = "Aparência mantida",
@@ -26,7 +26,7 @@ static const NovCena CENAS_B102[] = {
 };
 static const int ARTES_B102[] = { 2, 4, 7 };
 static const NovConteudo NOV_ATUAL = {
-  .versao = "Better Nuvio 1.0.2", .arquivo = "novidades-better-102.txt",
+  .versao = "Nuvio+ 1.0.2", .arquivo = "novidades-better-102.txt",
   .subtitulo = NULL,
   .itens = ITENS_B102, .nItens = (int)(sizeof ITENS_B102 / sizeof *ITENS_B102),
   .cenas = CENAS_B102, .nCenas = 3,

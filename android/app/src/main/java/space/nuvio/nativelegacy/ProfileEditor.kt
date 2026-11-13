@@ -479,7 +479,7 @@ class ProfileEditor(private val activity: Activity) {
         content.addView(scrollBox(g, dp(300)), lp(-2, top = 8).apply { gravity = Gravity.CENTER_HORIZONTAL })
         if (current.backgrounds == Catalogue.Loading) content.addView(note("Loading supporter backgrounds…"), lp(top = 6))
         if ((current.backgrounds as? Catalogue.Ready)?.items?.isNotEmpty() == true)
-            content.addView(note("Supporter backgrounds appear in official Nuvio apps. Better Nuvio shows image-link backgrounds."), lp(top = 8))
+            content.addView(note("Supporter backgrounds appear in official Nuvio apps. Nuvio+ shows image-link backgrounds."), lp(top = 8))
     }
 
     private fun linkDialog(current: Session, title: String, initial: String, done: (String) -> Unit) {

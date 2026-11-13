@@ -37,7 +37,7 @@ static const GuiaEnt GUIA_ENT[] = {
     "Além do QR, a tela de entrada aceita o e-mail e a senha da conta Nuvio.",
     "Tela de entrada", -1, GT_NADA, GX_NADA, GV_NADA },
   { 0, "Atualizar pelo app", "aj_download", 0, "c-atualizar",
-    "O app confere as versões do Better Nuvio no GitHub a cada 6 horas e avisa quando sai uma nova. Na Android TV, Atualizar agora baixa a versão e o Android pede para instalar. Na Samsung, o app se atualiza sozinho.",
+    "O app confere as versões do Nuvio+ no GitHub a cada 6 horas e avisa quando sai uma nova. Na Android TV, Atualizar agora baixa a versão e o Android pede para instalar. Na Samsung, o app se atualiza sozinho.",
     "Ajustes › Sobre e ajuda › Atualizar o aplicativo", AJ_ATUALIZAR, GT_NADA, GX_NADA, GV_NADA },
   { 1, "Três layouts da Home", "aj_layout-dashboard", 1, "h-layout",
     "Moderna põe o destaque atrás das fileiras. Padrão usa um banner no topo e fundo liso. Dinâmica é o estilo Apple TV, com carrossel e Top 10 numerado. O botão do destaque segue a sua cor.",

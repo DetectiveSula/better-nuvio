@@ -174,7 +174,7 @@
    "cap": "comecar",
    "t": "Atualizar pelo app",
    "ic": "download",
-   "txt": "O app confere as versões do Better Nuvio no GitHub a cada 6 horas e avisa quando sai uma nova. Na Android TV, Atualizar agora baixa a versão e o Android pede para instalar. Na Samsung, o app se atualiza sozinho.",
+   "txt": "O app confere as versões do Nuvio+ no GitHub a cada 6 horas e avisa quando sai uma nova. Na Android TV, Atualizar agora baixa a versão e o Android pede para instalar. Na Samsung, o app se atualiza sozinho.",
    "onde": "Ajustes › Sobre e ajuda › Atualizar o aplicativo",
    "acao": [
     "Abrir em Ajustes"

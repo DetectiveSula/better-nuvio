@@ -3,7 +3,7 @@
   <profile name="tv" />
   <ui-application appid="BetterNuv1.BetterNuvio" exec="NuvioTpk.dll" type="dotnet"
                   multiple="false" taskmanage="true" nodisplay="false" launch_mode="single">
-    <label>Better Nuvio</label>
+    <label>Nuvio+</label>
     <icon>NuvioTpk.png</icon>
   </ui-application>
   <privileges>

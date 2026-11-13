@@ -96,7 +96,7 @@ android {
             if (ks != null) signingConfig = signingConfigs.getByName("release")
             // Better Nuvio's own release app (owner, 12 Nov 2026): never the
             // upstream space.nuvio.nativelegacy package or its key.
-            manifestPlaceholders["appLabel"] = "Better Nuvio"
+            manifestPlaceholders["appLabel"] = "Nuvio+"
             // The C core's NV_VERSAO (shown in Settings > About and compared by
             // the updater) follows the same release version.
             externalNativeBuild { cmake { arguments += "-DNV_VERSAO_BETTER=$betterVersao" } }

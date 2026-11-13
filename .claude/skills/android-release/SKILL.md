@@ -82,13 +82,14 @@ cima exige desinstalar.
    os 10 artefatos, SHA256SUMS unificado e Homebrew em `build/release-<v>/`.
    Recusa chaves vazias, versão divergente e árvore alterada. Não publica nem
    instala. Android gera só release; debug continua em `tools/android.sh`.
-3. Publicação manual no MESMO `gh release create vX.Y.Z`, incluindo o APK.
+3. Publicação manual no MESMO `gh release create vX.Y.Z --title "Nuvio+ X.Y.Z"`, incluindo o APK
+   (o app se chama Nuvio+ desde nov/2026; anexos `NuvioPlus-X.Y.Z-android*.apk`).
    Sem ele no latest, nenhum Android se atualiza sozinho. Detalhes e
    `--jobs 2` / `--ensaio`: `docs/android/RELEASE.md`.
 4. Enquanto o dono nao liberar a divulgacao do Android: o `.apk` entra como
    anexo, SEM linha na tabela "Which file do I need?", sem aviso no app
    (`avisos.json` plataforma `android`) e sem README. Quando liberar, a linha e:
-   `| Android TV / Google TV | Android 7 or newer | \`Nuvio-X.Y.Z-android.apk\` |`
+   `| Android TV / Google TV | Android 7 or newer | \`NuvioPlus-X.Y.Z-android.apk\` |`
 
 ## Cartao de novidades da versao (um .inc por release)
 
