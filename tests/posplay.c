@@ -816,6 +816,62 @@ int main(void) {
   puts("PASS expansion: all 20 still-watching intervals block real automatic next until OK; Off/autoplay Off respected; 100 recommendation percentages/master Off");
   ajustes_shot_valor("proximoAutoLocal",0);ajustes_shot_valor("stillWatchingEpisodeCountLocal",0);
   ajustes_shot_valor("postPlayRecommendationsLocal",0);ajustes_shot_valor("postPlayThresholdPercentLocal",0);posplay_troca_manual();
+  // PROXIMO AINDA NAO FOI AO AR (dono, 13/11/2026). Antes o cartao contava e
+  // tocava T5E4 mesmo com estreia na semana seguinte, e a busca de fontes
+  // terminava no cartao de erro. Agora: aviso com a data, sem contagem, OK so
+  // fecha, e no fim real do video o cartao sai para o player encerrar.
+  {
+    long long agoraMs = (long long)time(NULL) * 1000LL;
+    CatEp x = { 0 };
+    assert(!posplay_episodio_futuro(NULL, agoraMs));
+    assert(!posplay_episodio_futuro(&x, agoraMs));                 // sem data: exibido
+    snprintf(x.dataIso, sizeof x.dataIso, "2001-01-01");
+    assert(!posplay_episodio_futuro(&x, agoraMs));
+    snprintf(x.dataIso, sizeof x.dataIso, "2099-01-01");
+    assert(posplay_episodio_futuro(&x, agoraMs));
+    snprintf(x.dataIso, sizeof x.dataIso, "2099-01-01T04:30:00Z");
+    assert(posplay_episodio_futuro(&x, agoraMs));
+
+    cat_definir(&c, 1);
+    snprintf(eps[3].dataIso, sizeof eps[3].dataIso, "2099-01-01");  // T5E4
+    cat_definir_episodios(0, eps, 10);
+    assert(ajustes_shot_valor("proximoAutoLocal", 0));   // 0 = ligado
+    assert(ajustes_proximo_auto());
+    posplay_fechar();
+    aquecer(3600.0, 1);
+    posplay_atualizar(0.016f, 1000, 3597.0, 3600.0, 1, 0, 1);
+    assert(posplay_visivel() && proxFuturo && proxT == 5 && proxE == 4);
+    assert(fecharEm == 0);                                          // sem contagem
+    posplay_atualizar(0.016f, 1000 + 9000, 3599.0, 3600.0, 1, 0, 1);
+    assert(posplay_visivel() && !posplay_pediu_episodio(&t, &e));
+    assert(tecla(SDLK_RETURN) == 1);                                // OK so fecha
+    assert(!posplay_visivel() && !posplay_pediu_episodio(&t, &e));
+    posplay_atualizar(0.016f, 11000, 3599.0, 3600.0, 1, 0, 1);
+    assert(!posplay_visivel());
+    assert(!posplay_aguarda_escolha());
+
+    posplay_fechar();
+    aquecer(3600.0, 1);
+    posplay_atualizar(0.016f, 1000, 3597.0, 3600.0, 1, 0, 1);
+    assert(posplay_visivel());
+    fixtureEnded = 1;                                               // fim real
+    posplay_atualizar(0.016f, 4000, 3600.0, 3600.0, 1, 0, 1);
+    fixtureEnded = 0;
+    assert(!posplay_visivel() && !posplay_aguarda_escolha() && !posplay_pediu_episodio(&t, &e));
+
+    // Ja foi ao ar: volta a contar e tocar.
+    snprintf(eps[3].dataIso, sizeof eps[3].dataIso, "2001-01-01");
+    cat_definir_episodios(0, eps, 10);
+    posplay_fechar();
+    aquecer(3600.0, 1);
+    posplay_atualizar(0.016f, 1000, 3597.0, 3600.0, 1, 0, 1);
+    assert(posplay_visivel() && !proxFuturo && fecharEm);
+    posplay_atualizar(0.016f, 1000 + 3100, 3600.0, 3600.0, 1, 0, 1);
+    assert(posplay_pediu_episodio(&t, &e) && t == 5 && e == 4);
+    ajustes_shot_valor("proximoAutoLocal", 0);
+    posplay_fechar();
+    puts("ok  proximo ainda nao exibido: aviso de estreia, sem contagem nem pedido");
+  }
   puts("posplay: tudo ok");
   return 0;
 }

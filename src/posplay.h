@@ -20,6 +20,7 @@
 #define NV_POSPLAY_H
 #include <SDL2/SDL.h>
 #include "gfx.h"
+#include "catalogo.h"
 
 // Chamada por quadro pelo player, com a posicao e a duracao correntes.
 // `janelaSerie` diz se a serie ja esta na janela de "proximo episodio" — os
@@ -82,6 +83,12 @@ int  posplay_indice(void);
 // proximo episodio (temporada/episodio) ou titulo relacionado (indice).
 int  posplay_pediu_episodio(int *temporada, int *episodio);
 int  posplay_pediu_titulo(void);
+// PROXIMO EPISODIO QUE AINDA NAO FOI AO AR (dono, 13/11/2026): o cartao diz
+// quando ele estreia ("Estreia 3 dez") e nao toca nada — sem contagem, sem
+// botao, e no fim do video o player sai como no ultimo episodio. 1 quando a
+// data do addon (`dataIso`, a mesma da lista de episodios) esta no futuro; sem
+// data legivel conta como exibido, como na fileira Continuar.
+int  posplay_episodio_futuro(const CatEp *ep, long long agoraMs);
 // Contagem desde a abertura do cartao (#470). Instante de disparo, 0 = sem contagem.
 Uint32 posplay_contagem(Uint32 agora, Uint32 fecharEm, double restaReal, int autoplay, int contagemSeg);
 #ifdef NV_SHOT_HOOKS

@@ -936,6 +936,13 @@ const CatEp *player_proximo_episodio(void) {
   i=prox_indice_seguinte(base,n,epT,epE);
   return i>=0?cat_episodio(ix,i):NULL;
 }
+// O seguinte que da para TOCAR: NULL quando ele ainda nao foi ao ar. O botao
+// Proximo, o fim do video e o "o que achou?" tratam esse caso como o ultimo
+// episodio; o cartao (posplay.c) avisa a data de estreia.
+const CatEp *player_proximo_jogavel(void) {
+  const CatEp *p = player_proximo_episodio();
+  return p && !posplay_episodio_futuro(p, (long long)time(NULL) * 1000LL) ? p : NULL;
+}
 // O MOTIVO DO CARTAO DE ERRO (issue #112). O cartao dizia sempre "Nao foi
 // possivel abrir a fonte / Abra Fontes para escolher outra opcao" — e para um
 // canal sem fonte nenhuma as duas frases sao falsas: nada foi aberto, e a
@@ -3411,7 +3418,7 @@ static int transporteAcoes(PlrAcao a[PLR_NBTNS]) {
   int n = 0, serie = transporteSerie();
   int pronto = serie && !trocaEpisodio && !pedRecarregar && !player_carregando() && !erroFonte && !saindo;
   a[n++] = (PlrAcao){PLR_PLAY, 1};
-  if (serie) a[n++] = (PlrAcao){PLR_PROXIMO, pronto && player_proximo_episodio() != NULL};
+  if (serie) a[n++] = (PlrAcao){PLR_PROXIMO, pronto && player_proximo_jogavel() != NULL};
   if (!ehCanal()) a[n++] = (PlrAcao){PLR_REINICIAR,
       player_recarregar_contexto() != 0 && video_duracao() > 0.5};
   a[n++] = (PlrAcao){PLR_CC, 1};
@@ -4241,7 +4248,7 @@ static int ativarBotao(int i, int repetiu) {
       char alvo[64];
       if (repetiu || trocaEpisodio ||
           (episodioPedidoMarcado && agora - episodioPedidoEm < 400u)) return 0;
-      ep = player_proximo_episodio();
+      ep = player_proximo_jogavel();
       if (!ep || ep->temporada < 0 || ep->episodio <= 0 ||
           !cat_id_stream(idxAtual(), ep->temporada, ep->episodio, alvo, sizeof alvo) || !alvo[0]) return 0;
       // Copiar os numeros agora: a lista do catalogo pode ser republicada.
@@ -5120,7 +5127,7 @@ void player_atualizar(float dt, Uint32 agora) {
       (cat_n_episodios(idxAtual()) > 0 && !desc_episodios_carregando(idxAtual()));
     if (!ehCanal() && !meio && ci && comVideo && video_pronto() && duracaoSeg >= 120.0f &&
         listaConhecida) {
-      const CatEp *px = eSerie ? player_proximo_episodio() : NULL;
+      const CatEp *px = eSerie ? player_proximo_jogavel() : NULL;
       double cr = credEfetivo();
       reacao_player_episodio(eSerie ? epT : 0, eSerie ? epE : 0);
       reacao_player_atualizar(dt, agora, ci, eSerie, posSeg, duracaoSeg, cr,
@@ -5136,7 +5143,7 @@ void player_atualizar(float dt, Uint32 agora) {
     else {
       if (eofDesde < 0.0) eofDesde = agoraEof;
       if ((!eSerie || !desc_episodios_carregando(idxAtual()) || agoraEof - eofDesde >= 8.0) &&
-          !posplayReterNoFim(player_proximo_episodio() != NULL)) { saindo = 1; pediuSair = 1; }
+          !posplayReterNoFim(player_proximo_jogavel() != NULL)) { saindo = 1; pediuSair = 1; }
     }
   }
   // Com o painel no ar os controles nao somem: eles sao a saida do dono.

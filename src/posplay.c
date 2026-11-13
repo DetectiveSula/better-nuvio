@@ -1,6 +1,7 @@
 #include "posplay.h"
 #include "intro.h"
 #include "proximo.h"
+#include "epdata.h"
 #include "fontecache.h"
 #include "proximopreparo.h"
 #include "jfid.h"
@@ -105,6 +106,7 @@ static int    pedT, pedE, pedTitulo = -1;
 static int    pedAutomatico, automaticoEntregue, recuou, aguardaBusca;
 static int    proxT, proxE;          // proximo episodio, quando ha
 static char   proxNome[120];
+static int    proxFuturo;          // o proximo ainda nao foi ao ar: so avisa a data
 static unsigned watchedAutomatically;
 static int unattendedCarry,watchedFromT,watchedFromE,watchedNextT,watchedNextE;
 static char watchedNextTitle[64];
@@ -114,6 +116,16 @@ static char lastAutoCounted[256];
 static NvPerfilSessao watchScope;
 // Temporada0 e especial; quem distingue ausencia e o numero do episodio.
 static int temProximo(void) { return serie && proxT >= 0 && proxE > 0; }
+// O proximo que da para TOCAR: existe e ja foi ao ar.
+static int temProximoJogavel(void) { return temProximo() && !proxFuturo; }
+
+int posplay_episodio_futuro(const CatEp *ep, long long agoraMs) {
+  long long quando;
+  if (!ep) return 0;
+  if (ep->dataIso[0]) return ep_ja_saiu(ep->dataIso, agoraMs) == 0;
+  quando = prox_episodio_data_ms(ep);   // pacote legado: so a data por extenso
+  return quando != PROX_SEM_DATA && quando > agoraMs;
+}
 static int temPedidoEpisodio(void) { return pedT >= 0 && pedE > 0; }
 static char   preEpisodio[64], preAlvo[64];
 static int    preTentou;
@@ -196,7 +208,7 @@ static void cancelarAutomatico(void) {
     unattendedCarry=0;watchedAutomatically=0;lastAutoCounted[0]=0;
     pedT = pedE = 0;
     pedAutomatico = 0;
-    if (temProximo()) {
+    if (temProximoJogavel()) {
       visivel = 1;
       dispensado = 0;
     }
@@ -209,7 +221,7 @@ void posplay_busca_usuario(void) {
   unattendedCarry=0;
   watchedAutomatically=0;stillWatchingPrompt=0;lastAutoCounted[0]=0;
   cancelarAutomatico();
-  if (automaticoEntregue && temProximo()) {
+  if (automaticoEntregue && temProximoJogavel()) {
     visivel = 1;
     dispensado = 0;
   }
@@ -299,6 +311,7 @@ static int acharProximo(int idxItem, int t, int e) {
   if (!px) return 0;
   proxT = px->temporada; proxE = px->episodio;
   snprintf(proxNome, sizeof proxNome, "%s", px->nome);
+  proxFuturo = posplay_episodio_futuro(px, (long long)time(NULL) * 1000LL);
   return 1;
 }
 
@@ -542,7 +555,7 @@ void posplay_atualizar(float dt, Uint32 agora, double posSeg, double durSeg,
     }
     serie = ehSerie;
     foco = 0; botaoFilme = 0; relAnterior = -1; relTroca = 1.0f;
-    proxT = proxE = 0; proxNome[0] = 0;
+    proxT = proxE = 0; proxNome[0] = 0; proxFuturo = 0;
     if (serie) {
       int t = 0, e = 0;
       const CatItem *ci = cat_item(idx);
@@ -574,12 +587,18 @@ void posplay_atualizar(float dt, Uint32 agora, double posSeg, double durSeg,
     }
   }
 
+  // Aviso de estreia no fim real do video: sai do caminho e o player encerra
+  // como no ultimo episodio (volta para a pagina do titulo).
+  if (visivel && serie && !aguardaCena && proxFuturo && filmeNoFimConfirmado(posSeg, durSeg))
+    esconder();
+
   // Arma ao abrir o cartao. Desligado, espera OK.
   // Recuo e busca pendente suspendem a mesma contagem configuravel.
   if (visivel && serie && janelaSerie && !recuou && !aguardaBusca) {
     // #202: a 1,5x os segundos do arquivo passam mais depressa que os do relogio.
     double resta = vel_tempo_real(durSeg - posSeg, player_velocidade_efetiva());
-    if (aguardaCena || stillWatchingPrompt) fecharEm = 0;
+    // Episodio que ainda nao foi ao ar nao tem o que tocar: nada de contagem.
+    if (aguardaCena || stillWatchingPrompt || proxFuturo) fecharEm = 0;
     else fecharEm = posplay_contagem(agora, fecharEm, resta, ajustes_proximo_auto(), ajustes_proximo_contagem());
   }
 
@@ -644,7 +663,7 @@ int posplay_evento(const SDL_Event *e) {
   // the player, which SEEKS while its controls are hidden (#121): the video
   // jumped under the card and could leave the end window, closing it.
   if (aguardaCena) {
-    int temProx = temProximo();
+    int temProx = temProximoJogavel();
     if (temProx && k == SDLK_RIGHT && foco == 0) { foco = 1; return 1; }
     if (temProx && k == SDLK_LEFT && foco == 1)  { foco = 0; return 1; }
     if (k == SDLK_LEFT || k == SDLK_RIGHT || k == SDLK_UP) return 1;
@@ -656,6 +675,8 @@ int posplay_evento(const SDL_Event *e) {
     return 0;
   }
   if (serie) {
+    // Ainda nao foi ao ar: o OK so fecha o aviso, o episodio segue tocando.
+    if (proxFuturo && (k == SDLK_RETURN || k == SDLK_KP_ENTER)) { esconder(); return 1; }
     if (k == SDLK_RETURN || k == SDLK_KP_ENTER) {
       player_aprender_creditos(); pedT = proxT; pedE = proxE; pedAutomatico = 0; esconder(); return 1;
     }
@@ -757,7 +778,7 @@ int posplay_desfocar_thumb(int idxCatalogo, int temporada, int episodio) {
 int posplay_teste_botao(void) { return botaoFilme; }
 
 static void ponteiroComecar(int a, int b) { (void)a; (void)b; }
-static void ponteiroCena(int i, int b) { (void)b; if (visivel && aguardaCena && temProximo()) foco = i; }
+static void ponteiroCena(int i, int b) { (void)b; if (visivel && aguardaCena && temProximoJogavel()) foco = i; }
 static void ponteiroBotao(int i, int b) { (void)b; if (visivel && !serie && !aguardaCena) botaoFilme = i; }
 static void ponteiroCartaz(int i, int b) {
   int n = nRel();
@@ -887,7 +908,9 @@ static void desenharCartaoEpisodio(Uint32 agora, float a) {
   const CatEp *px = NULL;
   int i, n = serie ? cat_n_episodios(idx) : 0;
   int resta = fecharEm > agora ? (int)((fecharEm - agora + 999) / 1000) : 0;
-  int duas = aguardaCena && temProximo();
+  int duas = aguardaCena && temProximoJogavel();
+  // So o aviso de estreia: sem botao de tocar.
+  int soAviso = proxFuturo && temProximo() && !aguardaCena && !stillWatchingPrompt;
   // Owner (12/11): bottom-LEFT, mirroring official's bottom-right card; it
   // slides in from the left. The player's skip button moves right while the
   // card is up (player.c), so the two never overlap.
@@ -913,11 +936,14 @@ static void desenharCartaoEpisodio(Uint32 agora, float a) {
     if (!(px && px->nome[0])) titulo[strlen(cod)] = 0;
   } else snprintf(titulo, sizeof titulo, "%s", ci ? ci->titulo : "");
   status[0] = 0;
-  if (!aguardaCena && !stillWatchingPrompt && resta > 0)
+  if (soAviso)
+    ep_rotulo_estreia(px ? px->dataIso : "", (long long)time(NULL) * 1000LL, 0,
+                      ajustes_idioma(), status, sizeof status);
+  else if (!aguardaCena && !stillWatchingPrompt && resta > 0)
     snprintf(status, sizeof status, i18n("Reproduzindo em %d s"), resta);
-  b0 = stillWatchingPrompt ? i18n("Reproduzir") : aguardaCena ? i18n("Seguir assistindo") : i18n("Reproduzir");
+  b0 = soAviso ? NULL : stillWatchingPrompt ? i18n("Reproduzir") : aguardaCena ? i18n("Seguir assistindo") : i18n("Reproduzir");
   if (duas) b1 = i18n("Próximo episódio");
-  pw0 = pilulaLarg(b0); if (b1) pw1 = pilulaLarg(b1);
+  pw0 = b0 ? pilulaLarg(b0) : 0.0f; if (b1) pw1 = pilulaLarg(b1);
   pills = pw0 + (b1 ? 12.0f + pw1 : 0.0f);
   card.w = PP_CARD_W2; card.h = 18.0f * 2 + PP_THUMB_H2;
   { TxtLinha l = txt_linha(TXT_G28B, titulo, 255, 255, 255, 255);
@@ -953,7 +979,7 @@ static void desenharCartaoEpisodio(Uint32 agora, float a) {
     } }
   postplay_preview_draw(idTitulo,a>.99f&&ajustes_posplay_trailer()&&!stillWatchingPrompt&&!aguardaCena,ajustes_posplay_trailer_espera_ms(),agora,tr);
   tx = tr.x + tr.w + 20.0f;
-  tw = card.x + card.w - 20.0f - tx - (card.h > 18.0f * 2 + PP_THUMB_H2 + 1.0f ? 0.0f : pills + 16.0f);
+  tw = card.x + card.w - 20.0f - tx - (card.h > 18.0f * 2 + PP_THUMB_H2 + 1.0f || !b0 ? 0.0f : pills + 16.0f);
   { TxtLinha l0 = txt_linha_corta(TXT_G22M, rotulo, 255, 255, 255, 204, tw);
     TxtLinha l1 = txt_linha_corta(TXT_G28B, titulo, 255, 255, 255, 255, tw);
     TxtLinha l2 = txt_linha_corta(TXT_G22M, status, 255, 255, 255, 199, tw);
@@ -965,7 +991,7 @@ static void desenharCartaoEpisodio(Uint32 agora, float a) {
   { float h = 56.0f, by, bx;
     if (card.h > 18.0f * 2 + PP_THUMB_H2 + 1.0f) { bx = tx; by = card.y + card.h - 18.0f - h; }
     else { bx = card.x + card.w - 20.0f - pills; by = card.y + (card.h - h) * 0.5f; }
-    pilulaPP((GfxRect){ bx, by, pw0, h }, b0, duas && foco == 0, 1, a);
+    if (b0) pilulaPP((GfxRect){ bx, by, pw0, h }, b0, duas && foco == 0, 1, a);
     if (b1) pilulaPP((GfxRect){ bx + pw0 + 12.0f, by, pw1, h }, b1, foco == 1, 1, a);
     if (visivel && a > 0.99f && a < 1.01f) {
       if (duas) {
@@ -1164,7 +1190,7 @@ static void desenharFilmeTelefone(Uint32 agora, float a) {
 float posplay_topo(float baseY) {
   if (anim < 0.01f) return baseY;
   if (serie || aguardaCena) {
-    int duas = aguardaCena && temProximo();
+    int duas = aguardaCena && temProximoJogavel();
     return NV_TELA_H - 60.0f - (18.0f * 2 + PP_THUMB_H2) - (duas ? 64.0f : 0.0f) - 16.0f;
   }
   // TV film: the page covers the screen; stack above its bottom-left column.
@@ -1178,6 +1204,10 @@ void posplay_shot(int idxCatalogo, int ehSerie, int t, int e, Uint32 fecha) {
   fixarTitulo(idxCatalogo);
   visivel = 1; anim = 1.0f; serie = ehSerie; foco = 0; botaoFilme = 0; relAnterior = -1; relTroca = 1.0f; dispensado = 0;
   proxT = t; proxE = e; fecharEm = fecha;
+  { int i, n = cat_n_episodios(idx); proxFuturo = 0;
+    for (i = 0; i < n; i++) { const CatEp *x = cat_episodio(idx, i);
+      if (x && x->temporada == t && x->episodio == e) {
+        proxFuturo = posplay_episodio_futuro(x, (long long)time(NULL) * 1000LL); break; } } }
 }
 // Post-credits choice / "Are you still watching?" for captures.
 void posplay_shot_estado(int cena, int aindaAssistindo) {

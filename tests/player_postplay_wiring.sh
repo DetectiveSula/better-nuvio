@@ -41,6 +41,6 @@ p=Path(sys.argv[1])/'test.c';p.write_text(code)
 subprocess.run(['cc',str(p),'-o',sys.argv[1]+'/test'],check=True)
 subprocess.run([sys.argv[1]+'/test'],check=True)
 assert 'prepararRecomendacoesPlayer(temFixo ? &itemFixo : NULL);' in s
-assert '!posplayReterNoFim(player_proximo_episodio() != NULL)' in s
+assert '!posplayReterNoFim(player_proximo_jogavel() != NULL)' in s  # unaired next = last episode
 print('PASS: direct movie metadata request/master-Off/live exclusion and actual EOF retention for recommendations/presence prompt/dismissal')
 PY
