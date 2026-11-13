@@ -19,6 +19,9 @@ static const char *H1="1111111111111111111111111111111111111111";
 static const char *H2="2222222222222222222222222222222222222222";
 static _Atomic int cacheCalls,listCalls,linkCalls;
 static int mode,mutations,noItem,linkMode,replaceList,disableDuring,rotateKey;
+// Library of `pageItems` items, served page by page as offset/limit ask
+// (H1 sits at index 600). `pageLimitSeen` records the largest limit asked.
+static int pageItems,pageLimitSeen;
 // Used only by the cached-addition extension fixture. Ordinary Stage D stays read-only.
 static int compatFixture,compatOptIn,compatCreateMode,compatReadyMode,compatListMode,compatVisible,compatSecondCached;
 static int compatFreshResult,compatDisableFresh,compatDisablePost;
@@ -89,6 +92,16 @@ char *rede_baixar_st(const char*u,int timeout,const char *const*h,int*status) {
       if(compatListMode==2)return strdup("{\"success\":true,\"data\":[{\"hash\":\"invalid\"}]}");
       if(compatListMode==3){char result[10000]="{\"success\":true,\"data\":[";for(int i=0;i<100;i++){size_t len=strlen(result);snprintf(result+len,sizeof result-len,"%s{\"hash\":\"%s\"}",i?",":"",H2);}strcat(result,"]}");return strdup(result);}
       return strdup("{\"success\":true,\"data\":[]}");
+    }
+    if(pageItems) {
+      const char *o=strstr(u,"offset="),*l=strstr(u,"limit=");int off=o?atoi(o+7):0,lim=l?atoi(l+6):0;
+      if(lim>pageLimitSeen)pageLimitSeen=lim;
+      int end=off+lim<pageItems?off+lim:pageItems;size_t cap=64+(size_t)(end>off?end-off:0)*200;
+      char *r=malloc(cap);strcpy(r,"{\"success\":true,\"data\":[");
+      for(int i=off;i<end;i++){size_t len=strlen(r);
+        if(i==600)snprintf(r+len,cap-len,"%s{\"hash\":\"%s\",\"files\":[{\"id\":3,\"name\":\"Show.S01E01.1080p.mkv\",\"size\":2000000000}],\"id\":77,\"download_finished\":true}",i>off?",":"",H1);
+        else snprintf(r+len,cap-len,"%s{\"hash\":\"%040x\"}",i>off?",":"",0x500000+i);}
+      strcat(r,"]}");return r;
     }
     if(noItem)return strdup("{\"success\":true,\"data\":[]}");
     char result[1500];snprintf(result,sizeof result,"{\"success\":true,\"data\":[{\"hash\":\"%s\",\"files\":[{\"id\":3,\"name\":\"Show.S01E01.1080p.mkv\",\"size\":2000000000}],\"id\":77,\"download_finished\":true}]}",H1);return strdup(result);

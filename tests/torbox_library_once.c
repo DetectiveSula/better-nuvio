@@ -49,6 +49,22 @@ int main(void) {
   assert(existing(H1, NULL) && listCalls == 1);
   puts("PASS: a new search or another TorBox key reads the library again");
 
+  // 13 Nov 2026: pages of 500. The owner's 634-item library took 7 requests
+  // (3.9 s) on every autoplay; now 2. Item 600 (second page) still resolves.
+  debrid_nova_busca(); pageItems = 634; pageLimitSeen = 0; listCalls = 0; linkCalls = 0;
+  assert(existing(H1, NULL) && listCalls == 2 && pageLimitSeen == 500);
+  debrid_nova_busca(); listCalls = 0;
+  { char h[41]; snprintf(h, sizeof h, "%040x", 0x9999); assert(!existing(h, NULL) && listCalls == 2); }
+  // A short ROUND page may be a server cap: the next page is read before the
+  // listing counts as complete. 450 items: two reads (450, then 0).
+  debrid_nova_busca(); pageItems = 450; listCalls = 0;
+  { char h[41]; snprintf(h, sizeof h, "%040x", 0x9998); assert(!existing(h, NULL) && listCalls == 2); }
+  // 123 items, not round: one read.
+  debrid_nova_busca(); pageItems = 123; listCalls = 0;
+  { char h[41]; snprintf(h, sizeof h, "%040x", 0x9997); assert(!existing(h, NULL) && listCalls == 1); }
+  pageItems = 0;
+  puts("PASS: the library is read in pages of 500 (634 items: 2 requests, not 7)");
+
   assert(!mutations);
   puts("PASS: no automatic provider write");
   SDL_Quit();

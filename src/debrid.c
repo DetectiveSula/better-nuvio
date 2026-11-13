@@ -1752,6 +1752,20 @@ static int cacheTBItemLink(const char *item,const char *hash,int file,char *url,
 // TorBox add clears it. Only hashes and the matching items' JSON are kept in
 // memory; nothing is written to disk or logged beyond counts.
 #define TBBIB_TTL_S 60
+// PAGES OF 500, NOT 100 (13 Nov 2026). TorBox answers each mylist page in
+// about half a second whatever its size, so 634 items took 7 requests and
+// 3.9 s on every autoplay; one 1000-item request took 1.2 s (4.8 MB) on the
+// owner's account. 500 keeps a page under ~4 MB for older TVs and reads the
+// same 634 items in 2 requests. Cap: 2 pages (1000 items, was 800).
+#define TBBIB_PAGINA  500
+#define TBBIB_PAGINAS 2
+// A short page ends the listing. A short ROUND page (a multiple of 50) could
+// instead be a server-side cap smaller than TBBIB_PAGINA, which would hide the
+// rest of the library and make a present torrent look absent; then the next
+// page is read too, and only an empty or non-round one ends the listing.
+static int tbBibUltimaPagina(int count) {
+  return count < TBBIB_PAGINA && (count == 0 || count % 50 != 0);
+}
 typedef struct { char hash[41]; char *item; } TbBibItem;
 static pthread_mutex_t tbBibTrava = PTHREAD_MUTEX_INITIALIZER;
 static struct {
@@ -1789,9 +1803,10 @@ static int tbBibCarregar(int fresco) {
   pthread_mutex_unlock(&tbBibTrava);
   TbBibItem *v = NULL; int n = 0, cap = 0, completa = 0, valid = 1, pages = 0;
   struct timespec a, b; clock_gettime(CLOCK_MONOTONIC, &a);
-  for (int page = 0; page < 8 && contextoVale(); page++) {
+  for (int page = 0; page < TBBIB_PAGINAS && contextoVale(); page++) {
     char route[160]; int status = 0, count = 0;
-    snprintf(route, sizeof route, "torrents/mylist?offset=%d&limit=100&bypass_cache=true", page * 100);
+    snprintf(route, sizeof route, "torrents/mylist?offset=%d&limit=%d&bypass_cache=true",
+             page * TBBIB_PAGINA, TBBIB_PAGINA);
     char *response = get_auth(TB, route, STB, &status), success[16];
     pages++;
     if (!ok2xx(response, status) || !cacheJsonValido(response) || !cacheRawRaiz(response, "success", success, sizeof success) || strcmp(success, "true")) { free(response); valid = 0; break; }
@@ -1807,12 +1822,12 @@ static int tbBibCarregar(int fresco) {
       memcpy(v[n].hash, normalized, sizeof v[n].hash); v[n].item = item; n++;
     }
     free(data); free(response);
-    if (count < 100) { completa = valid; break; }
+    if (tbBibUltimaPagina(count)) { completa = valid; break; }
   }
   clock_gettime(CLOCK_MONOTONIC, &b);
   long ms = (long)((b.tv_sec - a.tv_sec) * 1000 + (b.tv_nsec - a.tv_nsec) / 1000000);
   printf("[debrid] TorBox library read%s: %d item(s), %d page(s), %s, %ld ms\n",
-         fresco ? " (fresh, add path)" : " once for this search", n, pages, completa ? "complete" : valid ? "partial (over 800 items)" : "incomplete", ms);
+         fresco ? " (fresh, add path)" : " once for this search", n, pages, completa ? "complete" : valid ? "partial (over 1000 items)" : "incomplete", ms);
   fflush(stdout);
   if (!contextoVale() || (!completa && !n)) {
     for (int i = 0; i < n; i++) free(v[i].item);
