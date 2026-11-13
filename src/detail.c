@@ -5969,13 +5969,16 @@ static void desenhaEpisodioCorpo(GfxRect r, int c, float f, float a, Uint32 agor
     if (epNaoExibido(ep)) {
       const char *rot = epData ? i18n("ESTREIA") : i18n("NÃO EXIBIDO");
       const int vid = ajustes_vidro();
-      // Vidro: o ambar vira lavagem + aro e texto ambar (a cor ainda diz "atencao").
-      TxtLinha l = vid ? txt_linha(TXT_CAPTION2, rot, 245, 199, 77, 255)
+      // Vidro: o MESMO vidro escuro do selo "EPISODIO n" ao lado, com aro e
+      // texto ambar (a cor ainda diz "atencao"). Era so uma lavagem ambar de
+      // 14% direto sobre a arte: texto ambar em still claro nao se lia (dono,
+      // 13/11/2026, Abbott Elementary T6E7).
+      TxtLinha l = vid ? txt_linha(TXT_CAPTION2, rot, 255, 210, 92, 255)
                        : txt_linha(TXT_CAPTION2, rot, 20, 20, 20, 255);
       float w = l.w + NV_DETP_EP_SELO_PADX * 2;
       GfxRect s = { xs, r.y + epSeloY, w, NV_DETP_EP_SELO_H };
-      if (vid) { gfx_cor(s, 12.0f / NV_DETP_EP_SELO_H, 0.961f, 0.780f, 0.302f, 0.14f * a);
-                 gfx_anel(s, 12.0f / NV_DETP_EP_SELO_H, 1.5f, 0.961f, 0.780f, 0.302f, 0.6f * a); }
+      if (vid) { gfx_vidro_painel(s, 12.0f / NV_DETP_EP_SELO_H, 0.6f, a);
+                 gfx_anel(s, 12.0f / NV_DETP_EP_SELO_H, 2.0f, 0.961f, 0.780f, 0.302f, 0.9f * a); }
       else
       gfx_cor(s, 12.0f / NV_DETP_EP_SELO_H, 0.961f, 0.780f, 0.302f, a);
       // Mesmo peso extra do selo vizinho: sao a mesma peca tipografica, e o
