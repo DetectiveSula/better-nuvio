@@ -33,7 +33,7 @@ static int aplicarProgressoEm(CatItem *v, int m, const ProgRegistro *regs, int k
 static int removidoVence(const CatItem *c, const void *u);
 static int cwInvalido(const CatItem *c, const void *u);
 static int podarContinuar(int (*teste)(const CatItem *, const void *), const void *u);
-static int aSeguirAdiante(const CatItem *, int, int, long long);
+static int aSeguirAdiante(const CatItem *, int, int, long long, int);
 
 // --- QUEM PODE TROCAR O VETOR ------------------------------------------------
 // Dois publicadores podem se encontrar: o fio da descoberta (cat_definir_tudo)
@@ -1511,7 +1511,8 @@ void cat_aplicar_progresso(int indice, double posSeg, double durSeg, int tempora
   aplicarUm(indice, posSeg, durSeg, temporada, episodio);
   for (j = 0; j < n; j++)
     if (mesmaCopia(indice, j)) {
-      if (aSeguirAdiante(&itens[j], temporada, episodio, itens[indice].retomadoMs)) continue;
+      if (aSeguirAdiante(&itens[j], temporada, episodio, itens[indice].retomadoMs,
+                         posSeg / durSeg >= 0.90)) continue;
       aplicarUm(j, posSeg, durSeg, temporada, episodio);
       itens[j].retomadoMs = itens[indice].retomadoMs;
     }
@@ -1565,9 +1566,15 @@ static void aplicarUmEm(CatItem *v, int i, double posSeg, double durSeg, int tem
 // roda antes da publicacao (e da poda), entao a mesma regra entra aqui.
 // A Next Up seed shares the watched episode's timestamp, but points ahead.
 // Replaying that episode's progress must not turn the seed back into it.
-static int aSeguirAdiante(const CatItem *item, int t, int e, long long ms) {
+// REVER ATE O FIM um episodio que ja estava visto (dono, 13/11/2026: Abbott
+// Elementary T6E6 de novo, "a seguir" T6E7) grava um registro MAIS NOVO que a
+// semente, e o instante sozinho devolvia o card ao T6E6 a 100% — que
+// cwInvalido entao tirava da fileira. `concluido`: a fonte e um episodio
+// terminado (>= 90%), e terminado ATRAS da semente nunca a puxa de volta, seja
+// qual for o instante. Em andamento, o instante continua decidindo.
+static int aSeguirAdiante(const CatItem *item, int t, int e, long long ms, int concluido) {
   return !strcmp(item->tipo, "series") && item->progresso == 0 &&
-         item->retomadoMs > 0 && item->retomadoMs >= ms && e > 0 &&
+         item->retomadoMs > 0 && (concluido || item->retomadoMs >= ms) && e > 0 &&
          (item->temporada > t || (item->temporada == t && item->episodio > e));
 }
 static void espalharEm(CatItem *v, int m) {
@@ -1583,7 +1590,8 @@ static void espalharEm(CatItem *v, int m) {
     for (k = 0; k < nf; k++) {
       i = fontes[k];
       if (!mesmaCopiaEm(v, i, j)) continue;
-      if (aSeguirAdiante(&v[j], v[i].temporada, v[i].episodio, v[i].retomadoMs)) continue;
+      if (aSeguirAdiante(&v[j], v[i].temporada, v[i].episodio, v[i].retomadoMs,
+                         v[i].progresso >= 90)) continue;
       if (v[j].progresso > 0 && v[i].retomadoMs <= v[j].retomadoMs) continue;
       if (melhor < 0 || v[i].retomadoMs > v[melhor].retomadoMs) melhor = i;
     }
@@ -1628,7 +1636,9 @@ static int aplicarProgressoEm(CatItem *v, int m, const ProgRegistro *regs, int k
     for (j = 0; j < m; j++) {
       if (tocado[j] || !v[j].imdb[0] || !mesmoTitulo(v[j].imdb, regs[i].contentId)) continue;
       if (maisNova || aSeguirAdiante(&v[j], regs[i].temporada, regs[i].episodio,
-                                   regs[i].lastWatchedMs)) { tocado[j] = 1; continue; }
+                                   regs[i].lastWatchedMs,
+                                   regs[i].durSeg > 0 &&
+                                   regs[i].posSeg / regs[i].durSeg >= 0.90)) { tocado[j] = 1; continue; }
       // O ITEM QUE JA E MAIS NOVO QUE O DISCO NAO VOLTA NO TEMPO. O item do
       // Trakt (pausado ou "a seguir", issue #66) traz o instante em
       // retomadoMs; um registro local mais velho — o S1E1 a 3% de 8/9 quando

@@ -65,6 +65,36 @@ int main(void) {
     cat_aplicar_progresso(0, 600, 3000, 1, 2);
     assert(cat_item(0)->episodio == 2 && cat_item(0)->progresso == 20);
   }
+  // Owner, 13/11/2026 (Abbott Elementary): rewatching an ALREADY-WATCHED
+  // episode to the end writes a local record NEWER than the account's Next Up
+  // seed. That finished record used to pull the seed back to the finished
+  // episode at 100%, and cwInvalido then dropped the card from the row.
+  {
+    static CatItem items[2], next;
+    static CatEp eps[2];
+    CatFileira row = {0};
+    items[0] = a; items[0].temporada = 1; items[0].episodio = 1;
+    items[0].progresso = 30; items[0].retomadoMs = 1000;
+    snprintf(items[0].imdb, sizeof items[0].imdb, "tt300:1:1");
+    items[1] = items[0];
+    snprintf(items[1].imdb, sizeof items[1].imdb, "tt300");
+    snprintf(row.chave, sizeof row.chave, "continue_watching"); row.n = 1;
+    cat_definir_tudo(items, 2, &row, 1);
+    eps[0].temporada = eps[1].temporada = 1;
+    eps[0].episodio = 1; eps[1].episodio = 2;
+    cat_definir_episodios(1, eps, 2);
+    assert(cat_salvar_progresso_ep(1, 3000, 3000, 1, 1, 1));   // E1 replayed to the end, now
+    next = items[0]; next.episodio = 2; next.progresso = 0;
+    next.retomadoMs = 1000;                                       // seed from the first watch
+    snprintf(next.imdb, sizeof next.imdb, "tt300:1:2");
+    cat_trocar_continuar(&next, 1);
+    assert(!strncmp(cat_item(0)->imdb, "tt300:1:2", 9));
+    assert(cat_item(0)->episodio == 2 && cat_item(0)->progresso == 0);
+    // A newer PARTIAL replay of an earlier episode still wins, as before.
+    assert(cat_salvar_progresso_ep(1, 600, 3000, 1, 1, 1));
+    cat_trocar_continuar(&next, 1);
+    assert(cat_item(0)->episodio == 1 && cat_item(0)->progresso == 20);
+  }
   // Stage E (continueWatchingImageModel, card style): an UNAIRED next-up shows
   // the title's landscape art first and its still only as the last resort.
   { CatItem up = a;
