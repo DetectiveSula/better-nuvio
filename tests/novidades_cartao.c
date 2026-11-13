@@ -292,7 +292,7 @@ int main(int argc, char **argv) {
     else espacamento();
     return 0;
   }
-  assert(!strcmp(novcartao_versao(), "Better Nuvio 1.0.2"));
+  assert(!strcmp(novcartao_versao(), "Nuvio+ 1.0.2"));
   assert(!strcmp(novcartao_arquivo(), "novidades-better-102.txt"));
   instalacaoNova();
   vindoDa202();

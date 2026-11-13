@@ -156,13 +156,13 @@ if [ "$RELEASE_ONLY" = 0 ]; then
 fi
 if [ "$DEBUG_ONLY" = 0 ] && [ -n "${NUVIO_KEYSTORE:-}" ]; then
   if [ "$LITE" != 1 ]; then
-    cp "$APP_BUILD/outputs/apk/release/app-release.apk" "$SAIDA/Better-Nuvio-$BVER-android.apk"
-    APKS+=("$SAIDA/Better-Nuvio-$BVER-android.apk")
+    cp "$APP_BUILD/outputs/apk/release/app-release.apk" "$SAIDA/NuvioPlus-$BVER-android.apk"
+    APKS+=("$SAIDA/NuvioPlus-$BVER-android.apk")
     "${GR[@]}" -Pnuvio.apkLite=1 assembleRelease
   fi
   for pair in armeabi-v7a:armv7 arm64-v8a:arm64; do
-    cp "android/app/build-lite/outputs/apk/release/app-${pair%:*}-release.apk" "$SAIDA/Better-Nuvio-$BVER-android-lite-${pair#*:}.apk"
-    APKS+=("$SAIDA/Better-Nuvio-$BVER-android-lite-${pair#*:}.apk")
+    cp "android/app/build-lite/outputs/apk/release/app-${pair%:*}-release.apk" "$SAIDA/NuvioPlus-$BVER-android-lite-${pair#*:}.apk"
+    APKS+=("$SAIDA/NuvioPlus-$BVER-android-lite-${pair#*:}.apk")
   done
 else
   echo "  release fora: sem NUVIO_KEYSTORE"

@@ -667,8 +667,8 @@ int registro_evento(const SDL_Event *e) {
 static void legalPonteiro(int a, int b) { (void)a; (void)b; }
 static void desenhaLegal(void) {
   const char *texto = legal == 1
-    ? "Nuvio Legacy é um player: addons e listas são de terceiros e você é responsável pelo que adiciona.\nAjustes › Sobre e ajuda › Aviso legal."
-    : "Nuvio Legacy é apenas um player. Não hospeda, armazena, indexa, envia nem distribui conteúdo.\nNão vem com fontes: tudo que toca vem de addons, listas, servidores e contas de terceiros que você escolhe.\nVocê é responsável pelo que adiciona e assiste e por ter direito de acesso onde mora.\nO projeto não controla, recomenda nem verifica addons, listas ou serviços e não fornece links para conteúdo sem licença.\nAvisos de direitos autorais devem ir a quem hospeda o conteúdo.\nNão é afiliado ao Stremio, ao Nuvio oficial, a serviços de streaming ou debrid, nem a fabricantes de TV.";
+    ? "Nuvio+ é um player: addons e listas são de terceiros e você é responsável pelo que adiciona.\nAjustes › Sobre e ajuda › Aviso legal."
+    : "Nuvio+ é apenas um player. Não hospeda, armazena, indexa, envia nem distribui conteúdo.\nNão vem com fontes: tudo que toca vem de addons, listas, servidores e contas de terceiros que você escolhe.\nVocê é responsável pelo que adiciona e assiste e por ter direito de acesso onde mora.\nO projeto não controla, recomenda nem verifica addons, listas ou serviços e não fornece links para conteúdo sem licença.\nAvisos de direitos autorais devem ir a quem hospeda o conteúdo.\nNão é afiliado ao Stremio, ao Nuvio oficial, a serviços de streaming ou debrid, nem a fabricantes de TV.";
   float w = fminf(1500, NV_VTELA_W - 96), x = (NV_VTELA_W - w) * 0.5f;
   float h = rgBlocoAltura(TXT_AJ_TEXTO, texto, w - 88, 30, 24) + 200;
   float y = (NV_VTELA_H - h) * 0.5f, by, bw;
