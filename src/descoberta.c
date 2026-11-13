@@ -739,12 +739,24 @@ static void fotosDoElenco(CatItem *d, const char *imdbSerie, int serie, int mant
 static int deMeta(const char *ini, const char *fim, const char *tipo, CatItem *d);
 // "Ocultar nao lancados" (hideUnreleasedContent) nas fileiras da Home e na grade
 // de colecao / Ver tudo; ver nlanc.h. Desligado, nunca esconde nada.
-static int descOcultaNaoLancado(const CatItem *it) {
+// `p`/`f`: the item's own JSON. Its release DATE decides first (Stremio
+// `released`, TMDB `release_date`/`first_air_date`), as in regular Nuvio; only
+// without one does the year in `meta` decide.
+static int descOcultaNaoLancadoEm(const CatItem *it, const char *p, const char *f) {
+  static const char *const CHAVES[] = { "released", "release_date", "first_air_date" };
   time_t t;
   struct tm tmv;
   if (!ajustes_ocultar_nao_lancados()) return 0;
   t = time(NULL);
-  if (!gmtime_r(&t, &tmv)) return 0;
+  if (!localtime_r(&t, &tmv)) return 0;
+  if (p)
+    for (size_t k = 0; k < sizeof CHAVES / sizeof *CHAVES; k++) {
+      char v[48] = "";
+      int r;
+      if (!js_texto_raiz_em(p, f, CHAVES[k], v, sizeof v) || !v[0]) continue;
+      r = nlanc_data_futura(v, tmv.tm_year + 1900, tmv.tm_mon + 1, tmv.tm_mday);
+      if (r >= 0) return r;
+    }
   return nlanc_meta_futuro(it->meta, tmv.tm_year + 1900);
 }
 
@@ -1528,7 +1540,7 @@ static int lerCatalogo(const char *base, const char *tipo, const char *id,
     origemDaBase(base, orig, sizeof orig);      // ver CatItem.origem
     while (p && n < max && n < quantos) {
       const char *f = js_fim(p);
-      if (deMeta(p, f, tipo, &saida[n]) && !descOcultaNaoLancado(&saida[n])) {
+      if (deMeta(p, f, tipo, &saida[n]) && !descOcultaNaoLancadoEm(&saida[n], p, f)) {
         snprintf(saida[n].origem, sizeof saida[n].origem, "%s", orig);
         n++;
       }
@@ -1629,7 +1641,7 @@ static int lerCatalogoHomeParcial(const char *base, const char *tipo, const char
       const char *f = js_fim(p);
       raw++;
       if (n >= max || visiveis >= quantos) continue;
-      if (!deMeta(p, f, tipo, &saida[n]) || descOcultaNaoLancado(&saida[n])) continue;
+      if (!deMeta(p, f, tipo, &saida[n]) || descOcultaNaoLancadoEm(&saida[n], p, f)) continue;
       int repetido = 0;
       // O prefixo conserva ate repeticoes que o addon ja mandava. So a
       // reserva adicional rejeita ids repetidos, para nao preencher com o
@@ -9703,7 +9715,7 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
       ok = prov == 1 ? deMetaTmdb(p, fimItem, !strcasecmp(f.midia, "TV") ? "series" : "movie", &item) :
            prov == 2 ? deMetaTrakt(p, fimItem, f.midia, &item) : deMeta(p, fimItem, f.type, &item);
       if (!ok || !colecaoTipo(&f, &item)) { nv_perfil_sessao_destravar(); continue; }
-      if (descOcultaNaoLancado(&item)) { novos++; nv_perfil_sessao_destravar(); continue; }
+      if (descOcultaNaoLancadoEm(&item, p, fimItem)) { novos++; nv_perfil_sessao_destravar(); continue; }
       if (!prov) origemDaBase(origem, item.origem, sizeof item.origem);
       visto = desc_filme_visto(&item);
       nv_perfil_sessao_destravar();
@@ -9792,7 +9804,7 @@ static void *fioVerTudo(void *u) {
             if (strcasecmp(job,"director")) continue;
           }
           if (deMetaTmdb(p,f,padrao,&lote[nl]) && colecaoTipo(&fonte, &lote[nl])) {
-            if (descOcultaNaoLancado(&lote[nl])) ocultos++; else nl++;
+            if (descOcultaNaoLancadoEm(&lote[nl],p,f)) ocultos++; else nl++;
           }
         }
         if (!strcasecmp(fonte.tmdbTipo,"COLLECTION")||
@@ -9825,7 +9837,7 @@ static void *fioVerTudo(void *u) {
           for(;p&&nl<48;p=js_prox(js_fim(p))) {
             const char *f=js_fim(p);raw++;
             if (deMetaTrakt(p,f,fonte.midia,&lote[nl]) && colecaoTipo(&fonte, &lote[nl])) {
-              if (descOcultaNaoLancado(&lote[nl])) ocultos++; else nl++;
+              if (descOcultaNaoLancadoEm(&lote[nl],p,f)) ocultos++; else nl++;
             }
           }
           // rede_baixar nao devolve cabecalhos; menos que a pagina cheia e o
@@ -9885,7 +9897,7 @@ static void *fioVerTudo(void *u) {
     if (deMeta(p, f, type, &it) && colecaoTipo(&fonte, &it)) {
       // Escondido ainda conta como "pagina com novidade": senao uma pagina so de
       // futuros encerraria a paginacao do catalogo.
-      if (descOcultaNaoLancado(&it)) { added++; continue; }
+      if (descOcultaNaoLancadoEm(&it, p, f)) { added++; continue; }
       origemDaBase(base, it.origem, sizeof it.origem);
       it.ranking = skip + raw;
       pthread_mutex_lock(&vtTrava);

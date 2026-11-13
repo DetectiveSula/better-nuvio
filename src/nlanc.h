@@ -24,4 +24,26 @@ static inline int nlanc_meta_futuro(const char *meta, int anoAtual) {
   if (meta[4] >= '0' && meta[4] <= '9') return 0;
   return ano > anoAtual;
 }
+
+// THE FULL DATE FIRST (owner, 13 Nov 2026: "hide unreleased on but still
+// showing some unreleased titles"). The year rule above let through anything
+// due later THIS year. Regular Nuvio (ReleaseInfoUtils.isUnreleased) reads the
+// meta's `released` date first and only then the year. `valor` starts with
+// YYYY-MM-DD (a plain date or an ISO instant; the calendar day is compared).
+// 1 = after today, 0 = today or earlier, -1 = no readable date.
+static inline int nlanc_data_futura(const char *valor, int ano, int mes, int dia) {
+  int v[3] = { 0, 0, 0 }, pos[3] = { 0, 5, 8 }, tam[3] = { 4, 2, 2 };
+  if (!valor) return -1;
+  for (int k = 0; k < 3; k++)
+    for (int i = 0; i < tam[k]; i++) {
+      char c = valor[pos[k] + i];
+      if (c < '0' || c > '9') return -1;
+      v[k] = v[k] * 10 + (c - '0');
+    }
+  if (valor[4] != '-' || valor[7] != '-' || (valor[10] >= '0' && valor[10] <= '9')) return -1;
+  if (v[1] < 1 || v[1] > 12 || v[2] < 1 || v[2] > 31) return -1;
+  if (v[0] != ano) return v[0] > ano;
+  if (v[1] != mes) return v[1] > mes;
+  return v[2] > dia;
+}
 #endif

@@ -55,6 +55,7 @@ const char *addons_base_por_id(const char *id) { (void)id; return ""; }
 #define LST_SO_ITENS
 #include "../src/listas.c"
 
+int mus_listar(MusSalva *out, int max) { (void)out; (void)max; return 0; }   /* listas.c: saved music, unused here */
 char *rede_baixar_st(const char *url, int timeout, const char *const *headers, int *status) {
   (void)headers;
   char *body = rede_baixar(url, timeout);
@@ -63,6 +64,10 @@ char *rede_baixar_st(const char *url, int timeout, const char *const *headers, i
 }
 char *rede_baixar(const char *url,int timeout) {
   (void)timeout;
+  if(strstr(url,"datas.invalid"))return strdup("{\"metas\":["
+    "{\"id\":\"tt7\",\"name\":\"Later this year\",\"poster\":\"p.jpg\",\"releaseInfo\":\"2020\",\"released\":\"2099-12-31T00:00:00.000Z\"},"
+    "{\"id\":\"tt8\",\"name\":\"Out already\",\"poster\":\"p.jpg\",\"releaseInfo\":\"2099\",\"released\":\"2001-05-05\"},"
+    "{\"id\":\"tt9\",\"name\":\"Year only\",\"poster\":\"p.jpg\",\"releaseInfo\":\"2020\",\"released\":\"\"}]}");
   if(strstr(url,"skip=3"))return strdup("{\"metas\":[{\"id\":\"tt4\",\"name\":\"Quarto\",\"poster\":\"p.jpg\",\"releaseInfo\":\"2019\"}]}");
   if(strstr(url,"skip=2"))return strdup("{\"metas\":[{\"id\":\"tt3\",\"name\":\"Terceiro\",\"poster\":\"p.jpg\",\"releaseInfo\":\"2098\"}]}");
   return strdup("{\"metas\":[{\"id\":\"tt1\",\"name\":\"Futuro\",\"poster\":\"p.jpg\",\"releaseInfo\":\"2099\"},{\"id\":\"tt2\",\"name\":\"Lancado\",\"poster\":\"p.jpg\",\"releaseInfo\":\"2020\"}]}");
@@ -74,6 +79,18 @@ int main(void) {
   /* Home: lerCatalogo */
   ocultar=0;{int r=lerCatalogo("https://a.invalid","movie","rank",lin,8,8,&resp);assert(r==2);}
   ocultar=1;assert(lerCatalogo("https://a.invalid","movie","rank",lin,8,8,&resp)==1&&!strcmp(lin[0].imdb,"tt2"));
+  /* 13 Nov 2026: the full release date decides before the year (regular
+     Nuvio's isUnreleased). tt7 has an old year but a future date: hidden.
+     tt8 has a future year but a past date: shown. tt9 has no date: year rule. */
+  assert(nlanc_data_futura("2026-12-18", 2026, 11, 13) == 1);
+  assert(nlanc_data_futura("2026-11-13T23:00:00Z", 2026, 11, 13) == 0);
+  assert(nlanc_data_futura("2026-11-12", 2026, 11, 13) == 0);
+  assert(nlanc_data_futura("2027-01-01", 2026, 12, 31) == 1);
+  assert(nlanc_data_futura("2026", 2026, 11, 13) == -1 && nlanc_data_futura("", 2026, 1, 1) == -1);
+  assert(nlanc_data_futura("2026-13-01", 2026, 1, 1) == -1 && nlanc_data_futura("20261-01-01", 2026, 1, 1) == -1);
+  ocultar=1;assert(lerCatalogo("https://datas.invalid","movie","rank",lin,8,8,&resp)==2&&
+                   !strcmp(lin[0].imdb,"tt8")&&!strcmp(lin[1].imdb,"tt9"));
+  ocultar=0;assert(lerCatalogo("https://datas.invalid","movie","rank",lin,8,8,&resp)==3);
   /* Colecao / Ver tudo: desligado mostra tudo (3 paginas) */
   ocultar=0;
   desc_vertudo_abrir("https://off.invalid","movie","rank");waitDone();
