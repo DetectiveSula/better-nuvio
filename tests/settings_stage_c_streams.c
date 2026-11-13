@@ -46,6 +46,16 @@ int main(void){
  stream_resolver_escolhida(0,listaGeracao,url,sizeof url,provider,sizeof provider,&pct);assert(manualCalls==1);
  aberta=1;manualConfirm=0;manualConfirmGen=listaGeracao;manualConfirmSession=nv_perfil_sessao_ler();manualDecidir(1,0);stream_definir_lista(sources,1);
  stream_resolver_escolhida(0,listaGeracao,url,sizeof url,provider,sizeof provider,&pct);assert(manualCalls==1);
+ // Owner 13/11: OK on a Cached torrent plays without the prompt; anything not
+ // known to be cached still asks first.
+ { Stream cached=sources[0];cached.emCache=1;stream_definir_lista(&cached,1);assert(stream_cache_estado(&lista[0])==1);
+   static int one[1]={0};int *keep=ordem,keepN=nOrdem;ordem=one;nOrdem=1;
+   aberta=1;foco=0;assert(filtrado(foco)==0);okNaLinha();assert(manualConfirm==-1&&escolha==0&&!aberta);
+   stream_resolver_escolhida(0,listaGeracao,url,sizeof url,provider,sizeof provider,&pct);assert(manualCalls==2);
+   Stream unknown=sources[0];stream_definir_lista(&unknown,1);assert(stream_cache_estado(&lista[0])!=1);
+   aberta=1;foco=0;escolha=-1;okNaLinha();assert(manualConfirm==0&&escolha==-1&&aberta);
+   assert(!stream_resolver_escolhida(0,listaGeracao,url,sizeof url,provider,sizeof provider,&pct)&&manualCalls==2);
+   manualDecidir(0,0);ordem=keep;nOrdem=keepN; }
  config(0,0);Stream direct=sources[0];snprintf(direct.url,sizeof direct.url,"https://fixture.invalid/cached-addon.mkv");direct.emCache=1;
  assert(!streamUrlPronta(&direct));direct.debridServico=DEBRID_TB+1;assert(streamUrlPronta(&direct));stream_definir_lista(&direct,1);
  FonteFalhaCandidata *candidates=NULL;Stream *snapshot=NULL;int count=0;

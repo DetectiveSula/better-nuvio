@@ -5089,8 +5089,17 @@ static void okNaLinha(void) {
   if (i >= 0) {
     pthread_mutex_lock(&verTrava);manualPermit=-1;pthread_mutex_unlock(&verTrava);
     if(cacheHashDa(&lista[i])[0]||streamForaCache(&lista[i])) {
-      manualConfirm=i;manualConfirmGen=listaGeracao;manualConfirmSession=nv_perfil_sessao_ler();manualChoice=0;
-      return;
+      // Dono 13/11: so pergunta quando a fonte NAO esta em cache (ou ainda nao
+      // se sabe). "Em cache" toca direto: debrid_resolver_escolhido procura em
+      // cache em todos os servicos antes de baixar, entao nao gasta cota.
+      if(stream_cache_estado(&lista[i])!=1) {
+        manualConfirm=i;manualConfirmGen=listaGeracao;manualConfirmSession=nv_perfil_sessao_ler();manualChoice=0;
+        return;
+      }
+      pthread_mutex_lock(&verTrava);
+      manualPermit=i;manualPermitGen=listaGeracao;manualPermitSession=nv_perfil_sessao_ler();
+      manualPermitUntil=SDL_GetTicks()+15000;
+      pthread_mutex_unlock(&verTrava);
     }
     escolha=i; escolhaGeracao=listaGeracao; aberta=0;
   }
@@ -5897,12 +5906,12 @@ void stream_resolver_confirmacao_desenhar(void) {
       gfx_cor((GfxRect){0,0,NV_TELA_W,NV_TELA_H},0,0,0,0,.65f);
       GfxRect box={NV_TELA_W/2-520,NV_TELA_H/2-210,1040,420};
       gfx_cor(box,24.0f/box.h,.08f,.09f,.11f,1);
-      txt_bloco(TXT_AJ_INSP,"Manual resolver override",238,238,238,box.x+40,box.y+36,960,44,1,1);
-      txt_bloco(TXT_ILHA_ITEM,"This action can use configured services in Legacy order, add provider items or start downloads and consume quota, even when automatic resolution is Off. Choose Allow only if you want this manual exception. Back cancels.",220,220,220,box.x+40,box.y+100,960,36,1,5);
+      txt_bloco(TXT_AJ_INSP,"Esta fonte pode não estar em cache",238,238,238,box.x+40,box.y+36,960,44,1,1);
+      txt_bloco(TXT_ILHA_ITEM,"Se não estiver em cache, o arquivo será adicionado à sua conta de debrid e baixado primeiro. Isso pode levar alguns minutos e conta no seu limite de downloads.",220,220,220,box.x+40,box.y+100,960,36,1,5);
       for(int b=0;b<2;b++) {
         GfxRect r={box.x+40+b*470,box.y+320,430,64};
         gfx_cor(r,.22f,.22f,.25f,.30f,manualChoice==b?1:.45f);
-        TxtLinha t=txt_linha(TXT_ILHA_ITEM,b?"Allow manual operation":"Cancel",238,238,238,255);
+        TxtLinha t=txt_linha(TXT_ILHA_ITEM,b?"Tocar mesmo assim":"Cancelar",238,238,238,255);
         txt_desenhar_alpha(t,r.x+20,r.y+(64-t.h)*.5f,1);
         ponteiro_alvo(r.x,r.y,r.w,r.h,NULL,manualDecidir,b,0);
       }
