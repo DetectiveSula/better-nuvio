@@ -568,6 +568,12 @@ static float vaoDe(int m, float d) {
 static int modoFundo(void) {
   return ajustes_ps_fundo();
 }
+// O mural antigo (muralDesenhar) so aparece num fundo que nenhum dos estilos
+// abaixo cobre. E a MESMA condicao do desenho: quem nao desenha nao pede.
+static int muralVisivel(int modo) {
+  return modo != PS_FUNDO_FILMES && modo != PS_FUNDO_LUZ && modo != PS_FUNDO_PROJETOR &&
+         modo != PS_FUNDO_LISTRAS && modo != PS_FUNDO_ARTE;
+}
 
 static const char *muralUrls[PS_MURAL_MAX];
 static void montarCena(PSCena *c, int reduzida) {
@@ -1057,7 +1063,15 @@ void perfilsel_atualizar(float dt, Uint32 agora) {
   contAtualizar();
   // O pedido acontece no ciclo de atualização, nunca no draw. Assim a capa
   // compartilha o tex_cache da Home e o quadro só consulta GLuint pronto.
+  // SO QUANDO O MURAL E DESENHADO (muralVisivel). Os cinco fundos de hoje nao
+  // o desenham: a parede "Filmes" pede os proprios cartazes (psestilos.c) e so
+  // usa daqui a LISTA de URLs. Pedir os 36 do mural assim mesmo os mantinha
+  // quentes sem irem a tela, e quente nao sai do cache. MEDIDO na S90C do dono
+  // (14/11/2026, teto de textura a 50% = 48 MB): "tela=58/47.9MB fila-tex=20"
+  // por minutos — o teto cheio de cartaz invisivel e 20 cartazes da parede
+  // esperando vaga, os "posters em branco" que ele relatou.
   for (i = 0; i < muralN; i++) {
+    if (!muralVisivel(modoFundo())) { muralTexturas[i] = 0; continue; }
     // Revalidar em todo update marca o item como quente no LRU e substitui o
     // GLuint se o cache o despejou. `qualquer` mantém uma versão menor durante
     // a promoção; o hit não aloca nem baixa e a promoção ocorre uma vez.
@@ -1443,7 +1457,7 @@ void perfilsel_desenhar(Uint32 agora) {
         montarCena(&cena, reduzida);
         psestilos_desenhar(&cena, PS_FUNDO_LUZ,
                            a * (1.0f - cob) * (pinDe >= 0 ? 0.30f : 1.0f));
-      } else if (modo != PS_FUNDO_LISTRAS && modo != PS_FUNDO_ARTE && cob < 0.999f)
+      } else if (muralVisivel(modo) && cob < 0.999f)
         muralDesenhar(a * (1.0f - cob) * (pinDe >= 0 ? 0.30f : 1.0f), reduzida);
     } }
 

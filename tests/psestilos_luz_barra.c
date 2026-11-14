@@ -46,6 +46,9 @@ void tex_cache_marcar_larg(int grupo, const char *u, float l, int e, int u2) {
 }
 GLuint tex_obter_larg_qualquer(const char *c, float l) { (void)c; (void)l; return 0; }
 float tex_aspecto(const char *c) { (void)c; return 1.0f; }
+// A URL the cache gave up on (psestilos_loop.c sets it); NULL = none failed.
+static const char *failedUrl;
+int tex_falhou(const char *c) { return failedUrl && c && !strcmp(c, failedUrl); }
 
 // O grao de filme nasce de uma textura GL: aqui os nomes so precisam existir.
 #undef glTexImage2D

@@ -24,6 +24,26 @@ int main(void) {
   late.semParede=1;int reads=savedWallReads;
   psestilos_atualizar(.016f,&late,PS_FUNDO_FILMES);assert(savedWallReads==reads);
   savedWallCount=0;
+  { // A poster that fails to load leaves the wall instead of staying a blank
+    // card (owner's S90C, 14 Nov 2026): the wall is reassembled without it,
+    // cross-fades, and never asks for it again.
+    char more[PSEST_PAREDE_MAX+4][32];const char *big[PSEST_PAREDE_MAX+4];
+    for(int i=0;i<PSEST_PAREDE_MAX+4;i++){snprintf(more[i],sizeof more[i],"title-%02d",i);big[i]=more[i];}
+    PSCena f={0};f.perfil=5;f.mural=big;f.muralN=PSEST_PAREDE_MAX+4;
+    failedUrl=NULL;psestilos_iniciar();psestilos_atualizar(.016f,&f,PS_FUNDO_FILMES);
+    assert(parAtual.n==PSEST_PAREDE_MAX && !strcmp(parAtual.url[7],"title-07"));
+    psestilos_atualizar(2.0f,&f,PS_FUNDO_FILMES);assert(!parTemAnt);
+    failedUrl="title-07";psestilos_atualizar(.016f,&f,PS_FUNDO_FILMES);
+    assert(parAtual.n==PSEST_PAREDE_MAX && parTemAnt);   // refilled from the spare titles
+    for(int i=0;i<parAtual.n;i++)assert(strcmp(parAtual.url[i],"title-07"));
+    for(int i=0;i<parAtual.n;i++)for(int j=0;j<i;j++)assert(strcmp(parAtual.url[i],parAtual.url[j]));
+    psestilos_atualizar(2.0f,&f,PS_FUNDO_FILMES);assert(!parTemAnt);
+    psestilos_atualizar(.016f,&f,PS_FUNDO_FILMES);assert(!parTemAnt);   // settled: no churn
+    f.muralN=PSEST_PAREDE_MAX;f.perfil=6;   // no spare title: the wall is one short, never blank
+    psestilos_atualizar(.016f,&f,PS_FUNDO_FILMES);assert(parAtual.n==PSEST_PAREDE_MAX-1);
+    failedUrl=NULL;
+    puts("PASS: a poster that failed to load leaves the wall and a spare title takes its place");
+  }
   puts("PASS: profile 2 legacy cache, future profiles, late catalog and PIN fallback fill unique 36-title walls");
   for(int count=1;count<=PSEST_PAREDE_MAX;count++) {
     ParSet set={0};set.n=count;

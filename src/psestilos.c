@@ -96,8 +96,12 @@ static void graoDesenhar(float alfa) {
 }
 
 // A lista de URLs que a parede do perfil em foco deve mostrar.
+// A poster the cache already gave up on (dead URL, body that is not an image)
+// stays out: on the wall it was a permanent blank card. The next title in the
+// list takes the place.
 static void parAdicionar(ParSet *s,const char *url) {
   if(!url || !url[0] || strlen(url)>=PSPAREDE_URL || s->n>=PSEST_PAREDE_MAX)return;
+  if(tex_falhou(url))return;
   for(int i=0;i<s->n;i++)if(!strcmp(s->url[i],url))return;
   snprintf(s->url[s->n++],PSPAREDE_URL,"%s",url);
 }
@@ -129,6 +133,14 @@ static void parPedir(ParSet *s) {
   for (i = 0; i < s->n; i++) s->tex[i] = tex_obter_larg_qualquer(s->url[i], PAR_LARG_TEX);
 }
 
+// 1 when a poster of the wall has failed since it was assembled. Only slots
+// still without a texture are asked, so a loaded wall costs nothing here.
+static int parTemFalha(const ParSet *s) {
+  int i;
+  for (i = 0; i < s->n; i++) if (!s->tex[i] && tex_falhou(s->url[i])) return 1;
+  return 0;
+}
+
 void psestilos_atualizar(float dt, const PSCena *c, int modo) {
   int anda = !c->reduzida && !c->parado;
   if (anda) tempo += dt;
@@ -139,9 +151,11 @@ void psestilos_atualizar(float dt, const PSCena *c, int modo) {
     int stored = c->semParede ? 0 : psparede_n(c->perfil);
     // Foco mudou de pessoa (ou o mural chegou e a parede estava vazia): a
     // parede atual vira a anterior e sai num cross-fade.
+    // ...or a poster of the current wall failed to load: reassemble without
+    // it (parAdicionar skips it) and cross-fade, as for any other change.
     if (c->perfil != parAtual.perfil || parAtual.n == 0 ||
         parFonteMuralN != c->muralN || parFonteParedeN != stored ||
-        parFonteSemParede != c->semParede) {
+        parFonteSemParede != c->semParede || parTemFalha(&parAtual)) {
       ParSet novo;
       parMontar(&novo, c);
       parFonteMuralN=c->muralN;parFonteParedeN=stored;parFonteSemParede=c->semParede;
