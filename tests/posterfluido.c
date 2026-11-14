@@ -123,6 +123,28 @@ int main(void) {
   assert(pedir("https://x/fora-parado.jpg") == 1);
   tex_pedido_fora(0);
 
+  // A populated cache must keep preloading while scrolling, but only by
+  // recycling cold entries. Visible entries and memory pressure still win.
+  memset(itens,0,sizeof itens);nMax=40;filaIni=filaFim=decIni=decFim=0;
+  quadroAtual+=10;tex_grade_movendo(1);
+  for(int k=0;k<nMax;k++){
+    snprintf(itens[k].caminho,sizeof itens[k].caminho,"https://x/cached-%d.jpg",k);
+    itens[k].hash=hashCaminho(itens[k].caminho);itens[k].estado=PRONTO;
+    itens[k].ultimoQuadro=quadroAtual;itens[k].uso=(unsigned long)k+1;
+    itens[k].lookahead=1; // >30 completed speculative entries cannot disable lookahead.
+  }
+  assert(!tex_lookahead_pedir("https://x/protected.jpg",300));
+  itens[nMax-1].ultimoQuadro=0;itens[nMax-1].lookahead=1;
+  itens[nMax-1].w=itens[nMax-1].h=1024;
+  orcamento=16L*1024*1024;bytesUsados=14L*1024*1024;
+  assert(tex_lookahead_pedir("https://x/recycled.jpg",300));
+  assert(indice("https://x/recycled.jpg")==nMax-1);
+  assert(bytesUsados==10L*1024*1024);
+  for(int k=0;k<nMax-1;k++)assert(itens[k].estado==PRONTO);
+  quadroAtual+=2;pressaoLivrePct=75;
+  assert(!tex_lookahead_pedir("https://x/pressure.jpg",300));
+  pressaoLivrePct=100;
+
   puts("posterfluido: lado que entra nunca recusa; lookahead rola junto");
   puts("posterfluido: PASS");
   return 0;

@@ -2500,12 +2500,45 @@ static SDL_Surface *reduzirBilinear(SDL_Surface *src, int lw, int lh) {
   return dst;
 }
 
+/* Exact whole-pixel area reduction (e.g. 3840x2160 -> 1280x720).
+ * The fractional path below builds weighted row buffers and divides 64-bit
+ * accumulators per output channel. Those weights cancel for integer ratios.
+ * At most 16x16 source pixels fit comfortably in 32-bit premultiplied sums;
+ * this keeps identical alpha-aware results without the ARM32 division cost. */
+static SDL_Surface *reduzirInteiro(SDL_Surface *src, int lw, int lh) {
+  if (src->format->format != SDL_PIXELFORMAT_ABGR8888 || src->w % lw || src->h % lh) return NULL;
+  int sx=src->w/lw, sy=src->h/lh;
+  if(sx<1||sy<1||sx>16||sy>16)return NULL;
+  SDL_Surface *dst=nv_superficie(0,lw,lh,32,SDL_PIXELFORMAT_ABGR8888);
+  if(!dst)return NULL;
+  int locked=SDL_MUSTLOCK(src);
+  if(locked&&SDL_LockSurface(src)!=0){SDL_FreeSurface(dst);return NULL;}
+  unsigned area=(unsigned)(sx*sy);
+  for(int y=0;y<lh;y++){
+    unsigned char *out=(unsigned char *)dst->pixels+(size_t)y*dst->pitch;
+    for(int x=0;x<lw;x++){
+      unsigned r=0,g=0,b=0,a=0;
+      for(int yy=0;yy<sy;yy++){
+        const unsigned char *p=(const unsigned char *)src->pixels+(size_t)(y*sy+yy)*src->pitch+(size_t)(x*sx)*4;
+        for(int xx=0;xx<sx;xx++,p+=4){unsigned alpha=p[3];r+=p[0]*alpha;g+=p[1]*alpha;b+=p[2]*alpha;a+=alpha;}
+      }
+      unsigned char *q=out+(size_t)x*4;
+      if(a){q[0]=(unsigned char)((r+a/2)/a);q[1]=(unsigned char)((g+a/2)/a);q[2]=(unsigned char)((b+a/2)/a);q[3]=(unsigned char)((a+area/2)/area);}
+      else q[0]=q[1]=q[2]=q[3]=0;
+    }
+  }
+  if(locked)SDL_UnlockSurface(src);
+  return dst;
+}
+
 SDL_Surface *tex_reduzir(SDL_Surface *src, int lw, int lh) {
   SDL_Surface *dst;
   int sw = src->w, sh = src->h;
   if (lw <= 0 || lh <= 0 || sw <= 0 || sh <= 0) return NULL;
   if (sw <= 2 * lw && sh <= 2 * lh && !SDL_ISPIXELFORMAT_INDEXED(src->format->format))
     return reduzirBilinear(src, lw, lh);
+  dst=reduzirInteiro(src,lw,lh);
+  if(dst)return dst;
   if (SDL_ISPIXELFORMAT_INDEXED(src->format->format)) {
     // SDL_ConvertPixels nao carrega a paleta. Imagem indexada e PNG pequeno
     // (logo); converter inteira aqui nao custa.
@@ -4142,24 +4175,31 @@ int tex_lookahead_pedir(const char *caminho, float largura) {
        quadroAtual - pedidoQuadro < (gradeMovendo ? 2u : 1u))) return 0;
   SDL_LockMutex(mtx);
   int i = acharIndice(caminho, hashCaminho(caminho));
-  // Nao promove nem despeja arte para especular. Em voo inclui trabalho que
-  // os consumidores ja retiraram das filas, mas ainda nao publicaram.
-  int livre = 0, adiante = 0;
+  // A full slot table is not the same as memory pressure: completed artwork
+  // outside the visible/resident rows can be recycled by the normal cold LRU.
+  // Never reclaim hot/resident artwork merely to speculate.
+  int livre = 0, adiante = 0;long coldBytes=0;
   for (int j = 0; j < nMax; j++) {
     if (itens[j].estado == VAZIO) livre++;
-    if (itens[j].lookahead) adiante++;
+    if (itens[j].estado==FALHOU&&itens[j].falhas>=3)livre++;
+    if(itens[j].estado==PRONTO&&!quente(&itens[j])&&!residente(&itens[j])){
+      livre++;coldBytes+=bytesTextura(&itens[j]);
+    }
+    // Ready lookahead textures already belong to the bounded LRU cache.
+    // Counting them forever stopped preloading after 30 unseen neighbours.
+    if (itens[j].lookahead && (itens[j].estado==PENDENTE||itens[j].estado==DECODIFICADO)) adiante++;
   }
   // Parado: so especula com o cache ocioso (nunca atrasa demanda). ROLANDO:
   // a demanda existe sempre — as filas nunca esvaziam — entao o criterio e
   // so nao saturar os slots nem a memoria; a arte pedida sera demanda a
   // seguir, e ja entra com a largura certa.
-  int pode = i < 0 && livre > 0 && adiante < 30 &&
-             !pressaoAtiva() && bytesUsados < orcamento * 3 / 4 &&
-             (gradeMovendo ? emVoo() < nMax / 3 - 2
+  int limite=nMax/3-2;if(limite>8)limite=8;
+  int pode = i < 0 && livre > 0 && adiante < 12 &&
+             !pressaoAtiva() && bytesUsados-coldBytes < orcamento * 3 / 4 &&
+             (gradeMovendo ? emVoo() < limite
                            : (!emVoo() && filaIni == filaFim && decIni == decFim));
   SDL_UnlockMutex(mtx);
   if (!pode) return 0;
-  pedidoQuadro = quadroAtual;
   // O pedido e ESPECULATIVO por definicao: nao vale a marca `pedidoFora` que o
   // desenho deixou no ultimo cartao — senao a propria pre-busca seria recusada.
   int foraAntes = pedidoFora; pedidoFora = 0;
@@ -4168,11 +4208,12 @@ int tex_lookahead_pedir(const char *caminho, float largura) {
   SDL_LockMutex(mtx);
   i = acharIndice(caminho, hashCaminho(caminho));
   if (i >= 0) {
+    pedidoQuadro = quadroAtual;
     itens[i].lookahead = 1;
     itens[i].ultimoQuadro = 0; // nao conta como card visivel/quente
   }
   SDL_UnlockMutex(mtx);
-  return 1;
+  return i>=0;
 }
 
 // Como tex_obter_larg, mas ENTREGA O QUE JA EXISTE: se o arquivo foi

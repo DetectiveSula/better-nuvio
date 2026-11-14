@@ -7920,12 +7920,51 @@ static float desenhaTituloAddonFil(int r, float y, const char *rot,
   return end + 18.0f + source.w;
 }
 
+/* Collection rows carry folder IDs, not catalogue indices. Every preload
+ * path must resolve the same cover that desenhaAtalhos will draw. */
+static const char *homeArteFileira(int r, int c, int deitado) {
+  if(r<0||r>=nFileiras||c<0||c>=fileiras[r].n)return NULL;
+  if(fileiras[r].tipo==FILEIRA_CATALOGOS){
+    const ColFolder *folder=col_folder(fileiras[r].folders[c]);
+    return folder?col_capa(folder):NULL;
+  }
+  return arte_por_identidade(fileiraItemIndice(&fileiras[r],c),deitado);
+}
+
+/* Warm a bounded strip before horizontal navigation reaches it. Scan past
+ * cached/in-flight neighbours rather than repeatedly requesting one known
+ * item. When paused, prepare both directions; visible requests keep priority. */
+static void homePrecarregarHorizontal(int r,int deitado,float largura) {
+  static TexLookahead ahead[MAX_FIL];
+  if(r!=foco.fileira||fabsf(velY)>120.0f)return;
+  int settled=tex_lookahead_parado(&ahead[r],scrollX[r]);
+  int moving=fabsf(velX[r])>120.0f;
+  if(!moving&&!settled)return;
+  int first=-1,last=-1;
+  for(int c=0;c<fileiras[r].n;c++){
+    float x=homeFileiraX(r,c);
+    if(x+largura<0||x>NV_TELA_W)continue;
+    if(first<0)first=c;last=c;
+  }
+  if(first<0)return;
+  int direction=moving?(velX[r]>0?1:-1):(ahead[r].direcao<0?-1:1);
+  tex_grade_movendo(moving);tex_pedido_fora(0);
+  for(int side=0;side<(moving?1:2);side++){
+    int d=side?-direction:direction;
+    for(int step=1;step<=6;step++){
+      int c=(d>0?last:first)+step*d;
+      if(c<0||c>=fileiras[r].n)break;
+      if(tex_lookahead_pedir(homeArteFileira(r,c,deitado),largura))return;
+    }
+  }
+}
+
 // Register cached horizontal slices before draw can admit new requests.
 static void homeResidencia(void) {
   tex_residencia_inicio(foco.fileira);
   for (int r = 0; r < nFileiras; r++) {
     TipoFileira tipo = fileiras[r].tipo;
-    if (tipo == FILEIRA_SOCIAL || tipo == FILEIRA_CATALOGOS || fileiraEhCanal(&fileiras[r])) continue;
+    if (tipo == FILEIRA_SOCIAL || fileiraEhCanal(&fileiras[r])) continue;
     float lw = larguraFil(r);
     int deitado = editorial(tipo) || tipo == FILEIRA_LARGA || tipo == FILEIRA_HEROI ||
       (tipo != FILEIRA_TOP10_NUM && tipo != FILEIRA_TOP10 && tipo != FILEIRA_CONTINUE &&
@@ -7933,13 +7972,54 @@ static void homeResidencia(void) {
     for (int c = 0; c < fileiras[r].n; c++) {
       float x = homeFileiraX(r, c);
       if (x < -lw * 1.5f || x > NV_TELA_W + lw) continue;
-      int idx = fileiraItemIndice(&fileiras[r], c);
-      tex_residencia_marcar(arte_por_identidade(idx,
+      tex_residencia_marcar(homeArteFileira(r,c,
         (tipo == FILEIRA_CONTINUE || tipo == FILEIRA_RETORNO) ? 3 : deitado), r);
       // Expanded cards may have a second cached landscape variant.
-      if (!deitado) tex_residencia_marcar(arte_por_identidade(idx, 1), r);
+      if (!deitado && tipo!=FILEIRA_CATALOGOS) tex_residencia_marcar(homeArteFileira(r,c,1), r);
     }
   }
+}
+
+static void homePrecarregarVertical(float topoFil,float pd,float cinema) {
+  static TexLookahead adiante;
+  int parado = tex_lookahead_parado(&adiante, scrollY);
+  for (int r = 0; r < nFileiras; r++)
+    if (fabsf(velX[r]) > 0.25f) parado = 0;
+  int verticalMoving=fabsf(velY)>120.0f;
+  if ((parado||verticalMoving) && pd <= 0.001f && cinema <= 0.001f) {
+    tex_grade_movendo(verticalMoving);tex_pedido_fora(0);
+    int primeira = -1, ultima = -1;
+    float fy = topoFil - scrollY + bordaPag.x;
+    for (int r = 0; r < nFileiras; r++) {
+      if (fy < NV_TELA_H + 200 && fy + NV_LEGACY_ROW_HEAD_H + alturaFil(r) > -200) {
+        if (primeira < 0) primeira = r;
+        ultima = r;
+      }
+      fy += NV_LEGACY_ROW_HEAD_H + alturaTotalFil(r) + fileiraGap();
+    }
+    int dir = adiante.direcao < 0 ? -1 : 1, pediu = 0;
+    for (int passo = 1; primeira >= 0 &&
+         passo <= tex_residencia_fileiras() && !pediu; passo++) {
+      int r = (dir > 0 ? ultima : primeira) + passo * dir;
+      if (r < 0 || r >= nFileiras) break;
+      TipoFileira tipo = fileiras[r].tipo;
+      if (tipo == FILEIRA_SOCIAL ||
+          fileiraEhCanal(&fileiras[r])) continue;
+      float lw = larguraFil(r);
+      int deitado = editorial(tipo) || tipo == FILEIRA_LARGA || tipo == FILEIRA_HEROI ||
+                    (tipo != FILEIRA_TOP10_NUM && tipo != FILEIRA_TOP10 &&
+                     tipo != FILEIRA_CONTINUE && tipo != FILEIRA_POSTER_GRANDE && tipo != FILEIRA_HEROI_DIVIDIDO &&
+                     ajustes_posteres_deitados());
+      for (int c = 0; c < fileiras[r].n && !pediu; c++) {
+        float x = homeFileiraX(r, c);
+        if (x < -lw * 1.5f || x > NV_TELA_W + lw) continue;
+        const char *cam = homeArteFileira(r,c,
+          (tipo == FILEIRA_CONTINUE || tipo == FILEIRA_RETORNO) ? 3 : deitado);
+        pediu = tex_lookahead_pedir(cam, lw);
+      }
+    }
+  }
+  tex_grade_movendo(0);tex_grade_velocidade(0);tex_pedido_fora(0);
 }
 
 static void home_desenhar_(Uint32 agora) {
@@ -8163,7 +8243,11 @@ static void home_desenhar_(Uint32 agora) {
         continue;
       }
       if (tipo == FILEIRA_CATALOGOS) {
+        tex_grade_movendo(fabsf(velX[r])>120.0f);
+        tex_grade_velocidade(velX[r]/passo);
+        tex_pedido_fora(0);
         desenhaAtalhos(r, cardY);
+        if(pd<=0.001f&&cinema<=0.001f)homePrecarregarHorizontal(r,0,lw);
         y += NV_LEGACY_ROW_HEAD_H + alturaTotalFil(r) + fileiraGap();
         continue;
       }
@@ -8526,22 +8610,8 @@ static void home_desenhar_(Uint32 agora) {
       tex_pedido_fora(0);
       // EM MOVIMENTO: pede a arte do proximo card que vai entrar na borda,
       // antes de a rolagem chegar nele. Parado, o lookahead de repouso cobre.
-      { static TexLookahead lado[MAX_FIL];
-        int d = tex_lookahead_mover(&lado[r]);
-        if (d) {
-          // Um passo alem do card que JA entra na borda pela frente: esse ja
-          // foi pedido como nivel 3 (ou esta na tela); a pre-busca antecipa
-          // o seguinte.
-          int c2 = (int)(scrollX[r] / passo) +
-                   (d > 0 ? (int)(NV_TELA_W / passo) + 2 : -2);
-          if (c2 >= 0 && c2 < fileiras[r].n) {
-            int idx2 = fileiraItemIndice(&fileiras[r], c2);
-            tex_lookahead_pedir(arte_por_identidade(idx2,
-              (tipo == FILEIRA_CONTINUE || tipo == FILEIRA_RETORNO) ? 3 : deitado),
-              lw);
-          }
-        }
-      }
+      if(pd<=0.001f&&cinema<=0.001f)homePrecarregarHorizontal(r,
+        (tipo == FILEIRA_CONTINUE || tipo == FILEIRA_RETORNO)?3:deitado,lw);
       gfx_opacidade_grupo = grupoFil;
       if (tipo == FILEIRA_LINHA_TEMPO) desenhaLinhaTempo(r, y, cardY + artH, passo, lw, agora);
       // The single neighbour gradient is fused into the spotlight quad.
@@ -8627,43 +8697,7 @@ static void home_desenhar_(Uint32 agora) {
   gfx_borda_foco_atual = 1.0f;
   gfx_sem_recorte();
 
-  static TexLookahead adiante;
-  int parado = tex_lookahead_parado(&adiante, scrollY);
-  for (int r = 0; r < nFileiras; r++)
-    if (fabsf(velX[r]) > 0.25f) parado = 0;
-  if (parado && pd <= 0.001f && cinema <= 0.001f) {
-    int primeira = -1, ultima = -1;
-    float fy = topoFil - scrollY + bordaPag.x;
-    for (int r = 0; r < nFileiras; r++) {
-      if (fy < NV_TELA_H + 200 && fy + NV_LEGACY_ROW_HEAD_H + alturaFil(r) > -200) {
-        if (primeira < 0) primeira = r;
-        ultima = r;
-      }
-      fy += NV_LEGACY_ROW_HEAD_H + alturaTotalFil(r) + fileiraGap();
-    }
-    int dir = adiante.direcao < 0 ? -1 : 1, pediu = 0;
-    for (int passo = 1; primeira >= 0 &&
-         passo <= tex_residencia_fileiras() && !pediu; passo++) {
-      int r = (dir > 0 ? ultima : primeira) + passo * dir;
-      if (r < 0 || r >= nFileiras) break;
-      TipoFileira tipo = fileiras[r].tipo;
-      if (tipo == FILEIRA_SOCIAL || tipo == FILEIRA_CATALOGOS ||
-          fileiraEhCanal(&fileiras[r])) continue;
-      float lw = larguraFil(r);
-      int deitado = editorial(tipo) || tipo == FILEIRA_LARGA || tipo == FILEIRA_HEROI ||
-                    (tipo != FILEIRA_TOP10_NUM && tipo != FILEIRA_TOP10 &&
-                     tipo != FILEIRA_CONTINUE && tipo != FILEIRA_POSTER_GRANDE && tipo != FILEIRA_HEROI_DIVIDIDO &&
-                     ajustes_posteres_deitados());
-      for (int c = 0; c < fileiras[r].n && !pediu; c++) {
-        float x = homeFileiraX(r, c);
-        if (x < -lw * 1.5f || x > NV_TELA_W + lw) continue;
-        int idx = fileiraItemIndice(&fileiras[r], c);
-        const char *cam = arte_por_identidade(idx,
-          (tipo == FILEIRA_CONTINUE || tipo == FILEIRA_RETORNO) ? 3 : deitado);
-        pediu = tex_lookahead_pedir(cam, lw);
-      }
-    }
-  }
+  homePrecarregarVertical(topoFil,pd,cinema);
 }
 
 // Rede de seguranca, nao o gatilho principal. Numa TV o app raramente sai por
