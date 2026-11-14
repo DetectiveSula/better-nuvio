@@ -81,37 +81,47 @@ static const char *ajSharedJson(const char *p, const char *end, int depth) {
   if (*p == '"') return ajSharedString(p, end);
   if (*p == '{' || *p == '[') {
     int object = *p == '{'; char close = object ? '}' : ']';
-    const char *start = ++p;
+    // KEYS SEEN SO FAR in this object, by position (14 Nov 2026, Samsung S90C:
+    // 5.3 s frozen on every account sync). The duplicate check used to re-read
+    // AND re-validate every earlier sibling for each new key, recursively, so
+    // the cost snowballed with the document: 41 ms on BlueStacks, 5.3 s on the
+    // S90C. Values are validated once; only keys are compared.
+    const char **seen = NULL;
+    int nSeen = 0, capSeen = 0;
+    const char *res = NULL;
+    ++p;
     p = ajJsonSpace(p, end);
     if (p < end && *p == close) return p+1;
     while (p < end) {
       if (object) {
         char key[512], prior[512];
         const char *k = p, *ke = ajSharedString(p, end);
-        if (!ke || !js_cadeia(k, key, sizeof key)) return NULL;
+        if (!ke || !js_cadeia(k, key, sizeof key)) goto fim;
         // Reject duplicate keys, including equivalent escaped spellings.
-        const char *q = ajJsonSpace(start, k);
-        while (q < k) {
-          const char *qe = ajSharedString(q, k);
-          if (!qe || !js_cadeia(q, prior, sizeof prior)) return NULL;
-          if (!strcmp(key,prior)) { ajSharedDuplicada = 1; return NULL; }
-          q = ajJsonSpace(qe, k);
-          if (q == k || *q++ != ':') return NULL;
-          q = ajSharedJson(q, k, depth+1); if (!q) return NULL;
-          q = ajJsonSpace(q,k);
-          if (q < k && *q == ',') q = ajJsonSpace(q+1,k);
+        for (int i = 0; i < nSeen; i++) {
+          if (!js_cadeia(seen[i], prior, sizeof prior)) goto fim;
+          if (!strcmp(key, prior)) { ajSharedDuplicada = 1; goto fim; }
         }
+        if (nSeen == capSeen) {
+          int nc = capSeen ? capSeen * 2 : 16;
+          const char **t = realloc(seen, sizeof *seen * (size_t)nc);
+          if (!t) goto fim;
+          seen = t; capSeen = nc;
+        }
+        seen[nSeen++] = k;
         p = ajJsonSpace(ke, end);
-        if (p == end || *p++ != ':') return NULL;
+        if (p == end || *p++ != ':') goto fim;
       }
-      p = ajSharedJson(p,end,depth+1); if (!p) return NULL;
+      p = ajSharedJson(p,end,depth+1); if (!p) goto fim;
       p = ajJsonSpace(p,end);
-      if (p == end) return NULL;
-      if (*p == close) return p+1;
-      if (*p++ != ',') return NULL;
+      if (p == end) goto fim;
+      if (*p == close) { res = p+1; goto fim; }
+      if (*p++ != ',') goto fim;
       p = ajJsonSpace(p,end);
     }
-    return NULL;
+fim:
+    free(seen);
+    return res;
   }
   const char *literals[] = {"true","false","null"};
   for (int i=0;i<3;i++) {
