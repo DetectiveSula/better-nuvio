@@ -1087,7 +1087,10 @@ static const char *V_CW_FONTE[]  = { "Automático", "Conta Nuvio", "Trakt", "Sim
 static const char *V_CW_ORDEM[]  = { "Padrão", "Estilo streaming", "Separar futuros" };
 // Itens por fileira da Home (#163). O INDICE e o que fica gravado; o numero de
 // cada um esta em ajustes_itens_fileira. 24 e o teto de DESC_ITENS_POR_FILEIRA.
-static const char *V_ITENS_FIL[] = { "12", "18", "24" };
+// "Sem limite" (owner, 14 Nov 2026, as regular Nuvio): the row starts like
+// 24 and the next catalog page is appended as focus nears its end, up to
+// DESC_ITENS_SEM_LIMITE (descoberta.c, desc_fileira_mais).
+static const char *V_ITENS_FIL[] = { "12", "18", "24", "Sem limite" };
 static const char *V_GPU_EF[]    = { "Automático", "Completos", "Leves", "Mínimos" };
 static const char *V_MIC_BUSCA[] = { "Automático", "Ligado", "Desligado" };
 #ifdef NV_ANDROID
@@ -1591,7 +1594,7 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Agenda na barra lateral",         V_LIGA, 2),   // local: menuAgendaLocal
   ESC("Perfil e Stats na barra lateral", V_LIGA, 2),   // local: menuPerfilLocal
   ESC("Trailer do cartaz em foco",       V_FOCO_TRAILER, 3),   // trailerCartazModo (conta: focusedPosterBackdropTrailerEnabled)
-  ESC("Itens por fileira",               V_ITENS_FIL, 3), // local: itensFileiraLocal
+  ESC("Itens por fileira",               V_ITENS_FIL, 4), // local: itensFileiraLocal
   ESC("Fonte da interface", V_FONTE_UI, 7),
   ESC("Efeitos visuais", V_GPU_EF, 4),   // local: gpuEfeitosLocal; append values for compatibility
   ESC("Interface de vidro",              V_LIGA_AUTO, 3),   // local: vidroLocal
@@ -3852,10 +3855,13 @@ int  ajustes_menu_agenda(void)        { return lig(AJ_MENU_AGENDA); }
 int  ajustes_menu_perfil(void)        { return lig(AJ_MENU_PERFIL); }
 int  ajustes_gpu_efeitos(void) { return valor[AJ_GPU_EFEITOS]; }
 int  ajustes_itens_fileira(void) {
-  static const int N[] = { 12, 18, 24 };
+  static const int N[] = { 12, 18, 24, 24 };
   int i = valor[AJ_ITENS_FILEIRA];
   if (i < 0 || i >= (int)(sizeof N / sizeof *N) || SEGURO) i = 0;
   return N[i];
+}
+int  ajustes_itens_fileira_sem_limite(void) {
+  return valor[AJ_ITENS_FILEIRA] == 3 && !SEGURO;
 }
 int  ajustes_trailer_cartaz(void) {
   // Sem dependencia aqui: cada modo decide na home se o cartaz em foco serve

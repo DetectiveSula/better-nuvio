@@ -133,7 +133,11 @@ _Static_assert(MAX_FIL >= CAT_FIL_MAX + 16, "a home precisa de folga sobre o tet
 // coluna do card "Ver tudo", que ocupa a posicao seguinte a ultima arte. Com
 // menos que isso, animFoco[r][n] escrevia fora do vetor — o card nunca
 // acendia ao receber foco e a memoria do vizinho era corrompida em silencio.
-#define MAX_CARDS 41
+// 14 Nov 2026: room for "Itens por fileira: Sem limite" (DESC_ITENS_SEM_LIMITE
+// titles plus the Ver tudo card). Was 41. Per-card tables: ~2 MB on Android
+// (MAX_FIL 248), ~0.5 MB elsewhere; the titles themselves live in the catalog.
+#define MAX_CARDS (DESC_ITENS_SEM_LIMITE + 1)
+_Static_assert(MAX_CARDS >= 41, "Continuar assistindo (40) + Ver tudo");
 // Mesmo valor que CONT_MAX (CWO_FILEIRA_MAX, issue #205).
 #define CW_TETO CWO_FILEIRA_MAX
 _Static_assert(DESC_ITENS_POR_FILEIRA <= MAX_CARDS - 1, "itens por fileira + Ver tudo cabem em MAX_CARDS");
@@ -220,7 +224,8 @@ static int filmeVistoOculto(const CatItem *item) {
 // order, one card per title; drawn like any other poster row.
 static void montarBiblioteca(Fileira *f) {
   int teto = ajustes_itens_fileira(), fonte = ajustes_fonte_biblioteca();
-  if (teto > DESC_ITENS_POR_FILEIRA) teto = DESC_ITENS_POR_FILEIRA;
+  if (ajustes_itens_fileira_sem_limite()) teto = DESC_ITENS_SEM_LIMITE;
+  else if (teto > DESC_ITENS_POR_FILEIRA) teto = DESC_ITENS_POR_FILEIRA;
   memset(f, 0, sizeof *f);
   for (int i = 0; i < cat_n() && f->n < teto; i++) {
     const CatItem *it = cat_item(i);
@@ -3160,6 +3165,7 @@ static void sincronizarFileiras(void) {
       // a pessoa ja preencheu, nao catalogo de rede — o teto e o nativo
       // (CONT_MAX de descoberta.c); o web da 300.
       if (!strcmp(cf->chave, "continue_watching")) teto = CW_TETO;
+      else if (ajustes_itens_fileira_sem_limite()) teto = DESC_ITENS_SEM_LIMITE;
       else if (teto > DESC_ITENS_POR_FILEIRA) teto = DESC_ITENS_POR_FILEIRA;
       fileiras[destino].n = cf->n > teto ? teto : cf->n; }
     // UMA COLUNA A MAIS: o card "Ver tudo" no fim. So em fileira que veio de um
@@ -3751,12 +3757,28 @@ static void heroAquecerVizinhos(Uint32 agora) {
   }
 }
 
+// Weak fallbacks: the real ones live in descoberta.c and ajustes.c and win at
+// link time. Tests that link home.c with their own stubs keep building.
+__attribute__((weak)) void desc_fileira_mais(const char *chave, const char *base, const char *tipo,
+                                             const char *id, int nAgora) {
+  (void)chave; (void)base; (void)tipo; (void)id; (void)nAgora;
+}
+__attribute__((weak)) int ajustes_itens_fileira_sem_limite(void) { return 0; }
+
 static void home_atualizar_(float dt, Uint32 agora) {
   curadoria_passo();   // a curadoria da fileira Herói, no seu tempo (curadoria.h)
 #ifdef NV_TOUCH_UI
   if (!telefoneui_ativo()) { toqueHomeLimpar(); toqueHeroCancelar(); }
 #endif
   sincronizarFileiras();
+  // "SEM LIMITE": within 4 of the end of a catalog row, ask for the next page,
+  // as regular Nuvio's ModernHomeRows does (descoberta.c desc_fileira_mais).
+  if (ajustes_itens_fileira_sem_limite() && !focoHero && foco.fileira >= 0 && foco.fileira < nFileiras) {
+    const Fileira *fm = &fileiras[foco.fileira];
+    if (fm->ini >= 0 && !fm->usaItens && fm->base[0] && fm->catId[0] && fm->n > 0 &&
+        foco.coluna >= fm->n - 4)
+      desc_fileira_mais(fm->chave, fm->base, fm->catTipo, fm->catId, fm->n);
+  }
   // A FILEIRA DE AMIGOS tem tantas colunas quantos rostos (+ "Adicionar"), e
   // isso muda sem o catalogo mudar (um amigo novo chega do recomenda.c).
   for (int r = 0; r < nFileiras; r++) {

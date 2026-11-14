@@ -95,6 +95,32 @@ int main(void) {
     cat_trocar_continuar(&next, 1);
     assert(cat_item(0)->episodio == 1 && cat_item(0)->progresso == 20);
   }
+  // "Itens por fileira: Sem limite" (14 Nov 2026): a page appended to a row
+  // lands at the END of its window, skips titles the row already has, slides
+  // the next row, and stops at the ceiling.
+  {
+    static CatItem v[5], mais[4];
+    CatFileira rows[2];
+    memset(rows, 0, sizeof rows);
+    for (int i = 0; i < 5; i++) {
+      v[i] = a; snprintf(v[i].tipo, sizeof v[i].tipo, "movie");
+      snprintf(v[i].imdb, sizeof v[i].imdb, "tt90%d", i);
+    }
+    snprintf(rows[0].chave, sizeof rows[0].chave, "addon_movie_top"); rows[0].ini = 0; rows[0].n = 3;
+    snprintf(rows[1].chave, sizeof rows[1].chave, "addon_movie_new"); rows[1].ini = 3; rows[1].n = 2;
+    cat_definir_tudo(v, 5, rows, 2);
+    for (int i = 0; i < 4; i++) { mais[i] = v[0]; snprintf(mais[i].imdb, sizeof mais[i].imdb, "tt95%d", i); }
+    snprintf(mais[1].imdb, sizeof mais[1].imdb, "tt901");          // already in the row
+    snprintf(mais[3].imdb, sizeof mais[3].imdb, "tt950");          // repeated in the page
+    assert(cat_anexar_fileira("addon_movie_top", mais, 4, 200) == 2);
+    assert(cat_fileira(0)->n == 5 && cat_fileira(1)->ini == 5 && cat_fileira(1)->n == 2);
+    assert(!strcmp(cat_item(3)->imdb, "tt950") && !strcmp(cat_item(4)->imdb, "tt952"));
+    assert(!strcmp(cat_item(5)->imdb, "tt903"));                   // next row moved, intact
+    snprintf(mais[0].imdb, sizeof mais[0].imdb, "tt960"); snprintf(mais[2].imdb, sizeof mais[2].imdb, "tt962");
+    assert(cat_anexar_fileira("addon_movie_top", mais, 4, 6) == 1 && cat_fileira(0)->n == 6);   // ceiling
+    assert(cat_anexar_fileira("addon_movie_top", mais, 4, 200) == 1);                             // tt962 left
+    assert(cat_anexar_fileira("no_such_row", mais, 4, 200) == 0);
+  }
   // Stage E (continueWatchingImageModel, card style): an UNAIRED next-up shows
   // the title's landscape art first and its still only as the last resort.
   { CatItem up = a;

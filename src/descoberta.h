@@ -254,6 +254,13 @@ int  desc_buscando(void);
 // cartazes mais o "Ver tudo"), entao cabe. Custo: ~15,6 KB por item em RAM,
 // e as capas continuam carregando so quando entram na tela.
 #define DESC_ITENS_POR_FILEIRA 24
+// "Sem limite" (ajustes_itens_fileira_sem_limite): a row grows by catalog
+// pages up to this many items (home.c MAX_CARDS = this + the Ver tudo card).
+// ~17 KB of RAM per item; covers what regular Nuvio shows before See all.
+#define DESC_ITENS_SEM_LIMITE 200
+// Appends the next catalog page to row `chave` (asynchronous, one at a time per
+// row; see descoberta.c). `nAgora` = items the row shows now.
+void desc_fileira_mais(const char *chave, const char *base, const char *tipo, const char *id, int nAgora);
 
 // Comeca (ou continua) a leitura do catalogo. `pagina` 0 e o inicio; cada
 // pagina seguinte pede skip = pagina * VT_PASSO. Repetir a mesma pagina nao

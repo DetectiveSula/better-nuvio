@@ -491,6 +491,14 @@ int cat_copiar_fileira(const char *chave, CatItem *itens, int max,
 // descoberta — montarContinuar faz rede e nao pode rodar no desenho.
 void cat_trocar_continuar(const CatItem *lista, int qtd);
 
+// "ITENS POR FILEIRA: SEM LIMITE" (owner, 14 Nov 2026, as regular Nuvio's
+// ModernHomeRows: near the end of a row the next catalog page is appended).
+// Appends the items of `lista` that the row `chave` does not have yet (same id
+// and type) to the END of its window, up to `teto` items in the row; the rows
+// after it slide in `ini`, as in cat_trocar_continuar. Returns how many went in
+// (0 = row gone, nothing new, or full).
+int cat_anexar_fileira(const char *chave, const CatItem *lista, int qtd, int teto);
+
 // Troca itens E fileiras de uma vez. Tem de ser uma chamada so: com duas, o fio
 // do desenho pega um quadro com as fileiras novas apontando para os itens
 // velhos, e a janela (ini,n) cai fora do vetor.

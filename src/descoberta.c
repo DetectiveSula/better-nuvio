@@ -10008,6 +10008,109 @@ int  desc_vertudo_fim(void) { pthread_mutex_lock(&vtTrava);int n=vtFim;pthread_m
 int  desc_vertudo_erro(void) { pthread_mutex_lock(&vtTrava);int n=vtErro;pthread_mutex_unlock(&vtTrava);return n; }
 void desc_vertudo_fechar(void) { /* guarda o que leu; ver desc_vertudo_abrir */ }
 
+// --- "ITENS POR FILEIRA: SEM LIMITE": a fileira cresce pagina a pagina -------
+// Regular Nuvio (ModernHomeRows.kt) asks for the next catalog page when the
+// focus is within 4 items of a row's end. Here home.c calls desc_fileira_mais
+// in the same spot; one fetch per row at a time, the page goes through the
+// same filters as the first one (unreleased, watched films) and is appended by
+// cat_anexar_fileira, which also drops what the row already has. `skip` is the
+// number of items RECEIVED, as in Ver tudo: many add-ons send 20/50 a page.
+// The first request re-reads page 0 (the row showed only its first 24), and a
+// page with nothing new moves on, up to 3 pages per request.
+#define FM_SLOTS 8
+static struct { char chave[192]; int skip, fim, vivo, nVisto; Uint32 depois; } fm[FM_SLOTS];
+static unsigned fmRelogio[FM_SLOTS], fmTique;
+static pthread_mutex_t fmTrava = PTHREAD_MUTEX_INITIALIZER;
+typedef struct { int slot; char chave[192], base[NV_ADDON_URL_MAX], tipo[16], id[96]; NvPerfilSessao sessao; } FmPedido;
+
+static void *fioFileiraMais(void *u) {
+  FmPedido *pd = u;
+  int slot = pd->slot, skip, novos = 0, fim = 0, falhou = 0;
+  pthread_mutex_lock(&fmTrava); skip = fm[slot].skip; pthread_mutex_unlock(&fmTrava);
+  for (int pagina = 0; pagina < 3 && !novos && !fim; pagina++) {
+    char url[NV_ADDON_PEDIDO_MAX], extra[32] = "", orig[96], *corpo;
+    int w, raw = 0, nl = 0, cap = 120;
+    CatItem *lote;
+    if (skip) snprintf(extra, sizeof extra, "skip=%d", skip);
+    w = catalogoUrl(url, sizeof url, pd->base, pd->tipo, pd->id, extra);
+    if (addons_base_desligada(pd->base) || !descPedidoCoube(pd->base, w, sizeof url)) { fim = 1; break; }
+    corpo = rede_baixar(url, 8);
+    if (!corpo) { falhou = 1; break; }                 // retried after a pause
+    lote = malloc(sizeof *lote * (size_t)cap);
+    origemDaBase(pd->base, orig, sizeof orig);
+    for (const char *p = js_array(corpo, NULL, "metas"); p; p = js_prox(js_fim(p))) {
+      const char *f = js_fim(p);
+      raw++;
+      if (!lote || nl >= cap) continue;
+      if (!deMeta(p, f, pd->tipo, &lote[nl]) || descOcultaNaoLancadoEm(&lote[nl], p, f)) continue;
+      if (ajustes_ocultar_filmes_vistos() && !strcmp(pd->tipo, "movie") && desc_filme_visto(&lote[nl])) continue;
+      snprintf(lote[nl].origem, sizeof lote[nl].origem, "%s", orig);
+      lote[nl].ranking = skip + raw;
+      nl++;
+    }
+    free(corpo);
+    if (!raw) fim = 1;
+    else {
+      if (nl && nv_perfil_sessao_travar(pd->sessao)) {
+        novos = cat_anexar_fileira(pd->chave, lote, nl, DESC_ITENS_SEM_LIMITE);
+        nv_perfil_sessao_destravar();
+      }
+      skip += raw;
+    }
+    free(lote);
+  }
+  printf("[desc] fileira %s: pagina seguinte skip=%d, %d novo(s)%s\n", pd->chave, skip, novos, fim ? ", fim" : "");
+  fflush(stdout);
+  pthread_mutex_lock(&fmTrava);
+  // Three pages with nothing new: the add-on repeats itself or ignores skip.
+  if (!novos && !falhou) fim = 1;
+  if (!strcmp(fm[slot].chave, pd->chave)) {
+    fm[slot].skip = skip; fm[slot].fim = fim; fm[slot].vivo = 0;
+    fm[slot].depois = SDL_GetTicks() + (falhou ? 5000u : 0u);
+  }
+  pthread_mutex_unlock(&fmTrava);
+  free(pd);
+  return NULL;
+}
+
+void desc_fileira_mais(const char *chave, const char *base, const char *tipo, const char *id, int nAgora) {
+  int slot = -1, velho = 0;
+  FmPedido *pd;
+  pthread_t t;
+  pthread_attr_t at;
+  if (!chave || !chave[0] || !base || !base[0] || !id || !id[0] || !tipo) return;
+  if (nAgora >= DESC_ITENS_SEM_LIMITE) return;
+  pthread_mutex_lock(&fmTrava);
+  for (int i = 0; i < FM_SLOTS; i++) if (!strcmp(fm[i].chave, chave)) { slot = i; break; }
+  if (slot < 0) {
+    for (int i = 1; i < FM_SLOTS; i++) if (!fm[i].vivo && fmRelogio[i] < fmRelogio[velho]) velho = i;
+    if (fm[velho].vivo) { pthread_mutex_unlock(&fmTrava); return; }
+    slot = velho;
+    memset(&fm[slot], 0, sizeof fm[slot]);
+    snprintf(fm[slot].chave, sizeof fm[slot].chave, "%s", chave);
+  }
+  // The catalog was rebuilt (row back to its first page): start over.
+  if (nAgora < fm[slot].nVisto) { fm[slot].skip = 0; fm[slot].fim = 0; }
+  fmRelogio[slot] = ++fmTique;
+  if (fm[slot].vivo || fm[slot].fim || (fm[slot].depois && (Sint32)(SDL_GetTicks() - fm[slot].depois) < 0)) {
+    pthread_mutex_unlock(&fmTrava); return;
+  }
+  pd = calloc(1, sizeof *pd);
+  if (!pd) { pthread_mutex_unlock(&fmTrava); return; }
+  fm[slot].vivo = 1; fm[slot].nVisto = nAgora;
+  pd->slot = slot; pd->sessao = nv_perfil_sessao_ler();
+  snprintf(pd->chave, sizeof pd->chave, "%s", chave);
+  snprintf(pd->base, sizeof pd->base, "%s", base);
+  snprintf(pd->tipo, sizeof pd->tipo, "%s", tipo);
+  snprintf(pd->id, sizeof pd->id, "%s", id);
+  pthread_attr_init(&at);
+  pthread_attr_setstacksize(&at, 1u * 1024u * 1024u);
+  if (pthread_create(&t, &at, fioFileiraMais, pd) != 0) { fm[slot].vivo = 0; free(pd); }
+  else pthread_detach(t);
+  pthread_attr_destroy(&at);
+  pthread_mutex_unlock(&fmTrava);
+}
+
 int desc_vertudo_item(int i, CatItem *dst) {
   int ok = 0;
   pthread_mutex_lock(&vtTrava);

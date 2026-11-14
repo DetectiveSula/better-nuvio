@@ -172,7 +172,10 @@ int main(void) {
   // #163: itens por fileira nasce em 12 (o de sempre); 18 e 24 sao escolha,
   // com o aviso de memoria para TV de 1 GB. E a opcao vive neste aparelho.
   assert(valor[AJ_ITENS_FILEIRA] == 0 && ajustes_itens_fileira() == 12);
-  assert(OPCOES[AJ_ITENS_FILEIRA].n == 3);
+  assert(OPCOES[AJ_ITENS_FILEIRA].n == 4);   /* 12, 18, 24, Sem limite */
+  assert(!ajustes_itens_fileira_sem_limite());
+  valor[AJ_ITENS_FILEIRA] = 3; assert(ajustes_itens_fileira_sem_limite() && ajustes_itens_fileira() == 24);
+  valor[AJ_ITENS_FILEIRA] = 0;
   // Fileiras da home: 3 a 40 (o teto do catalogo), 7 de fabrica. Acima de 16 a
   // tela pede confirmacao (riscoPedirConfirmacao); acima de 12 o diario do modo
   // seguro vigia. O limite nunca passa do vetor de fileiras do catalogo.

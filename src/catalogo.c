@@ -2623,6 +2623,58 @@ void cat_definir_tudo(const CatItem *lista, int qtd,
   fflush(stdout);
 }
 
+int cat_anexar_fileira(const char *chave, const CatItem *lista, int qtd, int teto) {
+  CatItem *novo;
+  int r, alvo = -1, fim, entram = 0, novoN, nRegs, *pega;
+  ProgRegistro *regs;
+  if (!chave || !chave[0] || !lista || qtd <= 0) return 0;
+  pega = calloc((size_t)qtd, sizeof *pega);
+  if (!pega) return 0;
+  regs = lerProgresso(&nRegs);
+  catTravar();
+  for (r = 0; r < nFils; r++)
+    if (!strcmp(fils[r].chave, chave)) { alvo = r; break; }
+  if (alvo < 0 || fils[alvo].ini < 0) goto sai;
+  fim = fils[alvo].ini + fils[alvo].n;
+  for (int i = 0; i < qtd && fils[alvo].n + entram < teto && n + entram < CAT_MAX; i++) {
+    int dup = !lista[i].imdb[0];
+    for (int j = fils[alvo].ini; j < fim && !dup; j++)
+      dup = !strcmp(itens[j].imdb, lista[i].imdb) && !strcmp(itens[j].tipo, lista[i].tipo);
+    for (int j = 0; j < i && !dup; j++)
+      dup = pega[j] && !strcmp(lista[j].imdb, lista[i].imdb) && !strcmp(lista[j].tipo, lista[i].tipo);
+    if (!dup) { pega[i] = 1; entram++; }
+  }
+  if (!entram) goto sai;
+  novoN = n + entram;
+  novo = malloc(sizeof(CatItem) * (size_t)novoN);
+  if (!novo) { entram = 0; goto sai; }
+  if (fim) memcpy(novo, itens, sizeof(CatItem) * (size_t)fim);
+  { int w = fim;
+    for (int i = 0; i < qtd; i++) if (pega[i]) novo[w++] = lista[i]; }
+  if (n - fim > 0) memcpy(novo + fim + entram, itens + fim, sizeof(CatItem) * (size_t)(n - fim));
+  aplicarProgressoEm(novo, novoN, regs, nRegs);
+  // Same write order as cat_trocar_continuar: `n` drops first, so a reader
+  // without the lock never pairs a shifted window with the old block.
+  __atomic_store_n(&n, 0, __ATOMIC_RELEASE);
+  for (r = 0; r < nFils; r++) {
+    if (r == alvo) fils[r].n += entram;
+    else if (fils[r].ini >= fim) fils[r].ini += entram;
+  }
+  aposentar(itens);
+  __atomic_store_n(&itens, novo, __ATOMIC_RELEASE);
+  nAlocado = novoN;
+  pthread_mutex_lock(&epTrava);
+  zerarFaixas(nAlocado);
+  pthread_mutex_unlock(&epTrava);
+  __atomic_store_n(&n, novoN, __ATOMIC_RELEASE);
+  revisaoSobe(); mudou();
+sai:
+  pthread_mutex_unlock(&pubTrava);
+  free(regs); free(pega);
+  if (entram) { printf("[cat] fileira %s: +%d item(ns) no fim\n", chave, entram); fflush(stdout); }
+  return entram;
+}
+
 // TROCA SO A JANELA DE "CONTINUAR ASSISTINDO" (issue #38).
 //
 // A fileira so era refeita dentro de montar(), no ciclo completo da descoberta.
