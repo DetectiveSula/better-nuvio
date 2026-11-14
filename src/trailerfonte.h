@@ -75,6 +75,15 @@ int  trailerfonte_ordem_cheia(int ajuste, int tizen, int som, int ordem[3]);
 TrailerDecisao trailerfonte_escolher_cheia(int ajuste, int tizen, int som,
                                            const TrailerCandidatos *c,
                                            const char **url, int *qual);
+// O FUNDO DA PAGINA DO TITULO (trailer automatico atras do heroi). Toca com o
+// som do ajuste "Som do trailer" (`somAjuste`); com som, vale a regra da tela
+// cheia: no .tpk o IMDb vem antes da Apple. Medido na S90C do dono (14/11/2026,
+// 1.0.6): "[trailer] https://vod-ap-aoc.tv.apple.com/... no fundo com som" e o
+// trailer mudo — a Apple la e a variante SO VIDEO. Sem som, Apple primeiro
+// (melhor imagem). .wgt e LG: igual a trailerfonte_escolher.
+TrailerDecisao trailerfonte_escolher_fundo(int ajuste, int tizen, int somAjuste,
+                                           const TrailerCandidatos *c,
+                                           const char **url, int *qual);
 // 1 no .tpk (NV_TPK); 0 no .wgt e na LG, onde nada muda. O definir e para os
 // testes.
 int  trailerfonte_imdb_primeiro_cheia(void);

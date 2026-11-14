@@ -347,6 +347,10 @@ static int    volumeTocandoEnviado;   // ver nativoAplicar (#281)
 #define NV_TRAILER_TPK_POS_PRAZO_MS 4000u
 static int    imagemVista;
 static Uint32 tocandoVisto;
+// "Zoom cinema" pedido, mas o zoom do .tpk e o ajuste experimental (video_tpk.c,
+// #188): sem ele o trailer sai em quadro inteiro, com a tarja. Uma linha por
+// fonte, para "o zoom nao pega" (S90C, 14/11/2026) nao virar adivinhacao.
+static int    zoomBloqueadoLogado;
 #endif
 // ANDROID: THE ARTWORK STAYS UNTIL THE TRAILER HAS ITS FINAL GEOMETRY (Stage H
 // polish, 6 Nov 2026). The zoom (Slight/Cinema/Ultra) used to be applied only
@@ -456,6 +460,14 @@ static void nativoAplicar(void) {
     // prova (Tizen 6.x) e encaixa o quadro inteiro nas demais familias.
     trailer_recorte_legenda(video_largura(), video_altura(), noCartao ? 1.0f : ajustes_trailer_zoom(),
                             rect.w, rect.h, legendaProvavel, &sx, &sy, &sw, &sh);
+    if (!video_recorte_fonte_trailer() && !noCartao && !zoomBloqueadoLogado &&
+        ajustes_trailer_zoom() > 1.001f) {
+      zoomBloqueadoLogado = 1;
+      printf("[trailer] tpk: zoom %.2f pedido, mas \"Zoom no trailer e no player (experimental)\" "
+             "esta desligado: quadro %dx%d inteiro, com a tarja que vier nele\n",
+             ajustes_trailer_zoom(), video_largura(), video_altura());
+      fflush(stdout);
+    }
     if (video_recorte_fonte_trailer() || noCartao)
 #else
     trailer_recorte_legenda(video_largura(), video_altura(), ajustes_trailer_zoom(),
@@ -533,7 +545,7 @@ void trailer_abrir(const char *fonte, GfxRect r, int som, int modoCheia) {
     mostradoAndroid = 0;
 #endif
 #ifdef NV_TPK
-    recorteEnviadoEm = 0; mostraLogado = 0; imagemVista = 0; tocandoVisto = 0;
+    recorteEnviadoEm = 0; mostraLogado = 0; imagemVista = 0; tocandoVisto = 0; zoomBloqueadoLogado = 0;
     volumeTocandoEnviado = 0;
 #endif
   } else if (comSom != som) volumePendente = 1;

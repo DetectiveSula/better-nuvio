@@ -497,7 +497,7 @@ static TrailerCinema trailerCinema;
 // Automatico, o IMDb vem antes da Apple, porque la a Apple e so video
 // (trailerfonte_escolher_cheia, #178). O fundo passa 0 e nao muda.
 #ifdef NV_TPK
-static char trailerCheiaLogada[32];
+static char trailerCheiaLogada[32], trailerFundoLogada[32];
 #endif
 static int trailerSemFonteLogado = 0;
 static const char *trailerFonte(int k, int *qual, int cheia) {
@@ -526,16 +526,24 @@ static const char *trailerFonte(int k, int *qual, int cheia) {
   (void)k;
 #endif
   c.youtubeRespondeu = !extras_carregando();
+  // O fundo com som segue a regra da tela cheia (no .tpk, IMDb antes da Apple
+  // so video: trailerfonte_escolher_fundo).
   d = cheia ? trailerfonte_escolher_cheia(aj, tz, trailerfonte_com_som(tz), &c, &u, &q)
-            : trailerfonte_escolher(aj, tz, &c, &u, &q);
+            : trailerfonte_escolher_fundo(aj, tz, ajustes_trailer_som(), &c, &u, &q);
   if (d == TRF_ABRE) {
     if (qual) *qual = q;
 #ifdef NV_TPK
     // UMA linha por titulo: isto roda a cada quadro, e o log do testador da
     // Samsung (corte de 200 KB) saiu com 1693 copias e nada mais (05/10/2026).
-    if (cheia && ci && strcmp(trailerCheiaLogada, ci->imdb)) {
-      snprintf(trailerCheiaLogada, sizeof trailerCheiaLogada, "%s", ci->imdb);
-      printf("[trailer] detalhe: tela cheia pela fonte %s (ajuste %d)\n", trailerfonte_nome(q), aj); fflush(stdout);
+    // O fundo tambem: a Apple "com som" aqui sai MUDA (so video), e o log tem
+    // de dizer quando foi ela por falta de IMDb.
+    if (ci && strcmp(cheia ? trailerCheiaLogada : trailerFundoLogada, ci->imdb)) {
+      int somPedido = cheia || ajustes_trailer_som();
+      snprintf(cheia ? trailerCheiaLogada : trailerFundoLogada, sizeof trailerCheiaLogada, "%s", ci->imdb);
+      printf("[trailer] detalhe: %s pela fonte %s (ajuste %d)%s\n", cheia ? "tela cheia" : "fundo",
+             trailerfonte_nome(q), aj,
+             somPedido && q == TRF_APPLE ? ", mudo: a Apple aqui e so video" : "");
+      fflush(stdout);
     }
 #endif
     return u;

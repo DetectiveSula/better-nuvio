@@ -148,6 +148,13 @@ TrailerDecisao trailerfonte_escolher_cheia(int ajuste, int tizen, int som,
   return escolherNaOrdem(ordem, n, c, url, qual);
 }
 
+TrailerDecisao trailerfonte_escolher_fundo(int ajuste, int tizen, int somAjuste,
+                                           const TrailerCandidatos *c,
+                                           const char **url, int *qual) {
+  return trailerfonte_escolher_cheia(ajuste, tizen, somAjuste && trailerfonte_com_som(tizen),
+                                     c, url, qual);
+}
+
 TrailerDecisao trailerfonte_escolher_destaque(int ajuste, int tizen, const TrailerCandidatos *c,
                                               const char **url, int *qual) {
   int ordem[3], n = trailerfonte_ordem_destaque(ajuste, tizen, ordem);

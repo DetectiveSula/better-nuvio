@@ -227,7 +227,31 @@ int main(void) {
   confere("com som, IMDb e YouTube: IMDb -> Apple -> YouTube",
           n == 3 && o[0] == TRF_IMDB && o[1] == TRF_APPLE && o[2] == TRF_YOUTUBE);
   trailerfonte_definir_imdb_tizen(0);
+
+  // --- FUNDO DA PAGINA DO TITULO COM SOM (S90C do dono, 14/11/2026: a Apple
+  // "no fundo com som" tocou muda). Com o ajuste de som ligado, a regra da
+  // tela cheia: IMDb antes da Apple no .tpk. Desligado, Apple primeiro.
+  c = todas();
+  confere(".tpk fundo com som e as duas: abre o IMDb (tem audio)",
+          trailerfonte_escolher_fundo(TRF_AUTO, 0, 1, &c, &u, &n) == TRF_ABRE && n == TRF_IMDB && !strcmp(u, c.imdb));
+  confere(".tpk fundo SEM som e as duas: Apple (melhor imagem)",
+          trailerfonte_escolher_fundo(TRF_AUTO, 0, 0, &c, &u, &n) == TRF_ABRE && n == TRF_APPLE);
+  c = todas(); c.imdb = NULL; c.imdbRespondeu = 0;
+  confere(".tpk fundo com som: IMDb ainda sem resposta segura a Apple",
+          trailerfonte_escolher_fundo(TRF_AUTO, 0, 1, &c, &u, &n) == TRF_ESPERA);
+  c = todas(); c.imdb = NULL;
+  confere(".tpk fundo com som sem IMDb: cai na Apple (muda, nao ha outra)",
+          trailerfonte_escolher_fundo(TRF_AUTO, 0, 1, &c, &u, &n) == TRF_ABRE && n == TRF_APPLE);
+  c = todas();
+  confere(".tpk fundo com som e Apple fixa: Apple, respeitada",
+          trailerfonte_escolher_fundo(TRF_APPLE, 0, 1, &c, &u, &n) == TRF_ABRE && n == TRF_APPLE);
+  // .wgt: trailer sempre mudo, o fundo segue Apple -> ... mesmo com o ajuste de som.
+  confere("wgt fundo com o ajuste de som: Apple, como sempre",
+          trailerfonte_escolher_fundo(TRF_AUTO, 1, 1, &c, &u, &n) == TRF_ABRE && n == TRF_APPLE);
   trailerfonte_definir_imdb_primeiro_cheia(0);
+  // LG/.wgt (desvio desligado): o fundo com som e o de sempre.
+  confere("LG fundo com som: Apple primeiro, como hoje",
+          trailerfonte_escolher_fundo(TRF_AUTO, 0, 1, &c, &u, &n) == TRF_ABRE && n == TRF_APPLE);
 
   // --- DESTAQUE QUE CONTINUA COM SOM NA PAGINA (canario tpk-janela). So com
   // NV_TPK o desvio nasce ligado; .wgt e LG escolhem como sempre.
