@@ -14,6 +14,9 @@
 #include "js.h"
 #include "descoberta.h"
 #include "ajustes.h"
+#include "dados.h"
+#include "sessao.h"
+#include "perfis.h"
 #include "agenda.h"
 #include "comentordem.h"
 #include "idiomacod.h"
@@ -51,6 +54,8 @@ static int  notaTrakt, votosTrakt;
 static int  notas[EX_NFONTES];
 static char mdbChave[80];
 static char mdbChavePacote[80];
+static char mdbChaveConta[80];
+static int mdbChaveLocal;
 static char dirArteEx[512];
 
 // Nome do provedor na api do mdbList E nome do arquivo de marca em art/marcas.
@@ -90,12 +95,22 @@ int extras_fonte_percentual(int fonte) {
 
 void extras_definir_chave(const char *chave) {
   if (!chave || !*chave) return;
+  snprintf(mdbChaveConta,sizeof mdbChaveConta,"%s",chave);
+  if(mdbChaveLocal)return;
   snprintf(mdbChave, sizeof mdbChave, "%s", chave);
   printf("[extras] mdblist: chave da conta\n");
   fflush(stdout);
 }
 
 int extras_mdblist_tem_chave(void) { return mdbChave[0] != 0; }
+void extras_copiar_chave(char *dst, size_t cap) { if(dst&&cap)snprintf(dst,cap,"%s",mdbChave); }
+void extras_chave_local_recarregar(void) {
+  char name[200];snprintf(name,sizeof name,"mdblist-key-%s-p%d.txt",sessao_usuario(),perfis_ativo());
+  char *key=sessao_logada()?dados_ler(name):NULL;
+  mdbChaveLocal=key&&*key;
+  snprintf(mdbChave,sizeof mdbChave,"%s",mdbChaveLocal?key:mdbChaveConta[0]?mdbChaveConta:mdbChavePacote);
+  if(key){memset(key,0,strlen(key));free(key);}
+}
 
 void extras_carregar(const char *dirArte) {
   char caminho[600];
@@ -2895,7 +2910,9 @@ void extras_teste_progresso(const char *id, int nVistos, int exibidos, int pt, i
 }
 
 void extras_abrir_sessao(void) {
+  memset(mdbChaveConta,0,sizeof mdbChaveConta);
   snprintf(mdbChave, sizeof mdbChave, "%s", mdbChavePacote);
+  extras_chave_local_recarregar();
   pthread_mutex_lock(&trava);
   idPedido[0] = idEmCurso[0] = 0;
   sessaoPedido = nv_perfil_sessao_ler();

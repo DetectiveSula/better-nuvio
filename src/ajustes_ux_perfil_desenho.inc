@@ -24,7 +24,7 @@ static void pfTextos(char *kick, size_t nk, const char *tit[1], char *corpo, siz
     case PF_COPIAR:
       snprintf(kick, nk, "%s", i18n("Perfil · Administrador"));
       tit[0] = i18n("Copiar meus ajustes para…");
-      snprintf(corpo, nc, "%s", i18n("Copia aparência, player, home e legendas. Não copia Jellyfin, IPTV, chaves de API, histórico nem o que é da TV."));
+      snprintf(corpo, nc, "%s", i18n("Copia aparência, player, home, legendas, chaves de API, Jellyfin e IPTV. Histórico e ajustes da TV ficam separados."));
       break;
     case PF_INFANTIL:
       snprintf(kick, nk, "%s", i18n("Perfil · Administrador"));
@@ -42,7 +42,7 @@ static void pfTextos(char *kick, size_t nk, const char *tit[1], char *corpo, siz
           if (pfMarca[k++]) { size_t l = strlen(nomes); snprintf(nomes + l, sizeof nomes - l, "%s%s", l ? ", " : "", p->nome); }
         }
         tit[0] = i18n("Copiar os seus ajustes?");
-        snprintf(corpo, nc, i18n("Os ajustes de %s serão trocados pelos seus. Eles podem mudar de novo depois."), nomes);
+        snprintf(corpo, nc, i18n("Os ajustes e as chaves de API de %s serão trocados pelos seus. Eles podem mudar de novo depois."), nomes);
       } else {
         tit[0] = i18n("Restaurar o padrão deste perfil?");
         snprintf(corpo, nc, "%s", i18n("As opções do perfil voltam ao padrão de fábrica. O que é da TV, as contas e o histórico não mudam."));

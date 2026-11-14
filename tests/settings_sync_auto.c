@@ -17,11 +17,98 @@ static void dropNewKeys(const char *dir){
 int main(int argc,char **argv){
  setvbuf(stdout,NULL,_IOLBF,0);assert(argc==3);server=getenv("J7_SERVER");assert(server);offline=getenv("J7_OFFLINE")!=NULL;
  const char *step=argv[2];
+ if(!strcmp(step,"existing-layout")||!strcmp(step,"existing-layout-offline")){
+  /* Preferences from a build before automatic sync, saved before first boot. */
+  char file[700];snprintf(file,sizeof file,"%s/ajustes-p1.txt",argv[1]);
+  spit(file,"homeLayoutLocal 2\nheroSinopseLocal 1\n");
+  snprintf(file,sizeof file,"%s/ajustes.txt",argv[1]);
+  spit(file,"homeLayoutLocal 2\nheroSinopseLocal 1\n");
+ }
  boot(argv[1]);
- if(!strcmp(step,"readonly")){
+ if(!strcmp(step,"copy-all")||!strcmp(step,"copy-active")){
+  sync1();selectProfile(2);sync1();
+  valor[AJ_HOME_LAYOUT]=1;valor[AJ_HERO]=1;valor[AJ_MDB_IMDB]=1;valor[AJ_RESOLVE_LINKS]=1;
+  assert(gravar());sync1();sync1();selectProfile(1);sync1();
+  valor[AJ_HOME_LAYOUT]=HOME_LAYOUT_DINAMICA;valor[AJ_HERO]=0;valor[AJ_MDB_IMDB]=0;valor[AJ_RESOLVE_LINKS]=0;
+  assert(gravar());
+  assert(dados_gravar("debrid.txt","torbox=copy-torbox-key-fixture\n"));debCarregar();
+  assert(dados_gravar("fanart.txt","copy-fanart-key-fixture"));fanartCarregar();
+  assert(tmdbLocalDefinir("abcdef0123456789abcdef0123456789"));
+  extras_definir_chave("copy-mdblist-key-fixture");
+  assert(fonteregra_definir_regex("copy-2160p"));
+  ling_conta_audio("fr");
+  assert(ajLegendaDefinir(AJ_LEG1_TAMANHO,120));
+  const char *ids[]={"j7.fixture"},*bases[]={"https://fixture.invalid/j7-config"};fil_podar_catalogos(ids,bases,1,1);
+  assert(fil_definir_tipo("j7.fixture_movie_top",FIL_TIPO_FICHA));
+  assert(ajustes_copiar_perfil(1,2)>=0);
+  char targetFile[200];snprintf(targetFile,sizeof targetFile,"debrid-%s-p2.txt",sessao_usuario());
+  char *localKey=dados_ler(targetFile);assert(localKey&&strstr(localKey,"copy-torbox-key-fixture"));free(localKey);
+  if(!strcmp(step,"copy-active")){
+   selectProfile(2);for(int k=0;k<6;k++)sync1();
+   assert(valor[AJ_HOME_LAYOUT]==HOME_LAYOUT_DINAMICA&&valor[AJ_HERO]==0&&valor[AJ_RESOLVE_LINKS]==0&&valor[AJ_MDB_IMDB]==0);
+   pass("opening the target before its queued copy uploads cannot reapply the old account settings");
+   return 0;
+  }
+  offline=1;sync1();assert(!serverHas("better_nuvio",2,"fileDebrid0"));offline=0;
+  copySwitchOnPull=1;sync1();assert(!serverHas("better_nuvio",2,"fileDebrid0"));
+  signIn(OTHER_TOKEN);sync1();assert(!serverHas("better_nuvio",2,"fileDebrid0"));
+  signIn(TEST_TOKEN);copyFailAfterCommit=1;
+  char queuedName[160];ajCopyName(sessao_usuario(),2,queuedName,sizeof queuedName);
+  for(int k=0;k<6;k++){
+   sync1();char *pending=dados_ler(queuedName);if(!pending)break;free(pending);
+  }
+  char *pending=dados_ler(queuedName);assert(!pending);
+  assert(perfis_ativo()==1);
+  assert(serverHas("better_nuvio",2,"homeLayoutLocal")&&serverHas("better_nuvio",2,"fileDebrid0")&&serverHas("better_nuvio",2,"fileFanart0"));
+  char file[600];path(file,sizeof file,"tv","settings-test",2);char *doc=slurp(file);assert(doc);
+  for(size_t i=0;i<AJ_SHARED_N;i++)if(ajSharedMap[i].op==AJ_RESOLVE_LINKS||ajSharedMap[i].op==AJ_HERO)assert(ajSharedRemote(doc,i)==1);
+  free(doc);
+  pass("copy publishes an inactive target's layout, resolver settings and keys; offline/session changes and ambiguous writes retain the request");
+  return 0;
+ }else if(!strcmp(step,"copy-peer")){
+  selectProfile(2);for(int k=0;k<3;k++){if(jbCurrent)jbCurrent->jtProximo=0;sync1();}
+  assert(valor[AJ_HOME_LAYOUT]==HOME_LAYOUT_DINAMICA&&valor[AJ_HERO]==0&&valor[AJ_MDB_IMDB]==0&&valor[AJ_RESOLVE_LINKS]==0);
+  char name[160];assert(ajustes_provedores_arquivo(name,sizeof name,"debrid"));
+  char *key=dados_ler(name);assert(key&&strstr(key,"copy-torbox-key-fixture"));free(key);
+  key=dados_ler("fanart.txt");assert(key&&!strcmp(key,"copy-fanart-key-fixture"));free(key);
+  assert(!strcmp(tmdbLocal,"abcdef0123456789abcdef0123456789"));
+  char mdb[80];extras_copiar_chave(mdb,sizeof mdb);assert(!strcmp(mdb,"copy-mdblist-key-fixture"));
+  char regex[80];fonteregra_regex(regex,sizeof regex);assert(!strcmp(regex,"copy-2160p"));
+  assert(!strcmp(ling_conta_audio_valor(),"fr")&&player_leg_estilo()->tamanho==120);
+  const char *ids[]={"j7.fixture"},*bases[]={"https://fixture.invalid/j7-config"};fil_podar_catalogos(ids,bases,1,2);
+  fil_registrar("j7.fixture_movie_top","Fixture","Fixture","movie",1);
+  assert(fil_tipo("j7.fixture_movie_top")==FIL_TIPO_FICHA);
+  assert(!betterPushes&&!tvPushes);
+  pass("another TV restores the copied target profile, including TorBox, Fanart and TMDB keys");
+  return 0;
+ }else if(!strcmp(step,"existing-layout-offline")){
+  assert(offline);sync1();sync1();
+  assert(valor[AJ_HOME_LAYOUT]==HOME_LAYOUT_DINAMICA&&betterPushes==0);
+  assert(!serverHas("better_nuvio",1,"homeLayoutLocal"));
+  pass("pre-existing preferences stay local until an authoritative pull succeeds");
+  return 0;
+ }else if(!strcmp(step,"existing-layout")){
+  assert(valor[AJ_HOME_LAYOUT]==HOME_LAYOUT_DINAMICA);
+  sync1();sync1();sync1();
+  assert(serverHas("better_nuvio",1,"homeLayoutLocal"));
+  assert(betterPushes==1&&valor[AJ_HOME_LAYOUT]==HOME_LAYOUT_DINAMICA);
+  pass("a layout saved before automatic sync uploads after a successful empty pull, once");
+  return 0;
+ }else if(!strcmp(step,"existing-layout-peer")){
+  sync1();sync1();
+  assert(valor[AJ_HOME_LAYOUT]==HOME_LAYOUT_DINAMICA&&betterPushes==0);
+  pass("another TV restores the pre-existing layout without uploading defaults");
+  return 0;
+ }else if(!strcmp(step,"existing-layout-cloud-wins")){
+  sync1();sync1();
+  assert(valor[AJ_HOME_LAYOUT]==HOME_LAYOUT_DINAMICA&&betterPushes==0);
+  pass("an account layout wins over a different pre-sync local baseline");
+  return 0;
+ }else if(!strcmp(step,"readonly")){
   assert(!j7arme_permite_j4(sessao_usuario(),1)&&!j7arme_permite_j6(sessao_usuario(),1));
   valor[AJ_HERO_GENERO]=!valor[AJ_HERO_GENERO];assert(gravar());sync1();
-  assert(betterPushes==0);
+  assert(ajustes_copiar_perfil(1,2)>=0);sync1();
+  assert(betterPushes==0&&tvPushes==0);
   pass("read-only validation build: automatic sync still refuses J4/J5/J6 uploads");
   return 0;
  }

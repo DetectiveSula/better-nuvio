@@ -811,9 +811,10 @@ int  ajustes_migrar_escopo(void);
 int  ajustes_migrar_escopo_para(const int *perfis, int n, int ativo);
 // 2.1: copia dos ajustes DO PERFIL (escopos 2 e 3; nunca os da TV) de `origem`
 // para `destino`. Devolve quantas opcoes mudaram no destino, ou -1 se falhou.
-// Nunca toca em credencial; a parte da conta fica como PENDENTE do destino e so
-// sobe quando ele for o perfil ativo.
+// Includes configured API keys and profile stores. A durable copy request
+// uploads on the next successful account cycle, including inactive targets.
 int  ajustes_copiar_perfil(int origem, int destino);
+int ajustes_copias_ciclo(uint64_t sessao);
 // Volta o perfil ao padrao de fabrica (so o que e do perfil). Devolve quantas mudaram.
 int  ajustes_restaurar_padrao_perfil(int perfil);
 // Sessao de EDICAO dos ajustes de outro perfil: valor[] passa a ser o dele ate

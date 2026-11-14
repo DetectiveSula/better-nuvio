@@ -29,6 +29,8 @@ static int jtNomeFixo(char *d, unsigned n, const char *f) { return snprintf(d, n
 static int jtNomeDebrid(char *d, unsigned n) { return ajustes_provedores_arquivo(d, n, "debrid"); }
 static int jtNomeFalha(char *d, unsigned n) { return ajustes_provedores_arquivo(d, n, "fontefalha"); }
 static int jtNomeTmdb(char *d, unsigned n) { return debNomePerfil(d, n, "tmdb-key"); }
+static int jtNomeMdb(char *d, unsigned n) { return debNomePerfil(d, n, "mdblist-key"); }
+static int jtNomeScope(char *d, unsigned n) { return debNomePerfil(d, n, "provider-scope"); }
 static int jtNomeFanart(char *d, unsigned n) { return jtNomeFixo(d, n, "fanart.txt"); }
 static int jtNomeSeekr(char *d, unsigned n) { return jtNomeFixo(d, n, "seekr.txt"); }
 static int jtNomePosters(char *d, unsigned n) { return jtNomeFixo(d, n, "posteres.txt"); }
@@ -125,6 +127,8 @@ static int jtGravarIptv(const char *t) {
 }
 
 static const JtArq jtArq[] = {
+  /* Apply scope before the credentials/failure store it selects. */
+  { "fileProviderScope",2,jtNomeScope,  NULL, NULL, ajustes_provedores_abrir_sessao, 0 },
   { "fileDebrid",      8, jtNomeDebrid,  NULL, NULL, debCarregar,          1 },
   { "fileTmdbKey",     2, jtNomeTmdb,    NULL, NULL, tmdbLocalCarregar,    0 },
   { "fileFanart",      2, jtNomeFanart,  NULL, NULL, fanartCarregar,       1 },
@@ -138,6 +142,7 @@ static const JtArq jtArq[] = {
   { "fileJellyfin",    8, jtNomeJf,      NULL, NULL, servidores_perfil_trocou, 0 },
   { "fileEmby",        8, jtNomeEmby,    NULL, NULL, servidores_perfil_trocou, 0 },
   { "filePlex",        8, jtNomePlex,    NULL, NULL, servidores_perfil_trocou, 0 },
+  { "fileMdbKey",      2, jtNomeMdb,     NULL, NULL, extras_chave_local_recarregar, 0 },
 };
 #define JT_N (sizeof jtArq / sizeof *jtArq)
 #define JT_PARTES_MAX 40

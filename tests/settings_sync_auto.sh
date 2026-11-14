@@ -30,6 +30,18 @@ log="$work/log.txt"
 run(){ local bin=$1 dev=$2 step=$3; shift 3; if ! env "$@" "$bin" "$work/$dev" "$step" >>"$log" 2>&1; then echo "FAIL: device $dev step $step"; tail -40 "$log"; exit 1; fi; }
 mkdir "$work/server" "$work/a" "$work/b" "$work/ro-server" "$work/r"
 export J7_SERVER="$work/server"
+mkdir "$work/copy-server" "$work/copy-a" "$work/copy-b"
+J7_SERVER="$work/copy-server" run "$work/test" copy-a copy-all
+J7_SERVER="$work/copy-server" run "$work/test" copy-b copy-peer
+mkdir "$work/copy-active-server" "$work/copy-active"
+J7_SERVER="$work/copy-active-server" run "$work/test" copy-active copy-active
+mkdir "$work/pre-server" "$work/pre-a" "$work/pre-b" "$work/pre-c"
+J7_SERVER="$work/pre-server" run "$work/test" pre-a existing-layout-offline J7_OFFLINE=1
+J7_SERVER="$work/pre-server" run "$work/test" pre-a existing-layout
+J7_SERVER="$work/pre-server" run "$work/test" pre-b existing-layout-peer
+printf 'homeLayoutLocal 1\n' > "$work/pre-c/ajustes-p1.txt"
+printf 'homeLayoutLocal 1\n' > "$work/pre-c/ajustes.txt"
+J7_SERVER="$work/pre-server" run "$work/test" pre-c existing-layout-cloud-wins
 run "$work/test" a a-edit
 run "$work/test" b b-restore
 run "$work/test" b b-edit

@@ -12,6 +12,7 @@
 static char *cloud;
 static int pushes, pushRequests, failPull, editDuringPull, failPush, stalePull;
 static char *lastWrite;
+static const char *providerCredentials;
 int nuvem_configurar(const char *d) { (void)d; return 1; }
 int nuvem_pronta(void) { return 1; }
 const char *nuvem_url(void) { return "https://account.invalid"; }
@@ -40,6 +41,8 @@ char *nuvem_rpc_com(const char *f, const char *c, const char *b, int *st) {
   (void)b; *st = 200;
   if (!strcmp(f, "sync_pull_profiles"))
     return strdup("[{\"profile_index\":1,\"name\":\"Test\"}]");
+  if (!strcmp(f, "sync_pull_provider_credentials") && providerCredentials)
+    return strdup(providerCredentials);
   if (!strcmp(f, "sync_pull_profile_settings_blob")) {
     if (failPull) { *st = 503; return strdup("unavailable"); }
     if (stalePull) perfis_invalidar_sessao();
@@ -80,6 +83,14 @@ int main(int argc,char **argv) {
   assert(argc==2); setenv("NUVIO_DADOS",argv[1],1);
   dados_iniciar(NULL); player_dir(argv[1]); ajustes_dir(argv[1]); fil_definir_perfil(1);
   login();
+  providerCredentials="[{\"provider\":\"tmdb\",\"credential_json\":{\"api_key\":\"0123456789abcdef0123456789abcdef\"}},{\"provider\":\"mdblist\",\"credential_json\":\"{\\\"api_key\\\":\\\"mdb-string-fixture\\\"}\"}]";
+  cycle();
+  check(!strcmp(desc_chave_tmdb_reserva(),"0123456789abcdef0123456789abcdef"),"object-encoded provider key imported");
+  check(extras_mdblist_tem_chave(),"string-encoded provider key imported");
+  providerCredentials="[{\"provider\":\"tmdb\",\"credential_json\":\"{\\\"api_key\\\":\\\"abcdef0123456789abcdef0123456789\\\"}\"}]";
+  cycle();
+  check(!strcmp(desc_chave_tmdb_reserva(),"abcdef0123456789abcdef0123456789"),"string-encoded TMDB key replaces the previous account key");
+  providerCredentials=NULL;
   for (size_t i=0;i<AJ_SHARED_N;i++)
     check(OPCOES[ajSharedMap[i].op].tipo==OP_ESCOLHA && OPCOES[ajSharedMap[i].op].n==2 &&
           (OPCOES[ajSharedMap[i].op].valores==V_LIGA || ajSharedMap[i].op==AJ_RAIL) &&

@@ -2399,6 +2399,7 @@ static const char *pstTexto(int op);
 static void uxNotificar(const char *s);
 static int gravar(void);
 static int ajBetterExplicitPerfil;
+static int ajustesCopiaEnfileirar(int origem, int destino, const int *src);
 static int dePerfil(int i);
 static int perfilGravarVetor(int perfil, const int *v);
 static int perfilLerVetor(int perfil, int *v, char *tem);
@@ -6616,13 +6617,14 @@ static void aplicarVetorAtivo(const int *v, const char *tem) {
 // Leva as chaves DO PERFIL de src[] (so as marcadas em tem[], ou todas) para o
 // perfil `destino`. Devolve quantas mudaram, -1 em falha. Ver ajustes.h.
 static int levarParaPerfil(const int *src, const char *tem, int destino) {
-  int dst[AJ_N], i, mudou = 0, mudouConta = 0;
+  int dst[AJ_N], before[AJ_N], i, mudou = 0, mudouConta = 0;
   char tdst[AJ_N];
   const int ativo = destino == perfis_ativo();
   if (edPerfil || destino <= 0) return -1;
   memcpy(dst, valorPadrao, sizeof dst);
   if (ativo) memcpy(dst, valor, sizeof dst);
   else perfilLerVetor(destino, dst, tdst);
+  memcpy(before,dst,sizeof before);
   for (i = 0; i < AJ_N; i++) {
     if (!dePerfil(i) || (tem && !tem[i]) || dst[i] == src[i]) continue;
     dst[i] = src[i];
@@ -6635,6 +6637,7 @@ static int levarParaPerfil(const int *src, const char *tem, int destino) {
     int betterOk=perfilGravarVetor(destino,dst);
     ajBetterExplicitPerfil--;
     if(!betterOk)return -1;
+    ajustes_compartilhados_edicao(destino,before,dst);
   }
   if (mudouConta) sync_marcar_ajustes_pendentes_perfil(destino);
   printf("[ajustes] ajustes levados ao perfil %d: %d mudaram (%d da conta, pendentes)\n", destino, mudou, mudouConta);
@@ -6647,9 +6650,11 @@ int ajustes_copiar_perfil(int origem, int destino) {
   char tem[AJ_N];
   if (origem <= 0 || destino <= 0 || origem == destino || edPerfil) return -1;
   memcpy(src, valorPadrao, sizeof src);
-  if (origem == perfis_ativo()) { memcpy(src, valor, sizeof src); memset(tem, 1, sizeof tem); }
+  if (origem == perfis_ativo()) { ajFalhaEspelhar(); ajLegendaEspelhar(); memcpy(src, valor, sizeof src); memset(tem, 1, sizeof tem); }
   else if (!perfilLerVetor(origem, src, tem)) return -1;
-  return levarParaPerfil(src, tem, destino);
+  int n = levarParaPerfil(src, tem, destino);
+  if (n >= 0 && sessao_logada() && !ajustesCopiaEnfileirar(origem, destino, src)) return -1;
+  return n;
 }
 
 int ajustes_restaurar_padrao_perfil(int perfil) {
@@ -11622,3 +11627,4 @@ int ajustes_rapido_cor_definir(int i) {
 }
 
 #include "ajustes_better.inc"
+#include "ajustes_copia.inc"

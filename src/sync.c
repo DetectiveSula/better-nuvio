@@ -1,6 +1,7 @@
 void servidores_esquecer_todos(void);   // servidores.c: wipe every profile's token
 #include "sync.h"
 #include <time.h>
+#include <ctype.h>
 #include "sessao.h"
 #include "nuvem.h"
 #include "perfis.h"
@@ -321,6 +322,14 @@ static char *pedidoDoCiclo(const char *nome, const char *corpo, int tabela, int 
 
 static char *rpcDoCiclo(const char *nome, const char *corpo, int *st) {
   return pedidoDoCiclo(nome, corpo, 0, st);
+}
+char *sync_rpc_copia_ajustes(unsigned long long session, const char *function,
+                            const char *body, int *status) {
+  *status=0;
+  if(session!=sessaoDoCiclo || !perfilDoCicloAtual() ||
+     (strcmp(function,"sync_pull_profile_settings_blob") &&
+      strcmp(function,"sync_push_profile_settings_blob"))) return NULL;
+  return rpcDoCiclo(function,body,status);
 }
 
 static char *tabelaDoCiclo(const char *nome, const char *consulta, int *st) {
@@ -778,9 +787,18 @@ static void puxarCredenciais(void) {
     char prov[48], cred[900];
     if (!js_texto(p, f, "provider", prov, sizeof prov)) continue;
     if (!js_bruto(p, f, "credential_json", cred, sizeof cred)) continue;
+    // Some clients store credential_json as a JSON string rather than an
+    // object. Decode that envelope before looking up its credential fields.
+    if (cred[0] == '"') {
+      char decoded[sizeof cred];
+      if (!js_cadeia(cred, decoded, sizeof decoded)) continue;
+      memcpy(cred, decoded, strlen(decoded) + 1);
+      memset(decoded, 0, sizeof decoded);
+    }
+    const char *object = cred;
+    while (*object && isspace((unsigned char)*object)) object++;
+    if (*object != '{') continue;
     if (!strcmp(prov, "trakt")) {
-      // O credential_json pode vir como OBJETO ou como string JSON — o web
-      // trata os dois. Aqui basta procurar a chave dentro do texto cru.
       char tk[300];
       if (js_texto(cred, cred + strlen(cred), "access_token", tk, sizeof tk)) {
         snprintf(traktTok, sizeof traktTok, "%s", tk);
@@ -1410,6 +1428,16 @@ static void *rodar(void *u) {
   // a base da costura e o blob que acabou de chegar. Ver empurrarAjustes.
   empurrarAjustes();
   ajustes_better_ciclo(sessaoDoCiclo);
+  if(ajustes_copias_ciclo(sessaoDoCiclo)&&perfilDoCicloAtual()){
+    /* A user may open the copied profile before its queued upload runs.
+     * Replace the pre-copy pull, otherwise the main thread would restore it
+     * over the new copy until the next five-minute poll. */
+    ajustes_better_ciclo(sessaoDoCiclo);
+    char settingsBody[96];snprintf(settingsBody,sizeof settingsBody,
+      "{\"p_profile_id\":%d,\"p_platform\":\"tv\"}",perfilDoCiclo);
+    temAjustesBlob=0;
+    puxarAjustesPerfil(settingsBody);
+  }
   sincronizarPlugins();
   // Sempre, nao so quando `sujoProgresso`: linhas migradas do formato antigo
   // nascem pendentes sem ninguem ter marcado nada.

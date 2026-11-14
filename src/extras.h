@@ -52,6 +52,8 @@ int  extras_mdblist_tem_chave(void);
 // art/mdblist.txt (que esta ate com modo 0600), o pacote distribui a chave de
 // quem o montou.
 void extras_definir_chave(const char *chave);
+void extras_copiar_chave(char *dst, size_t cap);
+void extras_chave_local_recarregar(void);
 
 // Nota da fonte, CRUA multiplicada por 10 (o imdb vem com uma casa decimal e
 // precisa caber em inteiro). 0 = nao ha. Divida por 10 e use

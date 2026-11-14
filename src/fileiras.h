@@ -545,6 +545,7 @@ typedef int (*FilHomeObserver)(const char *,BnValue);
 void fil_home_observer(FilHomeObserver);
 void fil_home_scope(const char *owner,int profile);
 int fil_home_baseline(const char *owner,int profile,BnField *,size_t,size_t *);
+int fil_home_snapshot(const char *owner,int profile,BnField *,size_t,size_t *);
 int fil_home_apply(const char *owner,int profile,const BnField *,size_t);
 int fil_home_identity(const char *local_key,char out[33]);
 #endif

@@ -104,6 +104,9 @@ unsigned sync_ultimo_ok(void);
 // colateral (login impossivel, sessao anonima, sync da conta errada) pareceu
 // bug do app. O ciclo tambem so roda com o app em uso, nunca durante o player.
 #define SYNC_INTERVALO_MS 300000u
+/* Explicit profile-copy worker; reuses the cycle's captured identity/token. */
+char *sync_rpc_copia_ajustes(unsigned long long session, const char *function,
+                            const char *body, int *status);
 // Com o servidor da conta fora do ar (sync_servidor_fora), a proxima volta
 // sai 1 minuto depois, e nao 5: e ela que substitui a copia local pela conta
 // quando ele voltar. O freio de nuvem.c continua valendo por cima.

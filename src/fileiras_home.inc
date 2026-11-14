@@ -117,3 +117,16 @@ int fil_home_baseline(const char *owner,int p,BnField *rows,size_t cap,size_t *n
  if(own){snprintf(file,sizeof file,"bn-home-owner-p%d.txt",perfil);dados_gravar(file,owner);}
  pthread_mutex_unlock(&trava);return 1;
 }
+/* Explicit copies need the presentation currently visible, including cloud
+ * overlays and edits still waiting for a journal commit, not the disk baseline. */
+int fil_home_snapshot(const char *owner,int p,BnField *rows,size_t cap,size_t *n){
+ if(!fil_home_baseline(owner,p,rows,cap,n))return 0;
+ pthread_mutex_lock(&trava);
+ if(p!=perfil||p!=homeProfile||strcmp(owner,homeOwner)){pthread_mutex_unlock(&trava);return 0;}
+ for(size_t i=0;i<homeCount;i++){
+  size_t j=0;for(;j<*n;j++)if(!strcmp(rows[j].key,homeOverrides[i].key))break;
+  if(j==*n){if(*n==cap){pthread_mutex_unlock(&trava);return 0;}memset(&rows[j],0,sizeof rows[j]);(*n)++;snprintf(rows[j].key,sizeof rows[j].key,"%s",homeOverrides[i].key);}
+  rows[j].value=homeOverrides[i].value;
+ }
+ pthread_mutex_unlock(&trava);return 1;
+}

@@ -22,7 +22,7 @@ static int jbLoja(int op){return ajLegendaPrincipal(op)||ajFalhaBackend(op);}
 static int jbDispositivo(size_t i);
 _Static_assert(JB_N==214,"J1 portable allowlist plus reviewed extensions (Home layout, Family Watching, personal preferences, full settings sync) changed");
 #include "ajustes_better_arquivos.inc"
-typedef struct JbContext {BnAccount *account;uint64_t session;int profile,refs,retired,cached,restoreLocal,homeSeeded;unsigned homeSeedRevision;char owner[80];BnValue observed[JB_N];
+typedef struct JbContext {BnAccount *account;uint64_t session;int profile,refs,retired,cached,restoreLocal,homeSeeded,seedLegacy;unsigned homeSeedRevision;char owner[80];BnValue observed[JB_N];
  uint64_t jtObs[JT_N];unsigned char jtOk[JT_N],jtNovo[JT_N];Uint32 jtProximo;struct JbContext *next;} JbContext;
 /* Bindings, then the file parts, then the J5 Home marker. */
 #define JB_DEFS_TOTAL (JB_N+JT_DEFS_MAX+1)
@@ -182,6 +182,7 @@ void ajustes_better_contexto(void){
  free(fontOwner);rotulosDeIdioma();
  {size_t nd=jbDefsTodas(valor,1,defs);if(nd)c->account=bna_open(defs,nd);}free(defs);
  if(!c->account){free(c);return;}c->cached=bna_cached(c->account);c->restoreLocal=c->cached&&jbForeign(c->profile,c->owner);
+ c->seedLegacy=NV_SYNC_AUTO&&!jbForeign(c->profile,c->owner);
  /* Persist the unobserved local baseline, without marking defaults as edits. */
  /* Automatic sync (owner decision, 12 Nov 2026): uploads are on for every signed-in profile.
   * NV_SYNC_AUTO=0 is a test-only build keeping the old explicit opt-in for the J4/J5 engine suites. */
@@ -274,6 +275,23 @@ int ajustes_better_passo(void){
  /* Failed local journalling takes priority over an older remote projection. */
  for(size_t i=0;i<JB_N;i++)if(!jbEqual(actual[i],c->observed[i]))return 0;
  if(!bna_view(c->account,keys,JB_N,remote,known,1))return 0;
+ /* The original bindings (including Home layout) used the saved local value
+  * as an unobserved baseline. Settings customised before automatic sync then
+  * never uploaded unless edited again. After a successful pull, seed only
+  * absent, non-default legacy preferences. Existing account fields win, and
+  * a profile left by another account is never used as a migration source. */
+ if(c->seedLegacy&&bna_pulled(c->account)){
+  BnValue changes[2*JB_ANTIGAS];const char *changedKeys[2*JB_ANTIGAS];size_t count=0;
+  for(size_t i=0;i<JB_ANTIGAS;i++){
+   BnValue initial;int op=jbMap[i].op;
+   if(known[i]||!jbEncode(op,valorPadrao[op],0,&initial)||jbEqual(actual[i],initial))continue;
+   changedKeys[count]=keys[i];changes[count++]=initial;
+   changedKeys[count]=keys[i];changes[count++]=actual[i];
+  }
+  if(count&&!bna_edit_many(c->account,changedKeys,changes,count))return 0;
+  c->seedLegacy=0;
+  if(count&&!bna_view(c->account,keys,JB_N,remote,known,1))return 0;
+ }
  Uint32 now=SDL_GetTicks();if(jbNextApply&&(Sint32)(now-jbNextApply)<0)return 0;jbNextApply=now+250;
  if(c->restoreLocal)memset(known,1,sizeof known);
  int n=jbApply(remote,known,c->cached),homeChanged=0;jbRead(c->observed);

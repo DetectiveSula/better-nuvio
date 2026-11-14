@@ -15,6 +15,7 @@ static const char *TEST_TOKEN="eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzZXR0aW5ncy10ZXN0
 static const char *OTHER_TOKEN="eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzZXR0aW5ncy1vdGhlciIsImV4cCI6NDEwMjQ0NDgwMH0.test";
 static const char *server;
 static int offline,pulls,betterPushes,tvPushes;
+static int copySwitchOnPull,copyFailAfterCommit;
 
 static void path(char *out,size_t cap,const char *platform,const char *owner,int profile){snprintf(out,cap,"%s/%s-%s-p%d.json",server,platform,owner,profile);}
 static char *slurp(const char *p){FILE *f=fopen(p,"rb");if(!f)return NULL;fseek(f,0,SEEK_END);long n=ftell(f);rewind(f);char *s=calloc((size_t)n+1,1);assert(s&&fread(s,1,(size_t)n,f)==(size_t)n);fclose(f);return s;}
@@ -24,11 +25,17 @@ static char *serverRpc(const char *fn,const char *body,const char *token,int *st
  if(offline){*st=503;return strdup("offline");}
  char platform[40]="",file[600];const char *pp=strstr(body,"\"p_platform\":\"");assert(pp);pp+=14;size_t n=strcspn(pp,"\"");assert(n<sizeof platform);memcpy(platform,pp,n);
  int profile=(int)js_num(body,NULL,"p_profile_id",-1);assert(profile>0);
+ if(copySwitchOnPull&&profile==2&&!strcmp(fn,"sync_pull_profile_settings_blob")){
+  copySwitchOnPull=0;perfis_invalidar_sessao();
+ }
  const char *owner=token&&!strcmp(token,OTHER_TOKEN)?"settings-other":"settings-test";
  path(file,sizeof file,platform,owner,profile);*st=200;
  if(!strcmp(fn,"sync_pull_profile_settings_blob")){pulls++;char *s=slurp(file);if(!s)return strdup("[]");char *r=malloc(strlen(s)+40);assert(r);sprintf(r,"[{\"settings_json\":%s}]",s);free(s);return r;}
  const char *p=strstr(body,"\"p_settings_json\":");assert(p);p=strchr(p,':')+1;const char *e=js_fim(p);assert(e);char *doc=strndup(p,(size_t)(e-p));spit(file,doc);free(doc);
  if(!strcmp(platform,"better_nuvio"))betterPushes++;else if(!strcmp(platform,"tv"))tvPushes++;else abort(); /* never mobile/home */
+ if(copyFailAfterCommit&&profile==2&&!strcmp(platform,"better_nuvio")){
+  copyFailAfterCommit=0;*st=503;return strdup("timeout after commit");
+ }
  *st=204;return strdup("");
 }
 char *nuvem_rpc_com(const char *f,const char *c,const char *token,int *st){return serverRpc(f,c,token,st);}

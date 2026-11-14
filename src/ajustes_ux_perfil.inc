@@ -79,7 +79,7 @@ static void pfExecutar(void) {
     }
     memset(pfMarca, 0, sizeof pfMarca);
     pfFechar();
-    uxNotificar(falha ? "Alguns ajustes não puderam ser copiados." : "Ajustes copiados. Quem recebeu pode mudar o que quiser.");
+    uxNotificar(falha ? "Alguns ajustes não puderam ser copiados." : "Ajustes e chaves de API copiados. A conta será atualizada na próxima sincronização.");
     (void)ok;
   } else if (acao == PA_INFANTIL) {
     int s = pfEstadoInfantil(alvo), prox = (s + 1) % 3;
@@ -234,7 +234,7 @@ static int pfLinhas(PfLinha *L) {
       pfRotulo(&L[n++], PL_RESTAURAR, "Restaurar o padrão deste perfil", "Só as opções deste perfil");
     } else {
       if (outros) pfRotulo(&L[n++], PL_EDITAR_OUTRO, "Editar ajustes de outro perfil", "Pede o PIN de administrador");
-      if (outros) pfRotulo(&L[n++], PL_COPIAR, "Copiar meus ajustes para…", "Aparência, player, home e legendas");
+      if (outros) pfRotulo(&L[n++], PL_COPIAR, "Copiar meus ajustes para…", "Aparência, player, home, legendas e chaves de API");
       pfRotulo(&L[n++], PL_RESTAURAR, "Restaurar o padrão deste perfil", "Só as opções deste perfil");
       if (outros) pfRotulo(&L[n++], PL_INFANTIL, "Perfil infantil e trava de ajustes…", "Pede o PIN de administrador");
     }
