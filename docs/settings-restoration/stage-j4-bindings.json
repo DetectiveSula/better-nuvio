@@ -2022,8 +2022,14 @@
    "storage_key": "filterSort",
    "reviewed": "2026-11-12",
    "reason": "Owner request (12 Nov 2026): all settings sync. Kept in its own per-profile store (subtitle style / failure policy / source filters); read from the mirrored value and applied through the store setter. Wire key is the stored key without its '-'."
+  },
+  {
+   "native_id": "AJ_FIL_LIMITE",
+   "storage_key": "limiteFileiras",
+   "reviewed": "2026-11-15",
+   "reason": "Owner request (15 Nov 2026): the Home row count syncs. Stored in fileiras.c and mirrored in valor[]; device-wide part of the table (each profile keeps its own copy). Wire range 3..200 on every platform; a TV clamps to its own maximum when applying."
   }
  ],
  "original_j1_portable_count": 90,
- "current_binding_count": 214
+ "current_binding_count": 215
 }

@@ -40,7 +40,8 @@ char *nuvem_addon_alternar(const char *q, int a, const char *b, unsigned p, int 
 char *nuvem_rpc_com(const char *f, const char *c, const char *b, int *st) {
   (void)b; *st = 200;
   if (!strcmp(f, "sync_pull_profiles"))
-    return strdup("[{\"profile_index\":1,\"name\":\"Test\"}]");
+    return strdup(getenv("J7_TWO_PROFILES") ? "[{\"profile_index\":1,\"name\":\"Test\"},{\"profile_index\":2,\"name\":\"Second\"}]"
+                                            : "[{\"profile_index\":1,\"name\":\"Test\"}]");
   if (!strcmp(f, "sync_pull_provider_credentials") && providerCredentials)
     return strdup(providerCredentials);
   if (!strcmp(f, "sync_pull_profile_settings_blob")) {

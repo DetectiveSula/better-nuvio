@@ -30,6 +30,14 @@ log="$work/log.txt"
 run(){ local bin=$1 dev=$2 step=$3; shift 3; if ! env "$@" "$bin" "$work/$dev" "$step" >>"$log" 2>&1; then echo "FAIL: device $dev step $step"; tail -40 "$log"; exit 1; fi; }
 mkdir "$work/server" "$work/a" "$work/b" "$work/ro-server" "$work/r"
 export J7_SERVER="$work/server"
+mkdir "$work/rows-server" "$work/rows-a" "$work/rows-b"
+J7_SERVER="$work/rows-server" run "$work/test" rows-a rows-a
+J7_SERVER="$work/rows-server" run "$work/test" rows-b rows-b
+J7_SERVER="$work/rows-server" run "$work/test" rows-b rows-wide
+mkdir "$work/share-server" "$work/share-a" "$work/share-b"
+J7_SERVER="$work/share-server" run "$work/test" share-a share-a J7_TWO_PROFILES=1
+J7_SERVER="$work/share-server" run "$work/test" share-b share-b J7_TWO_PROFILES=1
+J7_SERVER="$work/share-server" run "$work/test" share-a share-a2 J7_TWO_PROFILES=1
 mkdir "$work/copy-server" "$work/copy-a" "$work/copy-b"
 J7_SERVER="$work/copy-server" run "$work/test" copy-a copy-all
 J7_SERVER="$work/copy-server" run "$work/test" copy-b copy-peer

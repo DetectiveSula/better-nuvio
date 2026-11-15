@@ -228,3 +228,8 @@
 {AJ_FILTRO_POR_RES,"filterResolutionLimit"},
 {AJ_FILTRO_POR_QUAL,"filterQualityLimit"},
 {AJ_FILTRO_SORT,"filterSort"},
+/* Home row count (owner, 15 Nov 2026): kept in fileiras.c (fileirasui-p<N>.txt),
+ * mirrored in valor[]. Device-wide part of the table: each profile keeps its own
+ * synced copy. Wire range is 3..200 on every platform (Android's "Unlimited" is
+ * 200); a TV clamps to its own maximum when applying (jbDecode). */
+{AJ_FIL_LIMITE,"limiteFileiras"},

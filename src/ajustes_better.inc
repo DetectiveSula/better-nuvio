@@ -20,8 +20,13 @@ static const JbMap jbMap[]={
  * from the mirrored value[] and applied through the store setter. */
 static int jbLoja(int op){return ajLegendaPrincipal(op)||ajFalhaBackend(op);}
 static int jbDispositivo(size_t i);
-_Static_assert(JB_N==214,"J1 portable allowlist plus reviewed extensions (Home layout, Family Watching, personal preferences, full settings sync) changed");
+_Static_assert(JB_N==215,"J1 portable allowlist plus reviewed extensions (Home layout, Family Watching, personal preferences, full settings sync, Home row count) changed");
+/* The row count lives in fileiras.c; keep its valor[] mirror current before reading. */
+static void jbEspelharFileiras(void){valor[AJ_FIL_LIMITE]=fil_limite_gravado();}
 #include "ajustes_better_arquivos.inc"
+static void ajPartilharArquivo(size_t i,const char *raw,size_t len);
+static int ajPartilhaOpcao(int op);
+static void ajPartilharOpcao(const char *key,BnValue v);
 typedef struct JbContext {BnAccount *account;uint64_t session;int profile,refs,retired,cached,restoreLocal,homeSeeded,seedLegacy;unsigned homeSeedRevision;char owner[80];BnValue observed[JB_N];
  uint64_t jtObs[JT_N];unsigned char jtOk[JT_N],jtNovo[JT_N];Uint32 jtProximo;struct JbContext *next;} JbContext;
 /* Bindings, then the file parts, then the J5 Home marker. */
@@ -71,6 +76,7 @@ static int jbDecode(int op,BnValue v,int *native){
  }
  if(v.type==BN_BOOL){if(v.number!=0&&v.number!=1)return 0;*native=!v.number;return 1;}
  if(v.number<INT_MIN||v.number>INT_MAX)return 0;int n=(int)v.number;const Opcao *o=&OPCOES[op];
+ if(op==AJ_FIL_LIMITE){if(n<FIL_LIMITE_MIN||n>200)return 0;*native=n<o->min?o->min:n>o->max?o->max:n;return 1;}
  if(o->tipo==OP_NUMERO){if(n<o->min||n>o->max)return 0;}
  else if(n<0||n>=nValores(op))return 0;*native=n;return 1;
 }
@@ -80,14 +86,14 @@ static int jbDefs(const int *values,int registry,BnDef *defs){
   if(strcmp(CHAVE[op][0]=='-'?CHAVE[op]+1:CHAVE[op],jbMap[i].key)||(!dePerfil(op)&&i<JB_PERFIL_FIM)||!jbEncode(op,values[op],registry,&d->initial))return 0;
   snprintf(d->key,sizeof d->key,"%s",jbMap[i].key);d->type=d->initial.type;d->portable=1;
   if(d->type==BN_STRING)d->accept=op==AJ_LEG2_FONTE?jbFont:op==AJ_TRAILER_AUDIO?jbAudio:jbLang;
-  else if(d->type==BN_INT){d->min=o->min;d->max=o->max;}
+  else if(d->type==BN_INT){d->min=o->min;d->max=op==AJ_FIL_LIMITE?200:o->max;}
   else {d->min=0;d->max=d->type==BN_BOOL?1:o->n-1;}
  }return 1;
 }
 static size_t jbDefsTodas(const int *values,int registry,BnDef *defs){
  if(!jbDefs(values,registry,defs))return 0;size_t n=JB_N+jtDefs(defs+JB_N);home_definition(&defs[n]);return n+1;
 }
-static int jbRead(BnValue *v){if(!edPerfil){ajFalhaEspelhar();ajLegendaEspelhar();}for(size_t i=0;i<JB_N;i++)if(!jbEncode(jbMap[i].op,valor[jbMap[i].op],1,&v[i]))return 0;return 1;}
+static int jbRead(BnValue *v){jbEspelharFileiras();if(!edPerfil){ajFalhaEspelhar();ajLegendaEspelhar();}for(size_t i=0;i<JB_N;i++)if(!jbEncode(jbMap[i].op,valor[jbMap[i].op],1,&v[i]))return 0;return 1;}
 static void jbKeys(const char **keys){for(size_t i=0;i<JB_N;i++)keys[i]=jbMap[i].key;}
 /* Last Native-applied values distinguish an uncaptured local save from a
  * remote checkpoint committed just before a crash. This is local-only data. */
@@ -163,6 +169,8 @@ static int jbApply(const BnValue *values,const unsigned char *known,int cachedFo
   if(valor[AJ_SOCIAL]!=old[AJ_SOCIAL])desc_repetir();
   if(valor[AJ_FAMILIA]!=old[AJ_FAMILIA]||valor[AJ_FAMILIA_PARTILHAR]!=old[AJ_FAMILIA_PARTILHAR])familia_ajuste_mudou();
   if(valor[AJ_ADDONS_PRINCIPAL]!=old[AJ_ADDONS_PRINCIPAL])sync_iniciar();
+  /* Same as choosing it in Settings: fileiras.c owns the number and the Home. */
+  if(valor[AJ_FIL_LIMITE]!=old[AJ_FIL_LIMITE]){fil_ajustar_limite(valor[AJ_FIL_LIMITE]);valor[AJ_FIL_LIMITE]=fil_limite_gravado();fil_confirmar_limite();}
  }
  for(size_t i=0;i<JB_N;i++)if(jbMap[i].op==AJ_LEG2_FONTE&&(known[i]||cachedFont)){
   BnValue actual;if(jbEncode(AJ_LEG2_FONTE,valor[AJ_LEG2_FONTE],1,&actual)&&!jbEqual(actual,values[i])&&jbFontApply(values[i]))changed++;
@@ -171,6 +179,7 @@ static int jbApply(const BnValue *values,const unsigned char *known,int cachedFo
 }
 void ajustes_better_contexto(void){
  if(!jbReady||jbApplying||edPerfil||!sessao_logada()||jbCurrentScope(jbCurrent))return;
+ jbEspelharFileiras();
  JbContext *c=calloc(1,sizeof *c);BnDef *defs=calloc(JB_DEFS_TOTAL,sizeof *defs);if(!c||!defs){free(c);free(defs);return;}
  c->profile=perfis_ativo();c->session=nv_perfil_sessao_ler();snprintf(c->owner,sizeof c->owner,"%s",sessao_usuario());
  /* The custom-font registry is device-global; do not inherit another profile's
@@ -229,7 +238,8 @@ void ajustes_better_observar(void){
  for(size_t i=0;i<JB_N;i++)if(!jbEqual(actual[i],c->observed[i])){keys[n]=jbMap[i].key;changes[n++]=actual[i];}
  if(n){
   int nativeSaved=perfilGravarVetor(c->profile,valor);
-  if(bna_edit_many(c->account,keys,changes,n)){memcpy(c->observed,actual,sizeof actual);if(nativeSaved)jbAnchor(c->profile,valor,actual,1);}
+  if(bna_edit_many(c->account,keys,changes,n)){memcpy(c->observed,actual,sizeof actual);if(nativeSaved)jbAnchor(c->profile,valor,actual,1);
+   for(size_t k=0;k<n;k++)for(size_t i=0;i<JB_N;i++)if(!strcmp(keys[k],jbMap[i].key)&&ajPartilhaOpcao(jbMap[i].op))ajPartilharOpcao(keys[k],changes[k]);}
  }
 }
 /* Files: journal local changes, apply the account's copy, settle new files once the
@@ -253,7 +263,10 @@ static int jtPasso(JbContext *c){
    if(c->jtNovo[i]){memset(buf,0,cap);free(buf);free(rem);continue;}
   }
   if(hh!=c->jtObs[i]){  /* changed on this TV */
-   if(jtEditar(c->account,i,buf,(size_t)l)){c->jtObs[i]=hh;h[i]=hh;tem[i]=1;anchor=1;}
+   if(jtEditar(c->account,i,buf,(size_t)l)){c->jtObs[i]=hh;h[i]=hh;tem[i]=1;anchor=1;
+    /* A whole-TV store (Seekr, Fanart, poster service, debrid...) is one file for
+     * every profile here: send the edit to the other profiles too (ajustes_copia.inc). */
+    if(jtArq[i].dispositivo)ajPartilharArquivo(i,buf,(size_t)l);}
   }else if(view&&conhecido){
    size_t rl=0;
    if(jtJuntar(i,vals,rem,cap,&rl)){uint64_t rh=jtHash(rem,rl);

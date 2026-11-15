@@ -231,6 +231,65 @@ done:
   printf("[profile-copy] perfil %d %s HTTP %d: %s\n",target,platform,status,ok?"confirmado":"pendente");
   ajCopyFree(response);ajCopyFree(merged);return ok;
 }
+/* WHOLE-TV STORES FOLLOW EVERY PROFILE (owner, 15 Nov 2026). The Seekr key,
+ * Fanart key, poster service, debrid keys, P2P and failure policy are one file on
+ * a TV, shared by all its profiles, but the account keeps one copy per profile.
+ * Until now an edit reached only the active profile's copy, so another TV showing
+ * a different profile never got it. An edit made here is now queued for every
+ * other profile and merged into each one's account document with a newer revision
+ * (ajCopyUpload). Only real edits are shared, never a value received or an older
+ * copy found at start-up, so a stale TV cannot overwrite a newer key. */
+static void ajShareName(const char *owner,int profile,const char *tag,char *dst,size_t cap){
+  snprintf(dst,cap,"settings-share-v1-%016llx-p%d-%s.json",aj6OwnerHash(owner),profile,tag);
+}
+/* Queue `n` fields (one store's parts, or one setting) for every other profile. */
+static void ajPartilharCampos(const char *tag,const char *const *keys,const BnValue *values,int n){
+  char owner[80];snprintf(owner,sizeof owner,"%s",sessao_usuario());
+  int ativo=perfis_ativo(),queued=0;uint64_t session=nv_perfil_sessao_ler();
+  if(!sessao_logada()||!*owner||ativo<=0||n<=0)return;
+  BnDef *defs=calloc(JB_DEFS_TOTAL,sizeof *defs);BnEngine *e=calloc(1,sizeof *e);BnDoc *doc=calloc(1,sizeof *doc);
+  size_t nd=defs?jbDefsTodas(valorPadrao,0,defs):0;
+  if(!nd||!e||!doc)goto done;
+  for(int k=0;k<perfis_n();k++){
+    const ContaPerfil *p=perfis_item(k);int target=p?p->indice:0;char *better=NULL,name[200];
+    if(target<=0||target==ativo||!bn_init(e,owner,target,dados_cliente_id(),defs,nd))continue;
+    memset(doc,0,sizeof *doc);snprintf(doc->schema,sizeof doc->schema,"%s",BN_SCHEMA);doc->version=BN_VERSION;doc->profile=target;snprintf(doc->owner,sizeof doc->owner,"%s",owner);
+    int ok=1;for(int q=0;q<n&&ok;q++)ok=ajCopyField(doc,keys[q],values[q]);
+    if(!ok||!bn_json(e,doc,&better))continue;
+    Jsw w;jsw_iniciar(&w);jsw_obj_ini(&w);jsw_chave(&w,"better");jsw_bruto(&w,better);jsw_obj_fim(&w);ajCopyFree(better);
+    const char *text=jsw_texto_final(&w);ajShareName(owner,target,tag,name,sizeof name);
+    pthread_mutex_lock(&ajCopyLock);
+    if(text&&nv_perfil_sessao_travar(session)){if(debGravarArquivo(name,text))queued++;nv_perfil_sessao_destravar();}
+    pthread_mutex_unlock(&ajCopyLock);jsw_livre(&w);
+  }
+  if(queued)printf("[profile-share] %s: alterado nesta TV, guardado para %d outro(s) perfil(is)\n",tag,queued);
+done:
+  if(doc){memset(doc,0,sizeof *doc);free(doc);}free(e);free(defs);
+}
+static void ajPartilharArquivo(size_t i,const char *raw,size_t len){
+  BnValue parts[JT_PARTES_MAX];char keys[JT_PARTES_MAX][JT_CHAVE_MAX];const char *kp[JT_PARTES_MAX];
+  if(!jtArq[i].dispositivo||!jtPartes(i,raw,len,parts))return;
+  for(int q=0;q<jtArq[i].partes;q++){jtChave(i,q,keys[q]);kp[q]=keys[q];}
+  ajPartilharCampos(jtArq[i].chave,kp,parts,jtArq[i].partes);memset(parts,0,sizeof parts);
+}
+/* Whole-TV choices that belong with a shared store: the poster service in use
+ * goes with its configuration (filePosters). */
+static int ajPartilhaOpcao(int op){return op==AJ_POSTER_PROV;}
+static void ajPartilharOpcao(const char *key,BnValue v){const char *k=key;ajPartilharCampos(key,&k,&v,1);}
+static const char *ajShareTags[]={"posterProvLocal"};
+static void ajPartilhasCiclo(uint64_t session,const char *owner){
+  for(int target=1;target<=32&&ajCopyCurrent(session,owner);target++)
+    for(size_t i=0;i<JT_N+sizeof ajShareTags/sizeof *ajShareTags&&ajCopyCurrent(session,owner);i++){
+      char name[200];const char *tag=i<JT_N?jtArq[i].chave:ajShareTags[i-JT_N];
+      if(i<JT_N&&!jtArq[i].dispositivo)continue;ajShareName(owner,target,tag,name,sizeof name);
+      pthread_mutex_lock(&ajCopyLock);char *queued=dados_ler(name);pthread_mutex_unlock(&ajCopyLock);
+      if(!queued)continue;
+      char *better=ajCopyMember(queued,"better");int ok=better&&ajCopyUpload(session,owner,target,"better_nuvio",better);
+      pthread_mutex_lock(&ajCopyLock);
+      if(ok&&nv_perfil_sessao_travar(session)){char *latest=dados_ler(name);if(latest&&!strcmp(latest,queued))dados_apagar(name);ajCopyFree(latest);nv_perfil_sessao_destravar();}
+      pthread_mutex_unlock(&ajCopyLock);ajCopyFree(better);ajCopyFree(queued);
+    }
+}
 int ajustes_copias_ciclo(uint64_t session){
   char owner[80];snprintf(owner,sizeof owner,"%s",sessao_usuario());
   int refresh=0;
@@ -247,5 +306,6 @@ int ajustes_copias_ciclo(uint64_t session){
     }
     pthread_mutex_unlock(&ajCopyLock);ajCopyFree(better);ajCopyFree(tv);ajCopyFree(queued);
   }
+  ajPartilhasCiclo(session,owner);
   return refresh;
 }

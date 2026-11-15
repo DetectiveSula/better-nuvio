@@ -227,6 +227,63 @@ int main(int argc,char **argv){
   for(int k=0;k<3;k++){if(jbCurrent)jbCurrent->jtProximo=0;sync1();}
   char *f=dados_ler("fanart.txt");assert(f&&!strcmp(f,"fanart-test-key-0123456789abcdef"));free(f);
   pass("a TV's own copy from before its first download does not overwrite the account's");
+ }else if(!strcmp(step,"share-a")){
+  /* Owner, 15 Nov 2026: the Seekr key (a whole-TV store) must reach another TV
+   * showing a different profile. TV A edits it on profile 1 only. */
+  /* Let each profile settle its file anchors first, as an installed TV has. */
+  for(int p=1;p<=3;p++){selectProfile(p==2?2:1);for(int k=0;k<2;k++){if(jbCurrent)jbCurrent->jtProximo=0;sync1();}}
+  assert(dados_gravar("seekr.txt","seekr-share-key-0123456789abcdef"));seekrCarregar();
+  int prov=(valorPadrao[AJ_POSTER_PROV]+1)%nValores(AJ_POSTER_PROV);valor[AJ_POSTER_PROV]=prov;assert(gravar());
+  {char file[600],buf[16];snprintf(file,sizeof file,"%s/share-prov.txt",server);snprintf(buf,sizeof buf,"%d",prov);spit(file,buf);}
+  for(int k=0;k<3;k++){if(jbCurrent)jbCurrent->jtProximo=0;sync1();}
+  assert(serverHas("better_nuvio",1,"fileSeekr0")&&serverHas("better_nuvio",2,"fileSeekr0"));
+  assert(!serverHas("better_nuvio",2,"seekr-share-key"));
+  assert(serverHas("better_nuvio",2,"posterProvLocal"));
+  pass("share: a Seekr key and poster service changed on profile 1 are saved for profile 2 too");
+ }else if(!strcmp(step,"share-b")){
+  selectProfile(2);for(int k=0;k<4;k++){if(jbCurrent)jbCurrent->jtProximo=0;sync1();}
+  char *f=dados_ler("seekr.txt");assert(f&&!strcmp(f,"seekr-share-key-0123456789abcdef"));free(f);
+  {char file[600];snprintf(file,sizeof file,"%s/share-prov.txt",server);char *t=slurp(file);assert(t&&valor[AJ_POSTER_PROV]==atoi(t));free(t);}
+  pass("share: another TV on profile 2 receives the Seekr key and the poster service choice");
+ }else if(!strcmp(step,"share-a2")){
+  /* A received or unchanged key is never re-shared: no loop, no stale overwrite. */
+  int before=betterPushes;for(int k=0;k<3;k++){if(jbCurrent)jbCurrent->jtProximo=0;sync1();}
+  assert(betterPushes==before);
+  pass("share: no repeated uploads after the key is in place");
+ }else if(!strcmp(step,"rows-a")){
+  /* Owner, 15 Nov 2026: Home row count syncs. TV A changes it on profile 1. */
+  for(int k=0;k<2;k++)sync1();
+  int n=valorPadrao[AJ_FIL_LIMITE]==12?15:12;fil_ajustar_limite(n);fil_confirmar_limite();
+  sync1();sync1();
+  assert(fil_limite_gravado()==n&&serverHas("better_nuvio",1,"limiteFileiras"));
+  {char file[600],buf[16];snprintf(file,sizeof file,"%s/rows.txt",server);snprintf(buf,sizeof buf,"%d",n);spit(file,buf);}
+  pass("rows: a row count changed here is uploaded");
+  /* Switching to another profile on this TV must not carry this count into it. */
+  selectProfile(2);for(int k=0;k<3;k++)sync1();
+  printf("rows-switch: p2 limite=%d\n",fil_limite_gravado());
+  assert(!serverHas("better_nuvio",2,"limiteFileiras"));
+  selectProfile(1);for(int k=0;k<2;k++)sync1();assert(fil_limite_gravado()==n);
+  pass("rows: switching profiles on one TV copies no row count between them");
+ }else if(!strcmp(step,"rows-b")){
+  for(int k=0;k<3;k++)sync1();
+  char file[600];snprintf(file,sizeof file,"%s/rows.txt",server);char *t=slurp(file);assert(t);int n=atoi(t);free(t);
+  assert(fil_limite_gravado()==n&&valor[AJ_FIL_LIMITE]==n&&betterPushes==0);
+  pass("rows: another TV takes the row count, without echoing it back");
+ }else if(!strcmp(step,"rows-wide")){
+  /* Android's "Unlimited" (200) reaches a Samsung TV: clamped to its own maximum,
+   * never a refused document. */
+  char p[600];path(p,sizeof p,"better_nuvio","settings-test",1);char *t=slurp(p);assert(t);
+  char *at=strstr(t,"\"limiteFileiras\"");assert(at);char *v=strstr(at,"\"value\":");assert(v);
+  char out[200000];size_t pre=(size_t)(v+8-t);char *end=v+8;while(*end>='0'&&*end<='9')end++;
+  assert(pre+strlen(end)+8<sizeof out);memcpy(out,t,pre);size_t o=pre+(size_t)sprintf(out+pre,"200");strcpy(out+o,end);
+  char *rev=strstr(at,"\"rev\":");assert(rev);free(t);
+  spit(p,out);
+  /* bump the revision so it wins */
+  t=slurp(p);at=strstr(t,"\"limiteFileiras\"");rev=strstr(at,"\"rev\":");long r=strtol(rev+6,NULL,10);
+  char o2[200000];size_t pr=(size_t)(rev+6-t);char *e2=rev+6;while(*e2>='0'&&*e2<='9')e2++;memcpy(o2,t,pr);size_t q=pr+(size_t)sprintf(o2+pr,"%ld",r+5);strcpy(o2+q,e2);free(t);spit(p,o2);
+  for(int k=0;k<3;k++)sync1();
+  assert(fil_limite_gravado()==OPCOES[AJ_FIL_LIMITE].max);
+  pass("rows: a larger row count from another platform is clamped to this TV's maximum");
  }else if(!strcmp(step,"other-account")){
   unsigned long long bn=serverPrint("better_nuvio","settings-test",1),tv=serverPrint("tv","settings-test",1);assert(bn&&tv);
   signIn(OTHER_TOKEN);sync1();sync1();

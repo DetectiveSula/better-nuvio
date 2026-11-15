@@ -10,6 +10,30 @@ changes, push, merge or release. Stages B–D and the optional cached TorBox add
 checkpoint described in `CHECKPOINT-B-D.md`. Its parent is the Stage A checkpoint
 `bd0b7edb120b042a8db2f2dd3980dd7b390ba403`; obtain its SHA from local Git history.
 
+## Row count syncs; Seekr key and poster service follow every profile — 15 November 2026
+
+Owner: "make number of rows sync as well as custom poster artwork and seekr api key".
+* **Home row count** (`AJ_FIL_LIMITE`, stored in `fileiras.c`) is binding 215,
+  `limiteFileiras`, in the device-wide part of `ajustes_better_map.inc` (each profile
+  keeps its own copy; an older choice uploads once via `jbAnchorNovo`). Its `valor[]`
+  mirror is refreshed before every read (`jbEspelharFileiras`); a received value is
+  applied as Settings does (`fil_ajustar_limite` + `fil_confirmar_limite`). Wire range
+  3..200 on every platform; `jbDecode` clamps to this TV's maximum (40 on Samsung).
+  **Compatibility:** 1.0.8 and older refuse a `better_nuvio` document containing this
+  key, so a TV that has not updated stops syncing that profile's Nuvio+ settings until
+  it updates (owner accepted, 15 Nov 2026).
+* **Whole-TV stores** (`jtArq[].dispositivo`: debrid, Fanart, Seekr, poster service,
+  P2P, failure policy) and the poster service choice (`posterProvLocal`): an edit made
+  on this TV is queued for every other profile (`settings-share-v1-…-p<N>-<key>.json`,
+  `ajPartilharCampos` in `ajustes_copia.inc`) and merged into each profile's account
+  document with a newer revision by the existing copy worker. Only real edits are
+  shared, never received values or start-up copies. No new account keys.
+* Tests: `tests/settings_sync_auto.sh` rows-a/rows-b/rows-wide (incl. profile switch)
+  and share-a/share-b/share-a2; mock lists two profiles when `J7_TWO_PROFILES=1`.
+  J4/J5/J6 count pins updated to 215. Pre-existing at 1.0.8, unchanged: `fileiras.sh`,
+  `colfileiras.sh`, `settings_stage_j5.py`.
+* Not yet: the help texts still say the row count and Seekr key stay on this TV.
+
 ## References
 
 See `references.json` for the completed source audit, comparison CSV/JSON, priority

@@ -8,9 +8,9 @@ actual=re.findall(r'\{(AJ_\w+),"([^"]+)"\}',(ROOT/'src/ajustes_better_map.inc').
 extensions=json.loads((ROOT/'docs/settings-restoration/stage-j4-bindings.json').read_text())['reviewed_extensions']
 assert [(r['native_id'],r['storage_key']) for r in extensions][:3]==[('AJ_HOME_LAYOUT','homeLayoutLocal'),('AJ_FAMILIA','familyWatchingLocal'),('AJ_FAMILIA_PARTILHAR','familyShareActivityLocal')]
 # Personal preferences extension (12 Nov 2026): 55 reviewed per-profile controls.
-assert len(extensions)==124 and all(r['reviewed']=='2026-11-12' and r['reason'] for r in extensions[3:])
+assert len(extensions)==125 and all(r['reviewed'] in ('2026-11-12','2026-11-15') and r['reason'] for r in extensions[3:])
 assert actual==[(r['native_id'],r['storage_key']) for r in portable+extensions]
-assert len(actual)==214 and len(set(actual))==214
+assert len(actual)==215 and len(set(actual))==215
 reviewed={r['native_id'] for r in extensions}
 excluded=[r for r in inventory['controls'] if r['tier']!='better_nuvio tier: portable' and r['native_id'] not in reviewed]
 assert all((r['native_id'],r['storage_key']) not in actual for r in excluded)
