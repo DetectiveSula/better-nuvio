@@ -40,6 +40,28 @@ static int lerMetahub(const char *url, char *tipo, size_t tTipo, char *id, size_
   return 1;
 }
 
+/* A poster-service URL that carries an IMDb id as a whole path segment
+ * (".../tt1234567/..." or ".../tt1234567.jpg"): BetterPosters, RPDB, Top Posters.
+ * Kind: background when the path says so, otherwise poster. Never metahub
+ * (lerMetahub) nor TMDB image URLs (no id in them). */
+static int lerPosterServico(const char *url, char *tipo, size_t tTipo, char *id, size_t tId) {
+  const char *p = strstr(url, "://");
+  if (!p || strstr(url, "metahub.space/") || strstr(url, "nuvio.invalid/")) return 0;
+  p = strchr(p + 3, '/');
+  for (; p && *p; p = strchr(p + 1, '/')) {
+    const char *q = p + 1;
+    size_t n = 0;
+    if (q[0] != 't' || q[1] != 't') continue;
+    while (q[2 + n] >= '0' && q[2 + n] <= '9') n++;
+    char fim = q[2 + n];
+    if (n < 5 || (fim && fim != '/' && fim != '.' && fim != '?') || n + 3 > tId) continue;
+    memcpy(id, q, n + 2); id[n + 2] = 0;
+    snprintf(tipo, tTipo, "%s", (strstr(url, "background") || strstr(url, "backdrop")) ? "background" : "poster");
+    return 1;
+  }
+  return 0;
+}
+
 // episodes.metahub.space/<ttNNN>/<temp>/<ep>/<tam>.jpg  ->  id, temporada, episodio.
 static int lerStill(const char *url, char *id, size_t tId, int *temp, int *ep) {
   static const char PREFIXO[] = "episodes.metahub.space/";
@@ -502,12 +524,71 @@ static int lerRegistro(const char *url, char *id, size_t nId, int *poster) {
   return ok;
 }
 
+/* MERGED IMDb ENTRIES (owner, 15 Nov 2026: "Allen", tt37675397). IMDb merges
+ * duplicate titles; catalogs keep handing out the old id, which has no artwork
+ * anywhere (metahub 404, Cinemeta empty, TMDB /find empty), while the entry it
+ * now points to (tt37675123) has all of it. IMDb's public suggestion endpoint,
+ * asked for the old id, answers with the current one. No key needed. Remembered
+ * per id for the session (also "not moved"), so each id is asked at most once. */
+#define IMDB_MOV_N 64
+static struct { char de[24], para[24]; } imdbMov[IMDB_MOV_N];
+static int imdbMovN, imdbMovProx;
+static pthread_mutex_t imdbMovTrava = PTHREAD_MUTEX_INITIALIZER;
+static int imdbMovido(const char *id, char *novo, size_t tam) {
+  int achou = -1;
+  pthread_mutex_lock(&imdbMovTrava);
+  for (int i = 0; i < imdbMovN; i++) if (!strcmp(imdbMov[i].de, id)) { achou = i; break; }
+  if (achou >= 0) {
+    int r = imdbMov[achou].para[0] != 0;
+    if (r) snprintf(novo, tam, "%s", imdbMov[achou].para);
+    pthread_mutex_unlock(&imdbMovTrava);
+    return r;
+  }
+  pthread_mutex_unlock(&imdbMovTrava);
+  char api[160], atual[24] = "";
+  snprintf(api, sizeof api, "https://v2.sg.media-imdb.com/suggestion/t/%s.json", id);
+  char *r = rede_baixar(api, 8);
+  if (r) {
+    const char *v = js_array(r, NULL, "d");
+    if (v) js_texto(v, js_fim(v), "id", atual, sizeof atual);
+    free(r);
+    if (atual[0] != 't' || atual[1] != 't' || !strcmp(atual, id)) atual[0] = 0;
+  }
+  pthread_mutex_lock(&imdbMovTrava);
+  int slot = imdbMovN < IMDB_MOV_N ? imdbMovN++ : (imdbMovProx++ % IMDB_MOV_N);
+  snprintf(imdbMov[slot].de, sizeof imdbMov[slot].de, "%s", id);
+  snprintf(imdbMov[slot].para, sizeof imdbMov[slot].para, "%s", atual);
+  pthread_mutex_unlock(&imdbMovTrava);
+  if (!atual[0]) return 0;
+  printf("[tex] imdb %s agora e %s: arte pelo id atual\n", id, atual);
+  fflush(stdout);
+  snprintf(novo, tam, "%s", atual);
+  return 1;
+}
+
 int arte_reserva_url(const char *url, char *saida, size_t tam) {
   char tipo[16], id[24], api[300], caminho[128] = "";
   const char *chave, *corpo, *v;
   char *resp;
   int poster, temp = 0, ep = 0;
   if (!url || !saida || tam < 80) return 0;
+  /* Before TMDB (and without its key): a merged IMDb id gets the artwork of the
+   * entry it now points to. Also for a poster-service URL carrying the id
+   * (BetterPosters "btttr.cc/poster/movie/tt…/", RPDB …): those answer 404 for
+   * an id they do not know, and the title had no other artwork address. */
+  { char t2[16], id2[24], novo[24];
+    int achou = lerMetahub(url, t2, sizeof t2, id2, sizeof id2) ||
+                lerPosterServico(url, t2, sizeof t2, id2, sizeof id2);
+    if (achou && imdbMovido(id2, novo, sizeof novo)) {
+      snprintf(saida, tam, "https://images.metahub.space/%s/medium/%s/img", t2, novo);
+      return 1;
+    }
+    /* Same id, not moved: a poster service that failed falls back to metahub
+     * for it once, then (that URL failing too) to TMDB below via metahub. */
+    if (achou && !strstr(url, "metahub.space/")) {
+      snprintf(saida, tam, "https://images.metahub.space/%s/medium/%s/img", t2, id2);
+      return 1;
+    } }
   chave = desc_chave_tmdb_reserva();
   if (!chave[0]) {
     // UMA VEZ: e o unico jeito de saber pelo log que a reserva existe e nao

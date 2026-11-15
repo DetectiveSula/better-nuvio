@@ -50,8 +50,22 @@ static char *respostaOP(const char *url) {
   return NULL;
 }
 
+/* IMDb suggestion endpoint (merged-entry check): answered apart from the TMDB
+ * counters. tt37675397 was merged into tt37675123 (real answer, 15 Nov 2026);
+ * any other id answers with itself, i.e. not moved. */
+static int pedidosImdb;
+static char *respostaImdb(const char *url) {
+  char id[24] = "", b[200];
+  const char *p = strstr(url, "/suggestion/t/");
+  pedidosImdb++;
+  if (!p || sscanf(p + 14, "%23[^.]", id) != 1) return NULL;
+  snprintf(b, sizeof b, "{\"d\":[{\"id\":\"%s\",\"l\":\"Fixture\"}],\"q\":\"%s\",\"v\":1}",
+           !strcmp(id, "tt37675397") ? "tt37675123" : id, id);
+  return strdup(b);
+}
 char *rede_baixar(const char *url, int segundos) {
   (void)segundos;
+  if (strstr(url, "v2.sg.media-imdb.com/suggestion/")) return respostaImdb(url);
   if (modoOP) return respostaOP(url);
   pedidos++;
   snprintf(ultimaUrl, sizeof ultimaUrl, "%s", url);
@@ -198,6 +212,25 @@ int main(void) {
   chave = "";
   OK(arte_reserva_url("https://images.metahub.space/poster/medium/tt0111161/img", s, sizeof s) == 0, "sem chave");
   OK(ultimaUrl[0] == 0, "sem chave nao pede");
+  /* Merged IMDb entry (Allen): the old id gets the current entry's metahub art,
+   * even with no TMDB key; asked once per id, and only for metahub poster/background. */
+  pedidosImdb = 0;
+  OK(arte_reserva_url("https://images.metahub.space/poster/medium/tt37675397/img", s, sizeof s) == 1 &&
+     !strcmp(s, "https://images.metahub.space/poster/medium/tt37675123/img"), "id fundido: poster do id atual");
+  OK(arte_reserva_url("https://images.metahub.space/background/medium/tt37675397/img", s, sizeof s) == 1 &&
+     !strcmp(s, "https://images.metahub.space/background/medium/tt37675123/img"), "id fundido: fundo do id atual");
+  OK(pedidosImdb == 1, "id fundido: o IMDb e consultado uma vez por id");
+  OK(ultimaUrl[0] == 0, "id fundido: sem pedido ao TMDB");
+  /* BetterPosters (the owner's "Top 25 Movies" row): poster, background and logo
+   * were all btttr.cc URLs for the old id, which answer 404. */
+  OK(arte_reserva_url("https://btttr.cc/poster/movie/tt37675397/auto~g.png?r=1", s, sizeof s) == 1 &&
+     !strcmp(s, "https://images.metahub.space/poster/medium/tt37675123/img"), "BetterPosters, id fundido: poster do id atual");
+  OK(arte_reserva_url("https://btttr.cc/poster/movie/tt0111161/auto~g.png?r=1", s, sizeof s) == 1 &&
+     !strcmp(s, "https://images.metahub.space/poster/medium/tt0111161/img"), "BetterPosters falhou: poster do metahub do mesmo id");
+  OK(arte_reserva_url("https://api.ratingposterdb.com/k/imdb/poster-default/tt37675397.jpg", s, sizeof s) == 1 &&
+     !strcmp(s, "https://images.metahub.space/poster/medium/tt37675123/img"), "RPDB: id no nome do arquivo");
+  OK(arte_reserva_url("https://btttr.cc/poster/movie/tt12/x.png", s, sizeof s) == 0, "id curto demais nao conta");
+  OK(ultimaUrl[0] == 0, "servicos de poster: sem pedido ao TMDB");
   // Rede falhou -> 0.
   chave = "CHAVE"; resposta = NULL;
   OK(arte_reserva_url("https://images.metahub.space/poster/medium/tt0111161/img", s, sizeof s) == 0, "rede falhou");

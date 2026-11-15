@@ -32,17 +32,18 @@ int perfis_n(void) { return nLista; }
 const ContaPerfil *perfis_item(int i) { return i >= 0 && i < nLista ? &lista[i] : NULL; }
 int ajustes_cw_concluido(void) { return 90; }
 int   ajustes_cw_minimo(void)             { return 1; }
+const char *i18n(const char *s)            { return s; }
 static long long relogio(void) { return agora; }
 
 // O catalogo conhece o que o teste disser.
-static int catConhece;
+static int catConhece, catSoReserva;
 static char posterLongo[NV_ARTE_URL_MAX];
 int cat_copiar_por_id(const char *id, const char *tipo, CatItem *s) {
   (void)tipo;
   if (!catConhece || strcmp(id, "tt-b")) return 0;
   memset(s, 0, sizeof *s);
   snprintf(s->imdb, sizeof s->imdb, "%s", id);
-  snprintf(s->titulo, sizeof s->titulo, "Os Bichos da Mata");
+  snprintf(s->titulo, sizeof s->titulo, "%s", catSoReserva ? "Programa de TV" : "Os Bichos da Mata");
   snprintf(s->poster, sizeof s->poster, "%s", posterLongo[0] ? posterLongo : "http://x/b.jpg");
   s->temporada = 2; s->episodio = 4;
   snprintf(s->nomeEpisodio, sizeof s->nomeEpisodio, "A toca");
@@ -160,6 +161,18 @@ int main(void) {
     assert(perfilcont_de(&lista[0], &c) && !strcmp(c.poster, posterLongo));
   }
   puts("ok  continuar por perfil conserva cartaz de 1173/2000 bytes");
+  /* Owner, 15 Nov 2026: a card whose title was never resolved carries the
+   * stand-in "Movie"/"TV show"; it is not a title for the profile picker. */
+  posterLongo[0] = 0;
+  zerar(); catConhece = 1;
+  gravar(1, "tt-b", 2, 4, 1500, 3000, agora + 1);
+  perfilcont_registrar();
+  catSoReserva = 1;
+  assert(perfilcont_de(&lista[0], &c) && !strcmp(c.titulo, "Os Bichos da Mata"));
+  perfilcont_registrar();
+  assert(snapshot && strstr(snapshot, "Os Bichos da Mata") && !strstr(snapshot, "Programa de TV"));
+  catSoReserva = 0;
+  puts("ok  titulo provisorio (Filme/Programa de TV) nao vira o titulo do cartao");
   puts("perfilcont: tudo ok");
   return 0;
 }

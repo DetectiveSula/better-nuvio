@@ -1,3 +1,4 @@
+#include "artemetahub.h"
 #include "arteurl.h"
 #include "descoberta.h"
 #include "familia.h"
@@ -183,6 +184,36 @@ void desc_tmdb_definir(const char *chave) {
   snprintf(tmdbChave, sizeof tmdbChave, "%s", chave);
   printf("[desc] tmdb: chave da conta\n");
   fflush(stdout);
+  /* Remember it for this account/profile on this TV (desc_abrir_sessao). */
+  { char nome[48], texto[200]; const char *dono = sessao_usuario();
+    if (dono && dono[0] && perfis_ativo() > 0) {
+      snprintf(nome, sizeof nome, "tmdb-conta-p%d.txt", perfis_ativo());
+      snprintf(texto, sizeof texto, "%s\n%s\n", dono, chave);
+      char *antigo = dados_ler(nome);
+      if (!antigo || strcmp(antigo, texto)) dados_gravar(nome, texto);
+      free(antigo);
+    } }
+}
+/* A PROFILE SWITCH STARTED WITHOUT THE ACCOUNT'S TMDB KEY (owner, 15 Nov 2026):
+ * desc_abrir_sessao drops back to the package key (none in release builds) and
+ * the account key arrives seconds later with the sync. The Home built in between
+ * (Continue Watching, Family Watching) had no TMDB, so a title known only by its
+ * TMDB number ("tmdb:1153576", Street Fighter) got no artwork until some later
+ * rebuild. The key this account/profile last received is restored at once. */
+static void tmdbContaRestaurar(void) {
+  char nome[48], dono[96], chave[64];
+  const char *atual = sessao_usuario();
+  if (!atual || !atual[0] || perfis_ativo() <= 0) return;
+  snprintf(nome, sizeof nome, "tmdb-conta-p%d.txt", perfis_ativo());
+  char *t = dados_ler(nome);
+  if (!t) return;
+  if (sscanf(t, "%95s %63s", dono, chave) == 2 && !strcmp(dono, atual) &&
+      strlen(chave) == 32 && strncmp(chave, "eyJ", 3)) {
+    snprintf(tmdbChave, sizeof tmdbChave, "%s", chave);
+    printf("[desc] tmdb: chave da conta restaurada deste perfil\n");
+    fflush(stdout);
+  }
+  free(t);
 }
 
 void desc_tmdb(const char *dirArte) {
@@ -1508,6 +1539,16 @@ static int deMeta(const char *ini, const char *fim, const char *tipo, CatItem *d
   { double nota = js_num(ini, fim, "imdbRating", 0.0);
     d->nota = (int)(nota * 10.0 + 0.5) / 1; }
   if (d->nota > 99) d->nota /= 10;
+  /* A catalog title with an IMDb id but no poster (owner, 15 Nov 2026: "Allen",
+   * #1 in a Top 25 list) drew "Artwork unavailable" without trying anything.
+   * Fall back to metahub by id, like Trakt and Continue Watching do; when that
+   * id has no art either, the backup in artereserva.c follows a merged IMDb id
+   * and then TMDB. */
+  if (!d->poster[0]) {
+    arte_metahub_preencher(d);
+    if (d->backdrop[0] && !d->backdropCatalogo[0])
+      snprintf(d->backdropCatalogo, sizeof d->backdropCatalogo, "%s", d->backdrop);
+  }
   return 1;
 }
 
@@ -4656,6 +4697,11 @@ static int familiaItens(CatItem *saida, int max) {
     d->episodio  = !strcmp(c[i].tipo, "series") ? c[i].episodio : 0;
     snprintf(d->imdb, sizeof d->imdb, "%s", c[i].id);
     snprintf(d->tipo, sizeof d->tipo, "%s", c[i].tipo);
+    /* The stand-in "Movie"/"TV show" set below when a title was not resolved is
+     * not a title: blank it so the enrichment looks it up again (as
+     * continuarLocal does). Owner, 15 Nov 2026: Street Fighter stayed "Movie". */
+    if (!strcmp(d->titulo, i18n(!strcmp(d->tipo, "series") ? "Programa de TV" : "Filme")))
+      d->titulo[0] = 0;
     snprintf(d->socialSlug, sizeof d->socialSlug, "familia:%d", c[i].perfil);
     snprintf(d->socialNome, sizeof d->socialNome, "%s", c[i].nome);
     snprintf(d->socialAvatar, sizeof d->socialAvatar, "%s", c[i].avatar);
@@ -10438,6 +10484,7 @@ void desc_abrir_sessao(void) {
   tmdbChaveLocal[0]=0;
   NvPerfilSessao sessao = nv_perfil_sessao_ler();
   snprintf(tmdbChave, sizeof tmdbChave, "%s", tmdbChavePacote);
+  tmdbContaRestaurar();
   // The drawing thread uses the live session; only detached jobs keep a token.
   pthread_once(&descSessaoUma, descSessaoCriar);
   free(pthread_getspecific(descSessaoChave));

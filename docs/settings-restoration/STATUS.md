@@ -10,6 +10,35 @@ changes, push, merge or release. Stages B–D and the optional cached TorBox add
 checkpoint described in `CHECKPOINT-B-D.md`. Its parent is the Stage A checkpoint
 `bd0b7edb120b042a8db2f2dd3980dd7b390ba403`; obtain its SHA from local Git history.
 
+## Artwork and titles: TMDB-numbered titles, merged IMDb ids, TMDB key on profile switch — 15 November 2026
+
+Owner reports (Nuvio+ 1.0.9): Street Fighter showed "Artwork unavailable", then "Movie",
+in Continue Watching / Family Watching / the profile picker; Allen showed no artwork in a
+BetterPosters "Top 25 Movies" row.
+* **TMDB-numbered entries** (`tmdb:1153576`, progress saved by a TMDB-only source):
+  `enfeitar` (`src/trakt.c`) returned before any lookup for ids without `tt`. New
+  `enfeitarTmdb` asks TMDB `/movie|tv/<n>` for poster, backdrop, title and overview
+  (artwork key `desc_chave_tmdb_reserva`, weak fallback for test units). Test:
+  `tests/cw_tmdb_arte.sh` (fails without the fix).
+* **TMDB key on profile switch:** `desc_abrir_sessao` drops to the package key (none in
+  release builds) and the account key arrives seconds later, after the first Home build.
+  The account key is now kept per profile (`tmdb-conta-p<N>.txt`, owner-checked) and
+  restored at session open (`src/descoberta.c`).
+* **Stand-in titles:** an unresolved Family card got "Movie"/"TV show", which later builds
+  and the profile picker took as the title. `familiaItens` blanks it before enrichment (as
+  `continuarLocal` does); `perfilcont.c` ignores it, also in saved copies. Test: `tests/perfilcont.sh`.
+* **Merged IMDb ids:** BetterPosters lists Allen as `tt37675397`, merged by IMDb into
+  `tt37675123`; every poster/background/logo URL was `btttr.cc/poster/movie/tt37675397/…`
+  (404). `arte_reserva_url` now reads the id from metahub and poster-service URLs, asks
+  IMDb's public suggestion endpoint once per id whether it moved, and uses metahub for the
+  current id (no key); a poster-service failure for an unmoved id falls back to metahub.
+  Catalog titles with an IMDb id and no poster get metahub URLs (`deMeta`,
+  `cat_definir_tudo`, also for rows read from the cache). Test: `tests/artereserva.sh`. Not
+  confirmed on screen (owner: leave it).
+* **Mac preview:** `tools/mac.sh` uses the Nuvio+ version line; `src/atualizacao.c` makes the
+  Mac build check Nuvio+ releases (it showed "2.0.8 available").
+* Tests compiling `descoberta.c` (31) and `catalogo.c` (73) give the same results as at 1.0.9.
+
 ## Row count syncs; Seekr key and poster service follow every profile — 15 November 2026
 
 Owner: "make number of rows sync as well as custom poster artwork and seekr api key".

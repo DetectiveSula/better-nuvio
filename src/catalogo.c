@@ -5,6 +5,7 @@
 #include "idbase.h"
 #include "tendencia.h"
 #include "artereserva.h"
+#include "artemetahub.h"
 // FRACO: os testes leves compilam catalogo.c sozinho (tests/catcache.sh e
 // cinco irmaos) e nao querem historico de ordem nenhum. No app inteiro
 // tendencia.c define a de verdade e vence esta.
@@ -2550,6 +2551,11 @@ void cat_definir_tudo(const CatItem *lista, int qtd,
     CatItem *novo = malloc(sizeof(CatItem) * (size_t)(novoN > 0 ? novoN : 1));
     if (!novo) return;
     if (novoN > 0) memcpy(novo, lista, sizeof(CatItem) * (size_t)novoN);
+    // A title with an IMDb id and no poster (also one saved before this rule, read
+    // back from the catalog cache) falls back to metahub by id; artereserva.c then
+    // follows a merged IMDb id or TMDB when metahub has nothing (owner, 15 Nov 2026).
+    for (int k = 0; k < novoN; k++)
+      if (!novo[k].poster[0]) arte_metahub_preencher(&novo[k]);
     // Historico de ORDEM por fileira (tendencia.h), ANTES da troca e sobre os
     // parametros — le e grava arquivo, e depois da troca `novo` pode ser
     // liberado por uma publicacao seguinte.

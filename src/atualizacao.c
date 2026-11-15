@@ -142,6 +142,11 @@ static void at_sha256_hex(const unsigned char *buf, size_t n, char *hex65) {
 // releases live with the Android ones; the .so attachments keep their names.
 #define AT_URL   "https://api.github.com/repos/DetectiveSula/better-nuvio/releases/latest"
 #define AT_PAGINA "https://github.com/DetectiveSula/better-nuvio/releases"
+#elif defined(__APPLE__)
+// Mac preview (tools/mac.sh): it carries the Nuvio+ version line, so it compares
+// with Nuvio+'s releases, not the upstream 2.0.8 (which looked like an update).
+#define AT_URL   "https://api.github.com/repos/DetectiveSula/better-nuvio/releases/latest"
+#define AT_PAGINA "https://github.com/DetectiveSula/better-nuvio/releases"
 #else
 #define AT_URL   "https://api.github.com/repos/iqui27/nuvio-native-legacy/releases/latest"
 #define AT_PAGINA "https://github.com/iqui27/nuvio-native-legacy/releases"

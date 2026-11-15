@@ -1219,6 +1219,14 @@ int main(int argc, char **argv) {
     pedeH = quer4k || uiMenor4k ? 2160 : uiMenor720 ? 720 : (int)NV_TELA_H;
     if (quer4k) { printf("[4k] pedindo %dx%d — a linha `janela=` abaixo diz o "
                          "que a TV concedeu\n", pedeW, pedeH); fflush(stdout); } }
+#ifdef __APPLE__
+  // Mac preview only: NUVIO_JANELA=LxA opens a smaller window (in points), so
+  // two copies fit side by side. The 1920x1080 canvas scales to the drawable.
+  { const char *j = getenv("NUVIO_JANELA"); int jw = 0, jh = 0;
+    if (j && sscanf(j, "%dx%d", &jw, &jh) == 2 && jw >= 320 && jh >= 180 && jw <= 7680 && jh <= 4320) {
+      pedeW = jw; pedeH = jh;
+    } }
+#endif
   SDL_Window *win;
 #ifdef NV_TPK
   tpk_pedir_saida(pedeW, pedeH);

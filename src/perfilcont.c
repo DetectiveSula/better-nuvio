@@ -5,6 +5,7 @@
 #include "catalogo.h"
 #include "ajustes.h"
 #include "dados.h"
+#include "idioma.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -50,7 +51,9 @@ static void carregarSnaps(void) {
     snprintf(s.titulo, sizeof s.titulo, "%s", c[4]);
     snprintf(s.poster, sizeof s.poster, "%s", c[5]);
     snprintf(s.epNome, sizeof s.epNome, "%s", c[6]);
-    if (s.perfil > 0 && s.contentId[0] && s.titulo[0]) snaps[nSnaps++] = s;
+    /* A copy saved with the stand-in title (before 15 Nov 2026) is dropped. */
+    if (s.perfil > 0 && s.contentId[0] && s.titulo[0] &&
+        strcmp(s.titulo, i18n("Filme")) && strcmp(s.titulo, i18n("Programa de TV"))) snaps[nSnaps++] = s;
   }
   free(buf);
 }
@@ -79,8 +82,10 @@ static int achaSnap(int perfil) {
 // Um registro de progresso -> o titulo conhecido pelo catalogo, ou 0.
 static int doCatalogo(const ProgRegistro *r) {
   memset(&rascunho, 0, sizeof rascunho);
+  /* A stand-in "Movie"/"TV show" (unresolved title) is not a title either. */
   return cat_copiar_por_id(r->contentId, r->episodio > 0 ? "series" : "movie", &rascunho) &&
-         rascunho.titulo[0];
+         rascunho.titulo[0] &&
+         strcmp(rascunho.titulo, i18n(r->episodio > 0 ? "Programa de TV" : "Filme"));
 }
 
 int perfilcont_de(const ContaPerfil *p, PerfilCont *saida) {

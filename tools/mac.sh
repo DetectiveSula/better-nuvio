@@ -22,6 +22,10 @@ cd "$(dirname "$0")/.."
 # dizendo "Este pacote foi montado sem servidor". Nenhum desses valores entra em
 # arquivo de codigo versionado.
 ENV_D=$(tools/env.sh)
+# Nuvio+ version line (android/better-version.txt), as the Android and Samsung
+# builds use: without it the preview showed the upstream 2.0.8 and looked old.
+BVER=$(tr -d '[:space:]' < android/better-version.txt)
+ENV_D=$(printf '%s' "$ENV_D" | sed "s/-DNV_VERSAO=[^ ]*/-DNV_VERSAO=\\\\\"$BVER\\\\\"/")
 # Fora da pasta do pacote: o Mac nao deve gravar sessao dentro de deploy/.
 export NUVIO_DADOS="${NUVIO_DADOS:-$HOME/.nuvio}"
 # NUVIO_MAC_BIN: outro binario (a auditoria nao pisa no /tmp/nuvio-native-legacy-mac

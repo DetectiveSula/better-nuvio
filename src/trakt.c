@@ -670,6 +670,37 @@ __attribute__((weak)) void cwo_marcar_estreia_cru(const char *id, const char *cr
   cwo_marcar_estreia(id, ms > 0 ? ms : CWO_SEM_DATA);
 }
 
+/* Continue Watching keyed by a TMDB number ("tmdb:1153576", owner 15 Nov 2026:
+ * Street Fighter played from a TMDB-only source) had no artwork: metahub and
+ * Cinemeta know only IMDb ids and the TMDB step below asked /find with the TMDB
+ * number as if it were an IMDb id. Ask TMDB for that number directly. Uses the
+ * artwork-fallback key (not gated by the TMDB integration setting, like
+ * artereserva.c). Only fills empty fields. */
+/* Weak fallback for units linked without descoberta.c (tests); the real one wins. */
+__attribute__((weak)) const char *desc_chave_tmdb_reserva(void) { return desc_chave_tmdb(); }
+static void enfeitarTmdb(CatItem *d, const char *tipo) {
+  const char *chave = desc_chave_tmdb_reserva();
+  long id = strtol(d->imdb + 5, NULL, 10);
+  char url[300], pp[160];
+  if (!chave || !chave[0] || id <= 0) return;
+  int serie = !strcmp(tipo, "series");
+  snprintf(url, sizeof url, "https://api.themoviedb.org/3/%s/%ld?api_key=%s&language=%s",
+           serie ? "tv" : "movie", id, chave, desc_tmdb_idioma());
+  char *c = rede_baixar(url, 8);
+  if (!c) return;
+  pp[0] = 0;
+  if (!d->poster[0] && js_texto_raiz(c, "poster_path", pp, sizeof pp) && pp[0] == '/')
+    snprintf(d->poster, sizeof d->poster, "https://image.tmdb.org/t/p/w342%s", pp);
+  pp[0] = 0;
+  if (!d->backdrop[0] && js_texto_raiz(c, "backdrop_path", pp, sizeof pp) && pp[0] == '/')
+    snprintf(d->backdrop, sizeof d->backdrop, "https://image.tmdb.org/t/p/w1280%s", pp);
+  if (!d->titulo[0]) js_texto_raiz(c, serie ? "name" : "title", d->titulo, sizeof d->titulo);
+  if (!d->sinopse[0]) js_texto_raiz(c, "overview", d->sinopse, sizeof d->sinopse);
+  if (!d->backdrop[0] && strlen(d->poster) < sizeof d->backdrop)
+    snprintf(d->backdrop, sizeof d->backdrop, "%s", d->poster);
+  free(c);
+}
+
 static int enfeitar(CatItem *d, const char *tipo, uint64_t sessao) {
   if (!nv_perfil_sessao_atual(sessao)) return 0;
   cwMetaEstado(d->imdb, sessao, 0);
@@ -686,6 +717,7 @@ static int enfeitar(CatItem *d, const char *tipo, uint64_t sessao) {
   arte_metahub_preencher(d);
   // Cinemeta only understands IMDb. Keep confirmed Simkl next-up entries
   // with their title even when the provider has no artwork for a fallback ID.
+  if (!strncmp(d->imdb, "tmdb:", 5) && (!d->poster[0] || !d->titulo[0])) enfeitarTmdb(d, tipo);
   if (strncmp(d->imdb, "tt", 2))
     return d->poster[0] || (d->titulo[0] && simkl_e_a_seguir && simkl_e_a_seguir(d->imdb));
   snprintf(serie, sizeof serie, "%s", d->imdb);

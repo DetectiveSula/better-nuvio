@@ -3,6 +3,7 @@
 // Settings boundaries are supplied here. No network, texture or renderer runs.
 #include "catalogo.h"
 #include "artehero.h"
+#include "artemetahub.h"
 #include "js.h"
 #include "idiomacod.h"
 #include <assert.h>
