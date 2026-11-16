@@ -29,6 +29,7 @@
 // texto rasterizado, artes enviadas a GPU, desenhos. Depois da home de cada
 // cenario, a lista dos Ajustes e rolada para baixo (uma seta a cada 8 quadros)
 // e para cima. NV_QUADROS=1 imprime todo quadro acima de 2 ms.
+#include "addons.h"
 #include "agendaui.h"
 #include "ajustes.h"
 #include "biblioteca.h"
@@ -66,8 +67,8 @@ static const char *dirDados;
 
 typedef struct {
   double upd, des, gpu, fill, fillVis, fillGpu, fillGpuMist;
-  int rects, progs, binds, cheios, cheiosMist, txtRast, upl, vidCap, vidPas;
-  double txtMs;
+  int rects, progs, binds, cheios, cheiosMist, txtRast, upl, vidCap, vidPas, unif, unifPoup;
+  double txtMs, gfxMs, outMs, texMs;   // inside `des`: gfx_rect, FBO/blur work, cache lookups
   double modo[GFX_NMODOS];
 } Quadro;
 static int naAjustes;
@@ -158,6 +159,8 @@ static void quadro(SDL_Window *w, Quadro *q, Uint32 agora) {
     q->rects = gfx_n_rect; q->progs = gfx_n_prog; q->binds = gfx_n_bind;
     q->cheios = gfx_n_cheio; q->cheiosMist = gfx_n_cheio_mistura;
     q->txtRast = txt_rasterizadas; q->txtMs = txt_ms; q->upl = tex_upl_n;
+    q->unif = gfx_n_unif; q->unifPoup = gfx_n_unif_poupados;
+    q->gfxMs = gfx_ms_rect; q->outMs = gfx_ms_outros; q->texMs = tex_ms_busca;
     q->vidCap = gfx_vidro_capturas; q->vidPas = gfx_vidro_passadas;
     for (k = 0; k < GFX_NMODOS; k++) q->modo[k] = gfx_fill_modo[k];
   }
@@ -217,6 +220,16 @@ static void povoar(void) {
       }
     }
   }
+  // The Home needs one enabled add-on even with a local fixture catalogue:
+  // without it homevazio_ativo() takes the screen and every "home" phase
+  // measured the empty-Home QR card (10 rects) instead of the rows.
+  // NV_PERF_SEM_ADDON=1 keeps the old empty Home (tests/perfil_fundo_cobre.sh
+  // counts the profile picker's full-screen draws without a live title palette:
+  // with rows the 12 Hz light bake adds its own offscreen quad to that count).
+  if (!getenv("NV_PERF_SEM_ADDON")) {
+    AddonRemoto addon = { .nome = "Fixture", .url = "http://127.0.0.1:1/manifest.json", .ativo = 1 };
+    assert(addons_definir_lista(&addon, 1));
+  }
   cat_definir_tudo(itens, NCAT, fils, NFIL);
   // RELACIONADOS com arte: o mesmo hook das capturas (NV_SHOT_HOOKS). Sem ele
   // a secao "Recomendacoes" nao existe no fixture e a TV desenha 8 cards.
@@ -253,6 +266,13 @@ static void ajusta(const char *cenario) {
              "selected_theme %d\ncardDepthEnabled 0\nposterLabelsEnabled 0\nfundoLocal %d\n",
           layout, vidro ? 0 : 1, cheio ? 0 : 1, tema, fundo);
   if (getenv("NV_AJ")) fprintf(a, "%s\n", getenv("NV_AJ"));
+  // NV_AJ_ARQUIVO=/path/ajustes.txt: measure with a real settings file (the
+  // owner's TV setup) appended after the scenario's own lines.
+  if (getenv("NV_AJ_ARQUIVO")) {
+    FILE *o = fopen(getenv("NV_AJ_ARQUIVO"), "r");
+    char l[512];
+    if (o) { while (fgets(l, sizeof l, o)) fputs(l, a); fclose(o); }
+  }
   fclose(a);
   ajustes_dir(dirDados);
 }
@@ -304,8 +324,9 @@ static void relatar(const char *cen, const char *rotulo, Quadro *qs, int n) {
            qs[pi].txtRast, qs[pi].txtMs, qs[pi].upl, qs[pi].rects, st, su_upl);
     if (getenv("NV_QUADROS"))
       for (i = 0; i < n; i++) if (qs[i].des + qs[i].upd > 2.0)
-        printf("[%s] %-10s  q%03d upd=%.2f des=%.2f txt=%d/%.2fms upl=%d\n", cen, rotulo, i,
-               qs[i].upd, qs[i].des, qs[i].txtRast, qs[i].txtMs, qs[i].upl); }
+        printf("[%s] %-10s  q%03d upd=%.2f des=%.2f txt=%d/%.2fms upl=%d gfx=%.2f fbo=%.2f tex=%.2f rects=%d\n", cen, rotulo, i,
+               qs[i].upd, qs[i].des, qs[i].txtRast, qs[i].txtMs, qs[i].upl,
+               qs[i].gfxMs, qs[i].outMs, qs[i].texMs, qs[i].rects); }
   for (i = 0; i < n; i++) v[i] = qs[i].des;
   printf("[%s] %-10s upd=%.2f des=%.2f(p95 %.2f) gpu=%.2f ms | fill=%.2fx vis=%.2fx cheios=%.1f mist=%.1f"
          " | rects=%ld progs=%ld binds=%ld txt=%ld\n",
@@ -313,6 +334,12 @@ static void relatar(const char *cen, const char *rotulo, Quadro *qs, int n) {
          (double)sc / n, (double)scm / n, sr / n, sp / n, sb / n, st);
   // O que a GPU pinta de fato (gfx.h, gfx_fill_gpu) e a parte com mistura.
   printf("[%s] %-10s gpu-fill=%.2fx mist=%.2fx\n", cen, rotulo, sfg / n, sfm / n);
+  // glUniform calls per frame: what gfx_rect sent, and what the uniform shadow
+  // skipped (sent + skipped = what every frame used to send).
+  { long us = 0, up = 0;
+    for (i = 0; i < n; i++) { us += qs[i].unif; up += qs[i].unifPoup; }
+    printf("[%s] %-10s uniforms/quadro: enviados=%ld poupados=%ld (antes %ld)\n", cen, rotulo,
+           us / n, up / n, (us + up) / n); }
   { long vc = 0, vp = 0; int qc = 0;
     for (i = 0; i < n; i++) { vc += qs[i].vidCap; vp += qs[i].vidPas; qc += qs[i].vidCap > 0; }
     printf("[%s] %-10s vidro: capturas=%ld passadas=%ld quadros-com-captura=%d/%d\n", cen, rotulo, vc, vp, qc, n); }
@@ -368,7 +395,10 @@ static void cenario(SDL_Window *w, const char *cen) {
   { HomeItem it;
     if (home_item_focado(&it)) {
       detail_abrir(&it);
-      for (i = 0; i < 180; i++) { quadro(w, NULL, t); t += 16; }
+      // TRANSITIONS are measured too (the frames right after the key): that is
+      // where a screen rasterises its text and asks for its art.
+      for (i = 0; i < 180; i++) { quadro(w, &qs[i], t); t += 16; }
+      relatar(cen, "abre-detalhe", qs, 180);
       for (i = 0; i < n; i++) { quadro(w, &qs[i], t); t += 16; }
       relatar(cen, "detalhe", qs, n);
       if (getenv("NV_RASTRO")) { gfx_rastro_grandes = 1; quadro(w, NULL, t); t += 16; gfx_rastro_grandes = 0; }
@@ -376,7 +406,8 @@ static void cenario(SDL_Window *w, const char *cen) {
       // A PAGINA do titulo (seta para baixo: o cartao vira tela cheia), onde
       // entra Ajustes > Fundo (fundo.c).
       tecla(SDLK_DOWN);
-      for (i = 0; i < 180; i++) { quadro(w, NULL, t); t += 16; }
+      for (i = 0; i < 180; i++) { quadro(w, &qs[i], t); t += 16; }
+      relatar(cen, "abre-pagina", qs, 180);
       for (i = 0; i < n; i++) { quadro(w, &qs[i], t); t += 16; }
       relatar(cen, "pagina", qs, n);
       if (getenv("NV_RASTRO")) { gfx_rastro_grandes = 1; quadro(w, NULL, t); t += 16; gfx_rastro_grandes = 0; }
@@ -390,7 +421,8 @@ static void cenario(SDL_Window *w, const char *cen) {
   // AJUSTES: a lista rolada para baixo e de volta, uma seta a cada 8 quadros.
   ajustes_iniciar();
   naAjustes = 1;
-  for (i = 0; i < 120; i++) { quadro(w, NULL, t); t += 16; }
+  for (i = 0; i < 120; i++) { quadro(w, &qs[i], t); t += 16; }
+  relatar(cen, "abre-ajustes", qs, 120);
   for (i = 0; i < n; i++) {
     if (i % 8 == 0) tecla(i < n / 2 ? SDLK_DOWN : SDLK_UP);
     quadro(w, &qs[i], t); t += 16;
@@ -407,7 +439,9 @@ static void cenario(SDL_Window *w, const char *cen) {
       while (pos < ordem[c]) { tecla(SDLK_DOWN); pos++; quadro(w, NULL, t); t += 16; }
       for (i = 0; i < 40; i++) { quadro(w, NULL, t); t += 16; }
       tecla(SDLK_RETURN);
-      for (i = 0; i < 120; i++) { quadro(w, NULL, t); t += 16; }
+      for (i = 0; i < 120; i++) { quadro(w, &qs[i], t); t += 16; }
+      snprintf(nome, sizeof nome, "abre-cat%d", ordem[c]);
+      relatar(cen, nome, qs, 120);
       for (i = 0; i < n; i++) {
         if (i % 8 == 0) tecla(i < n / 2 ? SDLK_DOWN : SDLK_UP);
         quadro(w, &qs[i], t); t += 16;

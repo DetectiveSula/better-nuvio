@@ -21,6 +21,7 @@ int ajustes_vidro(void){return 0;}
 int ajustes_vidro_fosco(void){return 0;}
 int ajustes_vidro_qualidade(void){return 1;}
 float nv_acento_viva[3], nv_grad_viva[3][3], nv_tempo_viva;
+float nv_cor_fundo_viva[3];   // gfx_rect reads uFundo's value now (uniform shadow), stub or not
 float nv_ambiente_viva[4][3], nv_ambiente_forca;
 int ajustes_profundidade(void) { return 0; }
 float ajustes_profundidade_brilho(void) { return 0; }

@@ -126,7 +126,11 @@ int main(int argc, char **argv) {
   glClearColor(0, 0, 0, 0); glClear(GL_COLOR_BUFFER_BIT);
   gfx_cor((GfxRect){ 0, 0, 1920, 1080 }, 0, 0.1f, 0.5f, 0.1f, 1.0f);
   gfx_vidro_folha((GfxRect){ 1440, 48, 432, 984 }, 36.0f / 984.0f, 1.0f);
-  assert(gfx_vidro_capturas == 1);                                // o bloqueio era so daquele quadro
+  // o bloqueio era so daquele quadro: the glass is frosted again. It reads the
+  // backdrop captured before the block, which this frame draws unchanged, so no
+  // new capture is due (it used to recapture only because the light bake of
+  // frame k=0 had entered that frame's hash; see vidroAssando in gfx.c).
+  assert(gfx_vidro_com_fonte == 1 && gfx_vidro_chapados == 0 && gfx_vidro_capturas == 0);
   px(1500, 80, a); assert(a[1] > a[0] && a[1] > a[2]);           // o video atras, de novo
   puts("player_fundo: ok");
   return 0;

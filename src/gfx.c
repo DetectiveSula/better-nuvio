@@ -33,8 +33,26 @@ enum { VID_V0, VID_V1, VID_UVPX, VID_SCRT, VID_SCRB, VID_ARO, VID_AROLUZ, VID_LU
 static const char *const VID_NOMES[VID_NU] = {
   "uV0", "uV1", "uUvPx", "uScrT", "uScrB", "uAro", "uAroLuz", "uLuzBorda",
   "uLuzDir", "uEspec", "uDens", "uAmostra", "uRuido", "uRuidoEsc" };
+// UNIFORM SHADOW (per program). gfx_rect used to resend every uniform of the
+// mode on every rectangle: ~10-20 glUniform calls per card, most with the value
+// the program already holds (a row of posters differs only in uRect and the
+// texture). Natively that is driver validation; in the Samsung .wgt each call
+// also crosses WASM -> JS -> the browser's GPU command buffer, and a Home frame
+// made thousands of them. The last value sent is kept here and the call is
+// skipped when the bits are the same (memcmp, so -0.0 and NaN still resend).
+// A program's uniforms keep their values across glUseProgram, and gfx_rect is
+// the only writer of these locations, so a skipped call cannot change a pixel.
+// progMontar forgets the shadow (a fresh link starts every uniform at 0).
+enum { UC_RECT, UC_FOCO, UC_REFLEXO, UC_DEPTH, UC_PAR, UC_RAIO, UC_PESO, UC_ASP, UC_TEXASP, UC_JAN,
+       UC_FORCAR, UC_VEUTELA, UC_HEROIVEU, UC_BORDA, UC_VARRE, UC_VEU, UC_DESL, UC_FUNDO, UC_ACENTO,
+       UC_GRAD0, UC_GRAD1, UC_GRAD2, UC_TEMPO, UC_REG0, UC_REG1, UC_REG2, UC_REG3, UC_VAZA, UC_DIN,
+       UC_TEXASPB, UC_ALFAB, UC_AMBON, UC_COR,
+       UC_VID,                       // + VID_* : the glass program's own uniforms
+       UC_N = UC_VID + 14 };
 typedef struct {
   GLuint prog;
+  float uc[UC_N][4];           // the uniform shadow (see above)
+  unsigned char ucOk[UC_N];
   GLint rect, tela, tex, foco, reflexo, depth, par, raio, cor, asp, texAsp, forcarCover, veuTela, heroiVeu, borda, varre, veu, desl, fundo,
         grad0, grad1, grad2, tempo, reg0, reg1, reg2, reg3, vaza, acento;
   GLint amb, ambOn;         // uAmb/uAmbOn: so os tres modos de arte com rampa
@@ -57,6 +75,25 @@ typedef struct {
 } Programa;
 static Programa progs[GFX_NMODOS];
 static int progAtual = -1;
+typedef char uc_vid_cabe[UC_N - UC_VID >= VID_NU ? 1 : -1];   // the glass uniforms fit the shadow
+int gfx_n_unif, gfx_n_unif_poupados;   // glUniform calls sent / skipped this frame
+// 1 = the value differs from what the program holds (and is now remembered).
+static int ucMudou(Programa *P, int k, const float *v, int n) {
+  if (P->ucOk[k] && !memcmp(P->uc[k], v, sizeof(float) * (size_t)n)) { gfx_n_unif_poupados++; return 0; }
+  memcpy(P->uc[k], v, sizeof(float) * (size_t)n);
+  P->ucOk[k] = 1; gfx_n_unif++;
+  return 1;
+}
+#define UNI1(k, loc, a) do { const float u_[1] = { (a) }; \
+  if (ucMudou(P, (k), u_, 1)) glUniform1f((loc), u_[0]); } while (0)
+#define UNI2(k, loc, a, b) do { const float u_[2] = { (a), (b) }; \
+  if (ucMudou(P, (k), u_, 2)) glUniform2f((loc), u_[0], u_[1]); } while (0)
+#define UNI3(k, loc, a, b, c) do { const float u_[3] = { (a), (b), (c) }; \
+  if (ucMudou(P, (k), u_, 3)) glUniform3f((loc), u_[0], u_[1], u_[2]); } while (0)
+#define UNI4(k, loc, a, b, c, d) do { const float u_[4] = { (a), (b), (c), (d) }; \
+  if (ucMudou(P, (k), u_, 4)) glUniform4f((loc), u_[0], u_[1], u_[2], u_[3]); } while (0)
+#define UNI3V(k, loc, p) do { if (ucMudou(P, (k), (p), 3)) glUniform3fv((loc), 1, (p)); } while (0)
+#define UNI4V(k, loc, p) do { if (ucMudou(P, (k), (p), 4)) glUniform4fv((loc), 1, (p)); } while (0)
 // Proporcao da textura corrente, para o "cover". Fica global porque o desenho e
 // imediato: quem chama define antes de cada rect com textura.
 float gfx_tex_aspect_atual = 0.0f;
@@ -1807,6 +1844,7 @@ static int progMontar(int m) {
   if (!ok) { char log[700]; glGetProgramInfoLog(p, 700, NULL, log);
              printf("gfx link modo %d: %s\n", m, log); return 0; }
   progs[m].prog = p;
+  memset(progs[m].ucOk, 0, sizeof progs[m].ucOk);   // fresh link: nothing sent yet
   progs[m].rect = glGetUniformLocation(p, "uRect");
   progs[m].tela = glGetUniformLocation(p, "uTela");
   progs[m].tex  = glGetUniformLocation(p, "uTex");
@@ -2244,6 +2282,17 @@ void gfx_vidro_fundo_reservar(GfxRect r) {
 // framebuffer transparente do clear — a faixa que piscava no Apple TV+frost.
 int gfx_vidro_copia_com_din_adiado;
 #endif
+// A BAKE IS NOT THE FRAME. ambAssarEm paints the breathing light (12 Hz) or a
+// page background into a small offscreen target. Its draws used to enter
+// vidroHash like any other, so the frame of a bake hashed differently from the
+// frames around it: the frosted backdrop was copied and blurred on the bake
+// frame AND again on the next one, when the hash fell back (measured, Immersive
+// + glass, Home at rest: 2 captures per light tick, 120 in 300 frames). What a
+// bake changes on screen is already in the hash of the draws that show it: the
+// targets alternate, so the texture name differs (uTex below; ambFonte for the
+// art that reads the light through uAmb). While a bake paints, its draws only
+// note their source textures as dependencies.
+static int vidroAssando;
 static int vidroDentro(GfxRect r) {
   float b[4] = { r.x, r.y, r.x + r.w, r.y + r.h };
   int i;
@@ -2271,6 +2320,10 @@ static void vidroDesenho(GfxRect r, GLuint tex, GfxModo modo, float foco, float 
   int e[9] = { (int)modo, (int)tex, recorteAtivo, blendLigado, giroOn, miniAtiva, snapAtivo,
                efeitosLeves, telaW };
   int conta = 1;
+  if (vidroAssando) {   // offscreen bake: see vidroAssando
+    if (P->tex >= 0) vidroDepAnotar(tex);
+    return;
+  }
   // Only what can reach the pixels the glasses read decides reuse. Unsettled
   // easing drifts below 1/256 forever (detail veil, logo, island shadow), a
   // draw wholly off the screen paints nothing, a draw outside what last
@@ -2300,7 +2353,8 @@ static void vidroDesenho(GfxRect r, GLuint tex, GfxModo modo, float foco, float 
   if (conta) {
     if (P->tex >= 0) vidroDepAnotar(tex);
     if (P->texB >= 0) vidroDepAnotar(camTexB);
-    if (P->ambOn >= 0) vidroDepAnotar(ambFonte);
+    // The art that reads the light through uAmb shows a new bake by name only.
+    if (P->ambOn >= 0) { vidroDepAnotar(ambFonte); vidroSoma(&ambFonte, sizeof ambFonte); }
     vidroSoma(v, sizeof v);
     vidroSoma(e, sizeof e);
     if (recorteAtivo) vidroSoma(recorteBox, sizeof recorteBox);
@@ -2337,6 +2391,7 @@ static void vidroAplicar(Programa *P, GfxRect r);
 void gfx_novo_quadro(void) {
   gfx_quadro_n++;
   gfx_n_rect = gfx_n_prog = gfx_n_bind = gfx_n_outros = 0;
+  gfx_n_unif = gfx_n_unif_poupados = 0;
   gfx_ms_rect = gfx_ms_outros = 0.0;
   gfx_fill = 0.0; gfx_fill_vis = 0.0; gfx_n_cheio = 0; gfx_n_cheio_mistura = 0;
   gfx_fill_gpu_ult = gfx_fill_gpu; gfx_fill_gpu_mist_ult = gfx_fill_gpu_mist;
@@ -2726,66 +2781,67 @@ void gfx_rect(GfxRect r, GLuint tex, GfxModo modo, float foco,
   // ao glUniform e no-op valido mas ainda paga a travessia da chamada GL. Num
   // quadro tipico da home sao centenas de gfx_rect, a maioria em modos que nao
   // usam foco/parallax/texAsp, entao o teste barato aqui poupa a chamada cara.
-  glUniform4f(P->rect, r.x, r.y, r.w, r.h);
-  if (P->foco >= 0)   glUniform1f(P->foco, foco);
+  UNI4(UC_RECT, P->rect, r.x, r.y, r.w, r.h);
+  if (P->foco >= 0)   UNI1(UC_FOCO, P->foco, foco);
   // #410: o especular da arte tambem obedece a Reflexo/Profundidade.
   // uFoco continua inteiro: contraste e rebordo nao sao intensidade de reflexo.
   int depthOn=(P->reflexo>=0||P->depth>=0)&&nv_card_depth_enabled(ajustes_profundidade(),ajustes_profundidade_superficies(),gfx_card_superficie_atual);
   if (P->reflexo >= 0)
-    glUniform1f(P->reflexo,depthOn?ajustes_profundidade_brilho():0.0f);
-  if(P->depth>=0)glUniform3f(P->depth,depthOn?ajustes_profundidade_borda():0.0f,depthOn?ajustes_profundidade_brilho():0.0f,ajustes_profundidade_cobertura());
-  if (P->par >= 0)    glUniform2f(P->par, parx, pary);
-  if (P->raio >= 0)   glUniform1f(P->raio, raio);
-  if (P->peso >= 0 && parx < 0) glUniform3f(P->peso, -parx, pary, raio);
-  if (P->asp >= 0)    glUniform1f(P->asp, r.h > 0 ? r.w / r.h : 1.0f);
-  if (P->texAsp >= 0) glUniform1f(P->texAsp, gfx_tex_aspect_atual);
+    UNI1(UC_REFLEXO, P->reflexo,depthOn?ajustes_profundidade_brilho():0.0f);
+  if(P->depth>=0)UNI3(UC_DEPTH, P->depth,depthOn?ajustes_profundidade_borda():0.0f,depthOn?ajustes_profundidade_brilho():0.0f,ajustes_profundidade_cobertura());
+  if (P->par >= 0)    UNI2(UC_PAR, P->par, parx, pary);
+  if (P->raio >= 0)   UNI1(UC_RAIO, P->raio, raio);
+  if (P->peso >= 0 && parx < 0) UNI3(UC_PESO, P->peso, -parx, pary, raio);
+  if (P->asp >= 0)    UNI1(UC_ASP, P->asp, r.h > 0 ? r.w / r.h : 1.0f);
+  if (P->texAsp >= 0) UNI1(UC_TEXASP, P->texAsp, gfx_tex_aspect_atual);
   if (P->jan >= 0) {
     const float *j = modo == GFX_TEXTURA ? txUv : gfx_janela_atual;
-    glUniform4f(P->jan, j[0], j[1], j[2], j[3]);
+    UNI4V(UC_JAN, P->jan, j);
   }
-  if (P->forcarCover >= 0) glUniform1f(P->forcarCover, gfx_card_forcar_cover_atual);
-  if (P->veuTela >= 0)     glUniform1f(P->veuTela, gfx_card_veu_tela_atual);
-  if (P->heroiVeu >= 0) glUniform4fv(P->heroiVeu, 1, gfx_card_heroi_veu_atual);
-  if (P->borda >= 0)  glUniform1f(P->borda, gfx_borda_foco_atual);
-  if (P->varre >= 0)  glUniform1f(P->varre, gfx_varre_atual);
+  if (P->forcarCover >= 0) UNI1(UC_FORCAR, P->forcarCover, gfx_card_forcar_cover_atual);
+  if (P->veuTela >= 0)     UNI1(UC_VEUTELA, P->veuTela, gfx_card_veu_tela_atual);
+  if (P->heroiVeu >= 0) UNI4V(UC_HEROIVEU, P->heroiVeu, gfx_card_heroi_veu_atual);
+  if (P->borda >= 0)  UNI1(UC_BORDA, P->borda, gfx_borda_foco_atual);
+  if (P->varre >= 0)  UNI1(UC_VARRE, P->varre, gfx_varre_atual);
   // Depois da arte (gfx_veu_na_arte) a lista so serve para gfx_veu_base pular
   // os mesmos veus: nenhum outro GFX_CARD do card (miniatura) ganha veu.
   if (P->veu >= 0) {
     static const float zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-    glUniform4fv(P->veu, 1, gfx_veu_na_arte ? zero : gfx_veu_card_atual);
+    const float *vc = gfx_veu_na_arte ? zero : gfx_veu_card_atual;
+    UNI4V(UC_VEU, P->veu, vc);
   }
-  if (P->desl >= 0)   glUniform1f(P->desl, gfx_desliza_atual);
+  if (P->desl >= 0)   UNI1(UC_DESL, P->desl, gfx_desliza_atual);
   // So os tres modos de rampa declaram uFundo: e uma chamada por destaque ou
   // fundo de detalhe desenhado, nao por retangulo.
-  if (P->fundo >= 0)  glUniform3f(P->fundo, NV_COR_FUNDO_R, NV_COR_FUNDO_G, NV_COR_FUNDO_B);
+  if (P->fundo >= 0)  UNI3(UC_FUNDO, P->fundo, NV_COR_FUNDO_R, NV_COR_FUNDO_G, NV_COR_FUNDO_B);
   if (P->acento >= 0) {
     float ar, ag, ab; ajustes_acento(&ar, &ag, &ab);
-    glUniform3f(P->acento, ar, ag, ab);
+    UNI3(UC_ACENTO, P->acento, ar, ag, ab);
   }
   // Cor viva: so os modos que declaram (degrade, luz, rampas) pagam a chamada.
   if (P->grad0 >= 0) {
-    glUniform3fv(P->grad0, 1, nv_grad_viva[0]);
-    glUniform3fv(P->grad1, 1, nv_grad_viva[1]);
-    glUniform3fv(P->grad2, 1, nv_grad_viva[2]);
+    UNI3V(UC_GRAD0, P->grad0, nv_grad_viva[0]);
+    UNI3V(UC_GRAD1, P->grad1, nv_grad_viva[1]);
+    UNI3V(UC_GRAD2, P->grad2, nv_grad_viva[2]);
   }
-  if (P->tempo >= 0)  glUniform1f(P->tempo, nv_tempo_viva);
+  if (P->tempo >= 0)  UNI1(UC_TEMPO, P->tempo, nv_tempo_viva);
   if (P->reg0 >= 0) {
-    glUniform3fv(P->reg0, 1, nv_ambiente_viva[0]);
-    glUniform3fv(P->reg1, 1, nv_ambiente_viva[1]);
-    glUniform3fv(P->reg2, 1, nv_ambiente_viva[2]);
-    glUniform3fv(P->reg3, 1, nv_ambiente_viva[3]);
+    UNI3V(UC_REG0, P->reg0, nv_ambiente_viva[0]);
+    UNI3V(UC_REG1, P->reg1, nv_ambiente_viva[1]);
+    UNI3V(UC_REG2, P->reg2, nv_ambiente_viva[2]);
+    UNI3V(UC_REG3, P->reg3, nv_ambiente_viva[3]);
   }
-  if (P->vaza >= 0)   glUniform1f(P->vaza, nv_ambiente_forca > 0.001f ? 1.0f : 0.0f);
-  if (P->din >= 0)    glUniform4f(P->din, din[0], din[1], din[2], din[3]);
+  if (P->vaza >= 0)   UNI1(UC_VAZA, P->vaza, nv_ambiente_forca > 0.001f ? 1.0f : 0.0f);
+  if (P->din >= 0)    UNI4V(UC_DIN, P->din, din);
   if (duplo) {
-    glUniform1f(P->texAspB, camAspB);
-    glUniform1f(P->alfaB, camAlfaB * gfx_opacidade_grupo);
+    UNI1(UC_TEXASPB, P->texAspB, camAspB);
+    UNI1(UC_ALFAB, P->alfaB, camAlfaB * gfx_opacidade_grupo);
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, camTexB);
     glActiveTexture(GL_TEXTURE0);
   }
   if (P->ambOn >= 0) {
-    glUniform1f(P->ambOn, comAmb || veuAmb ? 1.0f : 0.0f);
+    UNI1(UC_AMBON, P->ambOn, comAmb || veuAmb ? 1.0f : 0.0f);
     if (comAmb || veuAmb) {
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, ambFonte);
@@ -2838,7 +2894,7 @@ void gfx_rect(GfxRect r, GLuint tex, GfxModo modo, float foco,
     P->leveAtual = (float)efeitosLeves;
     glUniform1f(P->leve, P->leveAtual);
   }
-  if (P->cor >= 0)    glUniform4f(P->cor, cr, cg, cb, ca * gfx_opacidade_grupo);
+  if (P->cor >= 0)    UNI4(UC_COR, P->cor, cr, cg, cb, ca * gfx_opacidade_grupo);
   if (modo == GFX_VIDRO) vidroAplicar(P, r);
   if (tex && tex != texAtual) {
     glActiveTexture(GL_TEXTURE0);
@@ -3049,9 +3105,11 @@ static void ambAssarEm(GLuint fbo, void (*pintar)(void *), void *ctx) {
   ambPendente = 0; ambIntacta = 0;   // a luz pendente e da tela, nao do assado
   dinAnt = dinPendente; dinPendente = 0;
   gfx_opacidade_grupo = 1.0f; gfx_desliza_atual = 0.0f;
+  vidroAssando++;
   { ESC_REAL_INI();
     pintar(ctx);
     ESC_REAL_FIM(); }
+  vidroAssando--;
   gfx_opacidade_grupo = g; gfx_desliza_atual = desl;
   ambPendente = pend; ambIntacta = intacta; dinPendente = dinAnt;
   gfxBlend(blendAnt);
@@ -3101,6 +3159,9 @@ static void ambAssar(void) {
   ambLado = (ambLado + 1) % AMB_N; ambTex = ambTexPar[ambLado]; ambFbo = ambFboPar[ambLado];
   gfx_n_assados++;
   ambAssarEm(ambFbo, ambPintarLuz, NULL);
+  // The target was repainted in place: a backdrop captured while it held an
+  // older light (four bakes ago, with no glass in between) is stale.
+  vidroEsquecerFonte(ambTex);
 }
 
 void gfx_ambiente_preparar(void) {
@@ -4025,21 +4086,21 @@ static void vidroAplicar(Programa *P, GfxRect r) {
   if (rp > hw) rp = hw;
   if (rp > hh) rp = hh;
   if (bevel > hh) bevel = hh;
-  glUniform4f(u[VID_V0], hw, hh, rp, bevel > 1.0f ? bevel : 1.0f);
-  glUniform4f(u[VID_V1], lente, barra ? 0.6f : 0.0f, sy > 1.0f ? sy : 1.0f, vidPend.fonte ? 1.0f : 0.0f);
-  glUniform2f(u[VID_UVPX], 1.0f / (float)telaW, -1.0f / (float)telaH);
-  glUniform4fv(u[VID_SCRT], 1, vidPend.scrT);
-  glUniform4fv(u[VID_SCRB], 1, vidPend.scrB);
-  glUniform4f(u[VID_ARO], 1.0f, 1.0f, 1.0f, vidPend.aro);
-  glUniform4f(u[VID_AROLUZ], 1.0f, 1.0f, 1.0f, vidPend.aroLuz);
-  glUniform4f(u[VID_LUZBORDA], 1.0f, 1.0f, 1.0f, 0.14f);
-  glUniform3f(u[VID_LUZDIR], -0.35f, -0.94f, 0.0f);
-  if (barra) glUniform4f(u[VID_ESPEC], 0.0f, 0.0f, 1.0f, 0.0f);
-  else glUniform4f(u[VID_ESPEC], -0.7071f, -0.7071f, 3.0f, 0.80f);
-  glUniform4fv(u[VID_DENS], 1, vidPend.dens);
-  glUniform4f(u[VID_AMOSTRA], (r.x + r.w * 0.5f) / NV_TELA_W, 1.0f - (r.y + r.h * 0.5f) / NV_TELA_H,
-              r.w * 0.25f / NV_TELA_W, r.h * 0.25f / NV_TELA_H);
-  glUniform2f(u[VID_RUIDOESC], (float)telaW / VID_RUIDO_N, (float)telaH / VID_RUIDO_N);
+  UNI4(UC_VID + VID_V0, u[VID_V0], hw, hh, rp, bevel > 1.0f ? bevel : 1.0f);
+  UNI4(UC_VID + VID_V1, u[VID_V1], lente, barra ? 0.6f : 0.0f, sy > 1.0f ? sy : 1.0f, vidPend.fonte ? 1.0f : 0.0f);
+  UNI2(UC_VID + VID_UVPX, u[VID_UVPX], 1.0f / (float)telaW, -1.0f / (float)telaH);
+  UNI4V(UC_VID + VID_SCRT, u[VID_SCRT], vidPend.scrT);
+  UNI4V(UC_VID + VID_SCRB, u[VID_SCRB], vidPend.scrB);
+  UNI4(UC_VID + VID_ARO, u[VID_ARO], 1.0f, 1.0f, 1.0f, vidPend.aro);
+  UNI4(UC_VID + VID_AROLUZ, u[VID_AROLUZ], 1.0f, 1.0f, 1.0f, vidPend.aroLuz);
+  UNI4(UC_VID + VID_LUZBORDA, u[VID_LUZBORDA], 1.0f, 1.0f, 1.0f, 0.14f);
+  UNI3(UC_VID + VID_LUZDIR, u[VID_LUZDIR], -0.35f, -0.94f, 0.0f);
+  if (barra) UNI4(UC_VID + VID_ESPEC, u[VID_ESPEC], 0.0f, 0.0f, 1.0f, 0.0f);
+  else UNI4(UC_VID + VID_ESPEC, u[VID_ESPEC], -0.7071f, -0.7071f, 3.0f, 0.80f);
+  UNI4V(UC_VID + VID_DENS, u[VID_DENS], vidPend.dens);
+  UNI4(UC_VID + VID_AMOSTRA, u[VID_AMOSTRA], (r.x + r.w * 0.5f) / NV_TELA_W, 1.0f - (r.y + r.h * 0.5f) / NV_TELA_H,
+       r.w * 0.25f / NV_TELA_W, r.h * 0.25f / NV_TELA_H);
+  UNI2(UC_VID + VID_RUIDOESC, u[VID_RUIDOESC], (float)telaW / VID_RUIDO_N, (float)telaH / VID_RUIDO_N);
   glActiveTexture(GL_TEXTURE3);
   glBindTexture(GL_TEXTURE_2D, vidRuido);
   glActiveTexture(GL_TEXTURE0);
@@ -4216,6 +4277,7 @@ GLuint gfx_luz_canal(int canal, const float *chave, int n, void (*pintar)(void *
   assandoCanal = 1;
   ambAssarEm(canFbo[canal][canLado[canal]], pintar, ctx);
   assandoCanal = 0;
+  vidroEsquecerFonte(canTex[canal][canLado[canal]]);   // repainted in place (see ambAssar)
   return canTex[canal][canLado[canal]];
 }
 // A passada de tela do ambPintar: GFX_SNAP de tela cheia (fonte FBO), opaca e

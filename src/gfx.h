@@ -542,6 +542,9 @@ void gfx_tex_esquecer(GLuint tex);
 extern int    gfx_n_rect;   // chamadas de gfx_rect
 extern int    gfx_n_prog;   // trocas de programa GL (glUseProgram)
 extern int    gfx_n_bind;   // trocas de textura (glBindTexture)
+// glUniform calls of gfx_rect this frame: sent, and skipped because the program
+// already held the value (the uniform shadow in gfx.c).
+extern int    gfx_n_unif, gfx_n_unif_poupados;
 extern double gfx_ms_rect;  // ms de CPU dentro de gfx_rect
 extern int    gfx_n_outros;  // chamadas de recorte/FBO/desfoque
 extern double gfx_ms_outros; // ms de CPU nesses pontos de GL
