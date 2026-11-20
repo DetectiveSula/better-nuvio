@@ -4,7 +4,7 @@
 #include <errno.h>
 #include "j7arme.h"
 #define AJ6_NATIVE_BRIDGE 1
-typedef enum {AJ6_BOOL,AJ6_INT,AJ6_CHOICE,AJ6_HOURS,AJ6_FOCUS} Aj6Codec;
+typedef enum {AJ6_BOOL,AJ6_INT,AJ6_CHOICE,AJ6_HOURS,AJ6_FOCUS,AJ6_TRIO} Aj6Codec;
 typedef struct {int op;const char *feature,*key;Aj6Codec codec;const char *const *choices;int n;} Aj6Map;
 #include "ajustes_official_map.inc"
 #define AJ6_N (sizeof aj6Map/sizeof *aj6Map)
@@ -17,9 +17,23 @@ static uint64_t aj6Session;
 static int aj6Current(void){return aj6Loaded&&aj6Ready&&sessao_logada()&&aj6Profile==perfis_ativo()&&!strcmp(aj6Owner,sessao_usuario())&&nv_perfil_sessao_atual(aj6Session);}
 static int aj6Native(size_t i,int v){int op=aj6Map[i].op;const Opcao *o=&OPCOES[op];return o->tipo==OP_NUMERO?v>=o->min&&v<=o->max:v>=0&&v<nValores(op);}
 static const char *aj6Type(size_t i){Aj6Codec c=aj6Map[i].codec;return c==AJ6_BOOL||c==AJ6_FOCUS?"boolean":c==AJ6_INT||c==AJ6_HOURS?"int":"string";}
+/* AJ6_TRIO: the three entries share one official string. Encoding entry k writes
+ * the whole string: its own value at k, the other two from `aj6TrioValores`
+ * (set by the caller). Writers of a whole feature emit it once (component 0). */
+static int aj6TrioValores[3];
+static void aj6TrioTexto(char out[24],const int c[3]){snprintf(out,24,"#%06X,#%06X,#%06X",(unsigned)c[0]&0xFFFFFFu,(unsigned)c[1]&0xFFFFFFu,(unsigned)c[2]&0xFFFFFFu);}
+/* "#RRGGBB,#RRGGBB,#RRGGBB" (the "#" optional, any case) -> component k. */
+static int aj6TrioLer(const char *v,const char *f,int k,int *out){
+ if(f-v<2||*v!='"'||f[-1]!='"')return 0;const char *p=v+1,*e=f-1;int c[3],n=0;
+ while(p<e&&n<3){if(*p=='#')p++;unsigned x=0;int d=0;
+  while(p<e&&*p!=','){char ch=*p++;int h=ch>='0'&&ch<='9'?ch-'0':ch>='a'&&ch<='f'?ch-'a'+10:ch>='A'&&ch<='F'?ch-'A'+10:-1;if(h<0||++d>6)return 0;x=x*16+(unsigned)h;}
+  if(d!=6)return 0;c[n++]=(int)x;if(p<e)p++;}
+ if(n!=3||p!=e)return 0;*out=c[k];return 1;
+}
 static const char *aj6String(size_t i,int n){
  const Aj6Map *m=&aj6Map[i];
  if(m->codec==AJ6_CHOICE)return n>=0&&n<m->n?m->choices[n]:NULL;
+ if(m->codec==AJ6_TRIO){static char t[24];int c[3]={aj6TrioValores[0],aj6TrioValores[1],aj6TrioValores[2]};c[m->n]=n;aj6TrioTexto(t,c);return t;}
  return NULL;
 }
 static int aj6Supported(size_t i,int n){
@@ -33,6 +47,7 @@ static int aj6Supported(size_t i,int n){
  case AJ6_INT:return aj6Map[i].op!=AJ_CW_DIAS||n==0||n>=7;
  case AJ6_HOURS:return n>=0&&n<(int)(sizeof LINK_PRAZO_H/sizeof *LINK_PRAZO_H);
  case AJ6_FOCUS:return n>=0&&n<=2;
+ case AJ6_TRIO:return n>=0&&n<=0xFFFFFF;
  }return 0;
 }
 static void aj6Encoded(Jsw *w,const char *key,const char *type,int number,const char *str){
@@ -76,6 +91,8 @@ static int aj6Remote(const char *json,size_t i,int *out){
  }else if(m->codec==AJ6_INT||m->codec==AJ6_HOURS){
   char *end;errno=0;long val=strtol(v,&end,10);if(errno||end!=f||end==v||val<INT_MIN||val>INT_MAX)goto invalid;
   n=(int)val;if(m->codec==AJ6_HOURS){n=-1;for(size_t j=0;j<sizeof LINK_PRAZO_H/sizeof *LINK_PRAZO_H;j++)if(LINK_PRAZO_H[j]==val)n=(int)j;}
+ }else if(m->codec==AJ6_TRIO){
+  if(!aj6TrioLer(v,f,m->n,&n))goto invalid;
  }else {
   int count=m->n;
   for(int j=0;j<count;j++){const char *s=aj6String(i,j);if(s&&aj6TokenString(v,f,s)){n=j;break;}}
@@ -181,7 +198,16 @@ static int aj6Merge(const char *base,char **out){
   for(size_t i=first;i<AJ6_N;i++)if(!strcmp(aj6Map[i].feature,aj6Map[first].feature)){
    Aj6Field *s=&aj6State[i];int remote=0,status=aj6Remote(base,i,&remote);
    if(!s->pending||s->hold||status==-2||(status==1&&(remote==s->desired||!s->known||remote!=s->base)))continue;
+   if(aj6Map[i].codec==AJ6_TRIO&&aj6Sent[i])continue;   /* already written with its trio */
    if(!opened){jsw_chave(&patch,aj6Map[i].feature);jsw_obj_ini(&patch);opened=1;}
+   if(aj6Map[i].codec==AJ6_TRIO){
+    size_t t[3];int k=0;
+    for(size_t j=0;j<AJ6_N&&k<3;j++)if(aj6Map[j].codec==AJ6_TRIO)t[k++]=j;
+    if(k!=3)continue;
+    for(int c=0;c<3;c++)aj6TrioValores[c]=aj6State[t[c]].desired;
+    if(aj6Encode(&patch,t[0],aj6TrioValores[0]))for(int c=0;c<3;c++){aj6Sent[t[c]]=1;aj6SentValue[t[c]]=aj6TrioValores[c];}
+    n++;continue;
+   }
    if(aj6Encode(&patch,i,s->desired)){aj6Sent[i]=1;aj6SentValue[i]=s->desired;n++;}
   }if(opened)jsw_obj_fim(&patch);
  }

@@ -98,6 +98,7 @@ int player_aberto(void);
 #endif
 int video_registro_negado(void); /* video.h: motivo do trailer bloqueado */
 #include "trailerimdb.h"
+#include "trailerytb.h"
 #include "trailerapple.h"
 #include "trailerfonte.h"
 #include "ponteiro.h"
@@ -536,6 +537,24 @@ static Uint32 heroVizTentaEm;
 static int    expFileira = -1, expColuna = -1;
 static Uint32 expDesde = 0;
 static float  expAbre = 0.0f;   // 0 fechado, 1 aberto
+// THE WIDE ART IS READY BEFORE THE CARD OPENS. The open card swaps to its wide
+// (16:9) art halfway through. That art used to be requested only at the swap,
+// so an uncached one flashed the grey placeholder and faded in on every first
+// expansion, and it was asked for at the card's in-between widths while it
+// grew (each 25% step re-decoded it). Now the draw asks for it once focus has
+// rested NV_EXP_AQUECE_MS, at the FINAL open width, and the card does not start
+// opening until it is ready (or known not to come, or NV_EXP_ESPERA_MS more
+// have passed). If it is still missing at the swap the poster stays in place:
+// never a grey card, and a card with no art at all yet does not open.
+// `expArtePronta` (2 wide ready, 1 poster only, 0 none) is written by the draw for the card
+// (expArteFileira, expArteColuna) and read by the next update.
+#define NV_EXP_AQUECE_MS 250u    // a fast scroll does not decode wide art for every card
+#define NV_EXP_ESPERA_MS 2500u   // past the delay: open with the poster rather than wait forever
+static int    expArtePronta = 0, expArteFileira = -1, expArteColuna = -1;
+#ifdef NV_FLUIDEZ_PERF
+int home_exp_quadros_sem_arte, home_exp_quadros_abrindo;
+#endif
+static char   expLargaUrl[NV_TEX_URL_MAX];
 
 // MEDIDO na TCL (1920x1080, com.nuvio.tv), capturando 0,8 s e 7,8 s apos a
 // tecla: o card focado vai de 214x320 para 565x320. A ALTURA NAO MUDA e a
@@ -4051,7 +4070,14 @@ static void home_atualizar_(float dt, Uint32 agora) {
       int pronto = expDesde && (agora - expDesde) >= (Uint32)(atraso * 1000.0f);
       // Fileira DEITADA (e a de continuar assistindo) ja mostra a arte larga:
       // nao ha para o que expandir.
-      if (pronto && podeExpandir(foco.fileira))
+      // Wait for the wide art (see expArtePronta). Once opening has started it
+      // never stops halfway: the gate only holds a card that is still closed.
+      // 2 = wide art ready (or not coming), 1 = only the poster, 0 = nothing:
+      // past NV_EXP_ESPERA_MS it opens on the poster, never on a grey card.
+      int estaArte = expArteFileira == foco.fileira && expArteColuna == foco.coluna ? expArtePronta : 0;
+      int arte = expAbre > 0.0f || estaArte == 2 ||
+                 (estaArte == 1 && pronto && agora - expDesde >= (Uint32)(atraso * 1000.0f) + NV_EXP_ESPERA_MS);
+      if (pronto && arte && podeExpandir(foco.fileira))
         expAbre = motionReduzido ? 1.0f
                    : anim_mola(expAbre, 1.0f, dt, NV_MOLA_TELA); }
   } else {
@@ -6061,7 +6087,7 @@ static void desenhaAtalhos(int r, float y) {
 }
 
 static const char *heroTrailerYoutube(const char *imdb) {
-#ifdef __EMSCRIPTEN__
+  {
   size_t j, tam;
   if (!extras_hero_trailer_obter(imdb, heroTrailerYoutubeId,
                                  sizeof heroTrailerYoutubeId)) return NULL;
@@ -6073,10 +6099,7 @@ static const char *heroTrailerYoutube(const char *imdb) {
           (heroTrailerYoutubeId[j] >= '0' && heroTrailerYoutubeId[j] <= '9') ||
           heroTrailerYoutubeId[j] == '_' || heroTrailerYoutubeId[j] == '-')) return NULL;
   return heroTrailerYoutubeId;
-#else
-  (void)imdb;
-#endif
-  return NULL;
+  }
 }
 
 // O carrossel compartilha o mesmo contrato do pedido de trailer: espera
@@ -6320,13 +6343,12 @@ static void home_trailer_passo_(int topo, float dt, Uint32 agora) {
     heroTrailerTentado = heroTrailerMemoriaFalhou || heroTrailerJaTocou(ci->imdb);
     if (heroTrailerTentado) goto trailer_hero_fim;
     trailerapple_pedir(ci->imdb, ci->titulo, ci->meta, ci->tipo[0] ? !strcmp(ci->tipo, "series") : 0);
-#ifdef __EMSCRIPTEN__
     // A consulta do hero e so /videos; extras_pedir (ficha, creditos,
     // relacionados e imagens) continua reservado para a pagina de detalhe.
+    // Native too since 19/11/2026: the YouTube id feeds trailerytb.c.
     extras_hero_trailer_pedir(ci->imdb,
                               ci->tipo[0] ? !strcmp(ci->tipo, "series") : 0,
                               ci->tmdb);
-#endif
     // O IMDb exige Referer, que navegador nenhum deixa por (e o CORS dele so
     // aceita imdb.com): na Samsung so pelo servico de recomendacoes (#136).
     if (!trailerfonte_tizen() || trailerfonte_imdb_tizen()) trailerimdb_pedir(ci->imdb);
@@ -6417,7 +6439,12 @@ static void home_trailer_passo_(int topo, float dt, Uint32 agora) {
     if (heroTrailerFalhas & (1u << TRF_YOUTUBE)) { c.youtube = NULL; c.youtubeIdiomaPreferido = 0; }
     c.youtubeRespondeu = 1;
 #else
-    c.youtubeRespondeu = venceu;
+    // NATIVE: TMDB's YouTube id, made playable by trailerytb.c.
+    { const char *yt = heroTrailerYoutube(ci->imdb);
+      if (yt) { trailerytb_pedir(yt); c.youtube = trailerytb_url(yt); }
+      if (heroTrailerFalhas & (1u << TRF_YOUTUBE)) c.youtube = NULL;
+      c.youtubeRespondeu = venceu || (heroTrailerFalhas & (1u << TRF_YOUTUBE)) ||
+        (yt ? trailerytb_respondeu(yt) : extras_hero_trailer_respondeu(ci->imdb)); }
 #endif
     // _destaque: igual a trailerfonte_escolher, salvo no .tpk com
     // NV_TRAILER_CONTINUA_DETALHE (IMDb antes da Apple, para o trailer poder
@@ -8491,9 +8518,33 @@ static void home_desenhar_(Uint32 agora) {
           // Aberto, o card mostra a arte DEITADA: e para isso que ele abre.
           // A troca acontece na metade do caminho, quando a moldura ja tem
           // largura de 16:9 e o retrato comecaria a ser recortado feio.
+          // The card that will open: ask for its wide art early, at the final
+          // width (expArtePronta, above). Copied: the lookup may return a
+          // buffer the next lookup reuses.
+          const int expAqui = r == expFileira && c == expColuna && ajustes_expandir_poster() &&
+                              podeExpandir(r) && !deitado && !homeRetratoTelefone();
+          const float wFimExp = artH * (1.0f + escalaDe(tipo)) * NV_EXP_ASPECTO;
+          GLuint tLargaExp = 0, tPosterExp = 0;
+          if (expAqui) {
+            const char *larga = arte_por_identidade(idxCat, 1);
+            snprintf(expLargaUrl, sizeof expLargaUrl, "%s", larga ? larga : "");
+            if (expLargaUrl[0] && (abre > 0.0f || agora - expDesde >= NV_EXP_AQUECE_MS))
+              tLargaExp = tex_obter_larg(expLargaUrl, wFimExp);
+          }
           caminho = arte_por_identidade(idxCat,
                                         (tipo == FILEIRA_CONTINUE || tipo == FILEIRA_RETORNO) ? 3
-                                        : (abre > 0.5f || deitado));
+                                        : deitado);
+          if (expAqui) {
+            // The poster keeps its closed width for the whole animation (asking
+            // at the growing `w` re-decoded it). Whichever art is ready is
+            // drawn: the wide one past halfway, else the poster, and the other
+            // one rather than a grey card.
+            tPosterExp = caminho ? tex_obter_larg(caminho, lw * esc) : 0;
+            if (tLargaExp && (abre > 0.5f || !tPosterExp)) caminho = expLargaUrl;
+            expArteFileira = r; expArteColuna = c;
+            expArtePronta = (tLargaExp || !expLargaUrl[0] || tex_falhou(expLargaUrl)) ? 2
+                          : tPosterExp ? 1 : 0;
+          }
 
           // `!focoHero` E A CONDICAO QUE FALTAVA AQUI, e e o mesmo defeito que
           // o anel de foco ja tinha resolvido dez linhas acima (linha 1747).
@@ -8521,7 +8572,16 @@ static void home_desenhar_(Uint32 agora) {
           // Pede pela largura REAL do card: e esta fileira que multiplica.
           // Com o teto unico de 640 cada poster custava 2,4 MB e o cache
           // estourava com ~40 texturas, despejando o que ainda estava na tela.
-          GLuint t = caminho ? tex_obter_larg(caminho, tipo == FILEIRA_PALCO ? lw : w) : 0;
+          // The opening card keeps ONE width per art for the whole animation:
+          // the wide art at its final width (already asked for above), the
+          // poster at its closed width. Asking at `w`, which grows, re-decoded.
+          GLuint t = expAqui ? (caminho == expLargaUrl ? tLargaExp : tPosterExp)
+                   : caminho ? tex_obter_larg(caminho, tipo == FILEIRA_PALCO ? lw : w) : 0;
+#ifdef NV_FLUIDEZ_PERF
+          // tests/fluidez_perf.c: frames the opening card showed no art (grey).
+          { extern int home_exp_quadros_sem_arte, home_exp_quadros_abrindo;
+            if (expAqui && abre > 0.0f) { home_exp_quadros_abrindo++; if (!t) home_exp_quadros_sem_arte++; } }
+#endif
           // ARTE CHEGANDO: so esvanece quem foi visto esperando (revela.h).
           float aArte = revela_arte(&revArte[r][c], t != 0, agora);
           // ANEL DE FOCO: 4 px de #FFFFFF, POR FORA da arte.

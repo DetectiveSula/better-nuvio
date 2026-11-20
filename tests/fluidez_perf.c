@@ -391,6 +391,26 @@ static void cenario(SDL_Window *w, const char *cen) {
     quadro(w, &qs[i], t); t += 16;
   }
   relatar(cen, "navegando", qs, n);
+  // EXPANSION AT REST (NV_EXPANDE=1, with the expansion setting on): step
+  // right onto cards never focused before and rest on each past the delay.
+  // Counts the frames the opening card was drawn without art (grey); with
+  // NV_PERF_DECODE_MS the decodes are TV-slow. PERF_BMP grabs the moment
+  // the card swaps to its wide art.
+  if (getenv("NV_EXPANDE")) {
+    extern int home_exp_quadros_sem_arte, home_exp_quadros_abrindo;
+    int k, j, cinza = 0, abrindo = 0;
+    home_exp_quadros_sem_arte = home_exp_quadros_abrindo = 0;
+    for (k = 0; k < 6; k++) {
+      tecla(SDLK_RIGHT); tecla(SDLK_RIGHT);
+      for (j = 0; j < 400; j++) { quadro(w, NULL, t); t += 16;
+        if (getenv("PERF_BMP") && k == 0 && (j == 200 || j == 215 || j == 230 || j == 399)) {
+          char b[800]; snprintf(b, sizeof b, "%s-%s-expande%03d.bmp", getenv("PERF_BMP"), cen, j); guardar(b); } }
+    }
+    cinza = home_exp_quadros_sem_arte; abrindo = home_exp_quadros_abrindo;
+    printf("[%s] expande    quadros abrindo=%d sem-arte=%d\n", cen, abrindo, cinza);
+    for (k = 0; k < 12; k++) { tecla(SDLK_LEFT); quadro(w, NULL, t); t += 16; }
+    for (j = 0; j < 60; j++) { quadro(w, NULL, t); t += 16; }
+  }
   // Detalhe por cima.
   { HomeItem it;
     if (home_item_focado(&it)) {

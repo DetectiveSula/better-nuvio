@@ -43,6 +43,9 @@ RETIRADAS = {
     "AJ_FILTRO_TAM_MAX", "AJ_FILTRO_GRUPOS",
     "AJ_FILTRO_MIN_GB", "AJ_FILTRO_MAX_RESULT", "AJ_FILTRO_POR_RES",
     "AJ_FILTRO_POR_QUAL", "AJ_FILTRO_SORT", "AJ_FILTRO_REQUIRED_GROUPS",
+    # 1.0.12: the three custom accent colours are edited inside "Cor de
+    # destaque" (Personalizada), not as rows of their own.
+    "AJ_TEMA_COR1", "AJ_TEMA_COR2", "AJ_TEMA_COR3",
 }
 opcoes = [op for op in opcoes if op not in RETIRADAS]
 

@@ -148,6 +148,7 @@ void pausao_atualizar(float dt, Uint32 agora, int podeSubir, int idx,
 // visivel para quem pergunta: se fosse, o player manteria os controles
 // recolhidos durante a saida e a barra so voltaria depois do fade.
 int pausao_visivel(void) { return visivel; }
+float pausao_anim(void) { return visivel ? anim : 0.0f; }
 
 int pausao_evento(const SDL_Event *e) {
   SDL_Keycode k;

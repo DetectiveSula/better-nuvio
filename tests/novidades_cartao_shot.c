@@ -15,6 +15,7 @@
 #include "tex_cache.h"
 #include "idiomacod.h"
 #include "idioma.h"
+#include "logoapp.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <assert.h>
@@ -164,6 +165,7 @@ int main(int argc, char **argv) {
   dados_iniciar(dir);
   if (strcmp(dados_dir(), dir)) return 2;
   novcartao_dir("deploy/app/art");
+  logoapp_iniciar("deploy/app/art");   // the opening scene's lockup, as the app sets it
 
   SDL_SetHint("SDL_MAC_BACKGROUND_APP", "1");
   assert(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) == 0);

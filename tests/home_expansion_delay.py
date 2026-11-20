@@ -20,6 +20,10 @@ static int expFileira=-1, expColuna=-1, okPressionando;
 static float expAbre, okHold, delay;
 static Uint32 expDesde;
 static struct {int fileira,coluna;} foco;
+// The draw reports whether the focused card's wide art is ready
+// (expArtePronta); `arteOk` stands in for it here.
+#define NV_EXP_ESPERA_MS 2500u
+static int arteOk=2, expArtePronta, expArteFileira=-1, expArteColuna=-1;
 static int ajustes_expandir_poster(void){return enabled;}
 static int homeRetratoTelefone(void){return portrait;}
 static int ctx_aberto(void){return context;}
@@ -30,6 +34,7 @@ static float anim_mola(float x,float target,float dt,int speed){
  (void)dt;(void)speed;return (x+target)*.5f;
 }
 static void tick(Uint32 agora){float dt=.016f;
+ expArteFileira=foco.fileira;expArteColuna=foco.coluna;expArtePronta=arteOk;   // 2 wide, 1 poster only, 0 none
 ''' + timer + r'''
 }
 int main(void){
@@ -54,6 +59,19 @@ int main(void){
  expFileira=-1;motionReduzido=0;tick(UINT32_MAX-1000u);
  tick(998);assert(expAbre==0);tick(999);assert(expAbre>0);
  puts("PASS context-menu suspension, portrait/landscape gates, reduced motion and timer wrap");
+ // Wide art not ready: the card stays closed past the delay, opens the frame
+ // the art is ready, and never waits more than NV_EXP_ESPERA_MS beyond it.
+ motionReduzido=0;delay=2;expFileira=-1;foco.coluna=5;arteOk=1;
+ tick(30000);tick(32000);assert(expAbre==0);
+ tick(33000);assert(expAbre==0);arteOk=2;tick(33016);assert(expAbre>0);
+ foco.coluna=6;arteOk=1;tick(40000);tick(42000);tick(44499);assert(expAbre==0);
+ tick(44500);assert(expAbre>0);                     // poster only: opens at the ceiling
+ // Already opening: losing the art (evicted) never closes it halfway.
+ arteOk=0;tick(44516);assert(expAbre>0.5f);
+ // No art at all (not even the poster): it never opens onto a grey card.
+ foco.coluna=7;arteOk=0;tick(50000);tick(60000);assert(expAbre==0);
+ arteOk=2;
+ puts("PASS expansion waits for its wide art (2.5 s ceiling on the poster), never opens grey, never stops halfway");
 }
 ''')
     executable = Path(directory) / 'timer'

@@ -25,6 +25,11 @@ void faixas_abrir(void);
 // botao.
 void faixas_abrir_em(int col);
 int  faixas_aberta(void);
+// The TV transport's popover (Apple TV layout): subtitles left (col 0), audio
+// right (col 1), with "More options" opening the full sheet above.
+void  faixas_abrir_duo(int col);
+int   faixas_duo(void);
+float faixas_duo_anim(void);
 // A folha de legenda esta como BARRA DE ESTILO no topo (foco na coluna
 // Estilo): o player desenha a legenda onde ela vai tocar, com uma linha de
 // previa quando nao ha fala naquele momento.

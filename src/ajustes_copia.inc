@@ -131,7 +131,8 @@ static char *ajCopyOfficial(const int *values, int source) {
   for(size_t first=0;first<AJ6_N;first++){
     int seen=0;for(size_t j=0;j<first;j++)seen|=!strcmp(aj6Map[j].feature,aj6Map[first].feature);if(seen)continue;
     jsw_chave(&w,aj6Map[first].feature);jsw_obj_ini(&w);
-    for(size_t j=first;j<AJ6_N;j++)if(!strcmp(aj6Map[j].feature,aj6Map[first].feature))aj6Encode(&w,j,values[aj6Map[j].op]);
+    aj6TrioValores[0]=values[AJ_TEMA_COR1];aj6TrioValores[1]=values[AJ_TEMA_COR2];aj6TrioValores[2]=values[AJ_TEMA_COR3];
+    for(size_t j=first;j<AJ6_N;j++)if(!strcmp(aj6Map[j].feature,aj6Map[first].feature)&&!(aj6Map[j].codec==AJ6_TRIO&&aj6Map[j].n!=0))aj6Encode(&w,j,values[aj6Map[j].op]);
     jsw_obj_fim(&w);
   }
   jsw_obj_fim(&w);jsw_obj_fim(&w);const char *patch=jsw_texto_final(&w);

@@ -15,6 +15,7 @@
 #include "nvtmp.h"
 #include "player.h"
 #include "idioma.h"
+#include "legenda.h"
 #include "pausao.h"
 #include "ajustes.h"
 #include "faixas.h"
@@ -355,8 +356,12 @@ static void relacionadosShot(void) {
     static const char *gen[8] = { "Drama, Adventure", "Adventure, Drama", "Drama, Science Fiction", "Science Fiction, Thriller",
                                   "Science Fiction, Drama", "Science Fiction, Drama", "Science Fiction, Thriller", "Drama, Mystery" };
     static const int nota[8] = { 77, 84, 76, 72, 59, 77, 68, 74 }, dur[8] = { 144, 169, 116, 91, 123, 97, 107, 150 };
-    for (i = 0; i < 8; i++)
-      extras_shot_relacionado_extra(i, img(bd[i]), "", sin[i], gen[i], nota[i], i % 3 == 2 ? EX_TRAKT : EX_TMDB, dur[i]); }
+    for (i = 0; i < 8; i++) {
+      // NV_REL_LOGO=1: logo artwork for each recommendation (the end-of-film
+      // screen with logos; without it, the name in text).
+      char lg[64] = "";
+      if (getenv("NV_REL_LOGO")) snprintf(lg, sizeof lg, "deploy/app/art/logo/%02d.png", i);
+      extras_shot_relacionado_extra(i, img(bd[i]), lg, sin[i], gen[i], nota[i], i % 3 == 2 ? EX_TRAKT : EX_TMDB, dur[i]); } }
 }
 
 static int quer(int argc, char **argv, const char *id) {
@@ -586,6 +591,31 @@ int main(int argc, char **argv) {
     quadros(90);
     salvar("reconectando");
     player_shot_video(0); simular(0, 0, "", 0, 0);
+  }
+  // APPLE TV TRANSPORT (player mockups 1-4): a focused button with its name,
+  // the subtitles/audio popover and the info panel opened with UP.
+  if (quer(argc, argv, "apple-botao") || quer(argc, argv, "apple-popover") || quer(argc, argv, "apple-info")) {
+    abrir(&filme); simularFaixas();
+    quadros(10);
+    if (quer(argc, argv, "apple-botao")) {
+      player_shot_estado(relogio, 4360.0f, 9420.0f, 1, 1 /* PLR_CC */, 0, 0);
+      quadros(60); salvar("apple-botao");
+    }
+    if (quer(argc, argv, "apple-popover")) {
+      player_shot_estado(relogio, 4360.0f, 9420.0f, 1, 1 /* PLR_CC */, 0, 0);
+      faixas_abrir_duo(0);
+      teclaFaixas(SDLK_DOWN);
+      quadros(90); salvar("apple-popover");
+      faixas_evento(&(SDL_Event){ .key = { .type = SDL_KEYDOWN, .keysym = { .sym = SDLK_ESCAPE } } });
+      quadros(60);
+    }
+    if (quer(argc, argv, "apple-info")) {
+      SDL_Event ev; memset(&ev, 0, sizeof ev);
+      player_shot_estado(relogio, 4360.0f, 9420.0f, 0, 0 /* PLR_PLAY */, 0, 0);
+      ev.type = SDL_KEYDOWN; ev.key.keysym.sym = SDLK_UP; player_evento(&ev);
+      quadros(90); salvar("apple-info");
+      ev.key.keysym.sym = SDLK_ESCAPE; player_evento(&ev); quadros(30);
+    }
   }
   if (quer(argc, argv, "audio") || quer(argc, argv, "audio-direita")) {
     int dir;
@@ -895,8 +925,11 @@ int main(int argc, char **argv) {
     { struct tm lt; time_t t = time(NULL);
       localtime_r(&t, &lt); lt.tm_hour = 20; lt.tm_min = 41; lt.tm_sec = 0;
       plrilha_shot_hora(mktime(&lt)); }
+    // A subtitle on screen: it must not sit on the panel (owner, 19/11/2026).
+    legenda_definir_corpo("1\n00:00:00,000 --> 02:00:00,000\n- Kind of in the middle of something.\n");
     quadros(420);
     salvar("pausa");
+    legenda_desligar();
     { struct tm lt; time_t t = time(NULL);
       localtime_r(&t, &lt); lt.tm_hour = 20; lt.tm_min = 19; lt.tm_sec = 0;
       plrilha_shot_hora(mktime(&lt)); }
@@ -935,6 +968,15 @@ int main(int argc, char **argv) {
     posplay_shot(0, 1, 1, 4, relogio + 8000u + 120u * 16u);
     quadros(120);
     salvar("proximo");
+    // The subtitles stay inside the receded window (owner, 19/11/2026).
+    legenda_definir_corpo("1\n00:00:00,000 --> 02:00:00,000\nA Mt. Rushmore bobblehead.\n");
+    quadros(30);
+    salvar("proximo-legenda");
+    legenda_desligar();
+    // Countdown ring part way: about 40% of the chosen countdown left.
+    posplay_shot(0, 1, 1, 4, relogio + (Uint32)(ajustes_proximo_contagem() * 400));
+    quadros(1);
+    salvar("proximo-contagem");
     posplay_shot_estado(1, 0); quadros(30);
     salvar("proximo-cena");
     posplay_shot_estado(0, 1); quadros(30);
@@ -942,7 +984,8 @@ int main(int argc, char **argv) {
     posplay_shot_estado(0, 0);
     posplay_fechar(); player_shot_video(0); quadros(30);
   }
-  if (quer(argc, argv, "mais-como-este") || quer(argc, argv, "mais-como-este-foco")) {
+  if (quer(argc, argv, "mais-como-este") || quer(argc, argv, "mais-como-este-foco") ||
+      quer(argc, argv, "mais-como-este-reacao")) {
     abrir(&filme);
     // Opening the player re-requests the film's metadata, which resets the list.
     relacionadosShot();
@@ -954,6 +997,13 @@ int main(int argc, char **argv) {
     posplay_shot(0, 0, 0, 0, 0);
     quadros(120);
     if (quer(argc, argv, "mais-como-este")) salvar("mais-como-este");
+    if (quer(argc, argv, "mais-como-este-reacao")) {
+      // The "Was it worth watching?" card over the end-of-film screen: bottom
+      // right, under the receded video, never over it.
+      reacao_teste_abrir("tt99999991", "Project Hail Mary", "movie", 0, "", 0);
+      quadros(110);
+      salvar("mais-como-este-reacao");
+    }
     if (quer(argc, argv, "mais-como-este-foco")) {
       SDL_Event k; int i;
       memset(&k, 0, sizeof k); k.type = SDL_KEYDOWN; k.key.keysym.sym = SDLK_RIGHT;
@@ -965,6 +1015,24 @@ int main(int argc, char **argv) {
       k.key.keysym.sym = SDLK_UP; posplay_evento(&k); quadros(30);
       salvar("mais-como-este-janela");
     }
+    posplay_fechar(); player_shot_video(0); quadros(30);
+  }
+  if (quer(argc, argv, "mais-como-este-legenda")) {
+    // A 2.39:1 film receded at its end: the subtitle line belongs on the
+    // window's picture, not under it in the letterbox (owner, 19/11/2026).
+    abrir(&filme);
+    relacionadosShot();
+    { VideoSimulacao v; memset(&v, 0, sizeof v);
+      v.largura = 3840; v.altura = 1606; v.pronto = 1; v.duracao = 9420; v.pos = 9300;
+      video_simular(&v); }
+    player_shot_video(1);
+    quadros(5);
+    posplay_shot(0, 0, 0, 0, 0);
+    quadros(120);
+    legenda_definir_corpo("1\n00:00:00,000 --> 02:00:00,000\nI'll not be here, sadly, but...\n");
+    quadros(30);
+    salvar("mais-como-este-legenda");
+    legenda_desligar();
     posplay_fechar(); player_shot_video(0); quadros(30);
   }
   if (quer(argc, argv, "reacao")) {

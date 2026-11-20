@@ -32,9 +32,23 @@
 //                animacoes reduzidas);
 //   Direto       sem parada minima e saida curta de 220 ms, sem crescer: assim
 //                que a home tem as artes do primeiro quadro, ela aparece.
+// CINEMATIC (owner, 18-19 Nov 2026: "some sort of animation like Disney Plus
+// when the app is opened" ... "it just doesnt feel premium" ... chosen from
+// twelve renders: "4 Crossing lights"). Nuvio+'s own reveal: on near-black the
+// logo is a pure black shape; a cyan light from the left and a violet one from
+// the right pass behind it in opposite directions, so only its outline glows;
+// where they cross there is a brief bright bloom and the logo's colour floods
+// in. About 2.3 s, any key skips it, reduced animations get the plain one. Only
+// the new logo; with the Classic art it stays the old one. It is what
+// "Padrão" (0) now means; the old still logo with a slow zoom became
+// "Clássica" (3).
+#define AB_CINEMA 0
+#define AB_CLASSICA 3
+#define AB_CINEMA_MS 2300u
 typedef struct { Uint32 minMs; float saidaMs; int zoom; } AbEstilo;
 static AbEstilo abEstilo(int e, int reduzida) {
   AbEstilo r = { 350u, 560.0f, 1 };
+  if (e == AB_CINEMA && !reduzida) r.minMs = AB_CINEMA_MS;   /* AB_CLASSICA: the 350 ms default above */
   if (e == 2) { r.minMs = 0u; r.saidaMs = 220.0f; r.zoom = 0; }
   else if (e == 1 || reduzida) r.zoom = 0;
   return r;
@@ -62,6 +76,69 @@ static Uint32 inicio, saidaEm;
 static float escala = 1.0f, escalaVel;
 static int estiloAb;        // ajustes_abertura() lido no arranque
 static float marcaW = AB_MARCA_W;   // largura da marca no 1080p
+
+// --- the cinematic reveal ---------------------------------------------------------
+#define AB_SIMBOLO_FIM 592.0f   // logo-novo-marca.png (1000 x 746): last row of the symbol; the text starts at 655
+#define AB_FUNDO_CINEMA 0.010f, 0.010f, 0.016f
+static float abSuave(float x) { x = x < 0 ? 0 : x > 1 ? 1 : x; return x * x * (3 - 2 * x); }
+static void abBrilho(float cx, float cy, float d, float r, float g, float b, float a) {
+  if (a <= 0.004f) return;
+  gfx_rect((GfxRect){ cx - d * 0.5f, cy - d * 0.5f, d, d }, 0, GFX_SOMBRA, 1.0f, 0, 0, 0.5f, r, g, b, a);
+}
+// The lockup in its two parts, symbol and the "Nuvio+" line: in colour, or
+// (`sombra`) as a flat black shape (GFX_MARCA: the image's alpha, tinted).
+static void abLogo(float aSimb, float aTexto, int sombra, float veu) {
+  const float k = AB_NOVO_W / 1000.0f, w = AB_NOVO_W, h = w / (marcaAsp > 0 ? marcaAsp : 1.34f);
+  const float ox = NV_TELA_W * 0.5f - w * 0.5f, oy = AB_CENTRO_Y - h * 0.5f;
+  const GfxModo modo = sombra ? GFX_MARCA : GFX_TEXTO;
+  const float c = sombra ? 0.0f : 1.0f;
+  if (!marca) return;
+  gfx_tex_aspect_atual = 0.0f;
+  if (aSimb > 0.004f) {
+    gfx_recorte(0, 0, NV_TELA_W, oy + AB_SIMBOLO_FIM * k);
+    gfx_rect((GfxRect){ ox, oy, w, h }, marca, modo, 0, 0, 0, 0.0f, c, c, c, aSimb * veu);
+    gfx_sem_recorte();
+  }
+  if (aTexto > 0.004f) {
+    gfx_recorte(0, oy + 640.0f * k, NV_TELA_W, NV_TELA_H);
+    gfx_rect((GfxRect){ ox, oy, w, h }, marca, modo, 0, 0, 0, 0.0f, c, c, c, aTexto * veu);
+    gfx_sem_recorte();
+  }
+}
+static void abCinema(float t, float veu) {
+  const float h = AB_NOVO_W / (marcaAsp > 0 ? marcaAsp : 1.34f), cx = NV_TELA_W * 0.5f;
+  const float cy = AB_CENTRO_Y - h * 0.5f + 330 * (AB_NOVO_W / 1000.0f);
+  float luz = abSuave((t - 0.05f) / 0.6f), p = abSuave((t - 0.1f) / 2.0f), cor = abSuave((t - 1.05f) / 0.8f);
+  float l = luz * (1.0f - 0.55f * cor), xa = cx - 520 + 1040 * p, xb = cx + 520 - 1040 * p;
+  float cruza = t > 0.95f ? expf(-(t - 1.05f) * (t - 1.05f) * 18.0f) : 0.0f;
+  gfx_cor((GfxRect){ 0, 0, NV_TELA_W, NV_TELA_H }, 0.0f, AB_FUNDO_CINEMA, veu);
+  abBrilho(xa, cy - 30, 1000, 0.14f, 0.80f, 1.0f, 0.42f * l * veu);   // cyan, from the left
+  abBrilho(xb, cy + 30, 1000, 0.62f, 0.30f, 1.0f, 0.42f * l * veu);   // violet, from the right
+  abBrilho(cx, cy, 700, 0.80f, 0.85f, 1.0f, 0.40f * cruza * veu);     // where they cross
+  abLogo(luz, luz, 1, veu);    // the black shape, rim-lit by the lights behind it
+  abLogo(cor, cor, 0, veu);    // then its colour floods in
+}
+static int abCinemaAtivo(void) { return estiloAb == AB_CINEMA && !anim_politica_reduzida && marca && !arteCheia; }
+void abertura_cinema_quadro(float t) { abCinema(t, 1.0f); }
+// The same reveal, scaled into `r` (the What's new card): the screen becomes
+// a band as wide as `r`, centred in it. The opening's own texture is gone once
+// it ends, so this borrows the cached lockup and gives `marca` back after.
+void abertura_cinema_previa(GfxRect r, float t, float a) {
+  GLuint antes = marca;
+  float aspAntes = marcaAsp, s = r.w / NV_TELA_W;
+  if (a <= 0.004f || r.w < 8.0f) return;
+  if (!marca) {
+    const char *c = logoapp_caminho(LOGO_NOVO, LOGO_F_MARCA);
+    marca = tex_obter(c);
+    if (marca) marcaAsp = tex_aspecto(c);
+  }
+  if (marca) {
+    gfx_transformar(0.0f, 0.0f, s, r.x, r.y + (r.h - NV_TELA_H * s) * 0.5f);
+    abCinema(t, a);
+    gfx_sem_transformar();
+  }
+  marca = antes; marcaAsp = aspAntes;
+}
 
 void abertura_iniciar(const char *dirArte) {
   char cam[600];
@@ -104,8 +181,11 @@ void abertura_iniciar(const char *dirArte) {
   SDL_FreeSurface(c);
 }
 
+// A key: the exit starts on the next frame, on that frame's clock (the one the
+// exit is measured in), not SDL_GetTicks.
+static int pediuSair;
 void abertura_tecla(void) {
-  if (estado == 1) { estado = 2; saidaEm = SDL_GetTicks(); }
+  if (estado == 1) pediuSair = 1;
 }
 
 int abertura_ativa(void) { return estado < 3; }
@@ -122,7 +202,8 @@ int abertura_desenhar(Uint32 agora, float dt, int pendentes) {
   const AbEstilo es = abEstilo(estiloAb, anim_politica_reduzida);
   float alvo = es.zoom ? 1.018f : 1.0f;
   if (estado == 3) return 0;
-  if (estado == 0) { estado = 1; inicio = agora; escala = 1.0f; escalaVel = 0.0f; }
+  if (estado == 0) { estado = 1; inicio = agora; escala = 1.0f; escalaVel = 0.0f; pediuSair = 0; }
+  if (estado == 1 && pediuSair) { pediuSair = 0; estado = 2; saidaEm = agora; }
   if (estado == 1) {
     Uint32 passou = agora - inicio;
     // NUVIO_ABERTURA_MS segura a parada (captura de tela no Mac/TV).
@@ -130,7 +211,7 @@ int abertura_desenhar(Uint32 agora, float dt, int pendentes) {
     if (segura < 0) { const char *v = getenv("NUVIO_ABERTURA_MS"); segura = v ? atol(v) : 0; }
     if (segura > 0 && passou < (Uint32)segura) pendentes = 1, passou = 0;
     // Sai quando as artes do primeiro quadro chegaram (nada em voo) ou no teto.
-    if ((passou >= es.minMs && pendentes <= 0) || passou >= ABERTURA_TETO_MS) {
+    if ((passou >= es.minMs && pendentes <= 0) || passou >= (abCinemaAtivo() ? AB_CINEMA_MS + 1200u : ABERTURA_TETO_MS)) {
       estado = 2; saidaEm = agora;
     }
   }
@@ -142,6 +223,7 @@ int abertura_desenhar(Uint32 agora, float dt, int pendentes) {
     abSaida(p, &veu, &alfaMarca);
     if (es.zoom) alvo = 1.09f;
   }
+  if (estado == 1 && abCinemaAtivo()) { abCinema((float)(agora - inicio) / 1000.0f, 1.0f); return 1; }
   // Sem zoom (So esmaece, Direto, animacoes reduzidas): so o esvanecimento.
   escala = !es.zoom ? 1.0f : anim_mola2(&escalaVel, escala, alvo, dt, 9.0f);
   if (marca && arteCheia) {
@@ -155,6 +237,9 @@ int abertura_desenhar(Uint32 agora, float dt, int pendentes) {
              marca, GFX_TEXTO, 0, 0, 0, 0.0f, 1, 1, 1, veu);
     return 1;
   }
+  if (abCinemaAtivo())   // the reveal's last frame opens into the app like the others
+    gfx_cor((GfxRect){ 0, 0, NV_TELA_W, NV_TELA_H }, 0.0f, AB_FUNDO_CINEMA, veu);
+  else
   gfx_cor((GfxRect){ 0, 0, NV_TELA_W, NV_TELA_H }, 0.0f,
           AB_FUNDO_R, AB_FUNDO_G, AB_FUNDO_B, veu);
   if (marca && alfaMarca > 0.004f) {

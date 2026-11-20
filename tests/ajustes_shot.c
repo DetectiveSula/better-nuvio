@@ -10,6 +10,7 @@
 // de quem nunca abriu o app) e a captura nao mexe no fileirasui.txt de quem
 // roda o teste.
 #include "ajustes.h"
+#include "acentocustom.h"
 #include "nvtmp.h"
 #include "ajustes_ux.h"
 #include "atualizacao.h"
@@ -284,6 +285,32 @@ int main(int argc, char **argv) {
     }
     assert(found == 1);
     puts("PASS text scale settings navigation");
+    return 0;
+  }
+  // NUVIO_SHOT_ACENTO=<dir>: Accent color › Custom (acentocustom.c), gradient
+  // and single colour, a slider in focus and the hex pad.
+  if (getenv("NUVIO_SHOT_ACENTO")) {
+    const char *d = getenv("NUVIO_SHOT_ACENTO");
+    static const unsigned cores[3] = { 0xB75AFF, 0xEC70A9, 0xFFB37A };
+    int op, sec;
+    const char *key, *label;
+    for (i = 0; ajustes_teste_cena_item(i, &op, &sec, &key, &label); i++)
+      if (!strcmp(key, "selected_theme")) assert(ajustes_teste_focar_opcao(op));
+    // The palette in the row: OK opens it, four Downs reach "Custom".
+    tecla(SDLK_RETURN);
+    for (i = 0; i < 4; i++) tecla(SDLK_DOWN);
+    snprintf(nome, sizeof nome, "%s/acento-0-paleta.bmp", d); captura(nome, w);
+    tecla(SDLK_RETURN);   // OK on Custom: the dialog
+    assert(acentocustom_aberto());
+    acentocustom_fechar();
+    acentocustom_abrir(cores, 1);
+    snprintf(nome, sizeof nome, "%s/acento-1-degrade.bmp", d); captura(nome, w);
+    acentocustom_teste(3, 1, 0);
+    snprintf(nome, sizeof nome, "%s/acento-2-matiz.bmp", d); captura(nome, w);
+    acentocustom_abrir(cores, 0); acentocustom_teste(2, 0, 0);
+    snprintf(nome, sizeof nome, "%s/acento-3-uma-cor.bmp", d); captura(nome, w);
+    acentocustom_teste(6, 0, 1);
+    snprintf(nome, sizeof nome, "%s/acento-4-hex.bmp", d); captura(nome, w);
     return 0;
   }
   if (getenv("NUVIO_SHOT_AJUSTES_ESCALA"))

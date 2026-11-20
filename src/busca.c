@@ -143,10 +143,17 @@ static float buTeclaH(void) { return buTelefone() ? 66.0f : 50.0f; }
 // Rotulo em caixa alta (15/700) 18 acima do conteudo; melhor resultado 226 de
 // altura (capa 330x186 + padding 20); cartaz 180x270, nome 17 a 10 abaixo.
 #define BU_KICK_H       34.0f
+// Poster rows on TV: 10 px more under the label, so the focused poster's
+// accent ring never reaches it (owner, 19/11/2026: it overlapped "Trending").
+#define BU_KICK_CARTAZ  (BU_KICK_H + 10.0f)
 #define BU_MELHOR_H    fmaxf(226.0f, 186.0f * gfx_poster_k() + 40.0f)
-#define BU_CARTAZ_W    (180.0f * gfx_poster_k())
+// BIGGER ON THE TV (owner, 18 Nov 2026: "search results are a bit too
+// small"): the five columns kept 180 px posters with ~55 px gaps between them.
+// On the TV a poster now fills its column (212 px at 100%); the titles under
+// them and the people row grew with it. The phone layouts keep their sizes.
+#define BU_CARTAZ_W    ((buTelefone() ? 180.0f : 212.0f) * gfx_poster_k())
 #define BU_CARTAZ_H    (270.0f * gfx_poster_k())
-#define BU_NOME_ALT     (buTecladoNativo() ? 50.0f : 30.0f)
+#define BU_NOME_ALT     (buTecladoNativo() ? 50.0f : buTelefone() ? 30.0f : 36.0f)
 #define BU_SECAO_GAP    34.0f
 #define BU_ABA_H        50.0f
 
@@ -1397,14 +1404,13 @@ static void busca_evento_(const SDL_Event *e) {
       else focus_mover(&focoRes, -1, 0);
       break;
     case SDLK_RIGHT:
-      // `fastHorizontalNavigationEnabled`: o web pula de 3 em 3 dentro da
-      // fileira quando a preferencia esta ligada. Numa fileira de 12 cards, 4
-      // toques em vez de 12 para chegar ao fim.
+      // ONE CARD PER PRESS, like the Home rows and like LEFT here. This used
+      // to jump three cards to the right (never to the left) whenever "Fast
+      // horizontal navigation" was on, reading that setting as "skip ahead";
+      // the setting means the row does not wait for its animation (its own
+      // help text, AJ_NAV_RAPIDA), and the jump read as the results lurching
+      // every third poster (owner, 18 Nov 2026).
       focus_mover(&focoRes, 1, 0);
-      if (ajustes_navegacao_horizontal_rapida()) {
-        focus_mover(&focoRes, 1, 0);
-        focus_mover(&focoRes, 1, 0);
-      }
       break;
     case SDLK_UP: {
       int moveu = focus_mover(&focoRes, 0, -1);
@@ -1440,7 +1446,7 @@ static void busca_evento_(const SDL_Event *e) {
 static float buCartazLanding(void) {
   if (buTelefone() || !sugestao || nFil <= 0) return 0.0f;
   float topo = recentesVisiveis() ? sugDesloc : 0.0f;
-  float livre = BU_RES_AREA_H - topo - (float)(nFil - 1) * BU_SECAO_GAP - (float)nFil * (BU_KICK_H + BU_NOME_ALT);
+  float livre = BU_RES_AREA_H - topo - (float)(nFil - 1) * BU_SECAO_GAP - (float)nFil * (BU_KICK_CARTAZ + BU_NOME_ALT);
   float w = livre / (float)nFil / 1.5f;
   if (w < BU_CARTAZ_W) w = BU_CARTAZ_W;
   if (w > BU_CARTAZ_W * 1.6f) w = BU_CARTAZ_W * 1.6f;
@@ -1480,7 +1486,7 @@ static float buCartazW(void) {
   return buTecladoNativo() || w < BU_CARTAZ_W ? w : BU_CARTAZ_W;
 }
 // PESSOAS: avatar 64 + 14 + nome (18), vao 26 entre pessoas (o .av do mockup).
-#define BU_PESS_AV     (buTecladoNativo() ? 96.0f : 64.0f)
+#define BU_PESS_AV     (buTecladoNativo() ? 96.0f : buTelefone() ? 64.0f : 76.0f)
 #define BU_PESS_GAP    26.0f
 #define BU_PESS_NOMEMAX 230.0f
 // x (relativo a coluna) e largura de cada pessoa, preenchidos pelo desenho (a
@@ -1495,7 +1501,7 @@ static float filKickH(int r) {
   }
   // TV: the tabs and the top-result banner carry no label (mock-up).
   if (fil[r].abas || fil[r].melhor) return 0.0f;
-  return BU_KICK_H;
+  return fil[r].pessoas || buTelefone() ? BU_KICK_H : BU_KICK_CARTAZ;
 }
 static float filAlt(int r) {
   // O alvo e a pilula de foco chegam 8px abaixo do avatar no telefone.
@@ -2114,7 +2120,7 @@ static void desenhaResultados(Uint32 agora) {
         int q = fil[r].itens[c];
         float f = animRes[r][c];
         float entra = filEntraEm[r] ? revela_entra(filEntraEm[r], revela_onda_atraso(c, 0), agora) : 1.0f;
-        TxtLinha nm = txt_linha_corta(buTecladoNativo() ? TXT_ILHA_NOME : TXT_ILHA_META,
+        TxtLinha nm = txt_linha_corta(buTecladoNativo() ? TXT_ILHA_NOME : buTelefone() ? TXT_ILHA_META : TXT_G20M,
                                      pess[q].nome, BU_TX, BU_PESS_NOMEMAX);
         float w = BU_PESS_AV + 14.0f + (float)nm.w;
         float px = BU_RES_X + x - scrollX[r];
@@ -2299,7 +2305,11 @@ static void desenhaResultados(Uint32 agora) {
           float entra = filEntraEm[r]
                       ? revela_entra(filEntraEm[r], revela_onda_atraso(c - c0, 0), agora) : 1.0f;
           float esc = 1.0f + 0.05f * f;
-          GfxRect p = { px - cw * (esc - 1.0f) * 0.5f, cy - ch * (esc - 1.0f) * 0.5f - 6.0f * f
+          // TV: the focused poster grows from its TOP edge and does not lift,
+          // so nothing but the ring rises above the row (the big landing
+          // posters reached the row label). Phones keep the centred lift.
+          float sobe = buTelefone() ? ch * (esc - 1.0f) * 0.5f + 6.0f * f : 0.0f;
+          GfxRect p = { px - cw * (esc - 1.0f) * 0.5f, cy - sobe
                           + (1.0f - entra) * NV_ENTRA_DY, cw * esc, ch * esc };
           float raio = 14.0f / p.h;
           gfx_opacidade_grupo = grupo * entra;
@@ -2323,7 +2333,13 @@ static void desenhaResultados(Uint32 agora) {
               gfx_esqueleto(p, raio, NV_COR_ESQUELETO_R, NV_COR_ESQUELETO_G, NV_COR_ESQUELETO_B, 1.0f);
             else
               gfx_cor(p, raio, NV_COR_ESQUELETO_R, NV_COR_ESQUELETO_G, NV_COR_ESQUELETO_B, 1.0f); }
-          { TxtLinha tn = txt_linha_corta(buTecladoNativo() ? TXT_ILHA_NOME : TXT_ILHA_GENERO,
+          // THE SELECTED POSTER WEARS THE ACCENT (owner, 18 Nov 2026): a ring
+          // in the accent colour outside the poster, fading with the focus.
+          if (f > 0.01f) {
+            float ar, ag, ab; ajustes_acento(&ar, &ag, &ab);
+            gfx_anel_fora(p, raio, 4.0f, 3.0f, ar, ag, ab, f);
+          }
+          { TxtLinha tn = txt_linha_corta(buTecladoNativo() ? TXT_ILHA_NOME : buTelefone() ? TXT_ILHA_GENERO : TXT_G20M,
                                          ci->titulo, BU_TX, cw);
             txt_desenhar_alpha(tn, p.x, p.y + p.h + 10.0f, anim_mistura(0.62f, 1.0f, f)); }
           if (painel == 1 && focus_indice(&focoRes, r, c)) {

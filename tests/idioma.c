@@ -279,7 +279,7 @@ int main(void) {
     idioma_data_curta(IDIOMA_PT, 21, idioma_mes_curto(IDIOMA_PT, 8), 0, o, sizeof o);
     if (strcmp(o, "21 set")) { printf("FALHOU: data curta pt -> %s\n", o); falhas++; }
     idioma_data_curta(IDIOMA_EN, 21, idioma_mes_curto(IDIOMA_EN, 8), 2025, o, sizeof o);
-    if (strcmp(o, "Sep 21, 2025")) { printf("FALHOU: data curta en -> %s\n", o); falhas++; }
+    if (strcmp(o, "21 Sep 2025")) { printf("FALHOU: data curta en -> %s\n", o); falhas++; }
     idioma_data_curta(IDIOMA_JA, 21, idioma_mes_curto(IDIOMA_JA, 8), 2025, o, sizeof o);
     if (strcmp(o, "2025年9月21日")) { printf("FALHOU: data curta ja -> %s\n", o); falhas++; }
     idioma_data_curta(IDIOMA_ZHTW, 5, idioma_mes_curto(IDIOMA_ZHTW, 0), 0, o, sizeof o);

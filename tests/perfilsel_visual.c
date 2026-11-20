@@ -14,6 +14,7 @@
 //
 //   bash tests/perfilsel.sh --capturas
 #include "perfilsel.h"
+#include "perfiledit.h"
 #include "nvtmp.h"
 #include "perfis.h"
 #include "dados.h"
@@ -290,6 +291,31 @@ int main(void) {
   ajustesDeTeste(0);
   perfilsel_iniciar();
   captura(nvt("/nuvio-perfilsel-4.bmp"));
+
+  // EDITAR PERFIL (perfiledit.c) in demo mode: no account, no network.
+  perfiledit_demo(1);
+  captura(nvt("/nuvio-perfilsel-editar-a.bmp"));     // pencil on the focused profile
+  tecla(SDLK_DOWN);
+  captura(nvt("/nuvio-perfilsel-editar-b.bmp"));     // "Edit Henrique" focused, pencils on all
+  tecla(SDLK_RETURN); assert(perfiledit_aberto());
+  captura(nvt("/nuvio-perfilsel-editar-c.bmp"));     // profile options
+  tecla(SDLK_RETURN);                                 // Edit profile
+  tecla(SDLK_RIGHT); tecla(SDLK_DOWN); tecla(SDLK_RIGHT); tecla(SDLK_RIGHT); tecla(SDLK_RETURN);
+  tecla(SDLK_RIGHT);
+  captura(nvt("/nuvio-perfilsel-editar-d.bmp"));     // Avatar tab: one chosen, the next focused
+  tecla(SDLK_DOWN); tecla(SDLK_DOWN); tecla(SDLK_RIGHT);
+  captura(nvt("/nuvio-perfilsel-editar-d2.bmp"));    // No photo | Avatar link (focused)
+  tecla(SDLK_UP); tecla(SDLK_UP);
+  tecla(SDLK_UP); tecla(SDLK_RIGHT); tecla(SDLK_DOWN); tecla(SDLK_RIGHT); tecla(SDLK_RIGHT); tecla(SDLK_RETURN);
+  captura(nvt("/nuvio-perfilsel-editar-e.bmp"));     // Colour tab
+  tecla(SDLK_UP); tecla(SDLK_RIGHT); tecla(SDLK_DOWN);
+  captura(nvt("/nuvio-perfilsel-editar-f.bmp"));     // Background tab
+  perfiledit_fechar();
+  perfiledit_demo_estado(2, 0, 0, 0);
+  tecla(SDLK_RETURN);
+  captura(nvt("/nuvio-perfilsel-editar-g.bmp"));     // remove-PIN confirmation
+  perfiledit_fechar(); perfiledit_demo_estado(-1, 0, 0, 0); perfiledit_demo(0);
+  perfilsel_iniciar();
   verificaAnimacoes();
   verificaRevisaoSemTrocaDeUrl();
 

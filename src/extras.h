@@ -242,6 +242,7 @@ void        extras_hero_trailer_pedir(const char *imdb, int serie, long tmdbId);
 // duas geracoes durante uma troca A -> B -> A.
 int         extras_hero_trailer_obter(const char *imdb, char *dst, unsigned cap);
 int         extras_hero_trailer_idioma_preferido(const char *imdb);  // same, for the hero
+int         extras_hero_trailer_respondeu(const char *imdb);  // the hero's /videos finished
 #ifdef NUVIO_TRAILER_TEST
 int         extras_hero_trailer_parse(const char *json, char *dst, unsigned cap);
 #endif
@@ -277,7 +278,11 @@ const char *extras_relacionado_imdb(int i);
 const char *extras_relacionado_poster(int i);
 // Post-play detail of a recommendation ("" / 0 / -1 when the source has none).
 const char *extras_relacionado_fundo(int i);    // backdrop URL
-const char *extras_relacionado_logo(int i);     // title logo URL (Trakt only)
+const char *extras_relacionado_logo(int i);     // title logo URL ("" until known)
+// Fetch the logo of recommendation i when its source sent none (TMDB): IMDb ids
+// get Metahub's at once, "tmdb:" ids one /images request in a worker. Cached.
+void extras_relacionado_logo_pedir(int i, int serie);
+void extras_relacionado_logo_parse(const char *corpo, const char *idioma, char *url, size_t cap);
 const char *extras_relacionado_sinopse(int i);
 const char *extras_relacionado_generos(int i);  // "Drama, Thriller", localised
 int extras_relacionado_duracao(int i);          // minutes

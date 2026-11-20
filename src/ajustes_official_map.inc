@@ -5,7 +5,10 @@ static const char *const aj6Choice31[]={"SHOW_ALL","HIDE_ALL",NULL};
 static const char *const aj6Choice32[]={"CARD","WIDE","POSTER",NULL};
 static const char *const aj6Choice33[]={"DEFAULT","STREAMING_STYLE","SPLIT_UPCOMING",NULL};
 static const char *const aj6Choice34[]={"ALL_SOURCES","INSTALLED_ADDONS_ONLY","ENABLED_PLUGINS_ONLY",NULL};
-static const char *const aj6Choice35[]={"WHITE","CRIMSON","OCEAN","VIOLET","EMERALD","AMBER","ROSE","GOLD","JADE","ROSE_GOLD","ARCTIC_BLUE","GRAPHITE",NULL};
+/* Indices 12..23 are this TV's own accents (no official name: held, never sent);
+ * 24 is official Nuvio's CUSTOM, whose colours travel in custom_theme_colors. */
+static const char *const aj6Choice35[]={"WHITE","CRIMSON","OCEAN","VIOLET","EMERALD","AMBER","ROSE","GOLD","JADE","ROSE_GOLD","ARCTIC_BLUE","GRAPHITE",
+ NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,"CUSTOM",NULL};
 static const char *const aj6Choice36[]={NULL,"NUVIO_SYNC","TRAKT","SIMKL",NULL};
 static const char *const aj6Choice37[]={"","torbox","premiumize",NULL};
 static const Aj6Map aj6Map[]={
@@ -43,7 +46,11 @@ static const Aj6Map aj6Map[]={
  {AJ_CW_ESTILO,"layout_settings","continue_watching_card_style",AJ6_CHOICE,aj6Choice32,3},
  {AJ_CW_ORDEM,"layout_settings","continue_watching_sort_mode",AJ6_CHOICE,aj6Choice33,3},
  {AJ_FONTE_ESCOPO,"player_settings","stream_auto_play_source",AJ6_CHOICE,aj6Choice34,3},
- {AJ_TEMA,"theme_settings","selected_theme",AJ6_CHOICE,aj6Choice35,12},
+ {AJ_TEMA,"theme_settings","selected_theme",AJ6_CHOICE,aj6Choice35,25},
+ /* One official string, three Native colours: "#RRGGBB,#RRGGBB,#RRGGBB" (CustomThemeColors.encode). */
+ {AJ_TEMA_COR1,"theme_settings","custom_theme_colors",AJ6_TRIO,NULL,0},
+ {AJ_TEMA_COR2,"theme_settings","custom_theme_colors",AJ6_TRIO,NULL,1},
+ {AJ_TEMA_COR3,"theme_settings","custom_theme_colors",AJ6_TRIO,NULL,2},
  {AJ_CW_FONTE,"trakt_settings","watch_progress_source",AJ6_CHOICE,aj6Choice36,4},
  {AJ_RESOLVE_PROVIDER,"debrid_settings","preferred_resolver_provider_id",AJ6_CHOICE,aj6Choice37,3},
  {AJ_LINK_PRAZO,"player_settings","stream_reuse_last_link_cache_hours",AJ6_HOURS,NULL,0},

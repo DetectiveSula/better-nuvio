@@ -36,6 +36,17 @@ void gfx_sem_girar(void) {}
 int  gfx_efeitos_leves(void)  { return 0; }
 int  gfx_efeitos_minimos(void) { return 0; }
 float gfx_tex_aspect_atual, gfx_card_forcar_cover_atual, gfx_card_veu_tela_atual;
+// The low-resolution wall layer (psestilos.c, PAR_BAIXA_*): no offscreen target
+// here, so the wall takes the direct path these tests measure.
+int  gfx_snap_ativo(void) { return 0; }
+int  gfx_mini_ativo(void) { return 0; }
+int  gfx_mini_alvo(GfxMini *m, int w, int h) { (void)m; (void)w; (void)h; return 0; }
+void gfx_mini_comecar(GfxMini *m, float x0, float y0, float e) { (void)m; (void)x0; (void)y0; (void)e; }
+void gfx_mini_terminar(void) {}
+void gfx_mini_desenhar(const GfxMini *m, GfxRect r, float raio, float a) { (void)m; (void)r; (void)raio; (void)a; }
+void gfx_vidro_sujar(void) {}
+void gfx_vidro_fora_do_hash(int l) { (void)l; }
+void gfx_ambiente_coberto(void) {}
 
 static int savedWallCount, savedWallReads;
 static const char *savedWallUrls[PSEST_PAREDE_MAX];
@@ -44,10 +55,18 @@ const char *psparede_url(int i, int k) { (void)i; return savedWallUrls[k]; }
 void tex_cache_marcar_larg(int grupo, const char *u, float l, int e, int u2) {
   (void)grupo; (void)u; (void)l; (void)e; (void)u2;
 }
-GLuint tex_obter_larg_qualquer(const char *c, float l) { (void)c; (void)l; return 0; }
-float tex_aspecto(const char *c) { (void)c; return 1.0f; }
-// A URL the cache gave up on (psestilos_loop.c sets it); NULL = none failed.
+// Posters decode at once unless a test holds them back (texLoading); a URL
+// the cache gave up on (failedUrl, below) never has a texture.
+static int texLoading;
 static const char *failedUrl;
+GLuint tex_obter_larg_qualquer(const char *c, float l) {
+  (void)l; return texLoading || (failedUrl && c && !strcmp(c, failedUrl)) ? 0 : 7;
+}
+// Neighbour walls warmed in the background (psestilos.c, parAquecerVizinhos).
+static int lookaheadAsks;
+int tex_lookahead_pedir(const char *c, float l) { (void)c; (void)l; lookaheadAsks++; return 1; }
+float tex_aspecto(const char *c) { (void)c; return 1.0f; }
+// failedUrl: a URL the cache gave up on (psestilos_loop.c sets it); NULL = none failed.
 int tex_falhou(const char *c) { return failedUrl && c && !strcmp(c, failedUrl); }
 
 // O grao de filme nasce de uma textura GL: aqui os nomes so precisam existir.

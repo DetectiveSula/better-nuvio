@@ -76,9 +76,17 @@ int main(void) {
   assert(NV_DETP_G_EP == 1194 && NV_DETP_EP_Y == 1286);
   assert(NV_DETP_EP_W == 640 && NV_DETP_EP_H == 414);
   assert(CAR_TEXTO_SOBE == 64);
-  // Ratings first below the hero on movies; right after the episodes on series,
-  // followed by the season numbers block (SEC_NUMEROS) before the tabs.
-  assert(ORDEM_FILME[0] == SEC_NOTAS);
+  // Movies (Apple TV order, owner 19/11/2026): the shelves, then the tile row
+  // "More about this title", then the extras it points at, Ratings first.
+  // Series: ratings right after the episodes, then the season numbers block
+  // (SEC_NUMEROS) before the tabs.
+  { int o, pMais = -1, pNotas = -1, pElenco = -1;
+    for (o = 0; o < N_ORDEM; o++) {
+      if (ORDEM_FILME[o] == SEC_MAIS) pMais = o;
+      if (ORDEM_FILME[o] == SEC_NOTAS) pNotas = o;
+      if (ORDEM_FILME[o] == SEC_ELENCO) pElenco = o;
+    }
+    assert(pElenco >= 0 && pElenco < pMais && pMais + 1 == pNotas); }
   assert(ORDEM_SERIE[1] == SEC_EPISODIOS && ORDEM_SERIE[2] == SEC_PROGTEMP &&
          ORDEM_SERIE[3] == SEC_NOTAS && ORDEM_SERIE[4] == SEC_NUMEROS && ORDEM_SERIE[5] == SEC_ABAS_INFO);
   CatItem c = {0};

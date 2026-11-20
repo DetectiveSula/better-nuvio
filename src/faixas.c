@@ -44,6 +44,7 @@
 // 3 e nao 2: a folha de legenda tem a LISTA e o ESTILO, e FX_COL_ESTILO e o
 // indice 2. Com dois slots a coluna de estilo escrevia fora do vetor.
 static int aberta, coluna, foco[3];
+static int duo;   // the TV transport popover is open (faixas_abrir_duo)
 // #202: foco na linha da velocidade e o ultimo valor pedido pela folha.
 static int velFoco, velPedidaUi = VEL_NORMAL;
 // ROLAGEM POR COLUNA, em LINHAS (nao em pixels): a folha desenhava todas as
@@ -496,7 +497,7 @@ void faixas_abrir(void) { faixas_abrir_em(0); }
 // existir); o que muda e onde o foco comeca.
 void faixas_abrir_em(int col) {
   int n;
-  aberta = 1;
+  aberta = 1; duo = 0;
   modo = (col == 1) ? 1 : 0;
   coluna = modo;                 // audio -> col 0; legenda -> col 1
   ctl = -1;
@@ -527,10 +528,77 @@ void faixas_abrir_em(int col) {
   else if (!modo && !nLinhas(0) && velFocavel()) velFoco = 1;
 }
 
+// SUBTITLES AND AUDIO IN ONE POPOVER (owner, 19/11/2026, player mockup 3, the
+// Apple TV app). The CC and Audio buttons of the TV transport open this small
+// two-column menu above the buttons instead of the side sheet: left the
+// subtitles ("None" first), right the audio tracks, LEFT/RIGHT between them, OK
+// uses the line and closes. The last line of each column, "More options",
+// opens the full sheet (style, the subtitle selector, volume, speed), so
+// nothing the sheet does is lost. Choosing goes through aplicar(), the same
+// path as the sheet: the memory of manual picks and the AutoSync stay right.
+#define DUO_VIS   6
+#define DUO_LN_H  74.0f
+#define DUO_COL_W 392.0f
+#define DUO_PAD   28.0f
+#define DUO_GAP   36.0f
+#define DUO_TIT_H 52.0f
+static int duoCol, duoFoco[2], duoRol[2];
+static float duoAnim;
+static int nLegendas(void);
+static int linhaDaLeg(int i);
+static int legDaLinha(int k);
+static int legendaAtiva(void);
+static void aplicar(void);
+// Lines of a column: subtitles = "None" + the list + "More options"; audio =
+// the tracks + "More options".
+static int duoN(int c) { return c == 0 ? nLegendas() + 2 : video_n_audio() + 1; }
+void faixas_abrir_duo(int col) {
+  int c;
+  aberta = 1; duo = 1; duoCol = col ? 1 : 0;
+  modo = 0; coluna = 0; ctl = -1; volFoco = velFoco = 0;
+  duoFoco[0] = linhaDaLeg(legendaAtiva()) + 1;
+  duoFoco[1] = video_audio_atual();
+  for (c = 0; c < 2; c++) {
+    if (duoFoco[c] < 0) duoFoco[c] = 0;
+    if (duoFoco[c] >= duoN(c)) duoFoco[c] = duoN(c) - 1;
+    duoRol[c] = duoFoco[c] >= DUO_VIS ? duoFoco[c] - DUO_VIS + 1 : 0;
+  }
+  if (!video_n_audio() && duoCol == 1) duoFoco[1] = 0;
+}
+int faixas_duo(void) { return aberta && duo; }
+float faixas_duo_anim(void) { return duoAnim; }
+static void duoEvento(const SDL_Event *e) {
+  SDL_Keycode k;
+  int c = duoCol, n;
+  if (e->type != SDL_KEYDOWN) return;
+  k = e->key.keysym.sym; n = duoN(c);
+  if (k == SDLK_AC_BACK || k == SDLK_ESCAPE || k == SDLK_BACKSPACE) { aberta = 0; return; }
+  if (k == SDLK_LEFT)  { duoCol = 0; return; }
+  if (k == SDLK_RIGHT) { duoCol = 1; return; }
+  if (k == SDLK_UP && duoFoco[c] > 0) duoFoco[c]--;
+  else if (k == SDLK_DOWN && duoFoco[c] < n - 1) duoFoco[c]++;
+  else if (k == SDLK_RETURN || k == SDLK_KP_ENTER) {
+    if (duoFoco[c] == n - 1) {   // "More options": the full sheet, same column
+      duo = 0; aberta = 0;
+      faixas_abrir_em(c == 0 ? 1 : 0);
+      return;
+    }
+    if (c == 0) { coluna = 1; foco[1] = duoFoco[0]; }
+    else        { coluna = 0; foco[0] = duoFoco[1]; }
+    aplicar();
+    aberta = 0;
+    return;
+  }
+  if (duoFoco[c] < duoRol[c]) duoRol[c] = duoFoco[c];
+  if (duoFoco[c] >= duoRol[c] + DUO_VIS) duoRol[c] = duoFoco[c] - DUO_VIS + 1;
+}
+
 int faixas_aberta(void) { return aberta; }
 int faixas_estilo_controle(void) { return ctl; }
 int faixas_estilo_topo(void) { return aberta && modo && coluna == FX_COL_ESTILO; }
-float faixas_anim(void) { return anim; }
+// The popover leaves the transport on screen: the player only fades its OSD
+// for the full sheet.
+float faixas_anim(void) { return duo ? 0.0f : anim; }
 void faixas_aba_estilo(int estilo) {
   if (!aberta || !modo) return;
   coluna = estilo ? FX_COL_ESTILO : 1;
@@ -1213,6 +1281,7 @@ void faixas_evento(const SDL_Event *e) {
 #endif
   SDL_Keycode k;
   if (!aberta) return;
+  if (duo) { duoEvento(e); return; }
   // F04: the subtitle LIST is the selector of legendasui.c (simple view and
   // "Mais opções"); the Estilo bar below stays here.
   if (modo && coluna == 1) {
@@ -1292,6 +1361,9 @@ static void avisarQueda(int e) {
 }
 
 void faixas_atualizar(float dt, Uint32 agora) {
+  { float alvo = aberta && duo ? 1.0f : 0.0f;
+    duoAnim = anim_politica_reduzida ? alvo
+            : anim_mola(duoAnim, alvo, dt, NV_MOLA_TELA); }
   if (aberta && modo && coluna == 1) legendasui_atualizar(dt);
   // #202: the platform refused the speed (LG/.tpk answer after the request):
   // the row is gone and playback is back at 1x; say it once.
@@ -1563,6 +1635,72 @@ static void linhaLista(int col, int i, float x, float y, float w, float a) {
     gfx_icone((GfxRect){ x + w - 22.0f - 28.0f, y + (IL_LN_H - 28.0f) * 0.5f, 28.0f, 28.0f },
               "pl_check", ar, ag, ab, a);
   }
+}
+
+// One line of the popover: check on the line in use, name and a grey detail.
+static void duoLinha(int c, int i, float x, float y, float a) {
+  char nome[96], sub[128];
+  const char *marca = NULL;
+  int sel = c == duoCol && i == duoFoco[c], ativo = 0, n = duoN(c);
+  GfxRect lr = { x, y, DUO_COL_W, DUO_LN_H - 6.0f };
+  nome[0] = sub[0] = 0;
+  if (i == n - 1) snprintf(nome, sizeof nome, "%s", i18n("Mais opções"));
+  else if (c == 1) {
+    const VideoFaixa *f = video_audio(i);
+    partirRotulo(f ? f->rotulo : "", nome, sizeof nome, sub, sizeof sub);
+    ativo = i == video_audio_atual();
+  } else if (i == 0) {
+    snprintf(nome, sizeof nome, "%s", i18n("Nenhuma"));
+    ativo = legendaAtiva() < 0;
+  } else {
+    int kk = legDaLinha(i - 1);
+    snprintf(nome, sizeof nome, "%s", rotuloLegenda(kk, &marca));
+    snprintf(sub, sizeof sub, "%s", marca ? marca : i18n("Incorporada"));
+    ativo = kk == legendaAtiva();
+  }
+  if (sel) plrui_linha_foco(lr, 18.0f, a);
+  { int tc = sel ? 255 : 226, ts = sel ? 190 : 140;   // the focus line is the sheet's: light text on it
+    float k = tc / 255.0f, tx = x + 52.0f, tw = DUO_COL_W - 52.0f - 16.0f;
+    if (ativo) gfx_icone((GfxRect){ x + 14.0f, y + (lr.h - 24.0f) * 0.5f, 24.0f, 24.0f }, "pl_check", k, k, k, a);
+    if (i == n - 1) gfx_icone((GfxRect){ x + DUO_COL_W - 40.0f, y + (lr.h - 24.0f) * 0.5f, 24.0f, 24.0f },
+                              "pl_chevron-right", k, k, k, a * 0.8f);
+    { TxtLinha ln = txt_linha_corta(TXT_ILHA_FORTE, nome, tc, tc, tc, 255, tw);
+      TxtLinha ls = txt_linha_corta(TXT_ILHA_GENERO, sub, ts, ts, ts, 255, tw);
+      float th = (float)ln.h + (sub[0] ? 3.0f + (float)ls.h : 0.0f), ty = y + (lr.h - th) * 0.5f;
+      txt_desenhar_alpha(ln, tx, ty, a);
+      if (sub[0]) txt_desenhar_alpha(ls, tx, ty + (float)ln.h + 3.0f, a); } }
+}
+static int duoVis(void) {
+  int c, vis = 0;
+  for (c = 0; c < 2; c++) { int n = duoN(c); if (n > vis) vis = n; }
+  return vis > DUO_VIS ? DUO_VIS : vis;
+}
+// The body of the clock island: subtitles left, audio right.
+static void duoCorpo(GfxRect r, float a, void *u) {
+  int c;
+  (void)u;
+  for (c = 0; c < 2; c++) {
+    float cx = r.x + DUO_PAD + c * (DUO_COL_W + DUO_GAP), y = r.y + DUO_PAD;
+    int n = duoN(c), i, fim = duoRol[c] + DUO_VIS;
+    TxtLinha t = txt_linha(TXT_G18M, c == 0 ? "Legendas" : "\xc3\x81udio", 160, 160, 166, 255);
+    txt_desenhar_alpha(t, cx + 14.0f, y + 6.0f, a * (c == duoCol ? 1.0f : 0.75f));
+    y += DUO_TIT_H;
+    if (fim > n) fim = n;
+    for (i = duoRol[c]; i < fim; i++) duoLinha(c, i, cx, y + (i - duoRol[c]) * DUO_LN_H, a);
+  }
+  gfx_cor((GfxRect){ r.x + DUO_PAD + DUO_COL_W + DUO_GAP * 0.5f, r.y + DUO_PAD + 6.0f, 1.0f,
+                     r.h - DUO_PAD * 2.0f }, 0.0f, 1, 1, 1, 0.10f * a);
+}
+// THE POPOVER OPENS FROM THE CLOCK (owner, 19/11/2026: "have subtitles and
+// audio go up there"): the top-right clock pill grows into the two columns,
+// the way the full sheets always opened, and shrinks back to the clock.
+static void duoDesenhar(void) {
+  PlrIlhaPedido p;
+  memset(&p, 0, sizeof p);
+  p.w = DUO_PAD * 2.0f + DUO_COL_W * 2.0f + DUO_GAP;
+  p.h = DUO_PAD + DUO_TIT_H + duoVis() * DUO_LN_H + DUO_PAD - 6.0f;
+  p.corpo = duoCorpo;
+  plrilha_pedir(&p);
 }
 
 static int visiveisLista(int col) { int n = nLinhas(col); return n < IL_VIS_COL(col) ? n : IL_VIS_COL(col); }
@@ -2123,6 +2261,7 @@ void faixas_desenhar(Uint32 agora) {
 static void faixas_desenharCorpo_(Uint32 agora) {
   (void)agora;
   pilPedir();   // a pilula da legenda automatica (so com a folha fechada)
+  if (duo) { if (aberta) duoDesenhar(); return; }   // closed: the island shrinks back by itself
   if (anim < .01f) return;
   { int dir = plrilha_direita(), est = faixas_estilo_topo();
     // O video fica sem veu cheio: so o degrade do lado da ilha (a lista) ou o

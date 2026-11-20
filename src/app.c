@@ -89,6 +89,7 @@
 #include "agenda.h"
 #include "agendaviso.h"
 #include "perfil.h"
+#include "perfiledit.h"
 #include "salvos.h"
 #include "contapend.h"
 #include "vistonao.h"
@@ -4195,7 +4196,8 @@ int app_na_home(void) {
 static int azulPodeAbrirSalvos(const SDL_Event *e) {
   if (player_aberto() || player_mini_ativo() || menu_aberto() || ctx_aberto() ||
       faixas_aberta() || episodios_aberto() || stream_folha_aberta() ||
-      guia_overlay_aberta() || pessoas_aberto() || recomenda_aberta() || recenviar_aberto())
+      guia_overlay_aberta() || pessoas_aberto() || recomenda_aberta() || recenviar_aberto() ||
+      perfiledit_aberto())
     return 0;
   // So no teclado de verdade (Mac/desktop). No Android a AZUL, o CH+ e o
   // MENU/BOOKMARK CHEGAM como "s" (NuvioActivity/main.c) e o SDL pode deixar o
@@ -6924,7 +6926,9 @@ void app_atualizar(float dt, Uint32 agora) {
   episodios_atualizar(dt);
   // O player devolve 1 para a coluna de audio e 2 para a de legenda.
   { int q = player_pediu_faixas();
-    if (q) faixas_abrir_em(q == 2 ? 1 : 0); }
+    // 3/4: the TV transport's popover (subtitles / audio); 1/2: the sheet.
+    if (q >= 3) faixas_abrir_duo(q == 3 ? 0 : 1);
+    else if (q) faixas_abrir_em(q == 2 ? 1 : 0); }
   if (!player_retido()) faixas_atualizar(dt, agora);
   atualizarFolha(dt, agora);
   // FOLHA FECHADA SEM ESCOLHER, com o player esperando por ela. Voltar na

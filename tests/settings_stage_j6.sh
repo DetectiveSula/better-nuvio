@@ -6,13 +6,16 @@ python3 - <<'PYAUDIT'
 import json,re
 from pathlib import Path
 audit=json.loads(Path('docs/settings-restoration/stage-j6-audit.json').read_text())
-mapped=re.findall(r'\{(AJ_\w+),"(\w+)","(\w+)",AJ6_',Path('src/ajustes_official_map.inc').read_text())
+rows=re.findall(r'\{(AJ_\w+),"(\w+)","(\w+)",AJ6_(\w+)',Path('src/ajustes_official_map.inc').read_text())
+mapped=[(o,f,k) for o,f,k,_ in rows]
+# AJ6_TRIO: three Native colours share official theme_settings.custom_theme_colors (one string).
+trio={(f,k) for _,f,k,c in rows if c=='TRIO'}
 ok={r['native_id']:r for r in audit['rows'] if r['decision']=='mapped'}
 assert sorted(o for o,_,_ in mapped)==sorted(ok), 'map and audit disagree'
 for o,f,k in mapped: assert ok[o]['official']==f'{f}.{k}', o
-assert len({(f,k) for _,f,k in mapped})==len(mapped), 'official key mapped twice'
+assert len({(f,k) for _,f,k in mapped})==len(mapped)-sum(1 for *_,c in rows if c=='TRIO')+len(trio), 'official key mapped twice'
 inv={r['native_id']:r['tier'] for r in json.loads(Path('docs/settings-restoration/stage-j-inventory.json').read_text())['controls']}
-assert not [o for o,_,_ in mapped if inv[o] in ('device-local','better_nuvio tier: portable','official: synced (Stage I)')]
+assert not [o for o,_,_ in mapped if inv.get(o,'official tier: J6 candidate') in ('device-local','better_nuvio tier: portable','official: synced (Stage I)')]
 print(f"PASS: J6 audit - {len(mapped)} mapped rows equal the map; {len(audit['rows'])-len(mapped)} rejected/local rows excluded; no device-local, J4 or Stage I owner mapped")
 PYAUDIT
 work=$(mktemp -d "${TMPDIR:-/tmp}/bn-j4.XXXXXX")

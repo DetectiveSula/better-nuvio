@@ -72,6 +72,8 @@ void pausao_atualizar(float dt, Uint32 agora, int podeSubir, int idx,
 
 // 1 do quadro em que o painel aparece ate o quadro em que some por completo.
 int  pausao_visivel(void);
+// How far the panel is in (0..1): the player fades the subtitles out under it.
+float pausao_anim(void);
 
 // SOMEONE TOUCHED THE CONTROL. Restarts the 4 s clock that makes the panel come
 // up, and that is what stops it returning over someone who is still using the

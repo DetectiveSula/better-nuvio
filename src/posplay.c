@@ -32,6 +32,9 @@
 #include "ponteiro.h"
 #include "rolagemtoque.h"
 #include "telefoneui.h"
+#include "artehero.h"
+#include "reacao.h"
+#include "atividade.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -119,6 +122,41 @@ static int temProximo(void) { return serie && proxT >= 0 && proxE > 0; }
 // O proximo que da para TOCAR: existe e ja foi ao ar.
 static int temProximoJogavel(void) { return temProximo() && !proxFuturo; }
 
+// APPLE TV END OF EPISODE (owner, 19/11/2026, from a photo of the Apple TV app:
+// Parks and Recreation). The next episode's still takes the whole screen, the
+// credits keep playing in a small window top-right (the player's corner
+// recede), and bottom-left the show's LOGO, "S1, E2 · name" and one "Next
+// Episode" pill that fills as the countdown runs. Nuvio+ keeps one thing
+// Apple does not have: a row of five stars beside the pill to rate the episode
+// that just ended (the big rating card stays away while this is up). Not on
+// phones, not for the post-credits scene, the still-watching question or an
+// episode that has not aired yet: those keep the compact card.
+static int aguardaCena;           // (declared again below, with its neighbours)
+static int fimFoco;               // 0 = Next Episode, 1..5 = the stars
+static int atualT, atualE;        // the episode that is ending (player)
+#ifdef NV_SHOT_HOOKS
+static int shotClassico;   // tests of the compact card (posplay_shot_classico)
+void posplay_shot_classico(int sim) { shotClassico = sim; }
+#else
+enum { shotClassico = 0 };
+#endif
+static int fimApple(void) {
+  return !shotClassico && visivel && serie && !aguardaCena && !stillWatchingPrompt && temProximoJogavel() &&
+         !telefoneui_ativo();
+}
+int posplay_fim_apple(void) { return fimApple(); }
+void posplay_episodio_atual(int t, int e) { atualT = t; atualE = e; }
+// "tt123:1:4", the key reacao.c rates an episode under ("" = cannot rate).
+static void fimAlvo(char *d, size_t n) {
+  const CatItem *ci = cat_item(idx);
+  char id[24];
+  d[0] = 0;
+  if (!ci || !ci->imdb[0] || atualE <= 0) return;
+  atividade_id_puro(id, sizeof id, ci->imdb);
+  if (strncmp(id, "tt", 2)) return;
+  snprintf(d, n, "%s:%d:%d", id, atualT, atualE);
+}
+
 int posplay_episodio_futuro(const CatEp *ep, long long agoraMs) {
   long long quando;
   if (!ep) return 0;
@@ -150,7 +188,7 @@ int posplay_aguarda_escolha(void) {
 }
 // Cartao do proximo episodio: SOBRE o video em tela cheia (o video nao recua).
 // Os relacionados do filme, bem mais altos, continuam recuando o video.
-int posplay_sobre_video(void) { return visivel && (serie || aguardaCena); }
+int posplay_sobre_video(void) { return visivel && (serie || aguardaCena) && !fimApple(); }
 
 // SAIR DA TELA PRESERVANDO A ESCOLHA, e a diferenca com posplay_fechar e o
 // issue #14 inteiro.
@@ -169,6 +207,7 @@ int posplay_sobre_video(void) { return visivel && (serie || aguardaCena); }
 // no video do relato o cartao nem sequer some depois do OK, que era este
 // segundo defeito somado ao primeiro.
 static void esconder(void) {
+  fimFoco = 0;
   postplay_preview_close();
   automaticoEntregue = 0;
   cancelarPreparo(!temPedidoEpisodio());
@@ -674,6 +713,23 @@ int posplay_evento(const SDL_Event *e) {
     }
     return 0;
   }
+  if (fimApple()) {
+    char alvo[48];
+    fimAlvo(alvo, sizeof alvo);
+    // RIGHT into the stars stops the countdown: someone rating is not leaving.
+    if (k == SDLK_RIGHT && alvo[0] && fimFoco < 5) {
+      if (fimFoco == 0) { int nt = reacao_nota(alvo); fimFoco = nt > 0 ? (nt + 1) / 2 : 1; cancelarAutomatico(); }
+      else fimFoco++;
+      return 1;
+    }
+    if (k == SDLK_LEFT && fimFoco > 0) { fimFoco--; return 1; }
+    if (k == SDLK_RETURN || k == SDLK_KP_ENTER) {
+      if (fimFoco > 0 && alvo[0]) { reacao_nota_definir(alvo, fimFoco * 2); fimFoco = 0; return 1; }
+      player_aprender_creditos(); pedT = proxT; pedE = proxE; pedAutomatico = 0; esconder(); return 1;
+    }
+    if (k == SDLK_LEFT || k == SDLK_RIGHT || k == SDLK_UP) return 1;
+    return 0;
+  }
   if (serie) {
     // Ainda nao foi ao ar: o OK so fecha o aviso, o episodio segue tocando.
     if (proxFuturo && (k == SDLK_RETURN || k == SDLK_KP_ENTER)) { esconder(); return 1; }
@@ -826,9 +882,37 @@ static void setaPP(GfxRect r, const char *icone, int ativa, int sel, float a) {
 
 // Backdrop + official scrims, behind everything. Called by the player in REAL
 // pixels around the receded video (player_fundo_fora_do_furo). 1 = drew.
+static const CatEp *fimProximo(void) {
+  int i, n = serie ? cat_n_episodios(idx) : 0;
+  for (i = 0; i < n; i++) {
+    const CatEp *e = cat_episodio(idx, i);
+    if (e && e->temporada == proxT && e->episodio == proxE) return e;
+  }
+  return NULL;
+}
 int posplay_fundo(GfxRect tela, GfxRect furo) {
   int i = foco, n = nRel();
   if (!visivel && anim < 0.01f) return 0;
+  if (fimApple()) {
+    const CatItem *ci = cat_item(idx);
+    const CatEp *px = fimProximo();
+    const char *arte = (px && px->thumb[0]) ? px->thumb : (ci ? artehero_url(ci) : "");
+    GLuint t = arte && arte[0] ? tex_obter_larg(arte, tela.w) : 0;
+    janelaReal = furo;
+    gfx_cor(tela, 0.0f, 0.043f, 0.047f, 0.055f, 1.0f);
+    if (t && posplay_desfocar_thumb(idx, proxT, proxE)) t = gfx_desfocado(t, arte);
+    if (t) {
+      gfx_tex_aspect_atual = tex_aspecto(arte);
+      gfx_rect(tela, t, GFX_CARD, 0, 0, 0, 0.0f, 0, 0, 0, 1.0f);
+      gfx_tex_aspect_atual = 0.0f;
+    }
+    // Apple's scrim: dark from the bottom-left, where the text sits.
+    gfx_veu_css(tela, 0, 0.0f, 0.55f, 0.78f);
+    gfx_veu_css_base(tela, 2, 0.0f, 0.62f, 0.55f, 0.0f);
+    gfx_rect((GfxRect){ furo.x - 30.0f, furo.y - 10.0f, furo.w + 60.0f, furo.h + 60.0f }, 0, GFX_SOMBRA,
+             1.0f, 0, 0, 0.5f, 0, 0, 0, 0.40f);
+    return 1;
+  }
   if (serie || aguardaCena || telefoneui_ativo() || n <= 0 || i < 0 || i >= n) return 0;
   janelaReal = furo;
   gfx_cor(tela, 0.0f, 0.043f, 0.047f, 0.055f, 1.0f);
@@ -857,6 +941,7 @@ int posplay_fundo(GfxRect tela, GfxRect furo) {
 
 static void desenharFilmeTV(Uint32 agora, float a);
 static void desenharCartaoEpisodio(Uint32 agora, float a);
+static void desenharFimApple(Uint32 agora, float a);
 static void desenharFilmeTelefone(Uint32 agora, float a);
 
 static void posplay_desenharCorpo_(Uint32 agora, float baseY);
@@ -883,6 +968,7 @@ static void posplay_desenharCorpo_(Uint32 agora, float baseY) {
   { int i = cat_indice_vivo(idx, idTitulo);
     if (i < 0) {postplay_preview_close();return;}
     idx = i; }
+  if (fimApple()) { desenharFimApple(agora, a); return; }
   if (serie || aguardaCena) { desenharCartaoEpisodio(agora, a); return; }
   if (telefoneui_ativo()) desenharFilmeTelefone(agora, a);
   else desenharFilmeTV(agora, a);
@@ -1001,6 +1087,77 @@ static void desenharCartaoEpisodio(Uint32 agora, float a) {
     } }
 }
 
+// --- EPISODE, TV: the Apple TV end of episode -----------------------------------
+static void desenharFimApple(Uint32 agora, float a) {
+  const CatItem *ci = cat_item(idx);
+  const CatEp *px = fimProximo();
+  const char *marca = ci ? artehero_logo_sessao(ci) : NULL;
+  GLuint logo = marca ? tex_obter_larg_qualquer(marca, 560) : 0;
+  char linha[220], cod[32], alvo[48];
+  float x = 112.0f, y = NV_TELA_H - 96.0f, sobe = (1.0f - a) * 24.0f;
+  int nota, sel;
+  fimAlvo(alvo, sizeof alvo);
+  nota = alvo[0] ? reacao_nota(alvo) : 0;
+  // bottom up: the pill row, the episode line, the logo
+  { GfxRect b; TxtLinha l = txt_linha(TXT_G26B, "Próximo episódio", 0, 0, 0, 255);
+    float bw = 30.0f + 34.0f + 16.0f + (float)l.w + 36.0f, bh = 72.0f, resta = -1.0f;
+    b = (GfxRect){ x, y - bh + sobe, bw, bh };
+    sel = fimFoco == 0;
+    // THE RING IS THE COUNTDOWN (owner, 19/11/2026): with "Play next episode"
+    // on, the circle around the play icon drains clockwise over the countdown
+    // chosen in Settings (Next episode countdown); without it, a whole ring.
+    if (fecharEm > agora && ajustes_proximo_contagem() > 0)
+      resta = anim_clamp((float)(fecharEm - agora) / (ajustes_proximo_contagem() * 1000.0f), 0.0f, 1.0f);
+    gfx_cor(b, 0.5f, 0.94f, 0.94f, 0.96f, (sel ? 0.95f : 0.60f) * a);
+    { GfxRect anel = { b.x + 28.0f, b.y + (bh - 34.0f) * 0.5f, 34.0f, 34.0f };
+      if (resta < 0.0f) gfx_anel(anel, 0.5f, 2.5f, 0.12f, 0.12f, 0.14f, a);
+      else {
+        gfx_anel(anel, 0.5f, 2.5f, 0.12f, 0.12f, 0.14f, 0.22f * a);   // the track
+        if (resta > 0.0f) gfx_arco(anel, 2.5f, 1.0f - resta, resta, 0.12f, 0.12f, 0.14f, a);
+      } }
+    gfx_icone((GfxRect){ b.x + 38.0f, b.y + (bh - 16.0f) * 0.5f, 16.0f, 16.0f }, "pl_play-f", 0.12f, 0.12f, 0.14f, a);
+    l = txt_linha(TXT_G26B, "Próximo episódio", 30, 30, 34, 255);
+    txt_desenhar_alpha(l, b.x + 28.0f + 34.0f + 16.0f, b.y + (bh - (float)l.h) * 0.5f, a);
+    if (visivel && a > 0.99f) ponteiro_alvo(b.x, b.y, b.w, b.h, ponteiroComecar, NULL, 0, 0);
+    // the stars: rate the episode that just ended (Nuvio+ only)
+    if (alvo[0]) {
+      float sx = b.x + b.w + 40.0f, st = 34.0f;
+      int cheias = fimFoco > 0 ? fimFoco : (nota + 1) / 2;
+      TxtLinha lr;
+      snprintf(cod, sizeof cod, i18n("T%dE%d"), atualT, atualE);
+      snprintf(linha, sizeof linha, "%s %s", i18n("Avaliar"), cod);
+      lr = txt_linha(TXT_G19M, linha, 243, 242, 239, 200);
+      txt_desenhar_alpha(lr, sx, b.y - 2.0f, a);
+      for (int k = 0; k < 5; k++) {
+        GfxRect r = { sx + k * (st + 12.0f), b.y + 26.0f, st, st };
+        int foco = fimFoco == k + 1;
+        if (foco) gfx_anel_fora(r, 0.5f, 6.0f, 3.0f, 1, 1, 1, a);
+        if (k < cheias) gfx_icone(r, "pl_star-f", 1.0f, 0.84f, 0.04f, a);
+        else gfx_icone(r, "pl_star", 0.95f, 0.95f, 0.94f, a * 0.85f);
+      }
+    }
+    y = b.y - 22.0f; }
+  // "S1, E2 · Lawn Gnome Beach Party of Terror"
+  snprintf(cod, sizeof cod, i18n("T%dE%d"), proxT, proxE);
+  { char *p = strchr(cod, 'E');   // "S1 E2" / "T1E2" -> "S1, E2", as Apple writes it
+    if (p && p > cod && p[-1] == ' ') { memmove(p + 1, p, strlen(p) + 1); p[-1] = ','; p[0] = ' '; }
+    else if (p && p > cod) { memmove(p + 2, p, strlen(p) + 1); p[0] = ','; p[1] = ' '; } }
+  if (px && px->nome[0]) snprintf(linha, sizeof linha, "%s \xc2\xb7 %s", cod, px->nome);
+  else snprintf(linha, sizeof linha, "%s", cod);
+  { TxtLinha l = txt_linha_corta(TXT_G28B, linha, 236, 236, 240, 255, 1100.0f);
+    y -= (float)l.h; txt_desenhar_alpha(l, x, y, a); y -= 22.0f; }
+  // the logo, or the show's name when it has none
+  if (logo) {
+    float ar = tex_aspecto(marca), w = 520.0f, h = ar > 0.0f ? w / ar : 160.0f;
+    if (h > 170.0f) { h = 170.0f; w = h * ar; }
+    gfx_rect((GfxRect){ x, y - h, w, h }, logo, tex_marca_escura(marca) ? GFX_MARCA : GFX_TEXTO,
+             0, 0, 0, 0, .97f, .97f, .98f, a);
+  } else if (ci) {
+    TxtLinha l = txt_linha_corta(TXT_PLR_TITULO, ci->titulo, 255, 255, 255, 255, 1100.0f);
+    txt_desenhar_alpha(l, x, y - (float)l.h, a);
+  }
+}
+
 // --- FILM, TV: one recommendation over its backdrop --------------------------
 static void notaPP(int i, float x, float yc, float a) {
   int fonte = 0, v = extras_relacionado_nota(i, &fonte);
@@ -1097,13 +1254,15 @@ static void desenharFilmeTV(Uint32 agora, float a) {
       notaPP(i, mx, yc, at);
       y -= 40.0f + 24.0f;
     } }
+  extras_relacionado_logo_pedir(i, 0);
+  if (i + 1 < n) extras_relacionado_logo_pedir(i + 1, 0);   // o proximo do ▶
   { const char *lg = extras_relacionado_logo(i);
     GLuint t = lg[0] ? tex_obter_larg(lg, colW * 0.76f) : 0;
     float ap = t ? tex_aspecto(lg) : 0.0f;
     if (t && ap > 0.0f) {
       float w = fminf(colW * 0.76f, PP_LOGO_H * ap), h = w / ap;
       y -= h;
-      gfx_rect((GfxRect){ x, y, w, h }, t, GFX_TEXTO, 0, 0, 0, 0, 1, 1, 1, at);
+      gfx_rect((GfxRect){ x, y, w, h }, t, tex_marca_escura(lg) ? GFX_MARCA : GFX_TEXTO, 0, 0, 0, 0, 1, 1, 1, at);
     } else {
       TxtLinha l = txt_linha_corta(TXT_TITULO1, extras_relacionado_titulo(i), 255, 255, 255, 255, colW);
       y -= (float)l.h;
@@ -1193,8 +1352,10 @@ float posplay_topo(float baseY) {
     int duas = aguardaCena && temProximoJogavel();
     return NV_TELA_H - 60.0f - (18.0f * 2 + PP_THUMB_H2) - (duas ? 64.0f : 0.0f) - 16.0f;
   }
-  // TV film: the page covers the screen; stack above its bottom-left column.
-  return telefoneui_ativo() ? NV_TELA_H - 444.0f - 40.0f - 16.0f : NV_TELA_H * 0.40f;
+  // TV film: the receded video owns the top right and the column the left, so
+  // the rating card sits bottom right, under the video (owner, 19/11/2026: at
+  // 40% it covered the video and its subtitles).
+  return telefoneui_ativo() ? NV_TELA_H - 444.0f - 40.0f - 16.0f : baseY - 96.0f;
 }
 
 #ifdef NV_SHOT_HOOKS

@@ -185,7 +185,7 @@ static inline const char *idioma_mes_curto(int idioma, int m0) {
 // Data curta ("21 set", "Sep 21, 2026", "9月21日"): a ORDEM e o que muda por
 // idioma, e por isso mora ao lado dos nomes dos meses. `mes` e o nome ja
 // escolhido (e, se for o caso, ja em caixa alta); `ano` 0 = sem ano.
-//   ingles     Sep 21, 2026 / Sep 21
+//   ingles     21 Sep 2026 / 21 Sep  (UK order, owner 19/11/2026: "Airs 3 Dec")
 //   ja e zh    2026年9月21日 / 9月21日 (o mes ja vem como "9月")
 //   hungaro    2026. szept. 21. / szept. 21.
 //   lituano    2026 rugs. 21 / rugs. 21
@@ -194,8 +194,8 @@ static inline void idioma_data_curta(int idioma, int dia, const char *mes, int a
                                      char *dst, size_t cap) {
   if (!dst || !cap) return;
   if (idioma == IDIOMA_EN) {
-    if (ano) snprintf(dst, cap, "%s %d, %d", mes, dia, ano);
-    else     snprintf(dst, cap, "%s %d", mes, dia);
+    if (ano) snprintf(dst, cap, "%d %s %d", dia, mes, ano);
+    else     snprintf(dst, cap, "%d %s", dia, mes);
   } else if (idioma_data_asiatica(idioma)) {
     if (ano) snprintf(dst, cap, "%d年%s%d日", ano, mes, dia);
     else     snprintf(dst, cap, "%s%d日", mes, dia);

@@ -406,7 +406,8 @@ parties that have nothing to do with this project.
 
 [GNU General Public License v3.0](LICENSE).
 
-The C in `src/` is written from scratch, but the interface icons in
+The C in `src/` is written from scratch (except the YouTube trailer extractor,
+below), but the interface icons in
 `deploy/app/art/icones/` come from the SVGs of the upstream web app, which is
 GPLv3, as is the [web fork](https://github.com/iqui27/NuvioTVSmart-legacy-webos)
 this grew alongside. So the whole thing goes out under the same terms.
@@ -414,6 +415,13 @@ this grew alongside. So the whole thing goes out under the same terms.
 Settings icons: [Lucide](https://lucide.dev), ISC license. The unmodified SVGs
 and the license text are in `deploy/app/art/icones/lucide/`; the `aj_*.png` next
 to them are rasterized by `tools/icones-lucide.sh`.
+
+The YouTube trailer extractor in `src/trailerytb.c` is a C translation of
+`InAppYouTubeExtractor.kt` and `YouTubeRateLimitGate.kt` from
+[NuvioTV](https://github.com/NuvioMedia/NuvioTV) (GPL-3.0), modified on
+19 November 2026 to fit this app's single-URL trailer players. It asks
+YouTube for streams the way YouTube's own apps do, which YouTube's terms don't
+allow; it can stop working whenever YouTube changes that API.
 
 DTS-enabled builds use libraries from the [FFmpeg project](https://ffmpeg.org/)
 under **LGPL 2.1 or later**. `tools/build-dts-ffmpeg.sh` records the exact release

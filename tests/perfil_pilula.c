@@ -39,7 +39,9 @@ int main(void) {
   assert(!menu_pilula_rect(&px, &py, &pw, &ph));
   assert(pfDy() == 0.0f);
   assert(PF_TOPO == 56.0f && PN_TOPO == 48.0f && PN_KPI_Y == 154.0f);
-  assert(rGrafico().h == 372.0f && rTopo().y + rTopo().h <= PF_AVISO_Y);
+  // 340, not 372: the board's text grew 20% (perfil_painel.inc, PN_TXT) and
+  // the taller numbers row and bottom cards took the chart's spare height.
+  assert(rGrafico().h == 340.0f && rTopo().y + rTopo().h <= PF_AVISO_Y);
 
   puts("PASS: perfil_pilula");
   return 0;

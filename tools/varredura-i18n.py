@@ -264,6 +264,7 @@ def contexto(txt, i):
 # virar teste ela nao impede a proxima regressao.
 IGNORAR = {
     "catalogo-*.bin",                # androidcache.c: cache filename pattern, never UI text
+    "deploy/app/art/poster",         # perfiledit.c: demo avatars' art folder, never UI text
     "ltv-fontes.txt", "ltv-fontes-p%d.txt",  # ltv.c: preference filenames, never UI labels
     "daqui em diante",  # episodios.c nomeModo: so no log [visto] menu, nunca rotulo
     "fechar",  # main.c: nome do evento de janela so no log "[ciclo] janela="

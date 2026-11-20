@@ -89,6 +89,15 @@ int main(int argc, char **argv) {
   assert(gpun_degrau() == 0);
   reports(2, 30); gpun_relatar(30, 1001, 16.667, 1, 1); reports(2, 30);
   assert(gpun_degrau() == 0);
+  // GPU-bound browsing (S90C, Mali-G51): ~10 ms of CPU drawing, ~22 ms
+  // waiting for the GPU. These frames are the GPU's, not the CPU's: three
+  // slow windows step down.
+  fresh();
+  for (int window = 0; window < 3; window++) {
+    for (int f = 0; f < 90; f++) gpun_medir(32, 22, 10, 1, 1);
+    reports(1, 31);
+  }
+  assert(gpun_degrau() == 1);
   fresh();
   for (int i = 0; i < 20; i++) gpun_relatar(50, 40, 20, 1, 1);
   assert(gpun_degrau() == 0);

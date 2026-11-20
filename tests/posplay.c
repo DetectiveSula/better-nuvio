@@ -81,6 +81,7 @@ static void abrirPainel(void) {
 }
 
 int main(void) {
+  posplay_shot_classico(1);   // these check the compact card (phones, scene, still watching)
   CatItem c = { 0 };
   CatEp eps[10] = { 0 };
   int i, t = 0, e = 0;

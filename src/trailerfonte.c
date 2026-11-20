@@ -29,7 +29,11 @@ static int existe(int fonte, int tizen) {
 #if defined(NV_VIDAA) && !defined(NV_UM_FIO)
       return 0;  // mt build: YouTube iframe falha com COEP isolado
 #else
-      return tizen;  // Tizen e VIDAA st: YouTube habilitado
+      // Tizen .wgt and VIDAA st: the embed. The native apps (LG, .tpk,
+      // Android): the stream trailerytb.c gets from YouTube (owner,
+      // 19/11/2026, after IMDb started blocking every request).
+      (void)tizen;
+      return 1;
 #endif
     default:          return 0;
   }
@@ -63,8 +67,10 @@ void trailerfonte_definir_imdb_primeiro_cheia(int sim) { imdbPrimeiroCheia = sim
 
 // O IMDb sobe para a frente; o resto mantem a ordem relativa. So em
 // Automatico: uma fonte escolhida no ajuste e respeitada.
-static void imdbNaFrente(int ajuste, int *ordem, int n) {
-  int i, j;
+// The YouTube stream also has sound, so on the .tpk it goes ahead of the
+// video-only Apple too: IMDb, YouTube, Apple (19/11/2026).
+static void imdbNaFrente(int ajuste, int *ordem, int n, int tizen) {
+  int i, j, apple = -1;
   if (ajuste == TRF_APPLE || ajuste == TRF_IMDB || ajuste == TRF_YOUTUBE) return;
   for (i = 1; i < n; i++)
     if (ordem[i] == TRF_IMDB) {
@@ -72,11 +78,19 @@ static void imdbNaFrente(int ajuste, int *ordem, int n) {
       ordem[0] = TRF_IMDB;
       break;
     }
+  for (i = 0; i < n; i++) if (ordem[i] == TRF_APPLE) { apple = i; break; }
+  if (tizen) return;   // the .wgt plays trailers muted: Apple keeps its place
+  for (i = apple + 1; apple >= 0 && i < n; i++)
+    if (ordem[i] == TRF_YOUTUBE) {
+      for (j = i; j > apple; j--) ordem[j] = ordem[j - 1];
+      ordem[apple] = TRF_YOUTUBE;
+      break;
+    }
 }
 
 int trailerfonte_ordem_cheia(int ajuste, int tizen, int som, int ordem[3]) {
   int n = trailerfonte_ordem(ajuste, tizen, ordem);
-  if (som && imdbPrimeiroCheia) imdbNaFrente(ajuste, ordem, n);
+  if (som && imdbPrimeiroCheia) imdbNaFrente(ajuste, ordem, n, tizen);
   return n;
 }
 
@@ -88,7 +102,7 @@ void trailerfonte_definir_imdb_primeiro_destaque(int sim) { imdbPrimeiroDestaque
 
 int trailerfonte_ordem_destaque(int ajuste, int tizen, int ordem[3]) {
   int n = trailerfonte_ordem(ajuste, tizen, ordem);
-  if (imdbPrimeiroDestaque) imdbNaFrente(ajuste, ordem, n);
+  if (imdbPrimeiroDestaque) imdbNaFrente(ajuste, ordem, n, tizen);
   return n;
 }
 
@@ -98,7 +112,7 @@ int trailerfonte_depois_destaque(int ajuste,int tizen,int qual) {
   return 0;
 }
 
-static TrailerDecisao escolherNaOrdem(const int *ordem, int n, const TrailerCandidatos *c,
+static TrailerDecisao escolherNaOrdem(int tizen, const int *ordem, int n, const TrailerCandidatos *c,
                                       const char **url, int *qual) {
   int i;
   if (url) *url = NULL;
@@ -107,7 +121,9 @@ static TrailerDecisao escolherNaOrdem(const int *ordem, int n, const TrailerCand
   // Trailer audio (Ajustes): where YouTube plays, the TMDB trailer in the
   // chosen language beats the English Apple/IMDb, and a pending TMDB answer
   // holds the queue. Automatic order only; a fixed source is respected.
-  if (n > 1 && c->youtubeIdiomaPreferido)
+  // The dubbed-trailer preference is the .wgt embed's: the native YouTube
+  // stream (trailerytb.c) does not pick a dub, so it never waits for it.
+  if (tizen && n > 1 && c->youtubeIdiomaPreferido)
     for (i = 0; i < n; i++) if (ordem[i] == TRF_YOUTUBE) {
       if (c->youtubeIdiomaPreferido < 0) return TRF_ESPERA;
       if (!c->youtube || !c->youtube[0]) break;
@@ -138,14 +154,14 @@ static TrailerDecisao escolherNaOrdem(const int *ordem, int n, const TrailerCand
 TrailerDecisao trailerfonte_escolher(int ajuste, int tizen, const TrailerCandidatos *c,
                                      const char **url, int *qual) {
   int ordem[3], n = trailerfonte_ordem(ajuste, tizen, ordem);
-  return escolherNaOrdem(ordem, n, c, url, qual);
+  return escolherNaOrdem(tizen, ordem, n, c, url, qual);
 }
 
 TrailerDecisao trailerfonte_escolher_cheia(int ajuste, int tizen, int som,
                                            const TrailerCandidatos *c,
                                            const char **url, int *qual) {
   int ordem[3], n = trailerfonte_ordem_cheia(ajuste, tizen, som, ordem);
-  return escolherNaOrdem(ordem, n, c, url, qual);
+  return escolherNaOrdem(tizen, ordem, n, c, url, qual);
 }
 
 TrailerDecisao trailerfonte_escolher_fundo(int ajuste, int tizen, int somAjuste,
@@ -158,7 +174,7 @@ TrailerDecisao trailerfonte_escolher_fundo(int ajuste, int tizen, int somAjuste,
 TrailerDecisao trailerfonte_escolher_destaque(int ajuste, int tizen, const TrailerCandidatos *c,
                                               const char **url, int *qual) {
   int ordem[3], n = trailerfonte_ordem_destaque(ajuste, tizen, ordem);
-  return escolherNaOrdem(ordem, n, c, url, qual);
+  return escolherNaOrdem(tizen, ordem, n, c, url, qual);
 }
 
 int trailerfonte_depois(int ajuste, int tizen, int qual) {

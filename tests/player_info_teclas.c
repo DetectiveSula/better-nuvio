@@ -28,6 +28,9 @@ int main(void) {
                                  SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
   assert(w && SDL_GL_CreateContext(w));
   gfx_opacidade_grupo = 0; // no pixels needed; inspect the OSD draw arguments
+  // The corner format row lives in the classic OSD (phones, narrow windows);
+  // the TV's Apple layout shows the badges in its info panel instead.
+  transporteClassico = 1;
   aberto = visivel = 1; entrada = anim = cheio = fileira = 1;
   comVideo = 0; canalSessao = 0; duracaoSeg = 3600; posSeg = 100;
   barraFoco = 0; ultimoInput = 1000;

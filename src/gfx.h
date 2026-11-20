@@ -567,6 +567,7 @@ extern int    gfx_n_cheio_mistura;   // desses, com mistura (so -DNV_FLUIDEZ_PER
 // tela, que e a pergunta de uma GPU presa em preenchimento (gpunivel.h).
 extern double gfx_fill_modo[GFX_NMODOS];
 extern int gfx_n_assados;
+int gfx_desfocados_quadro(void);   // blurred art copies generated this frame (gfx_desfocado)
 extern int gfx_rastro_grandes;   // rastro: imprime todo desenho >= 12% da tela
 // INSTRUMENTO DE CAMPO: bit N ligado = o modo N nao e desenhado. main.c le a
 // lista de /tmp/nuvio-gfx-off a cada 3 s (numeros separados por espaco). Serve
@@ -677,6 +678,13 @@ void gfx_vidro_ou_solido(GfxRect r, float raio, float dens, float a,
 // Conteudo mudou sem passar por gfx_rect (textura reenviada no lugar): o
 // proximo quadro recaptura.
 void gfx_vidro_sujar(void);
+// Draws between on and off stay out of the glass's change hash (only their
+// textures count as dependencies). For an offscreen layer whose owner calls
+// gfx_vidro_sujar when it really changed (psestilos.c, the profile wall).
+void gfx_vidro_fora_do_hash(int ligado);
+// The pending ambient light will be fully covered by an opaque layer drawn
+// next: drop it rather than paint it (psestilos.c, the offscreen wall).
+void gfx_ambiente_coberto(void);
 // Detail title <-> episodes (#205): this frame's glass backdrop may reuse the
 // capture of the same crossfade step (>= 0); -1 (reset every frame) = exact.
 void gfx_vidro_fundo_passo(int passo);

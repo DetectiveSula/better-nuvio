@@ -16,6 +16,15 @@ int perfis_verificar_pin(int i, const char *p) {
   (void)i; snprintf(pinVisto, sizeof pinVisto, "%s", p); atomic_fetch_add(&verificacoes, 1); return 0;
 }
 SyncEstado sync_estado(void) { return SYNC_FALHOU; }
+// The TV profile editor (perfiledit.c) is not part of these rules: no account,
+// so it is never offered and the picker behaves as before.
+int perfiledit_aberto(void) { return 0; }
+void perfiledit_evento(const SDL_Event *e) { (void)e; }
+void perfiledit_atualizar(float dt, Uint32 agora) { (void)dt; (void)agora; }
+void perfiledit_desenhar(Uint32 agora) { (void)agora; }
+int perfiledit_disponivel(void) { return 0; }
+int perfiledit_abrir_perfil(int indice, const char *pin) { (void)indice; (void)pin; return 0; }
+void perfiledit_fechar(void) {}
 int main(void) {
   foco = 0; pinDe = -1; preparando = verificando = concluido = 0;
   perfilFocar(1, 2); assert(foco == 1);

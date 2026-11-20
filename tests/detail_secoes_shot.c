@@ -833,6 +833,16 @@ int main(int argc, char **argv) {
   snprintf(nome, sizeof nome, "%s-17-filme-detalhes.png", saida);
   gravar(nome);
 
+  // --- 25. FILME, "More about this title" focused on its second tile.
+  abrir(1, SEC_MAIS, 1);
+  snprintf(nome, sizeof nome, "%s-25-filme-mais.png", saida);
+  gravar(nome);
+
+  // --- 26. FILME, cast focused: bare round headshot with the white ring.
+  abrir(1, SEC_ELENCO, 1);
+  snprintf(nome, sizeof nome, "%s-26-filme-elenco-foco.png", saida);
+  gravar(nome);
+
   // --- 18. FILME, foco na COLECAO (#194): o MINI CARD — backdrop da colecao,
   //         nome, "3 filmes · 1999–2003" e a escada de cartazes, focado.
   colecaoLigada = 1;

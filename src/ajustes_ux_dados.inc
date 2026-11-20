@@ -40,7 +40,7 @@ static int uxDiferente(int op) {
  * Audio/legenda, inclusive "Da conta", continuam no conjunto dePerfil: a
  * escolha e guardada por perfil nesta TV, sem prometer que ja sincronizou. */
 static const char *uxEscopoValor(int op, int v) {
-  if (op == AJ_TEMA && v >= AJ_TEMA_DINAMICA) return "Só este perfil, nesta TV";
+  if (op == AJ_TEMA && v >= AJ_TEMA_DINAMICA && v != AJ_TEMA_PERSONALIZADA) return "Só este perfil, nesta TV";
   if (op == AJ_TMDB_IDIOMA && v == 0) return "Só este perfil, nesta TV";
   /* J4-bound options really follow the account while this profile's Better
    * Nuvio uploads are on (same rule as the Home-rows notice); never in release. */

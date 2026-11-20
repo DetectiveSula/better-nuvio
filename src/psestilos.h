@@ -34,6 +34,10 @@ typedef struct {
   int   muralN;
   int   reduzida;
   int   parado;        // PIN por cima: o fundo para de andar
+  // The profiles either side of the focus (profile_index, 0 = none or a PIN
+  // profile): their walls are warmed in the background (FILMES), so moving
+  // the focus finds the posters already decoded.
+  int   vizinhos[2];
 } PSCena;
 
 void psestilos_iniciar(void);

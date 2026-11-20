@@ -219,6 +219,14 @@ static int uxRiscoFinal(int op, int novo) {
   return 0;
 }
 static void uxAplicar(void) {
+  // Custom accent: OK on the pill opens the editor (official Nuvio's Custom
+  // opens its CustomThemeDialog). Saving it is what selects the theme.
+  if (uxOp == AJ_TEMA && uxPendente == AJ_TEMA_PERSONALIZADA) {
+    unsigned c[3] = { (unsigned)valor[AJ_TEMA_COR1], (unsigned)valor[AJ_TEMA_COR2], (unsigned)valor[AJ_TEMA_COR3] };
+    uxCancelar();
+    acentocustom_abrir(c, !(c[0] == c[1] && c[1] == c[2]));
+    return;
+  }
   if(uxOp==AJ_GUIA_CATEGORIAS) {
     if(!nv_perfil_sessao_atual(iptvListaSessao)) { uxCancelar();return; }
     int n=0;

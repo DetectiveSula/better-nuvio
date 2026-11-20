@@ -2114,6 +2114,7 @@ void gfx_definir_efeitos_minimos(int m) { efeitosMinimos = m ? 1 : 0; }
 int  gfx_efeitos_minimos(void) { return efeitosMinimos; }
 static double gfxFreqMs = 0.0;
 static int desfGeradosQuadro = 0;   // ver gfx_desfocado
+int gfx_desfocados_quadro(void) { return desfGeradosQuadro; }   // frame trace (main.c)
 // Estado da luz ambiente (ver a nota "A LUZ AMBIENTE PENDENTE", em gfx_rect).
 static GLuint ambTex;          // a que se LE neste quadro (ambTexPar[ambLado])
 #define AMB_N 4
@@ -2293,6 +2294,11 @@ int gfx_vidro_copia_com_din_adiado;
 // art that reads the light through uAmb). While a bake paints, its draws only
 // note their source textures as dependencies.
 static int vidroAssando;
+// A caller that renders a layer offscreen and invalidates the glass itself
+// (gfx_vidro_sujar) when that layer changes: its draws stay out of the hash,
+// as a bake's do. psestilos.c, the profile wall at 1280x720.
+static int vidroForaHash;
+void gfx_vidro_fora_do_hash(int ligado) { vidroForaHash = ligado ? 1 : 0; }
 static int vidroDentro(GfxRect r) {
   float b[4] = { r.x, r.y, r.x + r.w, r.y + r.h };
   int i;
@@ -2320,7 +2326,7 @@ static void vidroDesenho(GfxRect r, GLuint tex, GfxModo modo, float foco, float 
   int e[9] = { (int)modo, (int)tex, recorteAtivo, blendLigado, giroOn, miniAtiva, snapAtivo,
                efeitosLeves, telaW };
   int conta = 1;
-  if (vidroAssando) {   // offscreen bake: see vidroAssando
+  if (vidroAssando || vidroForaHash) {   // offscreen bake / self-invalidating layer
     if (P->tex >= 0) vidroDepAnotar(tex);
     return;
   }
@@ -2439,6 +2445,10 @@ static float ambPendAlfa;
 // cima), condicao para o shader misturar com a luz em vez de com a tela.
 // Qualquer desenho derruba; gfx_ambiente levanta.
 static void ambPintar(float alfa);
+// The pending light will be covered by an opaque full-screen layer drawn next
+// (psestilos.c composites its offscreen wall over the whole screen): drop it
+// instead of painting a screen nobody sees.
+void gfx_ambiente_coberto(void) { ambPendente = 0; ambIntacta = 0; }
 void gfx_ambiente_descarregar(void) {
   int rec;
   float g;

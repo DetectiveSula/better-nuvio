@@ -5,7 +5,8 @@ static char *document(const int *values){
  for(size_t first=0;first<AJ6_N;first++){
   int repeated=0;for(size_t j=0;j<first;j++)if(!strcmp(aj6Map[j].feature,aj6Map[first].feature))repeated=1;if(repeated)continue;
   jsw_chave(&w,aj6Map[first].feature);jsw_obj_ini(&w);jsw_cs(&w,"unrelated_field","retain");
-  for(size_t i=first;i<AJ6_N;i++)if(!strcmp(aj6Map[i].feature,aj6Map[first].feature))assert(aj6Encode(&w,i,values[i]));
+  for(size_t i=0;i<AJ6_N;i++)if(aj6Map[i].codec==AJ6_TRIO)aj6TrioValores[aj6Map[i].n]=values[i];
+  for(size_t i=first;i<AJ6_N;i++)if(!strcmp(aj6Map[i].feature,aj6Map[first].feature)&&!(aj6Map[i].codec==AJ6_TRIO&&aj6Map[i].n!=0))assert(aj6Encode(&w,i,values[i]));
   jsw_obj_fim(&w);
  }jsw_obj_fim(&w);jsw_obj_fim(&w);char *s=strdup(jsw_texto_final(&w));jsw_livre(&w);assert(s);return s;
 }
@@ -13,21 +14,33 @@ static int position(int op){for(size_t i=0;i<AJ6_N;i++)if(aj6Map[i].op==op)retur
 static char *single(size_t i,int value){int values[AJ6_N];for(size_t j=0;j<AJ6_N;j++){int n=0;while(!aj6Supported(j,n))n++;values[j]=n;}values[i]=value;return document(values);}
 int main(int argc,char **argv){
  setvbuf(stdout,NULL,_IOLBF,0);assert(argc==2);setenv("NUVIO_DADOS",argv[1],1);dados_iniciar(NULL);player_dir(argv[1]);legfontes_dir(argv[1]);ajustes_dir(argv[1]);fil_definir_perfil(1);login();sync_reaplicar_ajustes();
- assert(AJ6_N==40&&AJ_SHARED_N==32&&JB_N==215&&aj6Current()&&!aj6Permission);
+ assert(AJ6_N==43&&AJ_SHARED_N==32&&JB_N==215&&aj6Current()&&!aj6Permission);
+ /* Custom accent: official CustomThemeColors.encode() exactly, both ways. */
+ {const char *doc="{\"features\":{\"theme_settings\":{\"custom_theme_colors\":{\"type\":\"string\",\"value\":\"#B75AFF,#ec70a9,FFB37A\"},\"selected_theme\":{\"type\":\"string\",\"value\":\"CUSTOM\"}}}}";
+  int c=-1;assert(aj6Remote(doc,position(AJ_TEMA_COR1),&c)==1&&c==0xB75AFF);assert(aj6Remote(doc,position(AJ_TEMA_COR2),&c)==1&&c==0xEC70A9);
+  assert(aj6Remote(doc,position(AJ_TEMA_COR3),&c)==1&&c==0xFFB37A);assert(aj6Remote(doc,position(AJ_TEMA),&c)==1&&c==24);
+  assert(aj6Remote("{\"features\":{\"theme_settings\":{\"custom_theme_colors\":{\"type\":\"string\",\"value\":\"#B75AFF,#EC70A9\"}}}}",position(AJ_TEMA_COR1),&c)==-2);
+  assert(aj6Remote("{\"features\":{\"theme_settings\":{\"custom_theme_colors\":{\"type\":\"string\",\"value\":\"#B75AFF,#EC70A9,#XYZXYZ\"}}}}",position(AJ_TEMA_COR1),&c)==-2);
+  aj6TrioValores[0]=0x112233;aj6TrioValores[1]=0x445566;aj6TrioValores[2]=0x778899;
+  Jsw w;jsw_iniciar(&w);jsw_obj_ini(&w);assert(aj6Encode(&w,position(AJ_TEMA_COR2),0xABCDEF));jsw_obj_fim(&w);
+  assert(strstr(jsw_texto_final(&w),"\"#112233,#ABCDEF,#778899\""));jsw_livre(&w);
+  puts("PASS: custom_theme_colors reads and writes official \"#RRGGBB,#RRGGBB,#RRGGBB\"; malformed values are refused");}
  /* One owner: Stage I read-only language imports and Stage G hide_unreleased_content stay out of J6. */
  const int foreign[]={AJ_AUD_LINGUA,AJ_AUD_LINGUA2,AJ_LEG_LINGUA,AJ_LEG_LINGUA2,AJ_TMDB_IDIOMA,AJ_OCULTAR_NLANC};
  int base[AJ6_N],target[AJ6_N];size_t conversions=0;
  for(size_t i=0;i<AJ6_N;i++){
   const Aj6Map *m=&aj6Map[i];for(size_t j=0;j<sizeof foreign/sizeof *foreign;j++)assert(m->op!=foreign[j]);for(size_t j=0;j<JB_N;j++)assert(m->op!=jbMap[j].op);for(size_t j=0;j<AJ_SHARED_N;j++)assert(m->op!=ajSharedMap[j].op);
   const Opcao *o=&OPCOES[m->op];int lo=o->tipo==OP_NUMERO?o->min:0,hi=o->tipo==OP_NUMERO?o->max:nValores(m->op)-1;int first=-1,last=-1;
-  for(int n=lo;n<=hi;n++)if(aj6Supported(i,n)){
+  /* A colour has 16.7M values: probe the ends and a middle one. */
+  const int trio[3]={0,0x5A3C9E,0xFFFFFF};int tn=m->codec==AJ6_TRIO?3:0;
+  for(int q=0,n=lo;tn?q<tn:n<=hi;q++,n++){if(tn)n=trio[q];if(!aj6Supported(i,n))continue;
    Jsw w;jsw_iniciar(&w);jsw_obj_ini(&w);jsw_chave(&w,"features");jsw_obj_ini(&w);jsw_chave(&w,m->feature);jsw_obj_ini(&w);assert(aj6Encode(&w,i,n));jsw_obj_fim(&w);jsw_obj_fim(&w);jsw_obj_fim(&w);int out=-1;assert(aj6Remote(jsw_texto_final(&w),i,&out)==1&&out==n);jsw_livre(&w);if(first<0)first=n;last=n;conversions++;
   }
   assert(first>=0&&last!=first);base[i]=first;target[i]=last;
   int out;assert(aj6Remote("{\"features\":{}}",i,&out)==-1);assert(aj6Remote("{\"features\":[]}",i,&out)==-2);
   printf("J6_BINDING %s %s %s %s %d %d\n",CHAVE[m->op],m->feature,m->key,aj6Type(i),first,last);
  }
- printf("PASS: all 40 verified mappings (41 controls incl. the derived prepare switch), %zu lossless value conversions; 215 J4, 32 Stage I, language imports and Stage G owners disjoint\n",conversions);
+ printf("PASS: all 43 verified mappings (41 controls incl. the derived prepare switch), %zu lossless value conversions; 215 J4, 32 Stage I, language imports and Stage G owners disjoint\n",conversions);
  free(cloud);cloud=document(base);cycle();for(size_t i=0;i<AJ6_N;i++)assert(valor[aj6Map[i].op]==base[i]);assert(pushes==0&&!aj6Permission);
  for(size_t i=0;i<AJ6_N;i++)valor[aj6Map[i].op]=target[i];assert(gravar());cycle();assert(!pushes&&ajustes_compartilhados_pendentes()==0);
  for(size_t i=0;i<AJ6_N;i++)assert(aj6State[i].pending);
@@ -42,7 +55,7 @@ int main(int argc,char **argv){
  char *out=NULL;assert(!ajustes_compartilhados_mesclar("{\"version\":1,\"features\":[]}",&out)&&!out);
  /* Malformed duplicate keys are rejected before any projection. */
  assert(!ajustes_compartilhados_aplicar("{\"version\":1,\"features\":{},\"features\":{}}"));assert(valor[AJ_DESCOBRIR]==saved);
- int theme=position(AJ_TEMA);valor[AJ_TEMA]=AJ_N_TEMAS_OPC-1;assert(gravar());assert(aj6State[theme].hold);ajustes_compartilhados_aplicar(cloud);assert(valor[AJ_TEMA]==AJ_N_TEMAS_OPC-1);aj6Forget();aj6Context();assert(valor[AJ_TEMA]==AJ_N_TEMAS_OPC-1&&!aj6Permission);
+ int theme=position(AJ_TEMA);valor[AJ_TEMA]=AJ_TEMA_TEXTURA_SUTIL;assert(gravar());assert(aj6State[theme].hold);ajustes_compartilhados_aplicar(cloud);assert(valor[AJ_TEMA]==AJ_TEMA_TEXTURA_SUTIL);aj6Forget();aj6Context();assert(valor[AJ_TEMA]==AJ_TEMA_TEXTURA_SUTIL&&!aj6Permission);
  /* Deferred ack cannot clear a later local edit. */
  assert(ajustes_oficiais_permitir_escritas(1));valor[AJ_DESCOBRIR]=1;assert(gravar());assert(ajustes_compartilhados_mesclar(cloud,&out)>0&&out);valor[AJ_DESCOBRIR]=2;assert(gravar());ajustes_compartilhados_confirmar(out);free(out);out=NULL;assert(aj6State[discover].pending&&aj6State[discover].desired==2);
  puts("PASS: conflicts, missing/malformed/future fields, compound trailer target, protected Native-only theme choices and edits during acknowledgement");

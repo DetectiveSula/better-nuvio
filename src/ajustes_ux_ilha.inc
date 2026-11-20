@@ -2228,6 +2228,23 @@ float ajustes_ui_dicas(const char *const *teclas, const char *const *rotulos, in
 }
 void ajustes_ui_neutro(GfxRect r, float raioPx, float vidA) { ajNeutro(r, raioPx, vidA, 0.106f, 0.110f, 0.129f, 1); }
 void ajustes_ui_foco_linha(GfxRect r, float raioPx) { ajFocoLinha(r, raioPx, 1, 1); }
+// The pieces of Settings' own modals for other screens (the profile editor on
+// the profile picker): the focused pill in the accent, the resting chip, and the
+// key-hint footer of the profile menu, drawn without Settings' pointer targets.
+void ajustes_ui_pilula_acento(GfxRect r, float raioPx, float a) { ajPilulaAcento(r, raioPx, a); }
+void ajustes_ui_chip(GfxRect r, float raioPx, float vidA, float a) { ajNeutro(r, raioPx, vidA, AJ_CHIP_SOL, a); }
+float ajustes_ui_dicas_modal(const char *const *teclas, const char *const *rotulos, int n, float x, float yc, float a) {
+  float x0 = x;
+  for (int i = 0; i < n; i++) {
+    TxtLinha k = ajTxt(TXT_G22M, teclas[i]), l = ajTxt(TXT_V2_26, rotulos[i]);
+    float kw = k.w + 18 < 44 ? 44 : k.w + 18;
+    ajNeutro((GfxRect){ x, yc - 20, kw, 40 }, 20, 0.09f, AJ_CHIP_SOL, a);
+    txt_desenhar_alpha(k, x + (kw - k.w) * 0.5f, yc - k.h * 0.5f, 0.82f * a);
+    txt_desenhar_alpha(l, x + kw + 10, yc - l.h * 0.5f, 0.55f * a);
+    x += kw + 10 + l.w + 28;
+  }
+  return x - x0 - 28;
+}
 // "Rotulo ........ a → b unidade" com a barra de cada valor na mesma escala.
 float ajustes_ui_antes_depois(const char *rot, int a, int b, const char *unid, int max,
                               float x, float y, float w, int compacto, float cr, float cg, float cb) {

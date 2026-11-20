@@ -1026,8 +1026,11 @@ static int podeReconsultar(void) {
 }
 
 void atualizacao_verificar(void) {
-#ifdef NV_DTS_DEBUG
-  return; /* Debug IPKs are installed explicitly, outside production updates. */
+#if defined(NV_DTS_DEBUG) || defined(NV_SEM_ATUALIZACAO)
+  // Debug packages (DTS IPKs; NV_SEM_ATUALIZACAO = a debug .tpk installed next
+  // to the release under its own app ID) are installed by hand: a release
+  // must never update them in place.
+  return;
 #endif
   static long ultChamada;
   long rel = (long)time(NULL);
@@ -1050,7 +1053,7 @@ void atualizacao_verificar(void) {
 }
 
 void atualizacao_procurar_agora(void) {
-#ifdef NV_DTS_DEBUG
+#if defined(NV_DTS_DEBUG) || defined(NV_SEM_ATUALIZACAO)
   return;
 #endif
   if (!mtx) mtx = SDL_CreateMutex();

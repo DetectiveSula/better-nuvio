@@ -113,6 +113,7 @@ extern int trakt_scrobble_alvo(int, const TraktScrobbleAlvo *, double, double,
 #include "credfonte.h"
 #include "credaprende.h"
 #include "seekr.h"
+#include "seekrvtt.h"
 #include "visto.h"     /* fim de episodio/filme para Simkl e conta */
 #include "vistoep.h"   /* o check de "assistido" na lista de episodios (issue #100) */
 #include "pausao.h"
@@ -208,6 +209,13 @@ extern int trakt_scrobble_alvo(int, const TraktScrobbleAlvo *, double, double,
 #define PLR_BARRA_Y      (NV_VTELA_H - 178.0f)
 #define PLR_BARRA_Y_SO   (NV_VTELA_H - 120.0f)
 #define PLR_BARRA_Y_SEEKR (NV_VTELA_H - 150.0f)
+// APPLE TV TRANSPORT (owner, 19/11/2026, player mockups 1-4), the TV layout:
+// the title on the left and the buttons on the right, both ABOVE the bar; under
+// the bar the elapsed time left and the remaining time right, with "Ends at".
+// The bar sits where the seek-only bar always sat, so it no longer moves.
+#define PLR_BARRA_Y_APPLE (NV_VTELA_H - 122.0f)
+#define PLR_GAP_ROW_A     38.0f   // base dos botoes -> topo da barra
+#define PLR_BTN_GAP_A     16.0f
 // De quanto o bloco desliza para baixo quando escondido. Pequeno de proposito:
 // o que faz o movimento ser lido nao e a distancia, e a mola somada ao fade.
 #define PLR_DESLIZE       46.0f
@@ -352,6 +360,12 @@ static float anim = 0.0f;          // 0..1 seguindo `visivel`, por mola
 static int   soBarra = 0;
 static float cheio = 1.0f;
 static float focoB[PLR_NBTNS];     // mola de foco de cada botao
+// INFO PANEL (player mockup 4): UP from the buttons opens tabs at the top (Info,
+// Episodes, Subtitles, Audio) and the Info card (poster, title, details,
+// format badges, synopsis, Start Over, ends at). nivel 0 = tabs, 1 = Start Over.
+static int   infoAberto, infoAba, infoNivel;
+static float infoAnim;
+enum { IA_INFO, IA_EP, IA_LEG, IA_AUD };
 // A FILEIRA DE BOTOES FECHA COM O FOCO NA BARRA (pedido do dono, 03/10): quem
 // subiu para a barra esta procurando no filme, e os botoes embaixo dela so
 // disputam o olhar. Ela desce e apaga pela mola dos controles e volta quando o
@@ -409,6 +423,7 @@ static struct {
 static _Atomic unsigned preTituloTokens;
 #endif
 static float posSeg = 0.0f;
+static double seekrAlvo = -1.0;   // see seekrMiniatura
 // Relogio da LEGENDA (#92): posSeg e o ultimo currentTime do pipeline, que na
 // C9 chega a cada ~200 ms. A legenda desenhada com ele andava aos degraus e em
 // media 100 ms atras; relogio.c interpola entre as amostras.
@@ -446,9 +461,25 @@ static int fontePrincipal(void) {
          trailerSessao == trailer_geracao() && !strcmp(fonteSessao, video_url_atual());
 }
 static void medirAssistido(void);
+// SAMSUNG .tpk: SUBTITLES WERE EARLY (owner's S90C, 18 Nov 2026, against the
+// regular Nuvio). The app draws add-on/converted subtitles on the graphics
+// plane from the player's position, but the TV runs the VIDEO plane through
+// its picture processing (and delays the sound to match it); the overlay is
+// not delayed, so every line appeared before it was spoken. The subtitle
+// clock runs this much behind the player's position; the person's own Delay
+// (legEstilo.atrasoMs) still applies on top. Embedded tracks the TV player
+// times itself are not drawn from this clock.
+#ifndef NV_LEG_ATRASO_TELA_MS
+#if defined(NV_TPK)
+#define NV_LEG_ATRASO_TELA_MS 150
+#else
+#define NV_LEG_ATRASO_TELA_MS 0
+#endif
+#endif
 static double posLegenda(void) {
-  if (!relLeg.temAmostra || scrubbing) return posSeg;
-  return relogio_ler(&relLeg, monoSeg());
+  if (scrubbing) return posSeg;
+  if (!relLeg.temAmostra) return posSeg - NV_LEG_ATRASO_TELA_MS / 1000.0;
+  return relogio_ler(&relLeg, monoSeg()) - NV_LEG_ATRASO_TELA_MS / 1000.0;
 }
 // Creditos tambem sao pulaveis — e o "Skip Outro" do web.
 static int skipDisponivel(void), skipLiberado;
@@ -3414,6 +3445,7 @@ static void corpoNeste(GfxRect r, float a, void *u) {
 
 typedef struct { int id, habilitada; } PlrAcao;
 static int transporteSerie(void) { return !ehCanal() && epT >= 0 && epE > 0; }
+static int transporteApple(void);
 static int transporteAcoes(PlrAcao a[PLR_NBTNS]) {
   int n = 0, serie = transporteSerie();
   int pronto = serie && !trocaEpisodio && !pedRecarregar && !player_carregando() && !erroFonte && !saindo;
@@ -3422,7 +3454,9 @@ static int transporteAcoes(PlrAcao a[PLR_NBTNS]) {
   if (!ehCanal()) a[n++] = (PlrAcao){PLR_REINICIAR,
       player_recarregar_contexto() != 0 && video_duracao() > 0.5};
   a[n++] = (PlrAcao){PLR_CC, 1};
-  a[n++] = (PlrAcao){PLR_AUDIO, 1};
+  // TV layout: ONE button for subtitles and audio, since they share one panel
+  // (owner, 19/11/2026: "does there need to be two separate buttons").
+  if (!transporteApple()) a[n++] = (PlrAcao){PLR_AUDIO, 1};
   a[n++] = (PlrAcao){PLR_ASPECTO, 1};
   a[n++] = (PlrAcao){PLR_FONTES, 1};
   if (temUltimoBotao()) a[n++] = (PlrAcao){PLR_EPISODIOS, 1};
@@ -3451,7 +3485,22 @@ static int transporteDuasLinhas(void) {
 }
 static int transportePrimeiraLinha(void) { return transporteSerie() ? 4 : 2; }
 static float transporteCelulaH(void) { return PLR_TOQUE_CELULA / gfx_escala_ui(); }
+// The Apple TV transport is the TV's: not on phones/touch, not on a narrow
+// window (the compact row), not on a live channel (its own OSD).
+static int transporteClassico;   // tests of the classic OSD (corner format row) set it
+static int transporteApple(void) {
+  return !transporteClassico && !transporteToque() && !ehCanal() && NV_VTELA_W - PLR_MARGEM * 2.0f >= 1280.0f;
+}
+int player_transporte_tv(void) { return transporteApple(); }
+static int infoAbas(int t[4]) {
+  int n = 0;
+  t[n++] = IA_INFO;
+  if (temUltimoBotao()) t[n++] = IA_EP;
+  t[n++] = IA_LEG;   // "Subtitles & audio": one panel, one tab
+  return n;
+}
 static float transporteBarraY(void) {
+  if (transporteApple()) return PLR_BARRA_Y_APPLE;
   if (!transporteToque()) return PLR_BARRA_Y;
   int linhas = transporteDuasLinhas() ? 2 : 1;
   return NV_VTELA_H - (64.0f + PLR_TOQUE_CELULA * linhas + 12.0f * (linhas - 1)) / gfx_escala_ui() - PLR_GAP_ROW;
@@ -3804,7 +3853,7 @@ static void acordar(void) { abrecine_acordou(&cine, player_carregando()); visive
 // Tira os controles da frente (BAIXO na fileira, CIMA no topo, #305). Nao
 // chama acordar(): isso os recolocaria no mesmo evento e o comando pareceria
 // quebrado. O proximo toque direcional os revela de novo.
-static void esconderControles(void) { barraFoco = 0; visivel = 0; ultimoInput = SDL_GetTicks(); }
+static void esconderControles(void) { barraFoco = 0; visivel = 0; infoAberto = 0; ultimoInput = SDL_GetTicks(); }
 
 // AS DUAS LINHAS DO CANAL no OSD: "AGORA hh:mm–hh:mm · titulo" e "A SEGUIR
 // hh:mm · titulo", da grade EPG. Sem grade real o canal se mostra como
@@ -4228,6 +4277,13 @@ static void terminarSalto(void) {
 #ifdef NV_TPK
   seekgesto_zerar(&gesto);   // the memory lives until the commit
 #endif
+  // The preview's own instant, when one was showing and it is this point's
+  // slot (never further than one slot: a stale or far cue keeps the raw spot).
+  { double crua = posSeg;
+    posSeg = posVis = (float)seekr_pouso(seekrAlvo, posSeg, duracaoSeg);
+    printf("[seekr] pouso: previa=%.1f crua=%.1f -> %.1f\n", seekrAlvo, crua, (double)posSeg);
+    fflush(stdout); }
+  seekrAlvo = -1.0;
   if (comVideo) {
     if (posSeg >= scrubInicio) creditosauto_buscar(&creditosAuto, posSeg);
     buscarUsuario(posSeg);
@@ -4282,8 +4338,8 @@ static int ativarBotao(int i, int repetiu) {
     }
     case PLR_PLAY: alternarTocando(); break;
     case PLR_ASPECTO: player_aspecto_ciclar(); break;
-    case PLR_CC: pedFaixas = 2; break;
-    case PLR_AUDIO: pedFaixas = 1; break;
+    case PLR_CC: pedFaixas = transporteApple() ? 3 : 2; break;
+    case PLR_AUDIO: pedFaixas = transporteApple() ? 4 : 1; break;
     case PLR_FONTES: pedFontes = 1; break;
     case PLR_NESTE: nesteAberto = 1; nesteT = epT; nesteE = epE; break;
     case PLR_EPISODIOS:
@@ -4328,7 +4384,7 @@ void player_evento(const SDL_Event *e) {
     else if (r == DVT_EV_HDR10) { video_dv_recusar(); video_dv_tela(0); }
     if (r != DVT_EV_NADA) return;
   }
-  if (reacao_evento(e, visivel)) return;
+  if (!posplay_fim_apple() && reacao_evento(e, visivel)) return;
   { int r = posplay_evento(e);
     if (r) { if (r == 2) acordar(); return; } }
   if (!aberto || saindo || e->type != SDL_KEYDOWN) return;
@@ -4373,6 +4429,7 @@ void player_evento(const SDL_Event *e) {
       k == SDLK_DELETE) {
     // Back dismisses exactly one layer. Loading/buffering keeps its exit path.
     if (pausao_visivel()) { pausao_fechar(); acordar(); return; }
+    if (infoAberto) { infoAberto = 0; acordar(); return; }
     if (!erroFonte && !player_carregando() && !video_bufferando_ms()) {
       if (skipFoco) { skipFoco = 0; return; }
       if (visivel || anim > 0.004f) {
@@ -4536,6 +4593,31 @@ void player_evento(const SDL_Event *e) {
     return;
   }
 
+  // INFO PANEL open: its tabs and its Start Over take every key.
+  if (infoAberto) {
+    int abas[4], nt = infoAbas(abas), ok = k == SDLK_RETURN || k == SDLK_KP_ENTER || k == SDLK_SPACE;
+    int recomeco = transporteHabilitado(PLR_REINICIAR);
+    if (infoAba >= nt) infoAba = nt - 1;
+    if (infoNivel == 0) {
+      if (k == SDLK_LEFT && infoAba > 0) infoAba--;
+      else if (k == SDLK_RIGHT && infoAba < nt - 1) infoAba++;
+      else if (k == SDLK_DOWN) {
+        if (abas[infoAba] == IA_INFO && recomeco) infoNivel = 1;
+        else infoAberto = 0;
+      } else if (ok) {
+        int t = abas[infoAba];
+        if (t == IA_INFO) { if (recomeco) infoNivel = 1; }
+        else { infoAberto = 0;
+               ativarBotao(t == IA_EP ? PLR_EPISODIOS : t == IA_LEG ? PLR_CC : PLR_AUDIO, e->key.repeat); }
+      }
+    } else {
+      if (k == SDLK_UP) infoNivel = 0;
+      else if (k == SDLK_DOWN) infoAberto = 0;
+      else if (ok) { infoAberto = 0; ativarBotao(PLR_REINICIAR, e->key.repeat); }
+    }
+    acordar();
+    return;
+  }
   // CONTROLES EM PE: o foco anda pelos botoes e o OK aperta o botao em foco.
   if (skipFoco) {
     double fim;
@@ -4566,6 +4648,22 @@ void player_evento(const SDL_Event *e) {
   // abria a folha no Audio, um salto que ninguem pediu no meio de uma busca.
   // Audio e Legendas ficam nos botoes deles. O unico alvo acima da barra e o
   // "Pular abertura", quando existe — e esse esta mesmo em cima dela.
+  // APPLE TV TRANSPORT: the buttons are ABOVE the bar. UP from the bar goes to
+  // the buttons, UP from the buttons to the skip button when there is one and
+  // else opens the info panel; DOWN from the buttons goes to the bar and DOWN
+  // from the bar takes the controls away.
+  if (transporteApple() && (k == SDLK_UP || k == SDLK_DOWN)) {
+    if (k == SDLK_UP) {
+      if (barraFoco) barraFoco = 0;
+      else if (trechoPulavel(NULL)) skipFoco = 1;
+      else { infoAberto = 1; infoAba = 0; infoNivel = 0; }
+    } else {
+      if (!barraFoco) barraFoco = 1;
+      else { esconderControles(); return; }
+    }
+    acordar();
+    return;
+  }
   if (k == SDLK_UP) {
     if (!barraFoco && transporteMoverLinha(-1)) { acordar(); return; }
     if (!barraFoco) barraFoco = 1;
@@ -5125,8 +5223,10 @@ void player_atualizar(float dt, Uint32 agora) {
     // a lista pode chegar tarde ou nao chegar).
     int listaConhecida = !eSerie ||
       (cat_n_episodios(idxAtual()) > 0 && !desc_episodios_carregando(idxAtual()));
+    // The Apple end of episode rates in its own star row: no card on top of it.
+    posplay_episodio_atual(eSerie ? epT : 0, eSerie ? epE : 0);
     if (!ehCanal() && !meio && ci && comVideo && video_pronto() && duracaoSeg >= 120.0f &&
-        listaConhecida) {
+        listaConhecida && !posplay_fim_apple()) {
       const CatEp *px = eSerie ? player_proximo_jogavel() : NULL;
       double cr = credEfetivo();
       reacao_player_episodio(eSerie ? epT : 0, eSerie ? epE : 0);
@@ -5159,7 +5259,7 @@ void player_atualizar(float dt, Uint32 agora) {
   { Uint32 mov = ponteiro_last_motion();
     if (mov && (Sint32)(mov - ultimoInput) > 0) { ultimoInput = mov; pausao_activity(); } }
   if (visivel && tocando && !player_carregando() && !episodios_aberto() &&
-      !stream_folha_aberta() && !faixas_aberta() && agora - ultimoInput > PLR_ESCONDE_MS
+      !stream_folha_aberta() && !faixas_aberta() && !infoAberto && agora - ultimoInput > PLR_ESCONDE_MS
 #ifdef NV_TPK
       && !vooAtivo   // the bar stays while the TV is still seeking
 #endif
@@ -5229,6 +5329,8 @@ void player_atualizar(float dt, Uint32 agora) {
   if (visivel || soBarra)
     cheio = anim_mola(cheio, soBarra ? 0.0f : 1.0f, dt,
                       soBarra ? NV_MOLA_DESFOCO : NV_MOLA_FOCO);
+  if (!visivel || !transporteApple()) infoAberto = 0;
+  infoAnim = anim_mola(infoAnim, infoAberto ? 1.0f : 0.0f, dt, infoAberto ? NV_MOLA_FOCO : NV_MOLA_DESFOCO);
   { float alvoF = (barraFoco && !ponteiroNoPlayer()) ? 0.0f : 1.0f;
     fileira = anim_mola(fileira, alvoF, dt, alvoF > fileira ? NV_MOLA_FOCO : NV_MOLA_DESFOCO); }
   PlrAcao acoes[PLR_NBTNS]; int nAcoes = transporteAcoes(acoes), habilitadas[PLR_NBTNS] = {0};
@@ -5313,7 +5415,21 @@ static void seekrStatus(float bx, float bw, float frac, float yBarra, float a, i
   }
 }
 
+// "+7:40" / "−2:10": how far the seek moves the playhead (Apple layout).
+static void deltaTexto(char *d, size_t n, double s) {
+  char t[24];
+  plrui_tempo(t, sizeof t, fabs(s));
+  snprintf(d, n, "%s%s", s < 0.0 ? "\xe2\x88\x92" : "+", t);
+}
+
+// LAND ON THE PREVIEW (owner, 19/11/2026: "it shows a different frame from
+// what is skipped to"). Seekr has one picture per ~10 s slot, taken at the
+// slot's start, and the label shows that instant; the seek went to the raw
+// position, up to a slot later. While a real picture of this point is on
+// screen, this is the video time it was taken at, and the seek goes there.
+// (seekrAlvo is declared next to posSeg: terminarSalto reads it.)
 static void seekrMiniatura(float bx, float bw, float frac, float yBarra, float a) {
+  seekrAlvo = -1.0;
   GLuint t[3] = { 0, 0, 0 };
   double cue[3] = { -1, -1, -1 };
   int fita, n, k, est;
@@ -5333,7 +5449,10 @@ static void seekrMiniatura(float bx, float bw, float frac, float yBarra, float a
   if (est == SEEKR_PRONTO) seekr_quadros(pv, n, t, cue);
   // A sincronia ja entra no tempo do quadro; sem cue ainda (a folha chegando),
   // a posicao com o mesmo ajuste.
-  if (cue[n == 1 ? 0 : 1] < 0.0) cue[n == 1 ? 0 : 1] = pv + ajustes_seekr_ajuste_s(); }
+  { int c = n == 1 ? 0 : 1;
+    if (est == SEEKR_PRONTO && t[c] && cue[c] >= 0.0 && !seekr_quadro_velho())
+      seekrAlvo = cue[c] - ajustes_seekr_ajuste_s();
+    if (cue[c] < 0.0) cue[c] = pv + ajustes_seekr_ajuste_s(); } }
   tot = fita ? 20.0f + ws * 2.0f + w + vao * 2.0f : w + 20.0f;
   x = bx + bw * frac - tot * 0.5f;
   if (x < PLR_MARGEM) x = PLR_MARGEM;
@@ -5373,6 +5492,7 @@ static void seekrMiniatura(float bx, float bw, float frac, float yBarra, float a
           char r[32], d[24];
           plrui_tempo(d, sizeof d, duracaoSeg - cue[k]);
           snprintf(r, sizeof r, "\xe2\x88\x92%s", d);
+          if (transporteApple()) deltaTexto(r, sizeof r, (posVisSolto ? posVis : posSeg) - posSeg);
           lr = txt_linha(TXT_G18M, r, 243, 242, 239, 128);
           tw += 10.0f + (float)lr.w;
         }
@@ -5413,7 +5533,7 @@ static const char *iconeBotao(int i) {
 static const char *rotuloBotao(int i) {
   switch (i) {
     case PLR_PLAY:      return tocando ? "Pausar" : "Continuar";
-    case PLR_CC:        return "Legendas";
+    case PLR_CC:        return transporteApple() ? "Legendas e áudio" : "Legendas";
     case PLR_AUDIO:     return "\xc3\x81udio";
     case PLR_ASPECTO:   return "Propor\xc3\xa7\xc3\xa3o";
     case PLR_FONTES:    return "Fontes";
@@ -5544,13 +5664,14 @@ int player_texto_legenda_nativa(char *dst, int tam) {
  * caminho do plano de hardware: miniatura, animacao da janela, modo de
  * proporcao (inclusive o retangulo virtual que passa da tela no zoom) e o
  * recuo do painel de creditos. Sem as dimensoes do quadro, a tela inteira. */
+static int legEmJanela;   // drawing subtitles through the recede transform
 static PlrRect areaVideoLegenda(void) {
   PlrRect r = { 0.0f, 0.0f, NV_TELA_W, NV_TELA_H }, d, o;
   if (video_largura() < 2 || video_altura() < 2) return r;
   if (mini) return miniDestino();
   if (janAtiva) return janAgora;
   r = aspectoRect(aspecto);
-  if (encolhe > 0.999f) return r;
+  if (encolhe > 0.999f || legEmJanela) return r;
   d = aspectoVisivel(aspecto);
   o = destinoComRecuo(d);
   r.x = o.x + (r.x - d.x) * encolhe;
@@ -5595,16 +5716,46 @@ static float baseLegendaPrincipal(void) {
   // previa da barra de estilo mostrou isso na primeira captura.
   if (legEstilo.posicao >= 3) base -= (legEstilo.posicao - 3) * 48.f;
   else base += (3 - legEstilo.posicao) * 20.f;
+  // RECEDED INTO THE CORNER WINDOW (end of a film): the layer is scaled onto
+  // the PICTURE, so a wide film's letterbox line (1000 of 1080) landed under
+  // the window (owner, 19/11/2026). Keep the line inside the picture, at the
+  // same 7% from its bottom that 1000 is on a 16:9 frame.
+  if (legEmJanela) {
+    PlrRect img = aspectoRect(aspecto);
+    float fundo = img.y + img.h - img.h * 0.074f;
+    if (img.h > 1.0f && base > fundo) base = fundo;
+  }
   return base;
 }
 
 static void desenharLegendaPrincipal(float *topoPilha);
 static void desenharLegendaExternaCorpo(void);
 /* A legenda e conteudo do filme, nao interface: o brilho do player nao a toca. */
+// THE SUBTITLES GO WITH THE VIDEO (owner, 19/11/2026): with the video receded
+// into its corner window (end of episode), they are laid out as on the full
+// picture and the whole layer is scaled into the window, text and ASS alike,
+// instead of staying full size across the next episode's artwork.
 static void desenharLegendaExterna(void) {
   const float osd = gfx_osd_mult;
+  int recuado = encolhe < 0.999f && !mini && !janAtiva && !gfx_transformado() &&
+                video_largura() >= 2 && video_altura() >= 2;
+  PlrRect cheio = aspectoRect(aspecto), janela;
+  // THE PAUSE SCREEN COVERS THE SUBTITLES (owner, 19/11/2026: a line of the
+  // episode sat across its synopsis). They fade out as it comes in, and back.
+  float pausa = pausao_anim();
+  const float grupoAnt = gfx_opacidade_grupo;
+  if (pausa >= 0.999f) return;
+  gfx_opacidade_grupo = grupoAnt * (1.0f - pausa);
   gfx_osd_mult = 1.0f;
+  if (recuado) {
+    janela = areaVideoLegenda();
+    legEmJanela = 1;
+    gfx_transformar(cheio.x, cheio.y, cheio.w > 0.0f ? janela.w / cheio.w : 1.0f,
+                    janela.x - cheio.x, janela.y - cheio.y);
+  }
   desenharLegendaExternaCorpo();
+  if (recuado) { gfx_sem_transformar(); legEmJanela = 0; }
+  gfx_opacidade_grupo = grupoAnt;
   gfx_osd_mult = osd;
 }
 static void desenharLegendaExternaCorpo(void) {
@@ -5863,6 +6014,8 @@ static void desenharAcoesEpisodio(void){
 static void desenharAcoesEpisodioCorpo(void){
   const CatEp *prox=player_proximo_episodio();double fim;int tipo=0;
   if (!skipDisponivel()) { skipFoco = 0; return; }
+  // The Apple end of episode replaces "Skip credits" with its Next Episode.
+  if (posplay_fim_apple()) { skipFoco = 0; return; }
   intro_definir_duracao(duracaoReal ? (double)duracaoSeg : 0.0, epE <= 0);
   int trecho=intro_botao(posSeg,monoSeg(),visivel,skipFoco&&visivel,&fim,&tipo);
   // A CAIXA DE "Próximo episódio" QUE FICAVA AQUI FOI APAGADA. Era um retangulo
@@ -5886,7 +6039,8 @@ static void desenharAcoesEpisodioCorpo(void){
     const float h=64.0f;
     float w=22.0f+26.0f+12.0f+(float)t.w+28.0f;
     float k=anim, xa=posplay_visivel() ? NV_VTELA_W-PLR_MARGEM-w : PLR_MARGEM, ya=NV_VTELA_H-120.0f;
-    float xb=NV_VTELA_W-PLR_MARGEM-w, yb=transporteBarraY()-36.0f-h;
+    float xb=NV_VTELA_W-PLR_MARGEM-w, yb=transporteApple() ? transporteBarraY()-PLR_GAP_ROW_A-PLR_BTN_D-24.0f-h
+                                                     : transporteBarraY()-36.0f-h;
     GfxRect p={xa+(xb-xa)*k,ya+(yb-ya)*k,w,h};
     int tinta=sel?plrui_tinta():243;
     float kt=tinta/255.0f;
@@ -6823,12 +6977,12 @@ void player_desenhar(Uint32 agora) {
   // mesma margem inferior.
   // "O que achou?" na margem de 96 (mockup) ou acima do pos-reproducao.
   { float base = posplay_visivel() ? posplay_topo(NV_VTELA_H) : NV_VTELA_H - 96.0f;
-    if (reacao_visivel()) {
+    if (reacao_visivel() && !posplay_fim_apple()) {
       // O video um degrau mais escuro e o veu leve de baixo, sob o cartao.
       gfx_cor(tela, 0, 0, 0, 0, 0.25f * entrada);
       gfx_veu_css((GfxRect){ 0, NV_TELA_H - 300.0f, NV_TELA_W, 300.0f }, 0, 1.0f, 1.0f, 0.60f * entrada);
     }
-    reacao_desenhar(agora, base); }
+    if (!posplay_fim_apple()) reacao_desenhar(agora, base); }
 
   // GUIA PARENTAL, canto superior esquerdo (.player-parental-guide).
   //
@@ -7216,6 +7370,80 @@ static float fileiraFormato(Uint32 agora, float x, float y, float ac, int medir,
 #undef ENTRADA
   return H;
 }
+// THE INFO PANEL (player mockup 4): tabs centred at the top and, under them,
+// the card with the poster, the title, the details with the format badges of
+// the stream (the same row the corner used to show), the synopsis, Start Over
+// and the end time. The transport stays underneath.
+static void infoDesenhar(Uint32 agora, float a, const CatItem *c) {
+  int abas[4], nt = infoAbas(abas), i;
+  float k = a * infoAnim, sobe = 16.0f * (1.0f - infoAnim);
+  const char *rot[4];
+  float lw[4], tot = 0.0f, x, y = 72.0f - sobe;
+  if (k < 0.01f || !c) return;
+  for (i = 0; i < nt; i++) {
+    rot[i] = abas[i] == IA_INFO ? "Informações" : abas[i] == IA_EP ? rotuloBotao(PLR_EPISODIOS)
+           : abas[i] == IA_LEG ? "Legendas e áudio" : "\xc3\x81udio";
+    lw[i] = (float)txt_largura(TXT_G21B, rot[i]) + 52.0f;
+    tot += lw[i] + (i ? 8.0f : 0.0f);
+  }
+  x = (NV_VTELA_W - tot) * 0.5f;
+  plrui_material((GfxRect){ x - 8.0f, y - 8.0f, tot + 16.0f, 64.0f }, 32.0f, 0, k);
+  for (i = 0; i < nt; i++) {
+    GfxRect r = { x, y, lw[i], 48.0f };
+    int foco = i == infoAba, tinta = foco && infoNivel == 0 ? (int)plrui_tinta() : 243;
+    if (foco && infoNivel == 0) plrui_pilula_foco(r, k);
+    else if (foco) gfx_cor(r, 0.5f, 1, 1, 1, 0.16f * k);
+    { TxtLinha l = txt_linha(TXT_G21B, rot[i], tinta, tinta, tinta, 255);
+      txt_desenhar_alpha(l, r.x + (r.w - (float)l.w) * 0.5f, r.y + (r.h - (float)l.h) * 0.5f, k); }
+    x += lw[i] + 8.0f;
+  }
+  if (abas[infoAba < nt ? infoAba : 0] != IA_INFO) return;   // the other tabs open on OK
+  { GfxRect card = { PLR_MARGEM, 168.0f - sobe, NV_VTELA_W - PLR_MARGEM * 2.0f, 356.0f };
+    float px = card.x + 28.0f, py = card.y + 28.0f, pw = 200.0f, ph = 300.0f;
+    float tx = px + pw + 40.0f, tw = card.x + card.w - 40.0f - tx, ty = card.y + 30.0f;
+    GLuint tp = c->poster[0] ? tex_obter_larg(c->poster, (int)pw) : 0;
+    plrui_material(card, 34.0f, 0, k);
+    if (tp) {
+      gfx_tex_aspect_atual = tex_aspecto(c->poster);
+      gfx_rect((GfxRect){ px, py, pw, ph }, tp, GFX_CARD, 0, 0, 0, 16.0f / ph, 0, 0, 0, k);
+      gfx_tex_aspect_atual = 0.0f;
+    } else gfx_cor((GfxRect){ px, py, pw, ph }, 16.0f / ph, 1, 1, 1, 0.06f * k);
+    { const char *nome = c->titulo[0] ? c->titulo : "";
+      TxtLinha lt = txt_linha_corta(TXT_PLR_TITULO, nome, 255, 255, 255, 255, tw);
+      txt_desenhar_alpha(lt, tx, ty, k); ty += (float)lt.h + 14.0f; }
+    { float mx = tx, hl = 0.0f;
+      if (linhaEp[0]) {
+        TxtLinha lm = txt_linha_corta(TXT_CAPTION2, linhaEp, 243, 242, 239, 214, tw * 0.6f);
+        txt_desenhar_alpha(lm, mx, ty, k); mx += (float)lm.w + 20.0f; hl = (float)lm.h;
+      } else if (c->meta[0]) {
+        TxtLinha lm = txt_linha_corta(TXT_CAPTION2, c->meta, 243, 242, 239, 214, tw * 0.6f);
+        txt_desenhar_alpha(lm, mx, ty, k); mx += (float)lm.w + 20.0f; hl = (float)lm.h;
+      }
+      { float hf = fileiraFormato(agora, 0.0f, 0.0f, k, 1, NULL);
+        if (hf > 0.0f) fileiraFormato(agora, mx, ty + (hl - hf) * 0.5f, k, 0, NULL);
+        ty += (hf > hl ? hf : hl) + 16.0f; } }
+    if (c->sinopse[0])
+      txt_bloco_corta(TXT_ILHA_TEXTO, c->sinopse, 243, 242, 239, tx, ty, tw * 0.8f, 34.0f, k, 3);
+    { float by = card.y + card.h - 28.0f - 64.0f, bxx = tx;
+      char fim[RELOGIO_FIM_MAX];
+      if (transporteHabilitado(PLR_REINICIAR)) {
+        TxtLinha l = txt_linha(TXT_G21B, rotuloBotao(PLR_REINICIAR), 0, 0, 0, 255);
+        GfxRect b = { bxx, by, 26.0f + 28.0f + 12.0f + (float)l.w + 28.0f, 64.0f };
+        int foco = infoNivel == 1, tinta = foco ? (int)plrui_tinta() : 243;
+        float kk = tinta / 255.0f;
+        if (foco) plrui_pilula_foco(b, k); else plrui_disco_osd(b, k);
+        gfx_icone((GfxRect){ b.x + 26.0f, by + 18.0f, 28.0f, 28.0f }, "pl_rotate-ccw", kk, kk, kk, k);
+        l = txt_linha(TXT_G21B, rotuloBotao(PLR_REINICIAR), tinta, tinta, tinta, 255);
+        txt_desenhar_alpha(l, b.x + 66.0f, by + (64.0f - (float)l.h) * 0.5f, k);
+        bxx += b.w + 24.0f;
+      }
+      if (duracaoSeg > 0.0f) {
+        relogio_fim(fim, sizeof fim, time(NULL),
+                    vel_tempo_real((double)(duracaoSeg - posSeg), velMed.efetiva));
+        { TxtLinha l = txt_linha(TXT_G19M, fim, 243, 242, 239, 150);
+          txt_desenhar_alpha(l, bxx, by + (64.0f - (float)l.h) * 0.5f, k); } } } }
+}
+
 static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) {
   // O bloco inteiro desliza junto: titulo, barra e botoes sao UM objeto que
   // sobe, acompanhando o OSD (`anim`) e a abertura da tela (`entrada`, numa
@@ -7230,7 +7458,8 @@ static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) 
   float ySo = ajustes_seekr_ligado() ? PLR_BARRA_Y_SEEKR : PLR_BARRA_Y_SO;
   float yCheio = transporteBarraY();
   float yBarra   = (yCheio + (ySo - yCheio) * (1.0f - cheio)) + desce;
-  float yRowTopo = yBarra + PLR_GAP_ROW;
+  int apple = transporteApple();
+  float yRowTopo = apple ? yBarra - PLR_GAP_ROW_A - PLR_BTN_D : yBarra + PLR_GAP_ROW;
   float cyBotoes = yRowTopo + PLR_BTN_D * 0.5f;
   float bx = PLR_MARGEM, bw = NV_VTELA_W - PLR_MARGEM * 2.0f;
   float cx = PLR_MARGEM;
@@ -7335,6 +7564,26 @@ static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) 
   // TIME BUBBLE over the dot while the bar has focus: the eye is on the dot,
   // the time was only in the far corner. Not when the Seekr island is up
   // (it already carries the frame's time) nor on a live channel.
+  // Apple layout (mockup 2): bigger, and while seeking the jump under it
+  // ("+7:40"), the way the Apple TV app says how far the playhead went.
+  if (apple && barraFoco && duracaoSeg > 0.0f &&
+      !(ajustes_seekr_habilitado() && seekr_tem_chave() && (scrubbing || posVisSolto))) {
+    char tb[24], td[32];
+    double pv = posVisSolto ? posVis : posSeg;
+    int comDelta = (scrubbing || posVisSolto) && fabs(pv - posSeg) >= 1.0;
+    plrui_tempo(tb, sizeof tb, pv);
+    deltaTexto(td, sizeof td, pv - posSeg);
+    { TxtLinha l = txt_linha(TXT_G26B, tb, 243, 242, 239, 255);
+      TxtLinha ld = comDelta ? txt_linha(TXT_G18M, td, 243, 242, 239, 170) : (TxtLinha){ 0 };
+      float pw = (float)(l.w > ld.w ? l.w : ld.w) + 40.0f;
+      float ph = (float)l.h + (comDelta ? (float)ld.h + 2.0f : 0.0f) + 22.0f;
+      float px = bx + bw * frac - pw * 0.5f, py = yBarra - 26.0f - ph;
+      if (px < bx) px = bx;
+      if (px + pw > bx + bw) px = bx + bw - pw;
+      plrui_material((GfxRect){ px, py, pw, ph }, 22.0f, 0, a);
+      txt_desenhar_alpha(l, px + (pw - (float)l.w) * 0.5f, py + 11.0f, a);
+      if (comDelta) txt_desenhar_alpha(ld, px + (pw - (float)ld.w) * 0.5f, py + 13.0f + (float)l.h, a); }
+  } else
   if (barraFoco && !ehCanal() && duracaoSeg > 0.0f &&
       !(ajustes_seekr_habilitado() && seekr_tem_chave() && (scrubbing || posVisSolto))) {
     char tb[24];
@@ -7353,7 +7602,37 @@ static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) 
   // o NOME DENTRO (o rotulo solto embaixo caia em y~1042, zona de overscan). A
   // largura acompanha a mola do foco, entao os vizinhos andam junto.
   // Com o foco na barra a fileira desce PLR_DESLIZE/2 e apaga (`fileira`).
-  if (fileira > 0.01f) {
+  if (apple && fileira > 0.01f) {
+    // APPLE LAYOUT: round buttons on the right, above the bar. The focused one
+    // fills white and says its name in a small pill above it (no pill growing
+    // sideways: the row is right-aligned and must not shift).
+    PlrAcao acoes[PLR_NBTNS]; int nAcoes = transporteAcoes(acoes);
+    float af = ac * fileira, dy = (1.0f - fileira) * PLR_DESLIZE * 0.5f;
+    float x = cx + cw - (nAcoes * PLR_BTN_D + (nAcoes - 1) * PLR_BTN_GAP_A);
+    for (int j = 0; j < nAcoes; j++) {
+      int i = acoes[j].id, habilitada = acoes[j].habilitada;
+      float f = habilitada ? focoB[i] : 0.0f, alpha = habilitada ? af : af * 0.35f;
+      GfxRect r = { x, yRowTopo + dy, PLR_BTN_D, PLR_BTN_D };
+      int tinta = (int)(242.0f + (plrui_tinta() - 242.0f) * f);
+      float k = tinta / 255.0f;
+      if (f < 0.98f) plrui_disco_osd(r, alpha * (1.0f - f));
+      if (f > 0.02f) plrui_pilula_foco(r, alpha * f);
+      if (ponteiroNoPlayer() && af > 0.3f)
+        ponteiro_alvo(r.x, r.y, r.w, r.h, habilitada ? ponteiroBotao : NULL,
+                      habilitada ? ponteiroAtivarBotao : ponteiroBotaoInativo, i, 0);
+      gfx_icone((GfxRect){ r.x + (PLR_BTN_D - 30.0f) * 0.5f, r.y + (PLR_BTN_D - 30.0f) * 0.5f, 30.0f, 30.0f },
+                iconeBotao(i), k, k, k, alpha * 0.96f);
+      if (f > 0.05f) {
+        TxtLinha l = txt_linha(TXT_G18M, rotuloBotao(i), 243, 242, 239, 255);
+        float pw = (float)l.w + 28.0f, ph = 36.0f;
+        float px = r.x + (r.w - pw) * 0.5f, py = r.y - 14.0f - ph;
+        if (px + pw > cx + cw) px = cx + cw - pw;
+        plrui_material((GfxRect){ px, py, pw, ph }, ph * 0.5f, 0, af * f);
+        txt_desenhar_alpha(l, px + 14.0f, py + (ph - (float)l.h) * 0.5f, af * f);
+      }
+      x += PLR_BTN_D + PLR_BTN_GAP_A;
+    }
+  } else if (!apple && fileira > 0.01f) {
     float x = cx, af = ac * fileira, dy = (1.0f - fileira) * PLR_DESLIZE * 0.5f;
     PlrAcao acoes[PLR_NBTNS]; int nAcoes = transporteAcoes(acoes);
     int toque = transporteToque(), duas = transporteDuasLinhas(), primeira = transportePrimeiraLinha();
@@ -7413,6 +7692,25 @@ static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) 
   // Com o OSD inteiro: "1:12:40 / 2:37:00" na linha dos botoes, o decorrido
   // claro (24/600 a 92%) e "/ total" apagado. Na busca so com a barra: o
   // mesmo texto, no mesmo lado (direita), logo abaixo do trilho.
+  if (apple) {
+    // Elapsed left, remaining right, "Ends at" before the remaining one (with
+    // the full OSD only). The same in the seek with only the bar.
+    char t1[24], d[24], t2[32], fim[RELOGIO_FIM_MAX];
+    double pv = posVisSolto ? posVis : posSeg;
+    float y = yBarra + 24.0f;
+    plrui_tempo(t1, sizeof t1, pv);
+    plrui_tempo(d, sizeof d, duracaoSeg - pv > 0.0 ? duracaoSeg - pv : 0.0);
+    snprintf(t2, sizeof t2, "\xe2\x88\x92%s", d);
+    { TxtLinha l1 = txt_linha(TXT_ILHA_NOME, t1, 243, 242, 239, 235);
+      TxtLinha l2 = txt_linha(TXT_ILHA_NOME, t2, 243, 242, 239, 235);
+      txt_desenhar_alpha(l1, cx, y, a);
+      txt_desenhar_alpha(l2, cx + cw - (float)l2.w, y, a);
+      (void)fim;   // "Ends at" is in the clock island at the top right
+#ifdef NV_TPK
+      if (vooAtivo && !scrubbing) plrui_anel(cx + (float)l1.w + 28.0f, y + (float)l1.h * 0.5f, 24.0f, 0, agora, a);
+#endif
+    }
+  } else
   {
     char t1[24], t2[32], d[24];
     if (ehCanal()) {
@@ -7452,12 +7750,12 @@ static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) 
 
   // A PILULA DA ILHA (plrilha.h): a hora e "termina as" moram nela agora, no
   // canto da Posicao do relogio. O canal nao tem fim.
-  plrilha_relogio(ac, ehCanal() ? -1.0 : vel_tempo_real((double)(duracaoSeg - posSeg), velMed.efetiva));
+  plrilha_relogio(ac * (apple ? 1.0f - infoAnim : 1.0f), ehCanal() ? -1.0 : vel_tempo_real((double)(duracaoSeg - posSeg), velMed.efetiva));
 
   // POSICAO "canto" da fileira de formato (Ajustes > Posicao do formato no
   // player): no alto, no canto OPOSTO ao da ilha, centrada na altura dela, no
   // estilo escolhido. As outras posicoes saem do bloco do titulo, acima.
-  if (ajustes_plr_formato_pos() == PLR_POS_CANTO) {
+  if (!apple && ajustes_plr_formato_pos() == PLR_POS_CANTO) {
     float lw = 0.0f, hf = fileiraFormato(agora, 0.0f, 0.0f, ac, 1, &lw);
     if (hf > 0.0f) {
       float xx = plrilha_direita() ? NV_ILHA_MARGEM_D : NV_VTELA_W - NV_ILHA_MARGEM_D - lw;
@@ -7476,6 +7774,7 @@ static void desenharOsdCorpo(Uint32 agora, float a, float ac, const CatItem *c) 
   // que devia pausar deu "seek para 149s", o fim da abertura). A posicao ja
   // acompanha `anim` (sobe acima dos controles), era so a chamada que faltava.
   desenharAcoesEpisodio();
+  if (apple) infoDesenhar(agora, a, c);
 }
 
 #ifdef NV_SHOT_HOOKS

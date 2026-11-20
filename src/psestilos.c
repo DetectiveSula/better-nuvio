@@ -22,16 +22,37 @@
 #define PAR_TROCA_S     0.9f
 #define PAR_ALFA        0.62f
 
+// NO POSTER IS SEEN LOADING. The wall used to show each poster the frame its
+// texture arrived: blank cards first, then posters popping in one by one, on
+// opening the screen and again on every focus change (the new wall cross-faded
+// in over 0.9 s whether its posters were there or not). Now:
+//   - the FIRST wall stays hidden until its posters are decoded (or
+//     PAR_ESPERA_S passed), then fades in whole (PAR_ENTRA_S);
+//   - a NEW wall (focus moved) keeps the old one on screen until it is ready,
+//     then cross-fades as before;
+//   - a poster that still arrives late fades in (PAR_CARTAZ_S) instead of
+//     popping; one already cached when its wall was assembled shows at once;
+//   - with the current wall ready, the walls of the neighbouring profiles are
+//     warmed one poster per frame through the idle lookahead, which never
+//     delays visible art and never evicts it.
+#define PAR_ESPERA_S  1.5f
+#define PAR_ENTRA_S   0.35f
+#define PAR_CARTAZ_S  0.25f
 typedef struct {
   int  n;
   char url[PSEST_PAREDE_MAX][PSPAREDE_URL];
   GLuint tex[PSEST_PAREDE_MAX];
+  float fade[PSEST_PAREDE_MAX];   // 0..1, per poster (late arrivals fade in)
+  int  visto[PSEST_PAREDE_MAX];   // the slot was asked for at least once
   int  perfil;
+  double desde;                   // relogio when assembled
 } ParSet;
 
 static ParSet parAtual, parAnt;
 static int    parTemAnt;
 static float  parTroca = 1.0f;     // 0..1 da parede anterior para a atual
+static float  parEntra = 0.0f;     // 0..1 reveal of the first wall
+static double relogio;             // always runs (tempo stops with reduced motion / PIN)
 static double tempo;   // retain subpixel motion during long profile-selection sessions
 static int parFonteMuralN, parFonteParedeN, parFonteSemParede;
 
@@ -59,6 +80,7 @@ void psestilos_iniciar(void) {
   int i;
   tempo = 0.0f;
   parAtual.n = 0; parAtual.perfil = -1; parTemAnt = 0; parTroca = 1.0f;
+  parEntra = 0.0f;   // the first wall of each visit waits for its posters
   parFonteMuralN = parFonteParedeN = parFonteSemParede = -1;
   luzX = -1.0f;
   for (i = 0; i < PJ_POEIRA; i++) {
@@ -123,14 +145,47 @@ static void parMontar(ParSet *s, const PSCena *c) {
   for (i = 0; i < c->muralN && s->n < PSEST_PAREDE_MAX; i++)
     parAdicionar(s,c->mural[i]);
   for (i = 0; i < s->n; i++) {
-    s->tex[i] = 0;
+    s->tex[i] = 0; s->fade[i] = 0.0f; s->visto[i] = 0;
     tex_cache_marcar_larg(NV_CACHE_ARTE_GRUPO_PERFIL, s->url[i], PAR_LARG_TEX, 1, 0);
+  }
+  s->desde = relogio;
+}
+
+// Asks for every poster and advances the per-poster fade. A poster already
+// there on its first request shows at once: it was never seen missing.
+static void parPedir(ParSet *s, float dt, int reduzida) {
+  int i;
+  for (i = 0; i < s->n; i++) {
+    s->tex[i] = tex_obter_larg_qualquer(s->url[i], PAR_LARG_TEX);
+    if (!s->visto[i]) { s->visto[i] = 1; if (s->tex[i]) s->fade[i] = 1.0f; }
+    if (!s->tex[i]) s->fade[i] = 0.0f;
+    else if (reduzida) s->fade[i] = 1.0f;
+    else if (s->fade[i] < 1.0f) { s->fade[i] += dt / PAR_CARTAZ_S; if (s->fade[i] > 1.0f) s->fade[i] = 1.0f; }
   }
 }
 
-static void parPedir(ParSet *s) {
+// Ready to be shown: every poster decoded or known not to come, or waited long
+// enough (a slow network must not leave the screen black).
+static int parPronto(const ParSet *s) {
   int i;
-  for (i = 0; i < s->n; i++) s->tex[i] = tex_obter_larg_qualquer(s->url[i], PAR_LARG_TEX);
+  if (relogio - s->desde >= PAR_ESPERA_S) return 1;
+  for (i = 0; i < s->n; i++) if (!s->tex[i] && !tex_falhou(s->url[i])) return 0;
+  return 1;
+}
+
+// One idle prefetch per frame for the neighbouring profiles' own walls (a PIN
+// profile or one without a stored wall uses the catalogue mural, which is
+// already loaded). tex_lookahead_pedir only asks when the cache is idle.
+static void parAquecerVizinhos(const PSCena *c) {
+  int v, k;
+  for (v = 0; v < 2; v++) {
+    int perfil = c->vizinhos[v], n = perfil ? psparede_n(perfil) : 0;
+    if (n < 4) continue;
+    for (k = 0; k < n && k < PSEST_PAREDE_MAX; k++) {
+      const char *u = psparede_url(perfil, k);
+      if (u && u[0] && !tex_falhou(u) && tex_lookahead_pedir(u, PAR_LARG_TEX)) return;
+    }
+  }
 }
 
 // 1 when a poster of the wall has failed since it was assembled. Only slots
@@ -143,6 +198,7 @@ static int parTemFalha(const ParSet *s) {
 
 void psestilos_atualizar(float dt, const PSCena *c, int modo) {
   int anda = !c->reduzida && !c->parado;
+  relogio += dt;
   if (anda) tempo += dt;
   if (c->reduzida) tempo = 0.0f;
   graoDx = anda ? aleat() * 120.0f : 0.0f;
@@ -162,18 +218,29 @@ void psestilos_atualizar(float dt, const PSCena *c, int modo) {
       int changed=c->perfil!=parAtual.perfil || novo.n!=parAtual.n;
       for(int i=0;!changed && i<novo.n;i++)changed=strcmp(novo.url[i],parAtual.url[i])!=0;
       if (changed) {
-        if (parAtual.n > 0 && novo.n > 0) {
-          parAnt = parAtual; parTemAnt = 1; parTroca = c->reduzida ? 1.0f : 0.0f;
+        // The wall on screen is the old one while a new one has not started
+        // to show (parTroca 0): flicking through profiles keeps it, instead
+        // of cross-fading out of a wall nobody saw.
+        if (parTemAnt && parTroca <= 0.0f && novo.n > 0) {
+          /* keep parAnt */
+        } else if (parAtual.n > 0 && novo.n > 0 && parEntra > 0.0f) {
+          parAnt = parAtual; parTemAnt = 1; parTroca = 0.0f;
         } else parTemAnt=0;
         parAtual = novo;
       }
     }
-    parPedir(&parAtual);
-    if (parTemAnt) {
-      parPedir(&parAnt);
-      parTroca += dt / PAR_TROCA_S;
-      if (parTroca >= 1.0f) { parTroca = 1.0f; parTemAnt = 0; }
-    }
+    parPedir(&parAtual, dt, c->reduzida);
+    { int pronto = parPronto(&parAtual);
+      if (!parTemAnt) {
+        if (pronto || parEntra > 0.0f) parEntra = c->reduzida ? 1.0f : parEntra + dt / PAR_ENTRA_S;
+        if (parEntra > 1.0f) parEntra = 1.0f;
+      }
+      if (parTemAnt) {
+        parPedir(&parAnt, dt, c->reduzida);
+        if (pronto) parTroca = c->reduzida ? 1.0f : parTroca + dt / PAR_TROCA_S;
+        if (parTroca >= 1.0f) { parTroca = 1.0f; parTemAnt = 0; }
+      }
+      if (pronto) parAquecerVizinhos(c); }
   }
   if (modo == PS_FUNDO_PROJETOR) graoGarantir();
   if (modo == PS_FUNDO_LUZ) {
@@ -253,7 +320,8 @@ static void parDesenhar(const ParSet *s, float alfa) {
       gfx_tex_aspect_atual = tex_aspecto(s->url[idx]);
       gfx_card_forcar_cover_atual = 1.0f;
       gfx_card_veu_tela_atual = leve ? 1.0f : 0.0f;   // os veus de borda, no fragmento (gfx.h)
-      gfx_rect((GfxRect){ x, y, PAR_CW, PAR_CH }, t, GFX_CARD, 0, 0, 0, 0.06f, 1, 1, 1, a);
+      gfx_rect((GfxRect){ x, y, PAR_CW, PAR_CH }, t, GFX_CARD, 0, 0, 0, 0.06f, 1, 1, 1,
+               a * suave(s->fade[idx]));
       gfx_card_veu_tela_atual = 0.0f;
       gfx_card_forcar_cover_atual = 0.0f;
       gfx_tex_aspect_atual = 0.0f;
@@ -274,11 +342,61 @@ static float veuTela(float y) {
   return (1.0f - vt) * (1.0f - gb);
 }
 
+// THE WALL IS DRAWN AT 1280x720 AND SCALED UP ONCE. Measured on a Samsung
+// S90C (Mali-G51, 17 Nov 2026): the profile screen held 24-25 fps with the GPU
+// as the limit, painting ~6.9 screens per frame, most of it this layer (36
+// rotated posters through the card shader, the profile light, two veils).
+// Everything here is soft or decorative (posters at 62% under veils, a radial
+// light), so it is rendered into an offscreen target at 2/3 of the screen in
+// each direction (0.44x the pixels) and composited with one pass; the avatars,
+// names and text drawn after it stay at full resolution. Falls back to the
+// direct path when the target is unavailable or another offscreen pass is
+// active. The frosted glass reads this layer as one texture, so its backdrop
+// is invalidated whenever the wall actually changed (parAssinatura).
+#define PAR_BAIXA_W 1280
+#define PAR_BAIXA_H 720
+static GfxMini parBaixa;
+static unsigned parAssinaturaAnt;
+// Quantised: the posters move under a pixel per frame and the glass blurs with
+// a ~68 px reach, so re-blurring its backdrop 10 times a second instead of 60
+// cannot be seen (it was every frame before this layer moved offscreen).
+static unsigned parAssinatura(const PSCena *c, float alfa) {
+  unsigned h = 2166136261u;
+  float v[8] = { floorf((float)tempo * 10.0f), floorf(parTroca * 16.0f), floorf(parEntra * 16.0f),
+                 floorf(alfa * 32.0f), c->luz[0], c->luz[1], c->luz[2], (float)parTemAnt };
+  const unsigned char *b = (const unsigned char *)v;
+  size_t i;
+  for (i = 0; i < sizeof v; i++) h = (h ^ b[i]) * 16777619u;
+  for (i = 0; i < (size_t)parAtual.n; i++) {
+    h = (h ^ parAtual.tex[i]) * 16777619u;
+    h = (h ^ (unsigned)(parAtual.fade[i] * 8.0f)) * 16777619u;
+  }
+  return h;
+}
+static void desenharFilmesCamada(const PSCena *c, float alfa);
 static void desenharFilmes(const PSCena *c, float alfa) {
+  if (!gfx_snap_ativo() && !gfx_mini_ativo() &&
+      gfx_mini_alvo(&parBaixa, PAR_BAIXA_W, PAR_BAIXA_H)) {
+    unsigned a = parAssinatura(c, alfa);
+    if (a != parAssinaturaAnt) { gfx_vidro_sujar(); parAssinaturaAnt = a; }
+    // The composite below is opaque and covers the screen: the pending ambient
+    // light that starting the offscreen pass would paint is never seen.
+    gfx_ambiente_coberto();
+    gfx_mini_comecar(&parBaixa, 0.0f, 0.0f, (float)PAR_BAIXA_W / NV_TELA_W);
+    gfx_vidro_fora_do_hash(1);
+    desenharFilmesCamada(c, alfa);
+    gfx_vidro_fora_do_hash(0);
+    gfx_mini_terminar();
+    gfx_mini_desenhar(&parBaixa, (GfxRect){ 0, 0, NV_TELA_W, NV_TELA_H }, 0.0f, 1.0f);
+    return;
+  }
+  desenharFilmesCamada(c, alfa);
+}
+static void desenharFilmesCamada(const PSCena *c, float alfa) {
   float k = suave(parTroca);
   gfx_cor((GfxRect){ 0, 0, NV_TELA_W, NV_TELA_H }, 0, 0, 0, 0, 1);
   if (parTemAnt) parDesenhar(&parAnt, (1.0f - k) * PAR_ALFA * alfa);
-  parDesenhar(&parAtual, (parTemAnt ? k : 1.0f) * PAR_ALFA * alfa);
+  parDesenhar(&parAtual, (parTemAnt ? k : suave(parEntra)) * PAR_ALFA * alfa);
   // Os dois veus de borda (veusBordas 0,92 / 0,95): com EFEITOS LEVES eles
   // ja sairam DENTRO de cada capa (gfx_card_veu_tela_atual) — sobre o preto e
   // o mesmo pixel, e sao duas passadas de largura inteira a menos por quadro

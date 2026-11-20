@@ -21,6 +21,7 @@
 #include "novidades202.h"
 #include "apoio.h"
 #include "dvtela.h"
+#include "abertura.h"
 #include "ajustes.h"
 #include "anim.h"
 #include "botoes.h"
@@ -100,7 +101,7 @@ typedef struct {
 
 #define NOV_ARTES_MAX 6
 #define NOV_ITENS_MAX 35
-#define NOV_CENAS_MAX 6
+#define NOV_CENAS_MAX 8
 #define NOV_PAGINAS_MAX 24
 
 static int   aberto, decidido, pagina, foco = 1;
@@ -182,7 +183,7 @@ __attribute__((unused)) static void novArteDesfocada(int numero, GfxRect r, floa
 
 // ======================================================= O CONTEUDO DA VERSAO
 // Para a proxima versao: um src/novidades/<versao>.inc novo, trocado aqui.
-#include "novidades/better102.inc"
+#include "novidades/better112.inc"
 #define CT NOV_ATUAL
 
 static const char *artePorNumero(int n) {

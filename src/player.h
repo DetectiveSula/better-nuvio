@@ -132,7 +132,9 @@ int  player_tem_video(void);   // esta sessao abriu um video (nao o trailer)
 int  player_com_video(void);
 // Pinta o que fica fora do furo do video (ver player.c). So o recuado leva arte.
 void player_fundo_fora_do_furo(GfxRect furo, int recuado, const CatItem *c);
-int  player_pediu_faixas(void);   // CIMA no player abre audio/legendas
+int  player_pediu_faixas(void);
+// 1 = the TV transport (Apple TV layout) is the one on screen.
+int  player_transporte_tv(void);   // CIMA no player abre audio/legendas
 
 // 1 enquanto a fonte abre. A tela mostra a arte-chave e um indicador; sem isso
 // o usuario aperta Reproduzir e encara uma tela parada sem saber se funcionou.

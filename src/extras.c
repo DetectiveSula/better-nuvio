@@ -459,7 +459,7 @@ static int heroTrailerIdValido(const char *id) {
   return 1;
 }
 
-typedef struct { char yt[16], nome[80], pub[32]; int peso, ordem, serie, idiomaPreferido; } VideoTmdb;
+typedef struct { char yt[16], nome[80], pub[32]; int peso, ordem, serie, idiomaPreferido, classe, oficial, tam; } VideoTmdb;
 
 // IDIOMAS DE VIDEO. Com `language=pt-BR` sozinho o TMDB devolve em /videos
 // SO os videos marcados em portugues — e trailer de serie quase sempre esta
@@ -575,15 +575,43 @@ static int nomeDeEpisodio(const char *nm) {
   return 0;
 }
 
-// Language and region rank first. Within one language rank, series prefer
-// the newest publication, then Trailer over Teaser; movies keep TMDB order.
+// WHAT IS A PROPER TRAILER (owner, 19/11/2026: "some of the trailers aren't
+// proper trailers"). TMDB files TV spots, home-release promos, clips and fan
+// uploads under "Trailer"/"Teaser" too: in BlueStacks the picks were "Watch at
+// Home November 17", "In Cinemas Now", "Don't miss the Vision." and a fan's
+// "Phineas and Ferb Trailer". A name that reads as a spot or promo goes last;
+// a Trailer beats a Teaser (NuvioTV's videoTypePriority).
+static int nomeDePromo(const char *nm) {
+  static const char *const M[] = {
+    "tv spot", "spot", "in cinemas", "in theaters", "in theatres", "now playing",
+    "now showing", "at home", "on digital", "blu-ray", "4k uhd", "dvd", "now streaming",
+    "streaming now", "available now", "tickets", "clip", "featurette", "behind the scenes",
+    "recap", "review", "reaction", "sneak peek", "promo", "countdown", "interview",
+    "don't miss", "dont miss", "b-roll", NULL };
+  char low[80];
+  size_t i;
+  int k;
+  for (i = 0; nm[i] && i + 1 < sizeof low; i++)
+    low[i] = (nm[i] >= 'A' && nm[i] <= 'Z') ? (char)(nm[i] | 32) : nm[i];
+  low[i] = 0;
+  for (k = 0; M[k]; k++) if (strstr(low, M[k])) return 1;
+  return 0;
+}
+
+// Proper trailers first (Trailer, then Teaser; promos last). Then language and
+// region. Within one language rank, series prefer the newest publication; then
+// TMDB's "official" flag (the studio's own channel), then the larger video, as
+// NuvioTV ranks them (rankTmdbVideoCandidates); TMDB order last.
 // O tipo vai em cada elemento, e nao num global: o fio do hero e o da pagina
 // ordenam ao mesmo tempo.
 static int cmpVideo(const void *pa, const void *pb) {
   const VideoTmdb *a = pa, *b = pb;
   int c;
+  if (a->classe != b->classe) return b->classe - a->classe;
   if (a->peso / 4 != b->peso / 4) return b->peso / 4 - a->peso / 4;
   if (a->serie && (c = strcmp(b->pub, a->pub)) != 0) return c;
+  if (a->oficial != b->oficial) return b->oficial - a->oficial;
+  if (a->tam != b->tam) return b->tam - a->tam;
   if (a->peso != b->peso) return b->peso - a->peso;
   return a->ordem - b->ordem;
 }
@@ -625,6 +653,11 @@ static int parsearVideos(const char *v, int serie, const char *idioma, const cha
                         !strcmp(lg, "en") ? 2 : 0)) +
                 (serie && !strcmp(tipo, "Trailer") ? 1 : 0);
       o->idiomaPreferido = strcmp(iso, "en") && !strcmp(lg, iso);
+      // 2 Trailer, 1 Teaser, 0 a spot or promo whatever its type.
+      o->classe = nomeDePromo(nm) ? 0 : !strcmp(tipo, "Trailer") ? 2 : 1;
+      { const char *of = strstr(v, "\"official\"");
+        o->oficial = of && of < vf && strncmp(of + 10, ":true", 5) == 0; }
+      o->tam = (int)js_num(v, vf, "size", 0);
       o->ordem = n;
       o->serie = serie;
       n++;
@@ -2413,6 +2446,19 @@ int extras_hero_trailer_obter(const char *imdb, char *dst, unsigned cap) {
   return ok;
 }
 
+// 1 once the hero's /videos request for `imdb` finished (with or without a
+// YouTube id): the native hero stops waiting for YouTube then.
+int extras_hero_trailer_respondeu(const char *imdb) {
+  char id[24];
+  int r;
+  normalizarHeroId(imdb, id, sizeof id);
+  if (!id[0]) return 1;
+  pthread_mutex_lock(&heroTrailerTrava);
+  r = !strcmp(heroTrailerPedido, id) && !heroTrailerVivo && heroTrailerExecutada == heroTrailerGer;
+  pthread_mutex_unlock(&heroTrailerTrava);
+  return r;
+}
+
 int extras_hero_trailer_idioma_preferido(const char *imdb) {
   char id[24];
   int preferido;
@@ -2562,6 +2608,131 @@ const char *extras_relacionado_poster(int i) {
 }
 const char *extras_relacionado_fundo(int i) { return (i >= 0 && i < nRel) ? rel[i].fundo : ""; }
 const char *extras_relacionado_logo(int i) { return (i >= 0 && i < nRel) ? rel[i].logo : ""; }
+
+// LOGO DO RELACIONADO SOB DEMANDA (dono, 19/11/2026: "end of movie screen
+// should have logo artwork"). So o Trakt manda logo; o "Mais como este" do TMDB
+// (o caminho normal) chega so com o id, e a tela do fim do filme escrevia o
+// nome. Aqui: id do IMDb -> logo do Metahub, na hora, sem rede nem chave; id
+// "tmdb:" -> /images do TMDB num fio, um pedido por vez (o titulo em foco e o
+// vizinho), com cache de acertos e de faltas para o ◀ ▶ nao repetir viagem.
+#define REL_LOGO_CACHE 48
+static pthread_mutex_t relLogoTrava = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  relLogoCv = PTHREAD_COND_INITIALIZER;
+static struct { char id[24]; char url[200]; } relLogoCache[REL_LOGO_CACHE];
+static int  relLogoN, relLogoProx;
+static char relLogoFila[2][24];
+static int  relLogoFilaSerie[2], relLogoFilaN, relLogoFio;
+static char relLogoEmVoo[24];
+
+static int relLogoNoCache(const char *id, char *url, size_t cap) {
+  for (int k = 0; k < relLogoN; k++)
+    if (!strcmp(relLogoCache[k].id, id)) { snprintf(url, cap, "%s", relLogoCache[k].url); return 1; }
+  return 0;
+}
+static void relLogoGuardar(const char *id, const char *url) {
+  int k = relLogoN < REL_LOGO_CACHE ? relLogoN++ : relLogoProx++ % REL_LOGO_CACHE;
+  snprintf(relLogoCache[k].id, sizeof relLogoCache[k].id, "%s", id);
+  snprintf(relLogoCache[k].url, sizeof relLogoCache[k].url, "%s", url);
+}
+static void relLogoPublicar(const char *id, const char *url) {
+  if (!url[0]) return;
+  pthread_mutex_lock(&trava);
+  for (int k = 0; k < nRel; k++)
+    if (!strcmp(rel[k].imdb, id) && !rel[k].logo[0])
+      snprintf(rel[k].logo, sizeof rel[k].logo, "%s", url);
+  pthread_mutex_unlock(&trava);
+}
+
+// O melhor logo de /images: idioma da interface, depois ingles, depois sem
+// texto; .svg fora (o SDL_image nao le). Empate: o primeiro (o TMDB ordena por
+// voto). "" quando nao ha.
+void extras_relacionado_logo_parse(const char *corpo, const char *idioma, char *url, size_t cap) {
+  const char *p = corpo ? js_array(corpo, NULL, "logos") : NULL;
+  int melhor = 0;
+  url[0] = 0;
+  while (p) {
+    const char *f = js_fim(p);
+    char lg[12] = "", fp[160] = "";
+    int nota;
+    js_texto(p, f, "iso_639_1", lg, sizeof lg);
+    js_texto(p, f, "file_path", fp, sizeof fp);
+    nota = !lg[0] ? 1 : (idioma && idioma[0] && !strncmp(lg, idioma, 2)) ? 3 : !strcmp(lg, "en") ? 2 : 0;
+    { size_t t = strlen(fp);
+      if (fp[0] != '/' || (t > 4 && !strcasecmp(fp + t - 4, ".svg"))) nota = 0; }
+    if (nota > melhor) { melhor = nota; snprintf(url, cap, "https://image.tmdb.org/t/p/w500%s", fp); }
+    p = js_prox(f);
+  }
+}
+
+static void *lacoRelLogo(void *ignorado) {
+  (void)ignorado;
+  for (;;) {
+    char id[24], url[640], achado[200] = "";
+    int serie;
+    pthread_mutex_lock(&relLogoTrava);
+    while (!relLogoFilaN) pthread_cond_wait(&relLogoCv, &relLogoTrava);
+    snprintf(id, sizeof id, "%s", relLogoFila[0]);
+    serie = relLogoFilaSerie[0];
+    memmove(relLogoFila[0], relLogoFila[1], sizeof relLogoFila[0]);
+    relLogoFilaSerie[0] = relLogoFilaSerie[1];
+    relLogoFilaN--;
+    snprintf(relLogoEmVoo, sizeof relLogoEmVoo, "%s", id);
+    pthread_mutex_unlock(&relLogoTrava);
+
+    { const char *chave = desc_chave_tmdb();
+      char idioma[8];
+      snprintf(idioma, sizeof idioma, "%.2s", desc_tmdb_idioma());
+      if (chave && chave[0]) {
+        snprintf(url, sizeof url,
+                 "https://api.themoviedb.org/3/%s/%ld/images?api_key=%s&include_image_language=%s,en,null",
+                 serie ? "tv" : "movie", atol(id + 5), chave, idioma);
+        { char *corpo = rede_baixar(url, 4);
+          extras_relacionado_logo_parse(corpo, idioma, achado, sizeof achado);
+          free(corpo); }
+      } }
+    pthread_mutex_lock(&relLogoTrava);
+    relLogoGuardar(id, achado);   // a falta tambem: nao pedir de novo
+    relLogoEmVoo[0] = 0;
+    pthread_mutex_unlock(&relLogoTrava);
+    relLogoPublicar(id, achado);
+  }
+  return NULL;
+}
+
+void extras_relacionado_logo_pedir(int i, int serie) {
+  char id[24], url[200];
+  pthread_mutex_lock(&trava);
+  if (i < 0 || i >= nRel || rel[i].logo[0]) { pthread_mutex_unlock(&trava); return; }
+  snprintf(id, sizeof id, "%s", rel[i].imdb);
+  // Id do IMDb: o Metahub serve o logo pelo proprio id. Sem logo la, a textura
+  // falha e a tela fica com o nome, como antes.
+  if (!strncmp(id, "tt", 2)) {
+    snprintf(rel[i].logo, sizeof rel[i].logo, "https://images.metahub.space/logo/medium/%s/img", id);
+    pthread_mutex_unlock(&trava);
+    return;
+  }
+  pthread_mutex_unlock(&trava);
+  if (strncmp(id, "tmdb:", 5) || atol(id + 5) <= 0) return;
+  pthread_mutex_lock(&relLogoTrava);
+  if (relLogoNoCache(id, url, sizeof url)) { pthread_mutex_unlock(&relLogoTrava); relLogoPublicar(id, url); return; }
+  if (!strcmp(relLogoEmVoo, id)) { pthread_mutex_unlock(&relLogoTrava); return; }
+  for (int k = 0; k < relLogoFilaN; k++)
+    if (!strcmp(relLogoFila[k], id)) { pthread_mutex_unlock(&relLogoTrava); return; }
+  // Fila de dois: o que entra por ultimo e o que esta na tela; o mais velho sai.
+  if (relLogoFilaN == 2) {
+    memmove(relLogoFila[0], relLogoFila[1], sizeof relLogoFila[0]);
+    relLogoFilaSerie[0] = relLogoFilaSerie[1];
+    relLogoFilaN = 1;
+  }
+  snprintf(relLogoFila[relLogoFilaN], sizeof relLogoFila[0], "%s", id);
+  relLogoFilaSerie[relLogoFilaN++] = serie;
+  if (!relLogoFio) {
+    pthread_t t;
+    if (pthread_create(&t, NULL, lacoRelLogo, NULL) == 0) { pthread_detach(t); relLogoFio = 1; }
+  }
+  pthread_cond_signal(&relLogoCv);
+  pthread_mutex_unlock(&relLogoTrava);
+}
 const char *extras_relacionado_sinopse(int i) { return (i >= 0 && i < nRel) ? rel[i].sinopse : ""; }
 const char *extras_relacionado_generos(int i) { return (i >= 0 && i < nRel) ? rel[i].generos : ""; }
 int extras_relacionado_duracao(int i) { return (i >= 0 && i < nRel) ? rel[i].duracao : 0; }

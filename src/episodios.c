@@ -1026,7 +1026,7 @@ static void linhaEp(int i, const CatItem *ci, float lx, float lw, float y, float
   { float tx = tr.x + tr.w + 20.0f, w = row.x + row.w - 16.0f - tx, ty = y + 14.0f;
     char num[48], estado[96], dur[32];
     snprintf(num, sizeof num, i18n("Episódio %d"), ep->episodio);
-    plrui_kicker(num, tx, ty, 243, 242, 239, ra * 0.42f);
+    plrui_kicker(num, tx, ty, 243, 242, 239, ra * 0.66f);   // readable from the sofa (owner, 19/11/2026)
     ty += 22.0f;
     { TxtLinha l = txt_linha_corta(TXT_ILHA_NOME, ep->nome[0] ? ep->nome : num, 243, 242, 239, sel ? 255 : 224, w);
       txt_desenhar_alpha(l, tx, ty, ra); ty += (float)l.h + 6.0f; }
@@ -1039,11 +1039,11 @@ static void linhaEp(int i, const CatItem *ci, float lx, float lw, float y, float
     } else {
       if (visto == 1) snprintf(estado, sizeof estado, "%s%s%s", i18n("Assistido"), dur[0] ? " \xc2\xb7 " : "", dur);
       else snprintf(estado, sizeof estado, "%s%s%s", ep->data, ep->data[0] && dur[0] ? " \xc2\xb7 " : "", dur);
-      txt_desenhar_alpha(txt_linha_corta(TXT_ILHA_APOIO, estado, 243, 242, 239, 128, w), tx, ty, ra);
+      txt_desenhar_alpha(txt_linha_corta(TXT_ILHA_META, estado, 243, 242, 239, 205, w), tx, ty, ra);
     }
     ty += 20.0f + 8.0f;
     if (selF > 0.02f && ep->sinopse[0])
-      sinopse_bloco_corta(TXT_ILHA_APOIO, ep->sinopse, 243, 242, 239, tx, ty, w, 23.0f, ra * 0.5f * selF, 2);
+      sinopse_bloco_corta(TXT_ILHA_META, ep->sinopse, 243, 242, 239, tx, ty, w, 24.0f, ra * 0.82f * selF, 2);
   }
 }
 

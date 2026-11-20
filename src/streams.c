@@ -6167,13 +6167,13 @@ static void corpoFolha(float x, float w, float anim, Uint32 agora, int ilha) {
       // gritar como selo — e o SDR num cinza um degrau mais claro.
       float hx=tx+l.w+16;
       if(GRUPO_SUB[g/2][0]) {
-        hx+=caixaAlta(GRUPO_SUB[g/2],120,120,118,hx,y+15,anim)+10;
-        hx+=caixaAlta("·",90,90,88,hx,y+15,anim)+10;
+        hx+=caixaAlta(GRUPO_SUB[g/2],175,175,173,hx,y+15,anim)+10;
+        hx+=caixaAlta("·",140,140,138,hx,y+15,anim)+10;
       }
       if(g%2==0) caixaAlta("HDR",(int)(120+(ai-120)*.45f),(int)(120+(ag*255-120)*.45f),(int)(118+(ab*255-118)*.45f)+18,hx,y+15,anim);
       else       caixaAlta("SDR",150,150,148,hx,y+15,anim); }
     snprintf(q,sizeof q,i18n(secN[g]==1?"%d fonte":"%d fontes"),secN[g]);
-    { TxtLinha l=txt_linha(TXT_PG_FIM,q,110,110,108,255);
+    { TxtLinha l=txt_linha(TXT_PG_FIM,q,170,170,168,255);
       txt_desenhar_alpha(l,tr-l.w,y+12,anim); }
     gfx_cor((GfxRect){lx,y+FOLHA_SEC_H-14,rw,1},0,1,1,1,.08f*anim);
   }
@@ -6220,21 +6220,22 @@ static void corpoFolha(float x, float w, float anim, Uint32 agora, int ilha) {
       // No modo do addon o tamanho ja vem no texto dele; so o addon fica.
       if(s->tamanhoMB && !ajustes_fonte_texto_addon()) { snprintf(gb,sizeof gb,s->tamanhoMB>=102400?"%.0f":"%.1f",s->tamanhoMB/1024.0); plrui_decimal(gb); }
       lg=txt_linha(TXT_CW_TITULO,gb,250,250,248,255);
-      lu=txt_linha(TXT_PG_FIM,"GB",120,120,118,255);
+      lu=txt_linha(TXT_PG_FIM,"GB",175,175,173,255);
       // TORRENT SEM DEBRID: quantos semeiam vai junto do addon. E o numero que
       // diz se a fonte abre (log da 2.0.0 no Android: "metadados nao chegaram
       // em 30 s"); a pessoa escolhia as cegas. "seeds" fica sem traducao: e o
       // termo que quem usa torrent conhece em qualquer idioma.
       { char pv[160];
         legendaProvedor(s,pv,sizeof pv);
-        lp=txt_linha_corta(TXT_PG_FIM,pv,150,150,148,255,340); }
+        lp=txt_linha_corta(TXT_PG_FIM,pv,205,205,203,255,340); }
       colW=lp.w;
       if(gb[0] && lg.w+6+lu.w>colW) colW=lg.w+6+lu.w;
       cy=y+20+(temMarca(i,automatica)?FOLHA_MARCA_H:0);
       if(gb[0]){
         txt_desenhar_alpha(lu,tr-lu.w,cy+(lg.h-lu.h)-3,anim);
         txt_desenhar_tom(lg,tr-lu.w-6-lg.w,cy,cg/250.0f,cg/250.0f,(cg-2)/248.0f,anim); }
-      txt_desenhar_tom(lp,tr-lp.w,gb[0]?cy+40:cy+6,sel?1:110.0f/150,sel?1:110.0f/150,sel?1:108.0f/148,anim);
+      // Brighter off focus (owner, 19/11/2026: hard to read on the TV).
+      txt_desenhar_tom(lp,tr-lp.w,gb[0]?cy+40:cy+6,sel?1:.86f,sel?1:.86f,sel?1:.86f,anim);
       // Dica da tecla Info/Amarela: so na linha em foco, no canto do addon.
       if(sel) gfx_icone((GfxRect){tr-lp.w-30,(gb[0]?cy+40:cy+6)+3,20,20},"aj_info",.62f,.62f,.62f,anim*.85f); }
     txtW=tr-tx-colW-28;
@@ -6368,7 +6369,7 @@ static void corpoFolha(float x, float w, float anim, Uint32 agora, int ilha) {
     // no acento no fim:
     // na LG e o container que vale escolher (ver pontos()).
     logos=logosDa(s,tira);
-    { float t=sel?.78f:.52f, lw=0, mpW=0;
+    { float t=sel?.9f:.72f, lw=0, mpW=0;
       // ROTULO DE QUALIDADE no inicio da fileira (#202): "4K · HDR10". A
       // resolucao no branco da linha, a faixa no champanhe do HDR ou no cinza
       // do SDR (as cores do cabecalho do grupo), e o resto da fileira anda
@@ -6376,11 +6377,11 @@ static void corpoFolha(float x, float w, float anim, Uint32 agora, int ilha) {
       float tx0=tx, txtW0=txtW;
       { char rs[16], fx[16]; int hd;
         rotuloQualidade(s,rs,sizeof rs,fx,sizeof fx,&hd);
-        int cr=sel?240:200;
+        int cr=sel?245:226;
         TxtLinha lr=txt_linha(TXT_HERO_META,rs,cr,cr,cr-2,255);
-        TxtLinha ls=txt_linha(TXT_HERO_META,"·",100,100,98,255);
+        TxtLinha ls=txt_linha(TXT_HERO_META,"·",150,150,148,255);
         TxtLinha lf=hd ? txt_linha(TXT_HERO_META,fx,(int)(120+(ai-120)*.45f),(int)(120+(ag*255-120)*.45f),(int)(118+(ab*255-118)*.45f)+18,255)
-                       : txt_linha(TXT_HERO_META,fx,sel?170:140,sel?170:140,sel?168:138,255);
+                       : txt_linha(TXT_HERO_META,fx,sel?200:185,sel?200:185,sel?198:183,255);
         float lx2=tx;
         txt_desenhar_alpha(lr,lx2,cy+(FOLHA_SELO_H-lr.h)*.5f,anim); lx2+=lr.w+9;
         txt_desenhar_alpha(ls,lx2,cy+(FOLHA_SELO_H-ls.h)*.5f,anim); lx2+=ls.w+9;

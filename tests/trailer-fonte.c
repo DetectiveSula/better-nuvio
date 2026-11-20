@@ -47,8 +47,11 @@ int main(void) {
   TrailerCandidatos c;
   const char *u;
   trailerfonte_definir_imdb_primeiro_destaque(1);
-  confere("native Home fallback order follows IMDb -> Apple",
-    trailerfonte_depois_destaque(TRF_AUTO,0,TRF_IMDB)==TRF_APPLE &&
+  // Native: the YouTube stream (trailerytb.c, 19/11/2026) has sound, so it
+  // comes before the video-only Apple.
+  confere("native Home fallback order follows IMDb -> YouTube -> Apple",
+    trailerfonte_depois_destaque(TRF_AUTO,0,TRF_IMDB)==TRF_YOUTUBE &&
+    trailerfonte_depois_destaque(TRF_AUTO,0,TRF_YOUTUBE)==TRF_APPLE &&
     trailerfonte_depois_destaque(TRF_AUTO,0,TRF_APPLE)==0);
   confere("native Home explicit source has no implicit fallback",
     trailerfonte_depois_destaque(TRF_IMDB,0,TRF_IMDB)==0 &&
@@ -66,7 +69,8 @@ int main(void) {
 
   // --- Automatico: a ordem de hoje, filtrada pelo que a TV toca
   n = trailerfonte_ordem(TRF_AUTO, 0, o);
-  confere("LG automatico: Apple -> IMDb", n == 2 && o[0] == TRF_APPLE && o[1] == TRF_IMDB);
+  confere("LG automatico: Apple -> IMDb -> YouTube",
+          n == 3 && o[0] == TRF_APPLE && o[1] == TRF_IMDB && o[2] == TRF_YOUTUBE);
   n = trailerfonte_ordem(TRF_AUTO, 1, o);
   confere("Samsung automatico: Apple -> YouTube", n == 2 && o[0] == TRF_APPLE && o[1] == TRF_YOUTUBE);
   n = trailerfonte_ordem(99, 1, o);
@@ -120,12 +124,13 @@ int main(void) {
     confere(nome, escolhe(TRF_IMDB, tz, &c, NULL) == (tz ? 0 : TRF_IMDB));
 
     c = todas();
-    snprintf(nome, sizeof nome, "%s YouTube fixo: %s", tz ? "Samsung" : "LG", tz ? "abre YouTube, pula a Apple" : "nao toca nesta TV");
-    confere(nome, escolhe(TRF_YOUTUBE, tz, &c, &u) == (tz ? TRF_YOUTUBE : 0));
-    if (tz) confere("Samsung YouTube fixo entrega o id", !strcmp(u, "dQw4w9WgXcQ"));
+    snprintf(nome, sizeof nome, "%s YouTube fixo: abre YouTube, pula a Apple", tz ? "Samsung" : "LG");
+    confere(nome, escolhe(TRF_YOUTUBE, tz, &c, &u) == TRF_YOUTUBE);
+    snprintf(nome, sizeof nome, "%s YouTube fixo entrega o que a fonte deu", tz ? "Samsung" : "LG");
+    confere(nome, !strcmp(u, "dQw4w9WgXcQ"));
     c.youtube = NULL; c.youtubeRespondeu = 0;
-    snprintf(nome, sizeof nome, "%s YouTube fixo ainda sem lista: %s", tz ? "Samsung" : "LG", tz ? "espera" : "sem trailer");
-    confere(nome, escolhe(TRF_YOUTUBE, tz, &c, NULL) == (tz ? -1 : 0));
+    snprintf(nome, sizeof nome, "%s YouTube fixo ainda sem resposta: espera", tz ? "Samsung" : "LG");
+    confere(nome, escolhe(TRF_YOUTUBE, tz, &c, NULL) == -1);
 
     for (n = TRF_APPLE; n <= TRF_YOUTUBE; n++) {
       int k = trailerfonte_ordem(n, tz, o);
@@ -142,7 +147,8 @@ int main(void) {
   confere("Samsung com servico: Apple -> IMDb -> YouTube",
           n == 3 && o[0] == TRF_APPLE && o[1] == TRF_IMDB && o[2] == TRF_YOUTUBE);
   n = trailerfonte_ordem(TRF_AUTO, 0, o);
-  confere("LG nao muda: Apple -> IMDb", n == 2 && o[0] == TRF_APPLE && o[1] == TRF_IMDB);
+  confere("LG nao muda: Apple -> IMDb -> YouTube",
+          n == 3 && o[0] == TRF_APPLE && o[1] == TRF_IMDB && o[2] == TRF_YOUTUBE);
   c = todas(); c.apple = NULL;
   confere("Samsung com servico: sem Apple, IMDb antes do YouTube", escolhe(TRF_AUTO, 1, &c, &u) == TRF_IMDB && !strcmp(u, c.imdb));
   c = todas(); c.appleFalhou = 1;
@@ -184,24 +190,32 @@ int main(void) {
   }
 
   // .tpk (NV_TPK): trailerfonte_tizen() == 0 la, entao a plataforma e a da
-  // LG (Apple -> IMDb, sem YouTube) e a tela cheia tem som.
+  // LG (Apple -> IMDb -> YouTube pelo trailerytb.c) e a tela cheia tem som.
   trailerfonte_definir_imdb_primeiro_cheia(1);
   confere(".tpk: tela cheia tem som", trailerfonte_com_som(0) == 1);
   n = trailerfonte_ordem_cheia(TRF_AUTO, 0, 1, o);
-  confere(".tpk tela cheia automatico: IMDb -> Apple", n == 2 && o[0] == TRF_IMDB && o[1] == TRF_APPLE);
+  confere(".tpk tela cheia automatico: IMDb -> YouTube -> Apple",
+          n == 3 && o[0] == TRF_IMDB && o[1] == TRF_YOUTUBE && o[2] == TRF_APPLE);
   n = trailerfonte_ordem_cheia(99, 0, 1, o);
-  confere(".tpk tela cheia valor desconhecido: le como automatico, IMDb primeiro", n == 2 && o[0] == TRF_IMDB);
+  confere(".tpk tela cheia valor desconhecido: le como automatico, IMDb primeiro", n == 3 && o[0] == TRF_IMDB);
   n = trailerfonte_ordem(TRF_AUTO, 0, o);
-  confere(".tpk fundo/destaque (mudo) continua Apple -> IMDb", n == 2 && o[0] == TRF_APPLE && o[1] == TRF_IMDB);
+  confere(".tpk fundo/destaque (mudo) continua Apple -> IMDb -> YouTube",
+          n == 3 && o[0] == TRF_APPLE && o[1] == TRF_IMDB && o[2] == TRF_YOUTUBE);
   n = trailerfonte_ordem_cheia(TRF_AUTO, 0, 0, o);
-  confere(".tpk tela cheia SEM som: Apple primeiro (nada ganha com o IMDb)", n == 2 && o[0] == TRF_APPLE);
+  confere(".tpk tela cheia SEM som: Apple primeiro (nada ganha com o IMDb)", n == 3 && o[0] == TRF_APPLE);
   c = todas();
   confere(".tpk tela cheia com as duas: abre o IMDb (tem audio)",
           trailerfonte_escolher_cheia(TRF_AUTO, 0, 1, &c, &u, &n) == TRF_ABRE && n == TRF_IMDB && !strcmp(u, c.imdb));
   confere(".tpk fundo com as duas: abre a Apple (melhor imagem, mudo)", escolhe(TRF_AUTO, 0, &c, &u) == TRF_APPLE);
   c = todas(); c.imdb = NULL;
-  confere(".tpk tela cheia sem IMDb: cai na Apple (sem som, como hoje)",
+  confere(".tpk tela cheia sem IMDb: YouTube (tem som), antes da Apple",
+          trailerfonte_escolher_cheia(TRF_AUTO, 0, 1, &c, &u, &n) == TRF_ABRE && n == TRF_YOUTUBE);
+  c = todas(); c.imdb = NULL; c.youtube = NULL;
+  confere(".tpk tela cheia sem IMDb nem YouTube: cai na Apple (sem som)",
           trailerfonte_escolher_cheia(TRF_AUTO, 0, 1, &c, &u, &n) == TRF_ABRE && n == TRF_APPLE);
+  c = todas(); c.imdb = NULL; c.youtube = NULL; c.youtubeRespondeu = 0;
+  confere(".tpk tela cheia: YouTube ainda sem resposta segura a Apple",
+          trailerfonte_escolher_cheia(TRF_AUTO, 0, 1, &c, &u, &n) == TRF_ESPERA);
   c = todas(); c.imdb = NULL; c.imdbRespondeu = 0;
   confere(".tpk tela cheia: IMDb ainda sem resposta segura a Apple",
           trailerfonte_escolher_cheia(TRF_AUTO, 0, 1, &c, &u, &n) == TRF_ESPERA);
@@ -217,7 +231,7 @@ int main(void) {
   confere(".tpk tela cheia com IMDb fixo: IMDb",
           trailerfonte_escolher_cheia(TRF_IMDB, 0, 1, &c, &u, &n) == TRF_ABRE && n == TRF_IMDB);
   n = trailerfonte_ordem_cheia(TRF_YOUTUBE, 0, 1, o);
-  confere(".tpk tela cheia com YouTube fixo: nada (nao toca nesta TV)", n == 0);
+  confere(".tpk tela cheia com YouTube fixo: so o YouTube", n == 1 && o[0] == TRF_YOUTUBE);
   // Mesmo com o desvio ligado, o .wgt nao muda: la a tela cheia e muda.
   n = trailerfonte_ordem_cheia(TRF_AUTO, 1, trailerfonte_com_som(1), o);
   confere("wgt com o desvio ligado continua Apple -> YouTube", n == 2 && o[0] == TRF_APPLE && o[1] == TRF_YOUTUBE);
@@ -240,7 +254,10 @@ int main(void) {
   confere(".tpk fundo com som: IMDb ainda sem resposta segura a Apple",
           trailerfonte_escolher_fundo(TRF_AUTO, 0, 1, &c, &u, &n) == TRF_ESPERA);
   c = todas(); c.imdb = NULL;
-  confere(".tpk fundo com som sem IMDb: cai na Apple (muda, nao ha outra)",
+  confere(".tpk fundo com som sem IMDb: YouTube (com som)",
+          trailerfonte_escolher_fundo(TRF_AUTO, 0, 1, &c, &u, &n) == TRF_ABRE && n == TRF_YOUTUBE);
+  c = todas(); c.imdb = NULL; c.youtube = NULL;
+  confere(".tpk fundo com som sem IMDb nem YouTube: cai na Apple (muda, nao ha outra)",
           trailerfonte_escolher_fundo(TRF_AUTO, 0, 1, &c, &u, &n) == TRF_ABRE && n == TRF_APPLE);
   c = todas();
   confere(".tpk fundo com som e Apple fixa: Apple, respeitada",
@@ -275,14 +292,18 @@ int main(void) {
   }
   trailerfonte_definir_imdb_primeiro_destaque(1);
   n = trailerfonte_ordem_destaque(TRF_AUTO, 0, o);
-  confere(".tpk destaque automatico: IMDb -> Apple", n == 2 && o[0] == TRF_IMDB && o[1] == TRF_APPLE);
+  confere(".tpk destaque automatico: IMDb -> YouTube -> Apple",
+          n == 3 && o[0] == TRF_IMDB && o[1] == TRF_YOUTUBE && o[2] == TRF_APPLE);
   n = trailerfonte_ordem(TRF_AUTO, 0, o);
-  confere(".tpk pagina do titulo (fundo) continua Apple -> IMDb", n == 2 && o[0] == TRF_APPLE);
+  confere(".tpk pagina do titulo (fundo) continua Apple primeiro", n == 3 && o[0] == TRF_APPLE);
   c = todas();
   confere(".tpk destaque com as duas: IMDb (tem audio para continuar com som)",
           trailerfonte_escolher_destaque(TRF_AUTO, 0, &c, &u, &n) == TRF_ABRE && n == TRF_IMDB);
   c = todas(); c.imdb = NULL;
-  confere(".tpk destaque sem IMDb: cai na Apple",
+  confere(".tpk destaque sem IMDb: YouTube",
+          trailerfonte_escolher_destaque(TRF_AUTO, 0, &c, &u, &n) == TRF_ABRE && n == TRF_YOUTUBE);
+  c = todas(); c.imdb = NULL; c.youtube = NULL;
+  confere(".tpk destaque sem IMDb nem YouTube: cai na Apple",
           trailerfonte_escolher_destaque(TRF_AUTO, 0, &c, &u, &n) == TRF_ABRE && n == TRF_APPLE);
   c = todas(); c.imdb = NULL; c.imdbRespondeu = 0;
   confere(".tpk destaque: IMDb sem resposta segura a Apple",

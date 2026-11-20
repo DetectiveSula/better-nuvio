@@ -3,6 +3,7 @@
 // cancela. A lista mostra valor e chevron, a ficha explica alcance e padrao.
 // IDs, chaves persistidas e indices de valores continuam os legados.
 #include "ajustes.h"
+#include "acentocustom.h"
 #include "settings_expansion_policy.h"
 #include "postplay_preview.h"
 #include "legfontes.h"
@@ -757,6 +758,10 @@ typedef enum {
   AJ_FILTRO_MIN_GB, AJ_FILTRO_MAX_RESULT, AJ_FILTRO_POR_RES, AJ_FILTRO_POR_QUAL, AJ_FILTRO_SORT, AJ_FILTRO_REQUIRED_GROUPS,
   AJ_POSPLAY_TRAILER, AJ_POSPLAY_TRAILER_ESPERA,
   AJ_TMDB_CHAVE_LOCAL, // append-only credential action; never a sync binding
+  // Custom accent colours (Accent color › Custom, acentocustom.c), 0xRRGGBB.
+  // Not rows of their own: the dialog edits them. Synced as official Nuvio's
+  // theme_settings.custom_theme_colors ("#RRGGBB,#RRGGBB,#RRGGBB").
+  AJ_TEMA_COR1, AJ_TEMA_COR2, AJ_TEMA_COR3,
   AJ_N
 } OpcaoId;
 _Static_assert(DEBRID_RD == 0 && DEBRID_TB == 1 && DEBRID_PM == 2 && DEBRID_AD == 3,
@@ -859,7 +864,7 @@ static const char *V_DTS_SAIDA[] = { "Estéreo (AAC)", "5.1 (Dolby Digital)" };
 static const char *V_PROPORCAO[] = { "Último usado", "Original", "Recortar", "Esticar", "Zoom leve", "Zoom cinema", "Zoom ultra", "Ajustar altura", "Ajustar largura" };
 static const char *V_LOGO_APP[] = { "Novo", "Clássico" };
 static const char *V_BUSCA_NUVIO[] = { "Primeiro", "Por último", "Desligado" };
-static const char *V_ABERTURA[] = { "Padrão", "Só esmaece", "Direto" };
+static const char *V_ABERTURA[] = { "Padrão", "Só esmaece", "Direto", "Clássica" };   // Padrão = the cinematic reveal (abertura.c)
 // #202: "Instantâneo" e 15/30 s, como o "Stream Selection Timeout" do
 // oficial (0 = instantaneo; Unlimited = todos). O indice e o gravado em
 // fonteEsperaLocal; o fontePrazoLocal de antes (3 s, 5 s, 8 s, Todos) migra na
@@ -1246,6 +1251,7 @@ static const AcentoFixo TEMA_ACENTO[] = {
   { 0x6468d9, 0xbec6fe, 0xb0b4cd, 0x404488, 'p' },   // 21 Índigo
   { 0, 0, 0, 0, 0 },                                 // 22 Textura
   { 0, 0, 0, 0, 0 },                                 // 23 Textura sutil
+  { 0, 0, 0, 0, 0 },                                 // 24 Personalizada (AJ_TEMA_COR1..3)
 };
 #define AJ_N_TEMAS 12   // os da conta (W_TEMA)
 // OS DINAMICOS (cor viva, corviva.h) vem DEPOIS dos doze da conta, e a posicao
@@ -1261,7 +1267,8 @@ static const AcentoFixo TEMA_ACENTO[] = {
 #define AJ_TEMA_IMERSIVA    (AJ_N_TEMAS + 3)
 #define AJ_TEMA_TEXTURA     22
 #define AJ_TEMA_TEXTURA_SUTIL 23
-#define AJ_N_TEMAS_OPC      24
+#define AJ_TEMA_PERSONALIZADA 24   // "Custom": official Nuvio's CUSTOM theme
+#define AJ_N_TEMAS_OPC      25
 _Static_assert(sizeof TEMA_ACENTO / sizeof *TEMA_ACENTO == AJ_N_TEMAS_OPC,
                "TEMA_ACENTO: uma linha por indice de V_TEMA");
 static const char *V_TEMA[] = {
@@ -1269,7 +1276,7 @@ static const char *V_TEMA[] = {
   "Rosa", "Dourado", "Jade", "Ouro rosé", "Azul ártico", "Grafite",
   "Da arte", "Dinâmica estilizada", "Gradiente", "Imersiva",
   "Champagne", "Sálvia", "Lavanda", "Vinho", "Petróleo", "Índigo",
-  "Textura", "Textura sutil"
+  "Textura", "Textura sutil", "Personalizada"
 };
 _Static_assert(sizeof V_TEMA / sizeof *V_TEMA == AJ_N_TEMAS_OPC,
                "V_TEMA: um nome por indice de TEMA_ACENTO");
@@ -1711,7 +1718,7 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("A escolha automática prioriza",   V_FONTE_PRIORIDADE, 4), // local: fontePrioridadeLocal
   ESC("HDR e Dolby Vision",              V_FONTE_HDR, 3),        // local: fonteHdrLocal
   ESC("Logo do app",                     V_LOGO_APP, 2),         // local: logoAppLocal
-  ESC("Abertura do app",                 V_ABERTURA, 3),         // local: aberturaAppLocal
+  ESC("Abertura do app",                 V_ABERTURA, 4),         // local: aberturaAppLocal
   ESC("Receber enquetes",                V_LIGA, 2),             // local: enquetesLocal (espelho do opt-out da conta)
   ESC("Buscar no Cinemeta",              V_LIGA, 2),             // local: buscaCinemetaLocal
   ESC("Tela de descanso",                V_ESMAECER, 6),         // local: esmaecerLocal
@@ -1925,6 +1932,9 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Post-play trailer preview", V_LIGA, 2),
   NUM("Post-play trailer delay",0,300,1," s"),
   ACAO("TMDB API key on this device"),
+  NUM("Custom color 1", 0, 0xFFFFFF, 1, ""),
+  NUM("Custom color 2", 0, 0xFFFFFF, 1, ""),
+  NUM("Custom color 3", 0, 0xFFFFFF, 1, ""),
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -2269,6 +2279,7 @@ static const char *CHAVE[] = {
   "-filterMinGB", "-filterMaxResults", "-filterResolutionLimit", "-filterQualityLimit", "-filterSort", "-filterRequiredGroups",
   "postPlayTrailerLocal", "postPlayTrailerDelayTenthsLocal",
   "-tmdbApiKeyDevice",
+  "customThemeColor1Local", "customThemeColor2Local", "customThemeColor3Local",
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -3115,6 +3126,12 @@ static int temaDinamico(void) { return temaEhDinamico(valor[AJ_TEMA]); }
 // sobe para a conta e a conta nao o desfaz (ajustes_aplicar_blob,
 // ajustes_mesclar_blob).
 static int temaLocal(void) { return valor[AJ_TEMA] >= AJ_N_TEMAS && valor[AJ_TEMA] < AJ_N_TEMAS_OPC; }
+// The custom colours to the live-colour engine (corviva), every frame it asks.
+static void ajustesPersonalizadaPassar(void) {
+  float c[3][3];
+  for (int k = 0; k < 3; k++) corDeHex((unsigned)valor[AJ_TEMA_COR1 + k], &c[k][0], &c[k][1], &c[k][2]);
+  corviva_personalizada(c);
+}
 int ajustes_cor_viva(void) {
   if (SEGURO) return CORVIVA_DESLIGADA;   // qualquer tema dinamico: a cor viva anima a arte inteira
   return valor[AJ_TEMA] == AJ_TEMA_DINAMICA   ? (valor[AJ_ARTE_TOM] == 1 ? CORVIVA_SIMPLES_CLARO : CORVIVA_SIMPLES)
@@ -3123,6 +3140,7 @@ int ajustes_cor_viva(void) {
        : valor[AJ_TEMA] == AJ_TEMA_IMERSIVA   ? CORVIVA_IMERSIVA
        : valor[AJ_TEMA] == AJ_TEMA_TEXTURA    ? CORVIVA_TEXTURA
        : valor[AJ_TEMA] == AJ_TEMA_TEXTURA_SUTIL ? CORVIVA_TEXTURA_SUTIL
+       : valor[AJ_TEMA] == AJ_TEMA_PERSONALIZADA ? (ajustesPersonalizadaPassar(), CORVIVA_PERSONALIZADA)
        : CORVIVA_DESLIGADA;
 }
 int ajustes_cor_logo(void) { return lig(AJ_COR_LOGO); }
@@ -3401,7 +3419,7 @@ int ajustes_cache_seek_mb(void) {
 }
 int ajustes_icone_app(void) { return valor[AJ_ICONE_APP]; }
 int ajustes_logo_app(void) { int v = valor[AJ_LOGO_APP]; return v < 0 || v > 1 ? 0 : v; }
-int ajustes_abertura(void) { int v = valor[AJ_ABERTURA]; return v < 0 || v > 2 ? 0 : v; }
+int ajustes_abertura(void) { int v = valor[AJ_ABERTURA]; return v < 0 || v > 3 ? 0 : v; }
 // R4: estilo proprio da segunda legenda. -1 / 0 = segue a principal.
 int ajustes_legendas_todas(void) { return valor[AJ_LEG_MOSTRAR] == 1; }
 int ajustes_abertura_detalhada(void) { return valor[AJ_TELA_ABERTURA] == 1; }
@@ -8038,7 +8056,7 @@ static const char *ajudaOpcaoBase(int op) {
       if (ajustes_fonte_prioridade() == 3) return "Do addon: toca a primeira fonte permitida, sem priorizar qualidade nem reutilizar escolhas anteriores.";
       return "Equilíbrio: HDR e Dolby Vision ganham de SDR na mesma resolução ou numa abaixo, e uma fonte que a sua conexão claramente não sustenta desce. Qualidade máxima: a maior resolução permitida, depois Dolby Vision, HDR10+, HDR10 e SDR, sem rebaixar por velocidade. Começar rápido: prefere fontes em cache e arquivos menores, que abrem mais depressa. Sempre rebaixa uma fonte que a conexão medida não sustenta.";
     case AJ_LOGO_APP: return "O símbolo que o Nuvio mostra na abertura e nas telas de entrada. Novo é o play em degradê; Clássico é a TV retrô de sempre. Vale só nesta TV.";
-    case AJ_ABERTURA: return "Como o logo some quando o app abre. Padrão para um instante, aproxima e esmaece; Só esmaece não aproxima; Direto abre a Home sem parar. Vale só nesta TV.";
+    case AJ_ABERTURA: return "Como o app abre. Padrão traz o logo do Nuvio+ entrando com luz; Clássica para um instante, aproxima e esmaece; Só esmaece não aproxima; Direto abre a Home sem parar. Vale só nesta TV.";
     case AJ_FONTE_HDR: return "Preferir: fontes com HDR ou Dolby Vision vêm na frente. Indiferente: o formato não conta. Evitar: prefere SDR na mesma resolução. O Dolby Vision só entra se estiver ligado em Imagem e som; perfil 5 sem HDR10 fica atrás do HDR10, porque sai com cores erradas fora de TV Dolby Vision. Só vale para a escolha automática.";
     case AJ_FONTE_ORDEM_ADDON: return "Por qualidade: as fontes vêm agrupadas por resolução, da maior para a menor, e do maior arquivo para o menor. Do addon: cada addon na ordem em que você o instalou, e as fontes de cada um na ordem em que ele mandou — para quem já ordena no AIOStreams. A escolha automática não muda.";
     case AJ_FONTE_TEXTO: return "Do Nuvio: o nome do título em cima e os logos de qualidade embaixo. Do addon: o nome e a descrição exatamente como o addon manda — para quem já formata o texto no AIOStreams. Logo do título: a logo do título no lugar do nome escrito.";
@@ -9954,6 +9972,8 @@ void ajustes_evento(const SDL_Event *e) {
   if (e->type == SDL_KEYDOWN) ajToqueLimpar();
 #endif
   AJ_ESCALA_INI();
+  // The custom accent dialog (acentocustom.c) owns every key while open.
+  if (acentocustom_aberto()) { acentocustom_evento(e); AJ_ESCALA_FIM(); return; }
   if (guiaAberto) { guiaEvento(e); AJ_ESCALA_FIM(); return; }
   if (apoioAberto) { apoioEvento(e); AJ_ESCALA_FIM(); return; }
   eventoTela(e);
@@ -10287,6 +10307,17 @@ void ajustes_atualizar(float dt, Uint32 agora) {
   if(iptvForm.tipo && !nv_perfil_sessao_atual(iptvForm.sessao)) { ajIptvLimparForm();uxCancelar();stCampo=0;teclado_esquecer(); }
   ajLegendaEspelhar(); ajIptvEspelhar();
   AJ_ESCALA_INI();
+  acentocustom_atualizar(dt);
+  { unsigned c[3];
+    // Save theme: the three colours first, then the theme, so the first frame
+    // drawn with Custom already has them. Each goes through the normal setter
+    // (file + account sync of theme_settings).
+    if (acentocustom_resultado(c, NULL)) {
+      int ok = 1;
+      for (int k = 0; k < 3; k++) ok &= definirValorDireto(AJ_TEMA_COR1 + k, (int)(c[k] & 0xFFFFFF));
+      ok &= definirValorDireto(AJ_TEMA, AJ_TEMA_PERSONALIZADA);
+      uxNotificar(ok ? "Ajuste salvo nesta TV." : "Não foi possível salvar. O valor anterior foi mantido.");
+    } }
   guiaAtualizar(dt);
   if (uxAviso[0] && SDL_TICKS_PASSED(agora, uxAvisoAte)) uxAviso[0] = 0;
   montarTela();
@@ -11188,6 +11219,7 @@ static void ajDesenharTudo(Uint32 agora) {
   // A modal de digitacao e a ultima: ela e sempre a pergunta mais recente da
   // tela, e tem de ficar por cima ate do cartao de vinculo.
   if (apoioAberto) apoioDesenhar();
+  acentocustom_desenhar();
   if (teclado_aberto()) teclado_desenhar(agora);
 }
 

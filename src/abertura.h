@@ -42,5 +42,9 @@ int  abertura_ativa(void);
 // so o veu e a marca: o que fica por baixo e de quem chama.
 // `raio` = raio dos cantos em fracao da altura (como gfx_cor).
 void abertura_previa(GfxRect r, float raio, int estilo, int logo, Uint32 agora, float alfa);
+// The cinematic reveal (opening style 3) at `t` seconds, full screen. Captures.
+void abertura_cinema_quadro(float t);
+// The reveal at `t` seconds scaled into `r` (What's new card preview).
+void abertura_cinema_previa(GfxRect r, float t, float a);
 
 #endif

@@ -47,6 +47,7 @@
 #define CORVIVA_TEXTURA    5   // "Textura": foco/progresso feitos do material do titulo
 #define CORVIVA_TEXTURA_SUTIL 6 // "Textura sutil": a textura a 35% sobre o Da arte
 #define CORVIVA_SIMPLES_CLARO 7 // Pastel art accent; Vivid remains CORVIVA_SIMPLES.
+#define CORVIVA_PERSONALIZADA 8 // "Custom": the person's own colour(s), not the art's
 
 // Prioridade de quem pede (maior ganha dentro do mesmo quadro).
 #define CORVIVA_HOME     1
@@ -132,6 +133,11 @@ void corviva_definir_logo(const char *chave, int prioridade);
 // Uma vez por quadro, antes do desenho. `dt` em segundos.
 void corviva_quadro(float dt, int modo, int usarLogo, int reduzido);
 
+// CUSTOM ACCENT (Settings › Accent color › Custom, synced as official Nuvio's
+// custom_theme_colors): three sRGB 0..1 colours. Equal = one colour; different =
+// a gradient, drawn by the same GFX_COR_GRAD/GFX_ANEL_GRAD as "Gradiente".
+// Read by corviva_quadro in CORVIVA_PERSONALIZADA. Main thread.
+void corviva_personalizada(const float cores[3][3]);
 // A cor corrente (animada). So faz sentido com o modo ligado.
 void corviva_acento(float *r, float *g, float *b);
 // A cor do logo do titulo em cena (ou da arte, se o logo e branco/preto), como a

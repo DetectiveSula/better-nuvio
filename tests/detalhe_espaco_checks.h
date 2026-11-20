@@ -14,11 +14,13 @@ static int espaco_um(int p, int esc, unsigned char *pix) {
     fprintf(f, "selected_theme 2\nvidroLocal 0\ndetEspacoLocal %d\nescalaTextoLocal %d\nescalaTextoVersaoLocal 1\n", p, esc);
     fclose(f);
     ajustes_dir(dados_dir()); ajustes_definir_vidro(1); }
-  abrir(1, 1, SEC_ELENCO, 0);
+  // The cast lost its tiles (bare headshots, 19/11/2026): the row x is read
+  // from the focused first tile of "More about this title", same ink fill.
+  abrir(1, 1, SEC_MAIS, 0);
   snprintf(id, sizeof id, "espaco-%d-escala-%d", p, esc);
   gravar(id);
   glReadPixels(0, 0, 1920, 1080, GL_RGBA, GL_UNSIGNED_BYTE, pix);
-  // The focused cast tile is the B2 ink fill (#F3F2EF): its left edge is the
+  // The focused tile is the B2 ink fill (#F3F2EF): its left edge is the
   // row x. Longest run of ink pixels on any line, left of x 700.
   for (int y = 0; y < 1080; y++) {
     const unsigned char *l = pix + y * 1920 * 4;
@@ -37,8 +39,8 @@ static int espaco_um(int p, int esc, unsigned char *pix) {
       if (d > step) { step = d; sy = 1079 - y; }
     }
   if (best < 150 || (abs(bx - SIDE[p]) > 4 && abs(bx - ks) > 4)) {
-    printf("FAIL: spacing %d scale %.0f%%: cast row x %d (run %d), want %d\n", p, K[esc] * 100, bx, best, SIDE[p]); fail++;
-  } else printf("PASS: spacing %d scale %.0f%%: cast row x %d (side %d)\n", p, K[esc] * 100, bx, SIDE[p]);
+    printf("FAIL: spacing %d scale %.0f%%: tile row x %d (run %d), want %d\n", p, K[esc] * 100, bx, best, SIDE[p]); fail++;
+  } else printf("PASS: spacing %d scale %.0f%%: tile row x %d (side %d)\n", p, K[esc] * 100, bx, SIDE[p]);
   if (step > 12) { printf("FAIL: spacing %d: band step %d luma at y %d\n", p, step, sy); fail++; }
   else printf("PASS: spacing %d scale %.0f%%: no band (max step %d luma)\n", p, K[esc] * 100, step);
   return fail;

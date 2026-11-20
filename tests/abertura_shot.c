@@ -91,9 +91,9 @@ int main(int argc, char **argv) {
   assert(gfx_iniciar());
   logoapp_iniciar("deploy/app/art");
 
-  // TEMPOS: Padrao e So esmaece seguram 350 ms e saem em 560; Direto nao segura
-  // e sai em 220.
-  for (estilo = 0; estilo < 3; estilo++) {
+  // TEMPOS: Classica (3) e So esmaece (1) seguram 350 ms e saem em 560; Direto
+  // (2) nao segura e sai em 220. Padrao (0) e a entrada animada: logo abaixo.
+  for (estilo = 1; estilo < 4; estilo++) {
     int logo2 = estilo == 1;   // varia o logo: o tempo nao depende dele
     config(dir, logo2, estilo, 0);
     assert(ajustes_abertura() == estilo && ajustes_logo_app() == logo2);
@@ -113,15 +113,32 @@ int main(int argc, char **argv) {
     }
     printf("estilo %d: tempos ok\n", estilo);
   }
-  // O teto: com artes em voo para sempre, sai em 1500 ms em qualquer estilo.
+  // PADRAO com o logo Novo: a entrada animada (2,3 s) inteira, depois a saida.
   config(dir, 0, 0, 0);
+  assert(ajustes_abertura() == 0 && ajustes_logo_app() == 0);
+  abertura_iniciar("deploy/app/art");
+  quadro(t0, 0); quadro(t0 + 2299, 0); assert(abertura_ativa());   // ainda revelando
+  quadro(t0 + 2300, 0); quadro(t0 + 2300 + 561, 0); assert(!abertura_ativa());
+  // Uma tecla pula a entrada: a saida comeca na hora.
+  abertura_iniciar("deploy/app/art");
+  quadro(t0, 0); quadro(t0 + 400, 0); abertura_tecla();
+  quadro(t0 + 401, 0); quadro(t0 + 401 + 561, 0); assert(!abertura_ativa());
+  // Animacoes reduzidas: o Padrao volta aos 350 ms parados.
+  config(dir, 0, 0, 1);
+  anim_politica_reduzida = 1;   // what app.c sets every frame from Reduced animations
+  abertura_iniciar("deploy/app/art");
+  quadro(t0, 0); quadro(t0 + 350, 0); quadro(t0 + 350 + 561, 0); assert(!abertura_ativa());
+  anim_politica_reduzida = 0;
+  printf("padrao: entrada animada 2300 ms, tecla pula, reduzidas = parado\n");
+  // O teto: com artes em voo para sempre, sai em 1500 ms (Classica).
+  config(dir, 0, 3, 0);
   abertura_iniciar("deploy/app/art");
   quadro(t0, 1); quadro(t0 + 1499, 1); assert(abertura_ativa());
   quadro(t0 + 1500, 1); quadro(t0 + 1500 + 561, 1); assert(!abertura_ativa());
 
-  // CAPTURAS: cada logo, parada e meio da saida (Padrao).
+  // CAPTURAS: cada logo, parada e meio da saida (Classica).
   for (logo = 0; logo < 2; logo++) {
-    config(dir, logo, 0, 0);
+    config(dir, logo, 3, 0);
     abertura_iniciar("deploy/app/art");
     quadro(t0, 1);
     roda(t0, 16, 300, 100000);
@@ -138,6 +155,6 @@ int main(int argc, char **argv) {
   SDL_GL_DeleteContext(gl);
   SDL_DestroyWindow(w);
   SDL_Quit();
-  puts("PASS: abertura: tempos dos tres estilos e capturas dos dois logos");
+  puts("PASS: abertura: tempos dos quatro estilos (entrada animada no Padrao) e capturas dos dois logos");
   return 0;
 }

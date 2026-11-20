@@ -27,6 +27,13 @@ static const char *VTT =
   "lixo --> tambem\n";
 
 int main(void) {
+  // A skip lands on the previewed picture's instant (owner, 19/11/2026).
+  if (seekr_pouso(1230.0, 1238.4, 7200.0) != 1230.0) { puts("FALHOU: pouso na previa"); return 1; }
+  if (seekr_pouso(-1.0, 1238.4, 7200.0) != 1238.4) { puts("FALHOU: sem previa, posicao crua"); return 1; }
+  if (seekr_pouso(1200.0, 1238.4, 7200.0) != 1238.4) { puts("FALHOU: previa longe demais"); return 1; }
+  if (seekr_pouso(7200.0, 7195.0, 7200.0) != 7195.0) { puts("FALHOU: previa no fim do video"); return 1; }
+  if (seekr_pouso(1245.0, 1238.4, 7200.0) != 1245.0) { puts("FALHOU: sincronia adiante"); return 1; }
+
   char u[512];
   SeekrVtt v;
   int n;

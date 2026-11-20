@@ -13,14 +13,28 @@
 
 // Sem a pilula da barra, 48 (o mockup); com ela, o mesmo 20 abaixo dela que
 // o resto da tela usa (PF_TOPO = 56 + PF_DY).
+// BIGGER ON THE TV (owner, 18 Nov 2026: "currently too small"). The board is a
+// fixed 1920x1080 layout at 100% whatever the size settings, and most of its
+// text was 15-20 px tall, small from a sofa. Every text size on this board is
+// the shared PF_ESC_* size times PN_TXT, and the boxes below grew with it
+// (KPI 128 -> 146, day strip 64 -> 74, bar labels, poster captions, mix rows,
+// facts); the comparison view and the other states keep the shared sizes.
+#define PN_TXT 1.2f
+#define PN_ESC_AMIGO   (PF_ESC_AMIGO * PN_TXT)
+#define PN_ESC_APOIO   (PF_ESC_APOIO * PN_TXT)
+#define PN_ESC_BIG     (PF_ESC_BIG * PN_TXT)
+#define PN_ESC_CARD    (PF_ESC_CARD * PN_TXT)
+#define PN_ESC_COMUM   (PF_ESC_COMUM * PN_TXT)
+#define PN_ESC_LIN     (PF_ESC_LIN * PN_TXT)
+#define PN_ESC_NOME    (PF_ESC_NOME * PN_TXT)
 #define PN_TOPO      (PF_DY > 0.0f ? PF_TOPO : 48.0f)
 #define PN_AV         84.0f
-#define PN_GAP        18.0f
+#define PN_GAP        16.0f
 #define PN_KPI_Y     (PN_TOPO + PN_AV + 22.0f)
-#define PN_KPI_H     128.0f
+#define PN_KPI_H     146.0f
 #define PN_MEIO_Y    (PN_KPI_Y + PN_KPI_H + PN_GAP)
 #define PN_BAR_GAP     6.0f
-#define PN_FAIXA_H    64.0f
+#define PN_FAIXA_H    74.0f
 #define PN_ROSTO      40.0f
 #define PN_ROSTOS      3
 
@@ -29,7 +43,7 @@
 #define PN_FILME_G 0.702f
 #define PN_FILME_B 0.353f
 
-static float pnMeioH(void) { float h = 372.0f - PF_DY; return h < 300.0f ? 300.0f : h; }
+static float pnMeioH(void) { float h = 340.0f - PF_DY; return h < 300.0f ? 300.0f : h; }
 static float pnBaixoY(void) { return PN_MEIO_Y + pnMeioH() + PN_GAP; }
 
 static int nTopo(void) { return limitar(dados.nTopo, 0, PERFIL_MAX_TOPO); }
@@ -95,11 +109,17 @@ static int rostosCabem(void) {
 static GfxRect rPilula(void) {
   int m = rostosCabem();
   float w = 28.0f + (float)m * (PN_ROSTO - 10.0f) + 10.0f + 16.0f
-          + (float)txt_largura(TXT_ROW_TITULO, "Amigos") * PF_ESC_CARD + 72.0f;
+          + (float)txt_largura(TXT_ROW_TITULO, "Amigos") * PN_ESC_CARD + 72.0f;
   return (GfxRect){ PF_X + PF_W - w, PN_TOPO + (PN_AV - 64.0f) * 0.5f, w, 64.0f };
 }
 
 // --- utilidades de texto -------------------------------------------------------
+// The card titles of this board, at its own size (tituloCartao is shared).
+static float pnTitulo(GfxRect r, const char *s, float a) {
+  TxtLinha l = txt_linha(TXT_ROW_TITULO, s, PF_FORTE, PF_FORTE, PF_FORTE, 255);
+  txtEsc(l, r.x + PF_PAD_X, r.y + PF_PAD_Y, PN_ESC_CARD, a);
+  return r.y + PF_PAD_Y + (float)l.h * PN_ESC_CARD;
+}
 // Uma linha reduzida (estilo-base em `esc`) e a largura dela, sem desenhar.
 static float pnLarg(TxtEstilo e, const char *s, float esc) { return (float)txt_largura(e, s) * esc; }
 static void pnCentro(TxtEstilo e, const char *s, int c, float cx, float y, float esc, float a) {
@@ -164,12 +184,12 @@ static void desenharCabecalhoPainel(Uint32 agora, float a) {
   if (dados.cobertura & PF_COB_NUVIO)
     snprintf(sub, sizeof sub, "%s \xc2\xb7 %s \xe2\x80\x93 %s \xc2\xb7 Nuvio Sync", i18n("Últimos 30 dias"), d0, d1);
   else snprintf(sub, sizeof sub, "%s", dados.periodo);
-  { TxtLinha n = txt_linha_corta(TXT_TITULO2, nm, 245, 245, 243, 255, wTxt / (PF_ESC_NOME * 0.9f));
-    TxtLinha l2 = txt_linha_corta(TXT_CAPTION2, sub, PF_FRACO, PF_FRACO, PF_FRACO, 255, wTxt / PF_ESC_AMIGO);
-    float hN = (float)n.h * PF_ESC_NOME * 0.9f, h2 = (float)l2.h * PF_ESC_AMIGO;
+  { TxtLinha n = txt_linha_corta(TXT_TITULO2, nm, 245, 245, 243, 255, wTxt / (PN_ESC_NOME * 0.9f));
+    TxtLinha l2 = txt_linha_corta(TXT_CAPTION2, sub, PF_FRACO, PF_FRACO, PF_FRACO, 255, wTxt / PN_ESC_AMIGO);
+    float hN = (float)n.h * PN_ESC_NOME * 0.9f, h2 = (float)l2.h * PN_ESC_AMIGO;
     float y = cy - (hN + 4.0f + h2) * 0.5f;
-    txtEsc(n, tx, y, PF_ESC_NOME * 0.9f, a);
-    txtEsc(l2, tx, y + hN + 4.0f, PF_ESC_AMIGO, a); }
+    txtEsc(n, tx, y, PN_ESC_NOME * 0.9f, a);
+    txtEsc(l2, tx, y + hN + 4.0f, PN_ESC_AMIGO, a); }
   // A PILULA AMIGOS (D1): o caminho para o duelo, que antes era o cartao.
   if (rostosCabem() > 0) {
     GfxRect p = rPilula();
@@ -185,10 +205,10 @@ static void desenharCabecalhoPainel(Uint32 agora, float a) {
                 socialvis_amigo(k), 0.0f, a, agora);
     x += (float)rostosCabem() * (PN_ROSTO - 10.0f) + 10.0f + 12.0f;
     { TxtLinha l = txt_linha(TXT_ROW_TITULO, "Amigos", 245, 245, 243, 255);
-      txtEsc(l, x, p.y + (p.h - (float)l.h * PF_ESC_CARD) * 0.5f, PF_ESC_CARD, a);
-      x += (float)l.w * PF_ESC_CARD + 10.0f; }
+      txtEsc(l, x, p.y + (p.h - (float)l.h * PN_ESC_CARD) * 0.5f, PN_ESC_CARD, a);
+      x += (float)l.w * PN_ESC_CARD + 10.0f; }
     snprintf(cont, sizeof cont, "%d", socialvis_n_amigos());
-    escrever(TXT_CAPTION2, cont, PF_APOIO, x, p.y + 22.0f, 60.0f, PF_ESC_AMIGO, a);
+    escrever(TXT_CAPTION2, cont, PF_APOIO, x, p.y + 22.0f, 60.0f, PN_ESC_AMIGO, a);
     if (socialvis_n_ao_vivo() > 0)
       gfx_cor((GfxRect){ p.x + p.w - 22.0f, p.y + 26.0f, 10.0f, 10.0f }, 0.5f, .93f, .27f, .27f, a);
   }
@@ -221,12 +241,12 @@ static void desenharNumerosPainel(float a0) {
     float a = a0 * surge(i), w = r.w - PF_PAD_X * 2.0f;
     if (a <= 0.002f) continue;
     cartao(r, a);
-    escrever(TXT_CAPTION2, rot[i], PF_MEDIO, r.x + PF_PAD_X, r.y + 18.0f, w, PF_ESC_AMIGO, a);
+    escrever(TXT_CAPTION2, rot[i], PF_MEDIO, r.x + PF_PAD_X, r.y + 18.0f, w, PN_ESC_AMIGO, a);
     { int c = i == 4;
       TxtLinha v = txt_linha_corta(TXT_TITULO3, val[i], c ? acentoI(ar) : 245, c ? acentoI(ag) : 245,
-                                   c ? acentoI(ab) : 243, 255, w / PF_ESC_BIG);
-      txtEsc(v, r.x + PF_PAD_X, r.y + 42.0f, PF_ESC_BIG, a); }
-    escrever(TXT_CAPTION2, sub[i], PF_APOIO, r.x + PF_PAD_X, r.y + r.h - 34.0f, w, PF_ESC_APOIO, a);
+                                   c ? acentoI(ab) : 243, 255, w / PN_ESC_BIG);
+      txtEsc(v, r.x + PF_PAD_X, r.y + 46.0f, PN_ESC_BIG, a); }
+    escrever(TXT_CAPTION2, sub[i], PF_APOIO, r.x + PF_PAD_X, r.y + r.h - 38.0f, w, PN_ESC_APOIO, a);
   }
 }
 
@@ -242,15 +262,15 @@ static void desenharGrafico(float a) {
   int max = 60;
   acento(&ar, &ag, &ab);
   cartao(r, a);
-  y = tituloCartao(r, "Dia a dia", a);
+  y = pnTitulo(r, "Dia a dia", a);
   // A legenda, a direita do titulo.
   { float lx = r.x + r.w - PF_PAD_X, ly = r.y + PF_PAD_Y + 4.0f;
-    lx -= pnLarg(TXT_CAPTION2, "Filmes", PF_ESC_APOIO);
-    escrever(TXT_CAPTION2, "Filmes", PF_MEDIO, lx, ly, 200.0f, PF_ESC_APOIO, a);
-    lx -= 22.0f; gfx_cor((GfxRect){ lx, ly + 3.0f, 14.0f, 14.0f }, 4.0f / 14.0f, PN_FILME_R, PN_FILME_G, PN_FILME_B, a);
-    lx -= 22.0f + pnLarg(TXT_CAPTION2, "Episódios", PF_ESC_APOIO);
-    escrever(TXT_CAPTION2, "Episódios", PF_MEDIO, lx, ly, 200.0f, PF_ESC_APOIO, a);
-    lx -= 22.0f; gfx_cor((GfxRect){ lx, ly + 3.0f, 14.0f, 14.0f }, 4.0f / 14.0f, ar, ag, ab, a); }
+    lx -= pnLarg(TXT_CAPTION2, "Filmes", PN_ESC_APOIO);
+    escrever(TXT_CAPTION2, "Filmes", PF_MEDIO, lx, ly, 200.0f, PN_ESC_APOIO, a);
+    lx -= 24.0f; gfx_cor((GfxRect){ lx, ly + 4.0f, 16.0f, 16.0f }, 4.0f / 16.0f, PN_FILME_R, PN_FILME_G, PN_FILME_B, a);
+    lx -= 24.0f + pnLarg(TXT_CAPTION2, "Episódios", PN_ESC_APOIO);
+    escrever(TXT_CAPTION2, "Episódios", PF_MEDIO, lx, ly, 200.0f, PN_ESC_APOIO, a);
+    lx -= 24.0f; gfx_cor((GfxRect){ lx, ly + 4.0f, 16.0f, 16.0f }, 4.0f / 16.0f, ar, ag, ab, a); }
   // A FAIXA DO DIA ESCOLHIDO: cartazes pequenos, data e tempo, o que foi visto.
   { GfxRect f = { x0, y + 12.0f, w, PN_FAIXA_H };
     int d = limitar(dia, 0, PERFIL_DIAS - 1), n = limitar(dados.nDiaItens[d], 0, PERFIL_ITENS_DIA);
@@ -260,9 +280,9 @@ static void desenharGrafico(float a) {
     gfx_cor(f, 16.0f / f.h, 0, 0, 0, .28f * a);
     for (int k = 0; k < n && k < 2; k++) {
       const PerfilObra *o = obraDe(dados.diaItens[d][k].obra);
-      GfxRect pr = { px, f.y + 8.0f, 32.0f, 48.0f };
+      GfxRect pr = { px, f.y + 9.0f, 37.0f, 56.0f };
       svd_poster(pr, o ? o->poster : "", 6.0f / pr.h, a);
-      px += 40.0f;
+      px += 45.0f;
     }
     pnData(data, sizeof data, &tm);
     tempo(tt, sizeof tt, dados.minutosDia[d]);
@@ -276,17 +296,17 @@ static void desenharGrafico(float a) {
     { float tw = f.x + f.w - px - 12.0f;
       int tag = d == pnMaratonaDia();
       if (tag) {
-        float lw = pnLarg(TXT_CAPTION2, "Maior maratona", PF_ESC_APOIO) + 24.0f;
-        GfxRect tg = { f.x + f.w - 12.0f - lw, f.y + (f.h - 30.0f) * 0.5f, lw, 30.0f };
+        float lw = pnLarg(TXT_CAPTION2, "Maior maratona", PN_ESC_APOIO) + 24.0f;
+        GfxRect tg = { f.x + f.w - 12.0f - lw, f.y + (f.h - 34.0f) * 0.5f, lw, 34.0f };
         gfx_cor(tg, 0.5f, 0.60f, 0.95f, 0.92f, a);
-        escrever(TXT_CAPTION2, "Maior maratona", 12, tg.x + 12.0f, tg.y + 5.0f, lw, PF_ESC_APOIO, a);
+        escrever(TXT_CAPTION2, "Maior maratona", 12, tg.x + 12.0f, tg.y + 5.0f, lw, PN_ESC_APOIO, a);
         tw -= lw + 12.0f;
       }
-      escrever(TXT_ROW_TITULO, l1, PF_FORTE, px, f.y + 8.0f, tw, PF_ESC_LIN, a);
-      escrever(TXT_CAPTION2, l2[0] ? l2 : i18n("Nenhum título neste dia."), PF_APOIO, px, f.y + 36.0f, tw, PF_ESC_APOIO, a); }
+      escrever(TXT_ROW_TITULO, l1, PF_FORTE, px, f.y + 9.0f, tw, PN_ESC_LIN, a);
+      escrever(TXT_CAPTION2, l2[0] ? l2 : i18n("Nenhum título neste dia."), PF_APOIO, px, f.y + 42.0f, tw, PN_ESC_APOIO, a); }
     y = f.y + f.h + 14.0f; }
   // AS BARRAS: episodio no acento embaixo, filme em ambar em cima.
-  { float base = r.y + r.h - PF_PAD_Y - 22.0f, altura = base - y;
+  { float base = r.y + r.h - PF_PAD_Y - 26.0f, altura = base - y;
     float bw = (w - PN_BAR_GAP * (float)(PERFIL_DIAS - 1)) / (float)PERFIL_DIAS;
     for (int i = 0; i < PERFIL_DIAS; i++) if (dados.minutosDia[i] > max) max = dados.minutosDia[i];
     for (int i = 0; i < PERFIL_DIAS; i++) {
@@ -297,7 +317,7 @@ static void desenharGrafico(float a) {
       float f = i == dia ? focoCal : 0.0f;
       struct tm tm = pnDia(i);
       char num[8];
-      pfAlvoCorpo(bx, y, bw, base - y + 22.0f, ponteiroDia, NULL, i, 0);
+      pfAlvoCorpo(bx, y, bw, base - y + 26.0f, ponteiroDia, NULL, i, 0);
       if (md <= 0) gfx_cor((GfxRect){ bx, base - 4.0f, bw, 4.0f }, 0.5f, 1, 1, 1, .08f * a);
       else {
         if (hS > 0.5f) gfx_cor((GfxRect){ bx, base - hS, bw, hS }, fminf(6.0f, hS * 0.5f) / hS, ar, ag, ab, a);
@@ -309,7 +329,7 @@ static void desenharGrafico(float a) {
         gfx_anel_fora(fr, fminf(6.0f, hT * 0.5f) / hT, 4.0f, 3.0f, .96f, .97f, .97f, f * a);
       }
       snprintf(num, sizeof num, "%d", tm.tm_mday);
-      pnCentro(TXT_CAPTION2, num, i == dia ? PF_FORTE : PF_FRACO, bx + bw * 0.5f, base + 6.0f, PF_ESC_APOIO * 0.92f, a);
+      pnCentro(TXT_CAPTION2, num, i == dia ? PF_FORTE : PF_FRACO, bx + bw * 0.5f, base + 6.0f, PN_ESC_APOIO * 0.92f, a);
     } }
 }
 
@@ -324,7 +344,7 @@ static void desenharRelogio(float a) {
   }
   acento(&ar, &ag, &ab);
   cartao(r, a);
-  y = tituloCartao(r, "Hora do dia", a);
+  y = pnTitulo(r, "Hora do dia", a);
   { float disp = r.y + r.h - PF_PAD_Y - y - 16.0f;
     float rMax = fminf(150.0f, disp * 0.5f - 18.0f), r0 = rMax * 0.36f;
     float cx = r.x + PF_PAD_X + rMax + 18.0f, cy = y + 8.0f + disp * 0.5f;
@@ -341,12 +361,13 @@ static void desenharRelogio(float a) {
       for (int k = 0; k < 4; k++) {
         float px, py;
         setor_ponto(cx, cy, rMax + 14.0f, (float)k * 0.25f, &px, &py);
-        pnCentro(TXT_CAPTION2, marca[k], PF_FRACO, px, py - 9.0f, PF_ESC_APOIO * 0.9f, a);
+        pnCentro(TXT_CAPTION2, marca[k], PF_FRACO, px, py - 11.0f, PN_ESC_APOIO * 0.9f, a);
       } }
     if (pico >= 0) {
       char ph[16];
       snprintf(ph, sizeof ph, "%02d:00", pico);
-      pnCentro(TXT_TITULO3, ph, 245, cx, cy - 24.0f, PF_ESC_COMUM * 0.9f, a);
+      // The peak keeps its old size: it sits inside the ring's hole.
+      pnCentro(TXT_TITULO3, ph, 245, cx, cy - 26.0f, PF_ESC_COMUM * 0.9f, a);
       pnCentro(TXT_CAPTION2, "pico", PF_APOIO, cx, cy + 8.0f, PF_ESC_APOIO, a);
     }
     // OS QUATRO PERIODOS, a direita do relogio.
@@ -358,14 +379,14 @@ static void desenharRelogio(float a) {
         faixa[k] += dados.minutosHora[h];
       }
       if (total <= 0) {
-        escrever(TXT_CAPTION2, "Sem horários nos últimos 30 dias.", PF_APOIO, tx, ty, tw, PF_ESC_AMIGO, a);
+        escrever(TXT_CAPTION2, "Sem horários nos últimos 30 dias.", PF_APOIO, tx, ty, tw, PN_ESC_AMIGO, a);
         return;
       }
       for (int k = 0; k < 4; k++) {
         char pc[16];
         snprintf(pc, sizeof pc, "%d%%", (faixa[k] * 100 + total / 2) / total);
-        escrever(TXT_TITULO3, pc, 245, tx, ty, tw, PF_ESC_COMUM * 0.85f, a);
-        escrever(TXT_CAPTION2, rot[k], PF_APOIO, tx, ty + 30.0f, tw, PF_ESC_APOIO, a);
+        escrever(TXT_TITULO3, pc, 245, tx, ty, tw, PN_ESC_COMUM * 0.85f, a);
+        escrever(TXT_CAPTION2, rot[k], PF_APOIO, tx, ty + 35.0f, tw, PN_ESC_APOIO, a);
         ty += (disp - 10.0f) / 4.0f;
       } } }
 }
@@ -382,10 +403,10 @@ static void desenharTopo(float a) {
   float y, ar, ag, ab;
   acento(&ar, &ag, &ab);
   cartao(r, a);
-  y = tituloCartao(r, "Mais vistos", a) + 14.0f;
+  y = pnTitulo(r, "Mais vistos", a) + 14.0f;
   if (!n) { escrever(TXT_CAPTION2, "Nada assistido nos últimos 30 dias.", PF_APOIO, r.x + PF_PAD_X, y + 8.0f,
-                     r.w - PF_PAD_X * 2.0f, PF_ESC_AMIGO, a); return; }
-  { float ph = r.y + r.h - PF_PAD_Y - y - 50.0f, pw = ph * 2.0f / 3.0f;
+                     r.w - PF_PAD_X * 2.0f, PN_ESC_AMIGO, a); return; }
+  { float ph = r.y + r.h - PF_PAD_Y - y - 58.0f, pw = ph * 2.0f / 3.0f;
     float gap = 22.0f, maxW = (r.w - PF_PAD_X * 2.0f - gap * (PERFIL_MAX_TOPO - 1)) / PERFIL_MAX_TOPO;
     if (pw > maxW) { pw = maxW; ph = pw * 1.5f; }
     for (int i = 0; i < n; i++) {
@@ -395,14 +416,14 @@ static void desenharTopo(float a) {
       GfxRect pr = { base.x - pw * (esc - 1.0f) * 0.5f, base.y - ph * (esc - 1.0f) * 0.5f, pw * esc, ph * esc };
       char s[96], tt[48];
       if (!o) continue;
-      pfAlvoCorpo(base.x, base.y, base.w, base.h + 50.0f, ponteiroTopo, NULL, i, 0);
+      pfAlvoCorpo(base.x, base.y, base.w, base.h + 58.0f, ponteiroTopo, NULL, i, 0);
       if (f > 0.01f) gfx_anel_fora(pr, 12.0f / pr.h, 4.0f, 3.0f, ar, ag, ab, f * a);
       svd_poster(pr, o->poster, 12.0f / pr.h, a);
-      escrever(TXT_ROW_TITULO, tituloObra(o), PF_FORTE, base.x, base.y + ph + 8.0f, pw, PF_ESC_LIN * 0.88f, a);
+      escrever(TXT_ROW_TITULO, tituloObra(o), PF_FORTE, base.x, base.y + ph + 8.0f, pw, PN_ESC_LIN * 0.88f, a);
       tempo(tt, sizeof tt, o->minutos);
       if (o->episodios > 0) snprintf(s, sizeof s, i18n("%s · %d ep."), tt, o->episodios);
       else snprintf(s, sizeof s, i18n("%s · filme"), tt);
-      escrever(TXT_CAPTION2, s, PF_APOIO, base.x, base.y + ph + 32.0f, pw, PF_ESC_APOIO * 0.9f, a);
+      escrever(TXT_CAPTION2, s, PF_APOIO, base.x, base.y + ph + 36.0f, pw, PN_ESC_APOIO * 0.9f, a);
     } }
 }
 
@@ -413,27 +434,27 @@ static void desenharMix(float a) {
   int tot = dados.minutosSeries + dados.minutosFilmes, gTot = 0, gMax = 1;
   acento(&ar, &ag, &ab);
   cartao(r, a);
-  y = tituloCartao(r, "Seu mix", a) + 16.0f;
+  y = pnTitulo(r, "Seu mix", a) + 16.0f;
   if (tot > 0) {
     float fs = (float)dados.minutosSeries / (float)tot, ws = (w - 4.0f) * fs;
     char s[120];
-    if (ws > 0.5f) gfx_cor((GfxRect){ x, y, ws, 16.0f }, 0.5f, ar, ag, ab, a);
-    if (w - 4.0f - ws > 0.5f) gfx_cor((GfxRect){ x + ws + 4.0f, y, w - 4.0f - ws, 16.0f }, 0.5f, PN_FILME_R, PN_FILME_G, PN_FILME_B, a);
+    if (ws > 0.5f) gfx_cor((GfxRect){ x, y, ws, 18.0f }, 0.5f, ar, ag, ab, a);
+    if (w - 4.0f - ws > 0.5f) gfx_cor((GfxRect){ x + ws + 4.0f, y, w - 4.0f - ws, 18.0f }, 0.5f, PN_FILME_R, PN_FILME_G, PN_FILME_B, a);
     snprintf(s, sizeof s, i18n("%d%% séries · %d%% filmes"), (int)(fs * 100.0f + 0.5f), 100 - (int)(fs * 100.0f + 0.5f));
-    escrever(TXT_CAPTION2, s, PF_MEDIO, x, y + 26.0f, w, PF_ESC_APOIO, a);
-  } else escrever(TXT_CAPTION2, "Sem minutos ainda.", PF_APOIO, x, y, w, PF_ESC_APOIO, a);
-  y += 64.0f;
+    escrever(TXT_CAPTION2, s, PF_MEDIO, x, y + 28.0f, w, PN_ESC_APOIO, a);
+  } else escrever(TXT_CAPTION2, "Sem minutos ainda.", PF_APOIO, x, y, w, PN_ESC_APOIO, a);
+  y += 70.0f;
   for (int i = 0; i < dados.nGeneros; i++) { gTot += dados.generos[i].quantidade; if (dados.generos[i].quantidade > gMax) gMax = dados.generos[i].quantidade; }
-  if (!dados.nGeneros) { escrever(TXT_CAPTION2, "Gêneros aparecem quando os títulos carregarem.", PF_APOIO, x, y, w, PF_ESC_APOIO, a); return; }
-  for (int i = 0; i < dados.nGeneros && y + 30.0f < r.y + r.h - PF_PAD_Y; i++) {
+  if (!dados.nGeneros) { escrever(TXT_CAPTION2, "Gêneros aparecem quando os títulos carregarem.", PF_APOIO, x, y, w, PN_ESC_APOIO, a); return; }
+  for (int i = 0; i < dados.nGeneros && y + 34.0f < r.y + r.h - PF_PAD_Y; i++) {
     char pc[16];
-    float bw = w * 0.42f, bx = x + w - bw - 48.0f;
+    float bw = w * 0.36f, bx = x + w - bw - 58.0f;
     snprintf(pc, sizeof pc, "%d%%", gTot ? (dados.generos[i].quantidade * 100 + gTot / 2) / gTot : 0);
-    escrever(TXT_CAPTION2, dados.generos[i].nome, PF_MEDIO, x, y, bx - x - 8.0f, PF_ESC_APOIO, a);
-    gfx_cor((GfxRect){ bx, y + 7.0f, bw, 8.0f }, 0.5f, 1, 1, 1, .08f * a);
-    gfx_cor((GfxRect){ bx, y + 7.0f, bw * (float)dados.generos[i].quantidade / (float)gMax, 8.0f }, 0.5f, ar, ag, ab, a);
-    escrever(TXT_CAPTION2, pc, PF_APOIO, x + w - 40.0f, y, 40.0f, PF_ESC_APOIO, a);
-    y += 30.0f;
+    escrever(TXT_CAPTION2, dados.generos[i].nome, PF_MEDIO, x, y, bx - x - 8.0f, PN_ESC_APOIO, a);
+    gfx_cor((GfxRect){ bx, y + 9.0f, bw, 9.0f }, 0.5f, 1, 1, 1, .08f * a);
+    gfx_cor((GfxRect){ bx, y + 9.0f, bw * (float)dados.generos[i].quantidade / (float)gMax, 9.0f }, 0.5f, ar, ag, ab, a);
+    escrever(TXT_CAPTION2, pc, PF_APOIO, x + w - 50.0f, y, 50.0f, PN_ESC_APOIO, a);
+    y += 36.0f;
   }
 }
 
@@ -442,9 +463,9 @@ static void fato(int i, const char *rot, const char *val, const char *sub, float
   GfxRect r = rFato(i);
   float w = r.w - 40.0f, cy = r.y + r.h * 0.5f;
   cartao(r, a);
-  escrever(TXT_CAPTION2, rot, PF_MEDIO, r.x + 20.0f, cy - 40.0f, w, PF_ESC_APOIO, a);
-  escrever(TXT_ROW_TITULO, val, PF_FORTE, r.x + 20.0f, cy - 16.0f, w, PF_ESC_CARD, a);
-  escrever(TXT_CAPTION2, sub, PF_APOIO, r.x + 20.0f, cy + 16.0f, w, PF_ESC_APOIO * 0.95f, a);
+  escrever(TXT_CAPTION2, rot, PF_MEDIO, r.x + 20.0f, cy - 47.0f, w, PN_ESC_APOIO, a);
+  escrever(TXT_ROW_TITULO, val, PF_FORTE, r.x + 20.0f, cy - 20.0f, w, PN_ESC_CARD, a);
+  escrever(TXT_CAPTION2, sub, PF_APOIO, r.x + 20.0f, cy + 18.0f, w, PN_ESC_APOIO * 0.95f, a);
 }
 static void desenharFatos(float a) {
   char v[160], s[160], t[48], d[80], rot[80];
@@ -494,7 +515,7 @@ static void desenharFolha(float a) {
   pnData(data, sizeof data, &tm);
   tempo(tt, sizeof tt, dados.minutosDia[d]);
   snprintf(l, sizeof l, "%s \xc2\xb7 %s", data, tt);
-  escrever(TXT_TITULO3, l, 245, p.x + 32.0f, p.y + 28.0f, w - 64.0f, PF_ESC_COMUM, a);
+  escrever(TXT_TITULO3, l, 245, p.x + 32.0f, p.y + 28.0f, w - 64.0f, PN_ESC_COMUM, a);
   for (int k = 0; k < n; k++) {
     const PerfilDiaItem *it = &dados.diaItens[d][k];
     const PerfilObra *o = obraDe(it->obra);
@@ -508,8 +529,8 @@ static void desenharFolha(float a) {
     pnItem(t2, sizeof t2, it);
     tempo(tt, sizeof tt, it->minutos);
     snprintf(sub, sizeof sub, i18n("%s · começou às %s"), tt, hora);
-    escrever(TXT_ROW_TITULO, t2, PF_FORTE, lr.x + 96.0f, lr.y + 32.0f, lr.w - 120.0f, PF_ESC_CARD, a);
-    escrever(TXT_CAPTION2, sub, PF_APOIO, lr.x + 96.0f, lr.y + 66.0f, lr.w - 120.0f, PF_ESC_APOIO, a);
+    escrever(TXT_ROW_TITULO, t2, PF_FORTE, lr.x + 96.0f, lr.y + 32.0f, lr.w - 120.0f, PN_ESC_CARD, a);
+    escrever(TXT_CAPTION2, sub, PF_APOIO, lr.x + 96.0f, lr.y + 66.0f, lr.w - 120.0f, PN_ESC_APOIO, a);
   }
 }
 static void pedirObra(const PerfilObra *o) {

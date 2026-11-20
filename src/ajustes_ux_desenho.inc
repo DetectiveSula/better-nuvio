@@ -542,7 +542,7 @@ static void ajToqueBotoes(float direita, float yc, float a) {
 // profundos, dinamicas e a Textura —, o mockup a 1,15x (a linha da v2 e
 // mais larga que a do mockup das cores).
 #define AJ_REGUA_FILA 72.0f
-#define AJ_REGUA_H (4.0f * AJ_REGUA_FILA + 4.0f)
+#define AJ_REGUA_H (5.0f * AJ_REGUA_FILA + 4.0f)   // claros, profundos, dinamicas, Textura, Personalizada
 // Use the same responsive card width as the renderer. The old fixed 150px
 // thumbnail height let wide/full-screen previews paint over the following row.
 static float ajFundoBaixo(void) {
@@ -564,16 +564,18 @@ static const int *ajReguaFila(int op, int f, int *n) {
     return cores;
   }
   static const int TX[2] = { AJ_TEMA_TEXTURA, AJ_TEMA_TEXTURA_SUTIL };
+  static const int PERS[1] = { AJ_TEMA_PERSONALIZADA };
   switch (f) {
     case 0:  *n = 9; return REGUA_CLAROS;
     case 1:  *n = 9; return REGUA_PROFUNDOS;
     case 2:  *n = 3; return REGUA_DIN;
-    default: *n = 2; return TX;
+    case 3:  *n = 2; return TX;
+    default: *n = 1; return PERS;
   }
 }
 static int ajReguaOnde(int op, int v, int *col) {
   int f, k, n;
-  for (f = 0; f < (op == AJ_FUNDO_DIN_COR ? 2 : 4); f++) {
+  for (f = 0; f < (op == AJ_FUNDO_DIN_COR ? 2 : 5); f++) {
     const int *L = ajReguaFila(op, f, &n);
     for (k = 0; k < n; k++) if (L[k] == v) { *col = k; return f; }
   }
@@ -581,7 +583,7 @@ static int ajReguaOnde(int op, int v, int *col) {
 }
 static int ajReguaMover(int op, int v, int dx, int dy) {
   int col, f = ajReguaOnde(op, v, &col), n;
-  int ultima = op == AJ_FUNDO_DIN_COR ? 1 : 3;
+  int ultima = op == AJ_FUNDO_DIN_COR ? 1 : 4;
   const int *L;
   f += dy;
   if (f < 0) f = 0;
@@ -618,6 +620,11 @@ static void aj2Bolinha(int v, float cx, float cy, int foco, int gravada, float a
 // sem paleta, a da cena.
 static void aj2CorDin(int v, const char *url, float c1[3], float c2[3]) {
   CorvivaPaleta p;
+  if (v == AJ_TEMA_PERSONALIZADA) {   // the person's own colours, never the art's
+    corDeHex((unsigned)valor[AJ_TEMA_COR1], &c1[0], &c1[1], &c1[2]);
+    corDeHex((unsigned)valor[AJ_TEMA_COR3], &c2[0], &c2[1], &c2[2]);
+    return;
+  }
   if (url && url[0] && corviva_paleta(url, &p) && p.ok) {
     memcpy(c1, v == AJ_TEMA_DINAMICA && valor[AJ_ARTE_TOM] == 1 ? nv_acento_viva : p.acento, sizeof p.acento);
     memcpy(c2, v == AJ_TEMA_GRADIENTE ? p.grad[2] : c1, sizeof p.acento);
@@ -627,9 +634,9 @@ static void aj2CorDin(int v, const char *url, float c1[3], float c2[3]) {
   memcpy(c2, v == AJ_TEMA_GRADIENTE ? nv_grad_viva[2] : nv_acento_viva, sizeof nv_acento_viva);
 }
 static void aj2Regua(int op, GfxRect ln, float y, float a) {
-  static const char *const KICK[4][2] = {
+  static const char *const KICK[5][2] = {
     { "Claros", "Tinta escura" }, { "Profundos", "Tinta branca" },
-    { "Dinâmicas", "Só nesta TV" }, { "Textura", "Do título" } };
+    { "Dinâmicas", "Só nesta TV" }, { "Textura", "Do título" }, { "Personalizada", "Sincronizada" } };
   int sel = valor[op], alvo = uxPendente, f, k, n;
   // A coluna dos rotulos cresce ate 176 quando a linha deixa (Montserrat:
   // "ONLY ON THIS TV" pede ~170); as nove bolinhas (9 x 72) cabem do lado.
@@ -638,7 +645,7 @@ static void aj2Regua(int op, GfxRect ln, float y, float a) {
   if (kcol > 176.0f) kcol = 176.0f;
   if (kcol < 150.0f) kcol = 150.0f;
   bx = kx + kcol;
-  for (f = 0; f < (op == AJ_FUNDO_DIN_COR ? 2 : 4); f++) {
+  for (f = 0; f < (op == AJ_FUNDO_DIN_COR ? 2 : 5); f++) {
     const int *L = ajReguaFila(op, f, &n);
     float cy = y + f * AJ_REGUA_FILA + 32.0f, px = bx;
     // Em ingles/Montserrat "ONLY ON THIS TV" passava dos 150 da coluna e
@@ -673,10 +680,10 @@ static void aj2Regua(int op, GfxRect ln, float y, float a) {
       // da arte em todas (nao dizia qual era qual) mais um ponto de cor, e a
       // fileira passava da borda do bloco com Montserrat ou em outro idioma:
       // o nome agora encolhe para a largura que sobra (maxT).
-      { static const char *const IC[5] = { "aj_pipette", "aj_blend", "aj_spotlight", "aj_paint-roller", "aj_feather" };
+      { static const char *const IC[6] = { "aj_pipette", "aj_blend", "aj_spotlight", "aj_paint-roller", "aj_feather", "aj_palette" };
         const char *nome = V_TEMA[v], *url = ajFundoArte();
         const char *ic = v == AJ_TEMA_DINAMICA ? IC[0] : v == AJ_TEMA_GRADIENTE ? IC[1] : v == AJ_TEMA_IMERSIVA ? IC[2] :
-                         v == AJ_TEMA_TEXTURA ? IC[3] : IC[4];
+                         v == AJ_TEMA_TEXTURA ? IC[3] : v == AJ_TEMA_PERSONALIZADA ? IC[5] : IC[4];
         TxtLinha t = ajTxtC(TXT_V2_SEG, nome, maxT);
         float w = 7 + 42 + 10 + t.w + 18, c1[3], c2[3];
         GfxRect p = { px, cy - 28.0f, w, 56 };
@@ -692,7 +699,7 @@ static void aj2Regua(int op, GfxRect ln, float y, float a) {
         gfx_cor((GfxRect){ px + 7, cy - 21, 42, 42 }, 0.5f, 0.055f, 0.059f, 0.071f, 0.85f * a); // vidro-ok: knob disc
         if (v == sel && !foc) gfx_icone((GfxRect){ px + 16, cy - 12, 24, 24 }, "aj_check", 1, 1, 1, a);
         else {
-          if (v == AJ_TEMA_GRADIENTE) c1[0] = (c1[0] + c2[0]) * 0.5f, c1[1] = (c1[1] + c2[1]) * 0.5f, c1[2] = (c1[2] + c2[2]) * 0.5f;
+          if (v == AJ_TEMA_GRADIENTE || v == AJ_TEMA_PERSONALIZADA) c1[0] = (c1[0] + c2[0]) * 0.5f, c1[1] = (c1[1] + c2[1]) * 0.5f, c1[2] = (c1[2] + c2[2]) * 0.5f;
           gfx_icone((GfxRect){ px + 16, cy - 12, 24, 24 }, ic, c1[0], c1[1], c1[2], a);
         }
         txt_desenhar_alpha(t, px + 59, cy - t.h * 0.5f, (foc ? 1.0f : 0.78f) * a);

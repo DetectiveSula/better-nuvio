@@ -19,7 +19,7 @@ end = b.index('  if (vidro) {', start)
 out.append(b[start:end] + '  record(r, -1);\n}\n')
 start = s.index('  { float cyBtn = yAcoes +')
 end = s.index('  // --- ILHA DE AMIGOS', start)
-out.append('static void row(void) { float a = 1;\n' + s[start:end] + '\n}\n')
+out.append('static void row(void) { float a = 1, quieto = 0;\n' + s[start:end] + '\n}\n')
 pathlib.Path(sys.argv[2]).write_text('\n'.join(out))
 PY
 cc -O1 -g -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-value -Wno-unused-but-set-variable -Isrc -I"$dir" tests/detail_acoes_gap.c -o "$dir/t" -lm

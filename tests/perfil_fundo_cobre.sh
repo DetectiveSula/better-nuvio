@@ -14,7 +14,10 @@ linha="$(printf '%s\n' "$out" | grep -E '^\[imersiva\] perfil +upd=' | head -1)"
 modo2="$(printf '%s\n' "$out" | grep -E '^\[imersiva\] perfil +fill por modo' | head -1 | sed -E 's/.* 2=([0-9.]+).*/\1/')"
 cheios="$(printf '%s\n' "$linha" | sed -E 's/.*cheios=([0-9.]+).*/\1/')"
 echo "perfil: cheios=$cheios fill-cor=$modo2"
-if awk -v c="$cheios" -v m="$modo2" 'BEGIN { exit !(c != "" && m != "" && c <= 2.0 && m <= 1.01) }'; then
+# cheios <= 3: the wall layer is drawn offscreen at 1280x720 and composited in
+# one opaque full-screen pass (psestilos.c, PAR_BAIXA_*), which the layout-area
+# count adds to the wall's own two. fill-cor still catches a covered clear.
+if awk -v c="$cheios" -v m="$modo2" 'BEGIN { exit !(c != "" && m != "" && c <= 3.0 && m <= 1.01) }'; then
   echo "PASS: perfil picker draws one opaque full-screen clear"
 else
   echo "FAIL: perfil picker draws a covered full-screen clear"; exit 1

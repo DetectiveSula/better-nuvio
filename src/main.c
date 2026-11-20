@@ -2132,11 +2132,23 @@ int main(int argc, char **argv) {
     // uploads e o texto rasterizado. O [quadro] de 3 s mostra UM pior por
     // janela; para achar o que causa cada tranco da navegacao e preciso ver
     // todos, na ordem, ao lado das teclas.
-    if (rastroQuadros && dtms > 25.0)
+    // NV_RASTRO_MS: which frames the trace prints. Debug .tpk builds
+    // (NV_SEM_ATUALIZACAO) trace from startup into the log page, from two
+    // missed 60 Hz frames up, so a slow screen does not flood the log.
+#ifndef NV_RASTRO_MS
+#ifdef NV_SEM_ATUALIZACAO
+#define NV_RASTRO_MS 34.0
+#else
+#define NV_RASTRO_MS 25.0
+#endif
+#endif
+    if (rastroQuadros && dtms > NV_RASTRO_MS)
       printf("[qd] %.1fms ev=%.1f bomb=%.1f(%d tex %.1fMB) upd=%.1f clr=%.1f des=%.1f aux=%.1f swap=%.1f"
-             " [prep=%.1f glclear=%.1f] txt=%.1fms/%d rects=%d fill=%.2f assados=%d gpu~=%.1f %s\n", dtms, fEv, fBomb, fUplN, fUplB / 1048576.0,
-             fUpd, fClr, fDes, fAux, fSwap, fPrep, fGlClr, txtMsQuadro, txtNQuadro, fNRect, fFill, gfx_n_assados, gputempo_ultimo(), home_rastro_foco());
-    if (rastroQuadros && dtms > 25.0) {
+             " [prep=%.1f glclear=%.1f] txt=%.1fms/%d rects=%d fill=%.2f assados=%d gpu~=%.1f %s"
+             " | out=%.1fms/%d vidro=%d/%d desf=%d tela=%s trans=%s\n", dtms, fEv, fBomb, fUplN, fUplB / 1048576.0,
+             fUpd, fClr, fDes, fAux, fSwap, fPrep, fGlClr, txtMsQuadro, txtNQuadro, fNRect, fFill, gfx_n_assados, gputempo_ultimo(), home_rastro_foco(),
+             fOutMs, fNOut, gfx_vidro_capturas, gfx_vidro_passadas, gfx_desfocados_quadro(), fTela, fTrans);
+    if (rastroQuadros && dtms > NV_RASTRO_MS) {
       int k; printf("[qd-fill]");
       for (k = 0; k < GFX_NMODOS; k++) if (gfx_fill_modo[k] > 0.02) printf(" %d=%.2f", k, gfx_fill_modo[k]);
       printf("\n");
@@ -2161,7 +2173,16 @@ int main(int argc, char **argv) {
                  (home ? 1 : browse) : 0;
       // Scene/effect changes break consecutive report streaks.
       if (cena) cena += 8 * (ajustes_home_layout() + 4 * ajustes_cor_viva());
-      if (cena != gpuCenaAnterior || pendentes > 0 || fUplN > 0 || fUplB > 0)
+      // MEASURED WHILE BROWSING, not only at rest (S90C, Mali-G51, 17 Nov
+      // 2026): image loads and uploads made every frame "transient" for 3 s,
+      // and on a browsed Home there is always one in flight, so the ladder
+      // logged "[gpu-modos] lento" (37-49 fps) and never acted. A scene change
+      // still settles for 3 s; a frame that did the upload/decode work itself
+      // is already kept out by gpun_medir (CPU > 8 ms counts as bad, and a
+      // window with over 20% bad time is discarded), so GPU-bound browsing
+      // frames now count.
+      (void)pendentes;
+      if (cena != gpuCenaAnterior)
         gpuTransienteAte = agora + 3000u;
       gpuCenaAnterior = cena;
       int elegivel = cheia && (Sint32)(agora - gpuTransienteAte) >= 0;
@@ -2568,6 +2589,9 @@ int main(int argc, char **argv) {
       // /tmp/nuvio-gfx-off desliga modos de desenho; e o preenchimento do
       // ultimo quadro por modo, para saber quem pesa sem recompilar.
       { FILE *fq = fopen("/tmp/nuvio-quadros", "r"); rastroQuadros = fq != NULL; if (fq) fclose(fq); }
+#ifdef NV_SEM_ATUALIZACAO
+      rastroQuadros = 1;   // debug .tpk: the per-frame trace is the point of the build
+#endif
       { FILE *fo = fopen("/tmp/nuvio-gfx-off", "r");
         unsigned long long m = 0; int n;
         if (fo) { while (fscanf(fo, "%d", &n) == 1) if (n >= 0 && n < GFX_NMODOS) m |= 1ull << n; fclose(fo); }

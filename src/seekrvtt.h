@@ -45,4 +45,15 @@ void seekr_vtt_liberar(SeekrVtt *v);
 // passada a metade vale a seguinte — a regra do "Preview accuracy" da
 // documentacao. Antes da primeira, a primeira; depois da ultima, a ultima.
 int  seekr_vtt_cue(const SeekrVtt *v, long posMs);
+
+// WHERE A SKIP LANDS when a preview was on screen (player.c, terminarSalto):
+// at `previa`, the video time of the picture shown (its slot's start minus
+// the sync setting), so the landing frame is the frame that was previewed.
+// Only within one slot (15 s) of the raw position `pos` and inside the video;
+// otherwise, or with no preview (previa < 0), the raw position.
+static inline double seekr_pouso(double previa, double pos, double dur) {
+  double d = previa - pos;
+  if (previa < 0.0 || d > 15.0 || d < -15.0 || (dur > 0.0 && previa >= dur)) return pos;
+  return previa;
+}
 #endif

@@ -20,6 +20,7 @@
 #include "psparede.h"
 #include "psestilos.h"
 #include "profile_editor.h"
+#include "perfiledit.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -170,6 +171,25 @@ static int preparando;
 static int pinDe = -1;
 static int editAfterPin=-1, profileOkDown, profileOkSlot;
 static Uint32 profileOkSince;
+// EDIT PROFILE on the TV (perfiledit.c): Down from the profiles focuses an
+// "Edit <name>" button under them; every profile then shows a pencil. OK opens
+// the profile's options (a locked profile asks for its PIN first). Android keeps
+// its own panel (profile_editor.c), opened by holding OK.
+static int editarFoco;
+static float animEditar;
+// The Edit button and the new editor (perfiledit.c). On Android they are the
+// TV mode's too (owner, 19/11/2026: it was missing in BlueStacks); the phone
+// (touch) interface keeps its hold-to-edit editor, made for fingers.
+static int psEditorNovo(void) {
+#if defined(NV_ANDROID)
+  return !ajustes_interface_mobile();
+#else
+  return 1;
+#endif
+}
+static int psEditarVisivel(void) {
+  return psEditorNovo() && !preparando && pinDe < 0 && perfis_n() > 0 && perfiledit_disponivel();
+}
 static void perfilEditar(int slot);
 #ifdef NV_TOUCH_UI
 static float psToqueX, psToqueMaximo, psToquePasso;
@@ -585,11 +605,17 @@ static void montarCena(PSCena *c, int reduzida) {
                      : NV_TELA_W * 0.5f; }
   c->perfil = p ? p->indice : 0;
   c->semParede = p ? p->temPin : 1;
+  // Neighbours whose own wall is worth warming (a PIN profile shows the mural).
+  for (i = 0; i < 2; i++) {
+    int j = foco + (i ? 1 : -1);
+    const ContaPerfil *v = j >= 0 && j < m ? perfis_item(j) : NULL;
+    c->vizinhos[i] = v && !v->temPin ? v->indice : 0;
+  }
   for (i = 0; i < muralN && i < PS_MURAL_MAX; i++) muralUrls[i] = muralCapas[i].url;
   c->mural = muralUrls;
   c->muralN = muralN;
   c->reduzida = reduzida;
-  c->parado = pinDe >= 0;
+  c->parado = pinDe >= 0 || perfiledit_aberto();   // PIN pad or profile editor on top
 }
 
 // --- CONTINUAR SOB O AVATAR (2.0.3, variante D2) -----------------------------
@@ -813,6 +839,8 @@ void perfilsel_iniciar(void) {
   preparando = 0;
   pinDe = -1;
   profile_editor_close();editAfterPin=-1;profileOkDown=0;
+  if (perfiledit_aberto()) perfiledit_fechar();
+  editarFoco = 0; animEditar = 0.0f;
   pin[0] = 0;
   pinFoco = PS_PIN_INICIO;
   pinErrado = 0;
@@ -964,15 +992,32 @@ static void perfilAtivar(int slot, int indice) {
 }
 static void perfilEditar(int slot) {
 #if defined(NV_ANDROID) || defined(NV_PROFILE_EDIT_TEST)
+  if (psEditorNovo() && perfiledit_disponivel()
+#ifdef NV_PROFILE_EDIT_TEST
+      && 0   // the hold-to-edit tests drive the phone editor
+#endif
+     ) {
+    const ContaPerfil *p = perfis_item(slot);
+    profileOkDown = 0;
+    if (!p || preparando || perfiledit_aberto()) return;
+    if (p->temPin) { editAfterPin = slot; escolher(slot); return; }
+    perfiledit_abrir_perfil(p->indice, NULL);
+    return;
+  }
   const ContaPerfil *p=perfis_item(slot);
   if(!p || preparando || profile_editor_active())return;
   profileOkDown=0;
   if(p->temPin){editAfterPin=slot;escolher(slot);return;}
   profile_editor_open(slot,NULL);
 #else
-  (void)slot;
+  const ContaPerfil *p = perfis_item(slot);
+  if (!p || preparando || perfiledit_aberto() || !perfiledit_disponivel()) return;
+  if (p->temPin) { editAfterPin = slot; escolher(slot); return; }
+  perfiledit_abrir_perfil(p->indice, NULL);
 #endif
 }
+static void perfilEditarFocar(int a, int b) { (void)a; (void)b; if (psEditarVisivel()) editarFoco = 1; }
+static void perfilEditarAtivar(int a, int b) { (void)a; (void)b; if (psEditarVisivel()) { editarFoco = 1; perfilEditar(foco); } }
 static void pinFocar(int tecla, int b) {
   (void)b;
   if (pinDe >= 0 && !verificando && !preparando &&
@@ -989,6 +1034,7 @@ void perfilsel_evento(const SDL_Event *e) {
   int m = perfis_n();
   if(e->type==SDL_WINDOWEVENT && e->window.event==SDL_WINDOWEVENT_FOCUS_LOST)profileOkDown=0;
   if(profile_editor_active())return;
+  if (perfiledit_aberto()) { perfiledit_evento(e); return; }
 #if defined(NV_ANDROID) || defined(NV_PROFILE_EDIT_TEST)
   if(e->type==SDL_KEYUP && (e->key.keysym.sym==SDLK_RETURN || e->key.keysym.sym==SDLK_KP_ENTER)){
     int choose=profileOkDown && profileOkSlot==foco;
@@ -1009,7 +1055,7 @@ void perfilsel_evento(const SDL_Event *e) {
   k = e->key.keysym.sym;
   if (pinDe >= 0) { eventoPin(k); return; }
 #if defined(NV_ANDROID) || defined(NV_PROFILE_EDIT_TEST)
-  if(m>0 && (k==SDLK_RETURN || k==SDLK_KP_ENTER)){
+  if(m>0 && !editarFoco && (k==SDLK_RETURN || k==SDLK_KP_ENTER)){
     if(ponteiro_ok_longo()){perfilEditar(foco);return;}
     if(!e->key.repeat && !profileOkDown){profileOkDown=1;profileOkSlot=foco;profileOkSince=SDL_GetTicks();}
     return;
@@ -1017,6 +1063,16 @@ void perfilsel_evento(const SDL_Event *e) {
   profileOkDown=0;
 #endif
 
+  if (editarFoco && !psEditarVisivel()) editarFoco = 0;
+  if (editarFoco) {
+    // The edit button: Up back to the profiles, Left/Right still choose whose.
+    if (k == SDLK_UP || k == SDLK_ESCAPE || k == SDLK_AC_BACK || k == SDLK_BACKSPACE) editarFoco = 0;
+    else if (k == SDLK_RIGHT) { if (foco < m - 1) foco++; }
+    else if (k == SDLK_LEFT) { if (foco > 0) foco--; }
+    else if (k == SDLK_RETURN || k == SDLK_KP_ENTER) perfilEditar(foco);
+    return;
+  }
+  if (k == SDLK_DOWN && psEditarVisivel()) { editarFoco = 1; return; }
   if (k == SDLK_ESCAPE || k == SDLK_AC_BACK || k == SDLK_BACKSPACE) { sair = 1; return; }
   // Com a lista na tela, o OK escolhe. Sem ela (rede caida), o OK e a unica
   // acao que faz sentido: tentar de novo.
@@ -1032,6 +1088,9 @@ void perfilsel_atualizar(float dt, Uint32 agora) {
   float dtCru = dt;
   (void)agora;
   profile_editor_update();
+  perfiledit_atualizar(dt, agora);
+  animEditar = anim_reduzida(anim_mola(animEditar, editarFoco && psEditarVisivel() ? 1.0f : 0.0f, dt, NV_MOLA_FOCO),
+                             editarFoco && psEditarVisivel() ? 1.0f : 0.0f, ajustes_animacoes_reduzidas());
 #if defined(NV_ANDROID) || defined(NV_PROFILE_EDIT_TEST)
   if(profileOkDown && pinDe<0 && !preparando && !profile_editor_active() &&
      profileOkSlot==foco && agora-profileOkSince>=NV_HOLD_MS)perfilEditar(foco);
@@ -1152,7 +1211,18 @@ void perfilsel_atualizar(float dt, Uint32 agora) {
       const ContaPerfil *p = perfis_item(pinDe);
       if(editAfterPin==pinDe){
         int slot=pinDe;pinDe=-1;editAfterPin=-1;
-        profile_editor_open(slot,pin);memset(pin,0,sizeof pin);
+#if defined(NV_ANDROID) || defined(NV_PROFILE_EDIT_TEST)
+        if (psEditorNovo() && perfiledit_disponivel()
+#ifdef NV_PROFILE_EDIT_TEST
+            && 0
+#endif
+           ) { if (p) perfiledit_abrir_perfil(p->indice, pin); }
+        else profile_editor_open(slot,pin);
+#else
+        (void)slot;
+        if (p) perfiledit_abrir_perfil(p->indice, pin);
+#endif
+        memset(pin,0,sizeof pin);
       } else {
       // Gravar o perfil ativo e do fio de desenho, nunca do fio da rede: e ele
       // que escreve em disco e que o resto do app le todo quadro.
@@ -1446,7 +1516,7 @@ void perfilsel_desenhar(Uint32 agora) {
     if (modo == PS_FUNDO_FILMES || modo == PS_FUNDO_LUZ || modo == PS_FUNDO_PROJETOR) {
       PSCena cena;
       montarCena(&cena, reduzida);
-      psestilos_desenhar(&cena, modo, a * (pinDe >= 0 ? 0.30f : 1.0f));
+      psestilos_desenhar(&cena, modo, a * (pinDe >= 0 || perfiledit_aberto() ? 0.30f : 1.0f));
     } else {
       float cob = modo == PS_FUNDO_ARTE ? ambDesenhar(a) : 0.0f;
       // "Profile art": where the art does not cover (no art and no avatar, or
@@ -1456,9 +1526,9 @@ void perfilsel_desenhar(Uint32 agora) {
         PSCena cena;
         montarCena(&cena, reduzida);
         psestilos_desenhar(&cena, PS_FUNDO_LUZ,
-                           a * (1.0f - cob) * (pinDe >= 0 ? 0.30f : 1.0f));
+                           a * (1.0f - cob) * (pinDe >= 0 || perfiledit_aberto() ? 0.30f : 1.0f));
       } else if (muralVisivel(modo) && cob < 0.999f)
-        muralDesenhar(a * (1.0f - cob) * (pinDe >= 0 ? 0.30f : 1.0f), reduzida);
+        muralDesenhar(a * (1.0f - cob) * (pinDe >= 0 || perfiledit_aberto() ? 0.30f : 1.0f), reduzida);
     } }
 
   { TxtLinha t = txt_linha(TXT_TITULO1, "Quem está assistindo?", 255, 255, 255, 255);
@@ -1497,7 +1567,7 @@ void perfilsel_desenhar(Uint32 agora) {
   // Holding OK is the only way into the profile editor and nothing else on the
   // screen says so (official Nuvio shows the same hint). Hidden behind the PIN
   // pad and while the chosen profile is being prepared.
-  if (pinDe < 0 && !preparando) {
+  if (pinDe < 0 && !preparando && !psEditarVisivel()) {
     const char *dica = ajustes_interface_mobile()
       ? "Toque e segure um perfil para editá-lo, mudar o PIN ou apagá-lo"
       : "Segure OK em um perfil para editá-lo, mudar o PIN ou apagá-lo";
@@ -1553,6 +1623,19 @@ void perfilsel_desenhar(Uint32 agora) {
     // So anima o avatar em foco, e nao quando o teclado do PIN esta por cima:
     // gif.c segura uma animacao por vez e os dois discos disputariam a textura.
     disco(av, p, f, a, i == foco && pinDe < 0);
+    // The pencil: only while the Edit button has the focus, and only on the
+    // profile it will edit (owner, 19/11/2026: "should not always be shown").
+    if (psEditarVisivel() && i == foco && animEditar > 0.01f) {
+      float s = 60.0f, al = animEditar;
+      float bx = av.x + av.w * 0.5f + av.w * 0.5f * 0.707f, by = av.y + av.h * 0.5f + av.h * 0.5f * 0.707f;
+      GfxRect b = { bx - s * 0.5f, by - s * 0.5f, s, s };
+      int acento = i == foco && editarFoco;
+      gfx_cor((GfxRect){ b.x - 4, b.y - 4, s + 8, s + 8 }, 0.5f, 0.047f, 0.047f, 0.055f, al * a);
+      if (acento) ajustes_ui_pilula_acento(b, s * 0.5f, al * a);
+      else gfx_cor(b, 0.5f, 0.227f, 0.235f, 0.267f, al * a);
+      { float t = acento ? ajustes_tinta_foco() / 255.0f : 0.953f;
+        gfx_icone((GfxRect){ b.x + s * 0.25f, b.y + s * 0.25f, s * 0.5f, s * 0.5f }, "aj_pencil", t, t, t, al * a); }
+    }
     if (preparando && i == foco) giro(av, agora, a, reduzida);
 
     // 176 e nao 140 no estado sem foco: a nota de contraste vale a 3 m, e
@@ -1607,7 +1690,18 @@ void perfilsel_desenhar(Uint32 agora) {
     txt_desenhar_alpha(l, ilha.x + PS_ILHA_PAD, ilha.y + (ilha.h - (float)l.h) * 0.5f, a);
   }
 
+  if (psEditarVisivel()) {
+    const ContaPerfil *p = perfis_item(foco);
+    char rot[96];
+    float bw;
+    snprintf(rot, sizeof rot, i18n("Editar %s"), p ? p->nome : "");
+    bw = 28 + 32 + (float)txt_largura(TXT_ILHA_ITEM, rot) + 28;
+    ajustes_ui_botao(rot, "aj_pencil", (NV_TELA_W - bw) * 0.5f, PS_DICA_Y - 2.0f + subida, editarFoco);
+    if (!preparando)
+      ponteiro_alvo((NV_TELA_W - bw) * 0.5f, PS_DICA_Y + subida, bw, 60, perfilEditarFocar, perfilEditarAtivar, 0, 0);
+  }
   if (animPin > 0.004f) desenhaPin();
+  perfiledit_desenhar(agora);
 }
 
 #ifdef NV_PERFILSEL_TEST

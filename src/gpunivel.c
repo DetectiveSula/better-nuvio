@@ -742,10 +742,13 @@ void gpun_relatar(double fps, double pior, double periodo, int cena, int cheia) 
 }
 
 void gpun_medir(double dtms, double espera, double cpu, int cena, int cheia) {
-  (void)espera;
   if (!cena || !cheia) { medidaTransiente = 1; return; }
   if (dtms <= 0) return;
   // Reject decode/upload, event/list work and isolated scroll-start stalls.
-  if (cpu > 8.0 || dtms > 100.0) medidaRuim += dtms;
+  // A frame is CPU work only when the CPU took longer than the wait for the
+  // GPU: on a slow GPU an ordinary browsing frame spends 8-11 ms drawing and
+  // 20-35 ms waiting (S90C, Mali-G51), and rejecting it on CPU time alone
+  // kept the ladder from ever seeing the frames it exists for.
+  if ((cpu > 8.0 && cpu >= espera) || dtms > 100.0) medidaRuim += dtms;
   else { medidaMs += dtms; medidaN++; }
 }

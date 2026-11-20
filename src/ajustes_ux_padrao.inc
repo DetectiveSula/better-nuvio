@@ -367,3 +367,4 @@
 
   1,25, /* Separate post-play preview Off; 2.5 s delay. */
   0, /* Local TMDB credential action: no preference value or remote field. */
+  0xB75AFF, 0xEC70A9, 0xFFB37A, /* Custom accent: official Nuvio's CustomThemeColors.Default. */

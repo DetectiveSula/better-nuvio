@@ -49,6 +49,7 @@ static void savePng(const char *dir, const char *phase) {
   free(pixels);
 }
 int main(int argc, char **argv) {
+  posplay_shot_classico(1);   // these check the compact card (phones, scene, still watching)
   assert(argc == 3);
   assert(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) == 0);
   IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG);

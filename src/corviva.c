@@ -632,6 +632,8 @@ int corviva_logo_acento(float *r, float *g, float *b) {
 }
 int corviva_retargets(void) { return retargets; }
 
+static float pers[3][3] = { { 0.718f, 0.353f, 1.0f }, { 0.925f, 0.439f, 0.663f }, { 1.0f, 0.702f, 0.478f } };
+void corviva_personalizada(const float cores[3][3]) { memcpy(pers, cores, sizeof pers); }
 void corviva_quadro(float dt, int modo, int usarLogo, int reduzido) {
   float novo[CV_NCOR][3], forca;
   int k, grad, fonteOk;
@@ -719,6 +721,15 @@ void corviva_quadro(float dt, int modo, int usarLogo, int reduzido) {
     for (k = 0; k < 3; k++) ajustarRegiao(cenaLogo.grad[k], novo[6 + k]);
   }
   grad = fonteOk && modo == CORVIVA_GRADIENTE;
+  // CUSTOM: the person's colours in place of the art's. The accent is the
+  // middle one (official Nuvio's solid colour is the second slot); the three
+  // are the gradient stops; no light from the art.
+  if (modo == CORVIVA_PERSONALIZADA) {
+    memcpy(novo[0], pers[1], sizeof novo[0]);
+    for (k = 0; k < 3; k++) memcpy(novo[2 + k], pers[k], sizeof novo[0]);
+    for (k = 0; k < 4; k++) memcpy(novo[5 + k], FUNDO, sizeof novo[0]);
+    grad = memcmp(pers[0], pers[1], sizeof pers[0]) || memcmp(pers[1], pers[2], sizeof pers[0]);
+  }
   forca = (modo == CORVIVA_IMERSIVA && temCena) ? 1.0f : 0.0f;
 
   if (memcmp(novo, alvo, sizeof alvo) || forca != alvoForca || !iniciado) {

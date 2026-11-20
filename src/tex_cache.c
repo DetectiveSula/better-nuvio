@@ -2882,6 +2882,14 @@ static int threadDecode(void *arg) {
     itens[idx].bruto = NULL; itens[idx].nBruto = 0;
     itens[idx].urlCache[0] = 0;
     SDL_UnlockMutex(mtx);
+#ifdef NV_FLUIDEZ_PERF
+    // Measurement builds only (tests/fluidez_perf.c): NV_PERF_DECODE_MS makes
+    // every decode as slow as a TV's, so art that is late on the TV is late
+    // in the Mac harness too.
+    { static int atraso = -1;
+      if (atraso < 0) { const char *e = getenv("NV_PERF_DECODE_MS"); atraso = e ? atoi(e) : 0; }
+      if (atraso > 0) SDL_Delay((Uint32)atraso); }
+#endif
     if (filaEm) {
       filaWait = SDL_GetTicks() - filaEm;
       if (logoPedido || filaWait >= NV_TEX_TRACE_MS)

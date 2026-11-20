@@ -30,7 +30,13 @@ void posplay_atualizar(float dt, Uint32 agora, double posSeg, double durSeg,
                        int ehSerie, int idxCatalogo, int janelaSerie);
 int  posplay_visivel(void);
 int  posplay_aguarda_escolha(void); // pending choice/Next; false after dismissal
-int  posplay_sobre_video(void);   // 1 = cartao de proximo episodio sobre o video cheio
+int  posplay_sobre_video(void);
+// The Apple TV end of episode is on screen (TV, series with a next episode):
+// the player recedes the video into the top-right corner, hides its skip
+// button and keeps the rating card away; this screen has the stars itself.
+int  posplay_fim_apple(void);
+// The episode that is ending, for the stars (the player's epT/epE).
+void posplay_episodio_atual(int t, int e);   // 1 = cartao de proximo episodio sobre o video cheio
 // A regra do FILME sozinha, sem estado: 1 quando os relacionados devem subir.
 // `creditosSeg` e o marcador (0 = nenhum). Nunca antes da metade da duracao;
 // marcador fora do ultimo quarto e recusado (#115). posplay_atualizar soma a
@@ -94,6 +100,8 @@ Uint32 posplay_contagem(Uint32 agora, Uint32 fecharEm, double restaReal, int aut
 #ifdef NV_SHOT_HOOKS
 void posplay_shot(int idxCatalogo, int ehSerie, int t, int e, Uint32 fecha);
 void posplay_shot_estado(int cena, int aindaAssistindo);
+// Tests of the compact card: no Apple end of episode even on a TV layout.
+void posplay_shot_classico(int sim);
 GfxRect posplay_shot_cartao(void);
 #endif
 

@@ -389,6 +389,17 @@ int main(int argc, char **argv) {
     tecla(SDLK_RETURN);
     for (q = 0; q < 8; q++) { quadros(2, NULL); FOTO("abrindo"); }
     quadros(90, NULL); FOTO("cartao");
+    // Trailer no cartao (Apple TV): meio caminho e assentado. O Mac nao toca
+    // video, entao a arte faz o papel do quadro do trailer.
+    if (getenv("NV_CAR_QUIETO")) {
+      { CatItem *c = (CatItem *)cat_item(idx);
+        snprintf(c->logo, sizeof c->logo, "deploy/app/art/logo/%02d.png", 2);
+        logoFixo[0] = 0; }
+      quadros(60, NULL); FOTO("cartao-logo");
+      cartaoQuietoForcado = 0.5f; quadros(2, NULL); FOTO("trailer-meio");
+      cartaoQuietoForcado = 1.0f; quadros(2, NULL); FOTO("trailer");
+      goto fim;
+    }
     if (getenv("NV_CAR_LIMIAR")) {
       static const float passos[] = {1.0f, .5f, .1f, .02f, .0021f, .0019f, 0.0f};
       carOff = (float)carAplicado; carCheia = 1;

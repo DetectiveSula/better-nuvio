@@ -86,9 +86,9 @@ int main(void) {
     rot("2026-11-08", agora, 0, "Airs in 3 Days");
     rot("2026-11-08", agora, 1, "In 3 Days");
     rot("2026-11-12", agora, 0, "Airs in 7 Days");
-    rot("2026-11-13", agora, 0, "Airs Nov 13");         /* 8 days: the date */
-    rot("2026-11-13", agora, 1, "Nov 13");
-    rot("2027-01-03", agora, 0, "Airs Jan 3, 2027");    /* year when not this year */
+    rot("2026-11-13", agora, 0, "Airs 13 Nov");         /* 8 days: the date */
+    rot("2026-11-13", agora, 1, "13 Nov");
+    rot("2027-01-03", agora, 0, "Airs 3 Jan 2027");    /* year when not this year */
     rot("2026-11-05", agora, 0, "");                    /* plain date today: aired at UTC midnight */
     rot("2026-11-01", agora, 0, "");                    /* aired */
     rot("", agora, 0, "");                              /* no date: caller says Upcoming */

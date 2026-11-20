@@ -16,6 +16,7 @@ static int pedir(void) {
   return r;
 }
 int main(void) {
+  posplay_shot_classico(1);   // these check the compact card (phones, scene, still watching)
   assert(posplay_roteiro() == 0);
   // The reused suite ends on a special with a post-credits scene. Restore
   // this fixture's S5E3 before testing its S5E4 countdown.

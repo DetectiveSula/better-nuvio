@@ -33,7 +33,10 @@ int main(void) {
     failedUrl=NULL;psestilos_iniciar();psestilos_atualizar(.016f,&f,PS_FUNDO_FILMES);
     assert(parAtual.n==PSEST_PAREDE_MAX && !strcmp(parAtual.url[7],"title-07"));
     psestilos_atualizar(2.0f,&f,PS_FUNDO_FILMES);assert(!parTemAnt);
+    // The stub decoded everything above; a failed poster never had a texture,
+    // so give its slot one frame to lose it before the failure is noticed.
     failedUrl="title-07";psestilos_atualizar(.016f,&f,PS_FUNDO_FILMES);
+    psestilos_atualizar(.016f,&f,PS_FUNDO_FILMES);
     assert(parAtual.n==PSEST_PAREDE_MAX && parTemAnt);   // refilled from the spare titles
     for(int i=0;i<parAtual.n;i++)assert(strcmp(parAtual.url[i],"title-07"));
     for(int i=0;i<parAtual.n;i++)for(int j=0;j<i;j++)assert(strcmp(parAtual.url[i],parAtual.url[j]));
@@ -45,9 +48,53 @@ int main(void) {
     puts("PASS: a poster that failed to load leaves the wall and a spare title takes its place");
   }
   puts("PASS: profile 2 legacy cache, future profiles, late catalog and PIN fallback fill unique 36-title walls");
+  { // NO POSTER SEEN LOADING (psestilos.c, PAR_ESPERA_S): the first wall waits
+    // hidden for its posters, a new wall waits behind the old one, and late
+    // posters fade in.
+    PSCena a={0};a.perfil=3;a.mural=mural;a.muralN=PSEST_PAREDE_MAX;savedWallCount=0;
+    texLoading=1;psestilos_iniciar();
+    for(int i=0;i<10;i++)psestilos_atualizar(.1f,&a,PS_FUNDO_FILMES);
+    assert(parEntra==0.0f);                          // 1.0 s, nothing decoded: still hidden
+    texLoading=0;psestilos_atualizar(.016f,&a,PS_FUNDO_FILMES);
+    assert(parEntra>0.0f && parAtual.fade[0]<1.0f);  // ready: reveal starts; late posters fade
+    for(int i=0;i<30;i++)psestilos_atualizar(.016f,&a,PS_FUNDO_FILMES);
+    assert(parEntra==1.0f && parAtual.fade[0]==1.0f);
+    // A slow network never leaves the screen black past PAR_ESPERA_S.
+    texLoading=1;psestilos_iniciar();
+    for(int i=0;i<16;i++)psestilos_atualizar(.1f,&a,PS_FUNDO_FILMES);
+    assert(parEntra>0.0f);
+    // Focus moves to a profile whose wall is not decoded: the old wall stays
+    // until the new one is ready, then they cross-fade.
+    texLoading=0;psestilos_iniciar();
+    for(int i=0;i<40;i++)psestilos_atualizar(.016f,&a,PS_FUNDO_FILMES);
+    char own[12][32];for(int i=0;i<12;i++){snprintf(own[i],sizeof own[i],"own-%02d",i);savedWallUrls[i]=own[i];}
+    savedWallCount=12;a.perfil=4;texLoading=1;
+    for(int i=0;i<5;i++)psestilos_atualizar(.1f,&a,PS_FUNDO_FILMES);
+    assert(parTemAnt && parTroca==0.0f);             // waiting: only the old wall shows
+    texLoading=0;psestilos_atualizar(.016f,&a,PS_FUNDO_FILMES);
+    assert(parTroca>0.0f);
+    // Cached on arrival: shown at once, no per-poster fade.
+    assert(parAtual.fade[0]==0.0f||parAtual.visto[0]);
+    // Flicking past a profile before its wall showed keeps the visible wall.
+    savedWallCount=0;a.perfil=5;texLoading=1;psestilos_iniciar();
+    for(int i=0;i<30;i++)psestilos_atualizar(.016f,&a,PS_FUNDO_FILMES);  // perfil 5 (mural) hidden
+    texLoading=0;for(int i=0;i<40;i++)psestilos_atualizar(.016f,&a,PS_FUNDO_FILMES);
+    savedWallCount=12;a.perfil=6;texLoading=1;psestilos_atualizar(.016f,&a,PS_FUNDO_FILMES);
+    assert(parTemAnt && parAnt.perfil==5);
+    a.perfil=7;psestilos_atualizar(.016f,&a,PS_FUNDO_FILMES);
+    assert(parTemAnt && parAnt.perfil==5 && parAtual.perfil==7);
+    // Neighbours are warmed only once the visible wall is ready.
+    texLoading=0;a.vizinhos[0]=8;lookaheadAsks=0;
+    for(int i=0;i<200;i++)psestilos_atualizar(.016f,&a,PS_FUNDO_FILMES);
+    assert(lookaheadAsks>0);
+    texLoading=1;a.perfil=9;lookaheadAsks=0;psestilos_atualizar(.016f,&a,PS_FUNDO_FILMES);
+    assert(lookaheadAsks==0);
+    texLoading=0;savedWallCount=0;
+    puts("PASS: walls wait for their posters (1.5 s ceiling), keep the visible wall while flicking, fade late posters, warm neighbours");
+  }
   for(int count=1;count<=PSEST_PAREDE_MAX;count++) {
     ParSet set={0};set.n=count;
-    for(int i=0;i<count;i++)set.tex[i]=i+1;
+    for(int i=0;i<count;i++){set.tex[i]=i+1;set.fade[i]=1;}
     for(int speed=20;speed<=36;speed+=8) {
       for(int epoch=0;epoch<2;epoch++) for(int seam=0;seam<=count*2;seam++) {
         RectChamado before[256];int nb;
