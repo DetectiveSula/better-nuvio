@@ -584,19 +584,24 @@ static void pxServirFluxo(PxConexao *c) {
 // reduced YouTube trailer playlist (trailerytb.c via main.c's hook), so the
 // TV's player sees one variant and one audio track. Not a session: trailers
 // and live TV can be up at the same time.
+// GET /apl/<id>.m3u8 does the same for the Apple trailer (trailerapple.c,
+// 26/11/2026): one variant and its audio rendition, so it plays with sound.
 static int pxSubir(void);
 static int (*textoDe)(const char *id, char *dst, size_t n);
+static int (*textoApple)(const char *id, char *dst, size_t n);
 void proxyts_definir_texto(int (*fn)(const char *id, char *dst, size_t n)) { textoDe = fn; }
+void proxyts_definir_texto_apple(int (*fn)(const char *id, char *dst, size_t n)) { textoApple = fn; }
 
 static int pxServirTexto(int s, const char *req) {
-  char id[16], cab[256], *corpo;
+  char id[48], cab[256], *corpo;
   size_t k = 0;
-  const char *p = req + 9;   // "GET /ytb/"
+  const char *p = req + 9;   // "GET /ytb/" or "GET /apl/"
+  int (*preencher)(const char *, char *, size_t) = !strncmp(req, "GET /apl/", 9) ? textoApple : textoDe;
   while (k + 1 < sizeof id && ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z') ||
                                 (*p >= '0' && *p <= '9') || *p == '_' || *p == '-')) id[k++] = *p++;
   id[k] = 0;
   corpo = malloc(32768);
-  if (!corpo || !textoDe || strncmp(p, ".m3u8", 5) || !textoDe(id, corpo, 32768)) {
+  if (!corpo || !preencher || strncmp(p, ".m3u8", 5) || !preencher(id, corpo, 32768)) {
     static const char nao[] = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
     pxEnviar(s, nao, sizeof nao - 1);
     free(corpo);
@@ -622,6 +627,16 @@ int proxyts_url_texto(const char *id, char *dst, size_t n) {
   return ok;
 }
 
+int proxyts_url_texto_apple(const char *id, char *dst, size_t n) {
+  int ok;
+  if (!id || !dst || n < 48 || strlen(id) >= 48) return 0;
+  pthread_mutex_lock(&trava);
+  ok = pxSubir();
+  pthread_mutex_unlock(&trava);
+  if (ok) snprintf(dst, n, "http://127.0.0.1:%d/apl/%s.m3u8", porta, id);
+  return ok;
+}
+
 static void *pxAtender(void *u) {
   PxConexao *c = u;
   char req[4096], cab[512], cabs[512];
@@ -636,7 +651,7 @@ static void *pxAtender(void *u) {
     if (strstr(req, "\r\n\r\n") || strstr(req, "\n\n")) break;
   }
   req[tot > 0 ? tot : 0] = 0;
-  if (!strncmp(req, "GET /ytb/", 9)) { pxServirTexto(c->s, req); close(c->s); free(c); return NULL; }
+  if (!strncmp(req, "GET /ytb/", 9) || !strncmp(req, "GET /apl/", 9)) { pxServirTexto(c->s, req); close(c->s); free(c); return NULL; }
   q = strstr(req, "?s=");
   if (q) s = (unsigned)strtoul(q + 3, NULL, 10);
   pthread_mutex_lock(&trava);

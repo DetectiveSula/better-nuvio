@@ -26,6 +26,13 @@
 void        trailerapple_pedir(const char *imdb, const char *titulo, const char *meta, int serie);
 const char *trailerapple_url(const char *imdb);
 int         trailerapple_respondeu(const char *imdb);
+#include <stddef.h>
+// .tpk: the trailer WITH sound is a reduced master (one variant + its audio
+// rendition) on the local server. `definir_local` takes proxyts_url_texto_apple;
+// `manifesto` is the server's hook that fills the playlist of `id`. Without
+// them (other builds, no server) nothing changes.
+void trailerapple_definir_local(int (*fn)(const char *id, char *dst, size_t n));
+int  trailerapple_manifesto(const char *id, char *dst, size_t n);
 
 // ARTE-CHAVE da Apple TV (fonte "Apple TV" do destaque): o modelo da url do
 // mzstatic ("...{w}x{h}.{f}") do item que a busca casou. Reusa a busca do

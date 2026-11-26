@@ -39,29 +39,38 @@ static int existe(int fonte, int tizen) {
   }
 }
 
+// The IMDb trailer is only asked for when IMDb is the chosen source: it left
+// Automatic (see trailerfonte_ordem), and every request was a 403 per title.
+int trailerfonte_pede_imdb(int ajuste, int tizen) {
+  return ajuste == TRF_IMDB && existe(TRF_IMDB, tizen);
+}
+
 int trailerfonte_ordem(int ajuste, int tizen, int ordem[3]) {
   // A ordem de hoje, e por que: Apple e HLS matted ate 4K, sem tarja; IMDb e
   // MP4 16:9 com a tarja embutida, no <video> do app; YouTube na Samsung e o
   // embed que falha na AU7000 (#82/#86/#136). Melhor imagem primeiro, o que
   // mais falha por ultimo — e tudo DENTRO do app antes do iframe de terceiro.
-  static const int AUTO[3] = { TRF_APPLE, TRF_IMDB, TRF_YOUTUBE };
+  // IMDB LEFT AUTOMATIC (owner, 26/11/2026: "since imdb no longer works ...
+  // automatic is just apple and youtube"). Since ~19/11/2026 IMDb's API
+  // answers every app request with a CloudFront 403 (Mac and BlueStacks both,
+  // 26/11/2026). Chosen in the setting it is still tried, alone.
+  static const int AUTO[2] = { TRF_APPLE, TRF_YOUTUBE };
   int i, n = 0;
   if (ajuste == TRF_APPLE || ajuste == TRF_IMDB || ajuste == TRF_YOUTUBE) {
     if (existe(ajuste, tizen)) ordem[n++] = ajuste;
     return n;
   }
   // Valor desconhecido (ajustes.txt de outra versao) le como Automatico.
-  for (i = 0; i < 3; i++)
+  for (i = 0; i < 2; i++)
     if (existe(AUTO[i], tizen)) ordem[n++] = AUTO[i];
   return n;
 }
 
-// .tpk: Apple la e so video (ver trailerfonte.h, trailerfonte_ordem_cheia).
-#ifdef NV_TPK
-static int imdbPrimeiroCheia = 1;
-#else
+// .tpk: Apple used to be video only there (see trailerfonte.h,
+// trailerfonte_ordem_cheia). Since 26/11/2026 it plays WITH sound (the reduced
+// master on the local server, trailerapple.c), so Apple, the best picture,
+// leads again on every build; the switch stays for tests.
 static int imdbPrimeiroCheia = 0;
-#endif
 int  trailerfonte_imdb_primeiro_cheia(void) { return imdbPrimeiroCheia; }
 void trailerfonte_definir_imdb_primeiro_cheia(int sim) { imdbPrimeiroCheia = sim ? 1 : 0; }
 
@@ -96,7 +105,10 @@ int trailerfonte_ordem_cheia(int ajuste, int tizen, int som, int ordem[3]) {
 
 // Destaque/cartaz da home que pode CONTINUAR com som na pagina do titulo
 // (ver trailerfonte.h). 1 so no .tpk com NV_TRAILER_CONTINUA_DETALHE.
-static int imdbPrimeiroDestaque = NV_TRAILER_CONTINUA_DETALHE;
+// Off for the same reason (26/11/2026): Apple's trailer keeps its sound when
+// it continues on the title page. NV_TRAILER_CONTINUA_DETALHE still turns the
+// continuing itself on.
+static int imdbPrimeiroDestaque = 0;
 int  trailerfonte_imdb_primeiro_destaque(void) { return imdbPrimeiroDestaque; }
 void trailerfonte_definir_imdb_primeiro_destaque(int sim) { imdbPrimeiroDestaque = sim ? 1 : 0; }
 

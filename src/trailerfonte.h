@@ -116,6 +116,9 @@ void trailerfonte_definir_imdb_primeiro_destaque(int sim);
 // 1 quando o IMDb toca na Samsung: a build tem o servico de recomendacoes, por
 // onde passa a pergunta que exige Referer (#136). O definir e para os testes.
 int  trailerfonte_imdb_tizen(void);
+// 1 when the IMDb trailer should be fetched: only with IMDb chosen in the
+// setting (it is out of Automatic since 26/11/2026; IMDb blocks app requests).
+int  trailerfonte_pede_imdb(int ajuste, int tizen);
 void trailerfonte_definir_imdb_tizen(int sim);
 
 // Atalhos com o ajuste gravado e a plataforma deste build.

@@ -8285,18 +8285,12 @@ static const char *ajudaOpcaoBase(int op) {
       // defeito.
 #ifdef NV_VIDAA
       return "De onde vem o trailer da tela do título e do destaque. Automático tenta a Apple TV e, sem ela, o YouTube (só no modo de compatibilidade); uma fonte escolhida é a única tentada. O IMDb não toca nesta TV.";
+      // 26/11/2026: IMDb left Automatic (it blocks app requests), and the .tpk
+      // plays Apple with sound (trailerapple.c).
 #elif defined(__EMSCRIPTEN__)
-      return "De onde vem o trailer da tela do título e do destaque. Automático tenta a Apple TV, depois o IMDb e, sem os dois, o YouTube (só na tela do título); uma fonte escolhida é a única tentada. Nesta TV o trailer toca sempre sem som.";
-#elif defined(NV_TPK)
-      // .tpk: a Apple toca sem audio (trailerapple.c, varianteMidia), entao o
-      // botao Trailer em Automatico prefere o IMDb (trailerfonte_ordem_cheia).
-#if NV_TRAILER_CONTINUA_DETALHE
-      return "De onde vem o trailer da tela do título e do destaque. Automático tenta a Apple TV e, sem ela, o IMDb; no destaque e no botão de trailer o IMDb vem primeiro, porque o da Apple toca sem som nesta TV. Uma fonte escolhida é a única tentada. O YouTube não toca nesta TV.";
+      return "Where the title page and home trailers come from. Automatic tries Apple TV, then YouTube (title page only); a chosen source is the only one tried. IMDb currently blocks apps, so it only plays if chosen and may not work. On this TV trailers always play muted.";
 #else
-      return "De onde vem o trailer da tela do título e do destaque. Automático tenta a Apple TV e, sem ela, o IMDb; no botão de trailer, que toca com som, o IMDb vem primeiro, porque o da Apple toca sem som nesta TV. Uma fonte escolhida é a única tentada. O YouTube não toca nesta TV.";
-#endif
-#else
-      return "De onde vem o trailer da tela do título e do destaque. Automático tenta a Apple TV e, sem ela, o IMDb; uma fonte escolhida é a única tentada. O YouTube não toca nesta TV.";
+      return "Where the title page and home trailers come from. Automatic tries Apple TV, then YouTube; a chosen source is the only one tried. IMDb currently blocks apps, so it only plays if chosen and may not work.";
 #endif
 
     // --- Posteres e cards

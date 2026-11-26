@@ -6353,7 +6353,7 @@ static void home_trailer_passo_(int topo, float dt, Uint32 agora) {
                               ci->tmdb);
     // O IMDb exige Referer, que navegador nenhum deixa por (e o CORS dele so
     // aceita imdb.com): na Samsung so pelo servico de recomendacoes (#136).
-    if (!trailerfonte_tizen() || trailerfonte_imdb_tizen()) trailerimdb_pedir(ci->imdb);
+    if (trailerfonte_pede_imdb(trailerfonte_ajuste(), trailerfonte_tizen())) trailerimdb_pedir(ci->imdb);
   } else {
     decorrido = agora - heroTrailerDesde;
 #ifdef __EMSCRIPTEN__

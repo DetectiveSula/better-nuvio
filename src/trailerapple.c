@@ -31,6 +31,10 @@ typedef struct {
   char url[1024];       // master da Apple (ABR completo)
   char toca[600];       // LG: file:// do master reduzido a UMA variante; Samsung: URL da playlist de midia dela (varianteMidia); ou vazio
   int  tocaQual;        // teto de qualidade com que `toca` foi montado
+#ifdef NV_TPK
+  char local[160];      // .tpk: the reduced master WITH audio, on the local server (see montarReduzido)
+  int  localQual;       // quality ceiling `local` was built for, plus 1 (0: not yet)
+#endif
   long expira;
   int  emVoo, respondeu;
 } Entrada;
@@ -130,11 +134,47 @@ static int atributo(const char *linha, const char *nome, char *dst, unsigned tam
   return 0;
 }
 
-#ifndef NV_TRAILER_SAMSUNG   /* so a LG monta o reduzido em disco */
+#ifdef NV_TPK
+/* .TPK: APPLE TRAILERS WITH SOUND (owner, 26 Nov 2026: "get apple trailers to
+ * work with audio on samsung tv"). AVPlay never gets Apple's master (it hung
+ * the media server: see varianteMidia) and the video-only media playlist has
+ * no sound, because Apple ships the audio as a separate rendition. The same
+ * reduced master the LG builds (ONE variant + the ONE audio rendition of its
+ * group, no content steering) is served from the local server (proxyts
+ * /apl/<id>.m3u8), exactly like the YouTube trailers that already play with
+ * sound on AVPlay (trailerytb_hls_reduzir). One variant = no ABR switch, which
+ * was what broke the media server. Without the server it stays video-only. */
+static int (*urlLocal)(const char *id, char *dst, size_t n);
+void trailerapple_definir_local(int (*fn)(const char *id, char *dst, size_t n)) { urlLocal = fn; }
+// The id in the local url: ':' (series ids "tt123:3:2") becomes '-', which
+// IMDb ids never have and the server's path accepts.
+static void idUrl(const char *imdb, char *dst, size_t n) {
+  size_t k = 0;
+  for (; imdb[k] && k + 1 < n; k++) dst[k] = imdb[k] == ':' ? '-' : imdb[k];
+  dst[k] = 0;
+}
+// The line without its PATHWAY-ID attribute: the reduced master has no
+// content steering, so nothing names a pathway.
+static void semPathway(const char *linha, char *dst, size_t n) {
+  const char *p = strstr(linha, ",PATHWAY-ID=");
+  snprintf(dst, n, "%s", linha);
+  if (p) {
+    const char *e = p + 12;
+    if (*e == '"') { e = strchr(e + 1, '"'); e = e ? e + 1 : p + strlen(p); }
+    else while (*e && *e != ',' && *e != '\r' && *e != '\n') e++;
+    snprintf(dst + (p - linha), n > (size_t)(p - linha) ? n - (size_t)(p - linha) : 0, "%s", e);
+  }
+}
+#endif
+
+#if !defined(NV_TRAILER_SAMSUNG) || defined(NV_TPK)   /* LG, Android and .tpk build the reduced master on disk */
 static int montarReduzido(const char *imdb, int teto, char *saida, unsigned tam) {
   char cm[600], cr[600], linha[2048];
   char melhorInf[2048] = "", melhorUri[1024] = "", melhorAudio[128] = "";
   int melhorW = 0, melhorAvc = 0;
+#ifdef NV_TPK
+  int achouAudio = 0;
+#endif
   FILE *f, *g;
 #ifdef NV_ANDROID
   // ANDROID: "Máxima" vira 1080p. Na TCL Smart TV Pro (Mali-G52) a variante
@@ -162,7 +202,13 @@ static int montarReduzido(const char *imdb, int teto, char *saida, unsigned tam)
     if (!fgets(uri, sizeof uri, f)) break;
     uri[strcspn(uri, "\r\n")] = 0;
     if (uri[0] == '#' || strncmp(uri, "http", 4)) continue;
+#ifdef NV_TPK
+    // .tpk: avc1 whenever the title has it, as varianteMidia (decodes on every
+    // Samsung); the widest hvc1 only without avc1.
+    if ((avc && !melhorAvc) || (avc == melhorAvc && w > melhorW)) {
+#else
     if (w > melhorW || (w == melhorW && avc && !melhorAvc)) {
+#endif
       melhorW = w; melhorAvc = avc;
       snprintf(melhorInf, sizeof melhorInf, "%s", linha);
       snprintf(melhorUri, sizeof melhorUri, "%s", uri);
@@ -180,16 +226,51 @@ static int montarReduzido(const char *imdb, int teto, char *saida, unsigned tam)
     if (strncmp(linha, "#EXT-X-MEDIA:", 13)) continue;
     if (!strstr(linha, "TYPE=AUDIO")) continue;
     atributo(linha, "GROUP-ID", grp, sizeof grp);
+#ifdef NV_TPK
+    if (melhorAudio[0] && !strcmp(grp, melhorAudio)) { char l2[2048]; semPathway(linha, l2, sizeof l2); fputs(l2, g); achouAudio = 1; break; }
+#else
     if (melhorAudio[0] && !strcmp(grp, melhorAudio)) { fputs(linha, g); break; }
+#endif
   }
+#ifdef NV_TPK
+  { char l2[2048]; semPathway(melhorInf, l2, sizeof l2); fputs(l2, g); }
+#else
   fputs(melhorInf, g);
+#endif
   fprintf(g, "%s\n", melhorUri);
   fclose(g); fclose(f);
   printf("[trailer] apple %s: variante %dpx %s (teto %d)\n", imdb, melhorW, melhorAvc ? "avc1" : "hvc1", teto);
   fflush(stdout);
+#ifdef NV_TPK
+  // A variant whose audio rendition is missing would play mute: no use.
+  { char id[48];
+    idUrl(imdb, id, sizeof id);
+    if ((melhorAudio[0] && !achouAudio) || !urlLocal || !urlLocal(id, saida, tam)) { saida[0] = 0; return 0; } }
+#else
   snprintf(saida, tam, "file://%s", cr);
+#endif
   return 1;
 }
+
+#ifdef NV_TPK
+// The local server's hook (main.c): the reduced master of `id` (from the url,
+// ':' written as '-'), read from disk.
+int trailerapple_manifesto(const char *id, char *dst, size_t n) {
+  char imdb[48], cr[600];
+  size_t k = 0, lido;
+  FILE *f;
+  if (!id || !dst || n < 2) return 0;
+  for (; id[k] && k + 1 < sizeof imdb; k++) imdb[k] = id[k] == '-' ? ':' : id[k];
+  imdb[k] = 0;
+  if (strncmp(imdb, "tt", 2)) return 0;
+  caminhoMaster(imdb, cr, sizeof cr, "-play.m3u8");
+  if (!cr[0] || !(f = fopen(cr, "r"))) return 0;
+  lido = fread(dst, 1, n - 1, f);
+  fclose(f);
+  dst[lido] = 0;
+  return lido > 0 && lido < n - 1 && !strncmp(dst, "#EXTM3U", 7);
+}
+#endif
 #endif  /* !NV_TRAILER_SAMSUNG */
 
 #ifdef NV_TRAILER_SAMSUNG
@@ -526,6 +607,15 @@ static void *buscar(void *arg) {
     char *m = rede_baixar_com(url, 12, NULL);
     if (!m) semResposta = 1;
     else if (!varianteMidia(m, ajustes_trailer_qualidade(), midia, sizeof midia)) url[0] = 0;
+#ifdef NV_TPK
+    // .tpk: the master also goes to disk, for the reduced one WITH audio
+    // (montarReduzido, built when trailerapple_url asks).
+    if (m && url[0]) {
+      char cm[600];
+      caminhoMaster(p->imdb, cm, sizeof cm, ".m3u8");
+      if (cm[0]) { FILE *g = fopen(cm, "w"); if (g) { fputs(m, g); fclose(g); } }
+    }
+#endif
     free(m);
   }
 #else
@@ -547,6 +637,9 @@ static void *buscar(void *arg) {
   e->emVoo = 0; e->respondeu = 1;
   snprintf(e->url, sizeof e->url, "%s", url);
   e->toca[0] = 0; e->tocaQual = -1;
+#ifdef NV_TPK
+  e->local[0] = 0; e->localQual = 0;
+#endif
 #ifdef NV_TRAILER_SAMSUNG
   // A variante vale pelo teto do momento da busca. Trocar o teto nos Ajustes
   // so pega na proxima busca (acerto dura 1 h): guardar o master inteiro por
@@ -603,6 +696,17 @@ const char *trailerapple_url(const char *imdb) {
   e = achar(imdb);
   if (e && valido(e) && e->url[0]) {
 #ifdef NV_TRAILER_SAMSUNG
+#ifdef NV_TPK
+    // With sound first (the reduced master on the local server); the
+    // video-only media playlist when that can't be built.
+    int teto = ajustes_trailer_qualidade();
+    if (urlLocal && e->localQual != teto + 1) {
+      e->localQual = teto + 1;
+      if (!montarReduzido(imdb, teto, e->local, sizeof e->local)) e->local[0] = 0;
+    }
+    if (e->local[0]) r = e->local;
+    else
+#endif
     r = e->toca[0] ? e->toca : NULL;
 #else
     int teto = ajustes_trailer_qualidade();

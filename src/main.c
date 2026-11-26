@@ -1712,6 +1712,11 @@ int main(int argc, char **argv) {
   if (proxyts_disponivel()) {
     proxyts_definir_texto(trailerytb_manifesto);
     trailerytb_definir_local(proxyts_url_texto);
+#ifdef NV_TPK
+    // Apple's trailer the same way, so it plays WITH sound (trailerapple.h).
+    proxyts_definir_texto_apple(trailerapple_manifesto);
+    trailerapple_definir_local(proxyts_url_texto_apple);
+#endif
   }
   abertura_iniciar(dirArte);
   ajustes_texturas_dir(dirArte);   // materiais CC0 do tema Textura (recorte fraco)

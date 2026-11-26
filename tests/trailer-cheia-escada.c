@@ -1,5 +1,6 @@
 // Fullscreen "Watch trailer" (wasm): a failed or stalled dubbed YouTube falls
-// back Apple -> IMDb, reopened fullscreen, like autoplay. Drives the real
+// back to Apple, reopened fullscreen, like autoplay (IMDb is out of Automatic
+// since 26/11/2026, so Apple is the last step). Drives the real
 // tocarTrailerCheio()/trailerEscada() of src/detail.c compiled as the wasm
 // path; only the trailer element and the source lookups are fakes.
 #include <SDL.h>
@@ -77,12 +78,7 @@ int main(void) {
   trailerEscada(t + NV_TRAILER_PREPARA_MS - 1, 0);
   check("no fallback before the deadline", aberturas == 2);
   trailerEscada(t + NV_TRAILER_PREPARA_MS, 0);
-  check("stall falls back to IMDb, fullscreen", aberturas == 3 && !strcmp(fonte, "imdb.mp4") && cheia);
-
-  // Back closes fullscreen (no failure): the ladder stops.
-  aberto = 0;
-  trailerEscada(t + 3 * NV_TRAILER_PREPARA_MS, 0);
-  check("Back ends the ladder", aberturas == 3 && trailerEtapa == 0);
+  check("stall after Apple ends the ladder (no IMDb in Automatic)", aberturas == 2 && trailerEtapa == -1 && !aberto);
 
   printf("trailer-cheia-escada: %s\n", falhas ? "FALHOU" : "tudo ok");
   return falhas != 0;
