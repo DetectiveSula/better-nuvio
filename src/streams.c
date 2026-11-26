@@ -1108,6 +1108,20 @@ static int perfil5(const Stream *s) {
   return 0;
 }
 
+/* SAMSUNG: A SOURCE WAITING FOR ITS DEBRID CACHE ANSWER STAYS OUT OF THE SHEET
+ * (owner, 25 Nov 2026: "streams sources list flickers randomly every couple of
+ * secs"). An uncached answer hides the source (tvNaoToca 2,
+ * cacheOcultarConfirmada), and the answer lands ~1 s after the add-on's own,
+ * one batch at a time: every add-on that answered put rows on screen that
+ * vanished a second later. The row now shows once, with its answer. A failed or
+ * unknown answer still counts as an answer (stream_cache_verificar records it).
+ * Only the sheet waits; autoplay already waits for the answers (cachePendente). */
+static int tvAguardaCache(int i) {
+  const Stream *s = &lista[i];
+  return telaDv == 0 && !s->filtro.naoVod && ajustes_resolver_ativo() && cacheHashDa(s)[0] &&
+         !(s->url[0] && s->debridServico > 0) && !cacheConsultaAtual(s);
+}
+
 #ifndef NV_STREAMS_LG
 #if !defined(NV_ANDROID) && !defined(NV_TPK) && !defined(__EMSCRIPTEN__) && !defined(NV_LINUX_DESKTOP)
 #define NV_STREAMS_LG 1
@@ -3584,6 +3598,7 @@ static const char *fraseVazioChips(void) {
 }
 static int passaFiltro(int i) {
   if (filtro < 0) return 0;
+  if (!canalFolha && tvAguardaCache(i)) return 0;
   if (!passaChips(i)) return 0;
   if (filtro && !doProvedor(&lista[i], filtro)) return 0;
   return 1;
@@ -6461,7 +6476,15 @@ static void corpoFolha(float x, float w, float anim, Uint32 agora, int ilha) {
       txt_bloco(TXT_PG_FIM,texto,110,110,108,tx,
         FOLHA_TOPO+alturaTotal-dicaTorrentsAltura-rolagem+12,tr-tx,28,anim,0);
   }
-  if(!nFiltrados() && filtro != -1) {
+  // Every row of this tab still waiting for its cache answer (tvAguardaCache):
+  // the same "searching" line as an empty list, not a blank sheet.
+  int aguardaCache = 0;
+  if (!nf && filtro != -1 && !canalFolha)
+    for (int k = 0; k < n && !aguardaCache; k++)
+      aguardaCache = tvAguardaCache(k) && passaChips(k) && (filtro <= 0 || doProvedor(&lista[k], filtro));
+  if(aguardaCache)
+    txt_bloco(TXT_PG_FIM,"Buscando fontes nos addons…",196,199,204,tx,FOLHA_TOPO+20,rw-52,28,anim,3);
+  else if(!nFiltrados() && filtro != -1) {
     // A FOLHA VAZIA DIZ A CAUSA (B6/#107, D5). So quando a lista esta vazia
     // de verdade (n == 0): lista cheia com filtro de provedor que nao casa
     // nada fica na frase generica, porque ali a causa e o filtro na tela.
