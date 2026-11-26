@@ -58,7 +58,8 @@ class PostPlayPreview(private val activity: Activity, private val layer: FrameLa
             close()
             if (!foreground || !supported()) return@runOnUiThread
             val uri = Uri.parse(url)
-            if (!PostPlayPreviewPolicy.safeUrl(url)) return@runOnUiThread
+            val appDirs = listOf(activity.cacheDir.path, activity.filesDir.path)
+            if (!PostPlayPreviewPolicy.safeUrl(url, appDirs)) { state = -1; return@runOnUiThread }
             val request = generation
             state = 1
             try {

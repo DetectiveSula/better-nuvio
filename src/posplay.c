@@ -1063,7 +1063,9 @@ static void desenharCartaoEpisodio(Uint32 agora, float a) {
       gfx_tex_aspect_atual = 0.0f;
       gfx_veu_css(tr, 0, 0.0f, 1.0f, 0.32f * a);
     } }
-  postplay_preview_draw(idTitulo,a>.99f&&ajustes_posplay_trailer()&&!stillWatchingPrompt&&!aguardaCena,ajustes_posplay_trailer_espera_ms(),agora,tr);
+  { const CatItem *pci = cat_item(idx);
+    PostplayPreviewItem pit = { idTitulo, pci ? pci->titulo : "", pci ? pci->meta : "", serie, pci ? pci->tmdb : 0 };
+    postplay_preview_draw(&pit,a>.99f&&ajustes_posplay_trailer()&&!stillWatchingPrompt&&!aguardaCena,ajustes_posplay_trailer_espera_ms(),agora,tr); }
   tx = tr.x + tr.w + 20.0f;
   tw = card.x + card.w - 20.0f - tx - (card.h > 18.0f * 2 + PP_THUMB_H2 + 1.0f || !b0 ? 0.0f : pills + 16.0f);
   { TxtLinha l0 = txt_linha_corta(TXT_G22M, rotulo, 255, 255, 255, 204, tw);
@@ -1279,7 +1281,9 @@ static void desenharFilmeTV(Uint32 agora, float a) {
   // receded video, which shares the same Android layer.
   if (janelaReal.w > 0.0f) {
     GfxRect pr = { PP_COL_X, janelaReal.y / s, janelaReal.w / s, janelaReal.h / s };
-    postplay_preview_draw(extras_relacionado_imdb(i), a > .99f && ajustes_posplay_trailer(),
+    PostplayPreviewItem pit = { extras_relacionado_imdb(i), extras_relacionado_titulo(i),
+                                extras_relacionado_ano(i), 0, 0 };
+    postplay_preview_draw(&pit, a > .99f && ajustes_posplay_trailer(),
                           ajustes_posplay_trailer_espera_ms(), agora, pr);
   } else postplay_preview_close();
 }
@@ -1338,7 +1342,8 @@ static void desenharFilmeTelefone(Uint32 agora, float a) {
       gfx_card_para(NV_CARD_POSTERS, r, t, GFX_CARD, sel?1.0f:0.0f, 0, 0, 14.0f / r.h, 0, 0, 0, a * (sel ? 1.0f : 0.82f));
       gfx_tex_aspect_atual = 0.0f;
     } else gfx_cor(r, 14.0f / r.h, .133f, .133f, .133f, a);
-    if(sel)postplay_preview_draw(extras_relacionado_imdb(i),a>.99f&&ajustes_posplay_trailer(),ajustes_posplay_trailer_espera_ms(),agora,r);
+    if(sel){PostplayPreviewItem pit={extras_relacionado_imdb(i),extras_relacionado_titulo(i),extras_relacionado_ano(i),0,0};
+      postplay_preview_draw(&pit,a>.99f&&ajustes_posplay_trailer(),ajustes_posplay_trailer_espera_ms(),agora,r);}
     cx += 182.0f + 30.0f;
   }
   gfx_sem_recorte();
