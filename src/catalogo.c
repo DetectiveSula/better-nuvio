@@ -1374,6 +1374,103 @@ int cat_indice_por_imdb(const char *imdb) {
   return -1;
 }
 
+// MANY IDS, ONE PASS OVER THE CATALOGUE. The saved list and the account
+// library re-mark their titles every time the catalogue grows, which happens
+// while rows load during scrolling; calling cat_indice_por_imdb (a scan of the
+// whole catalogue) per title took 90-490 ms on the S90C main thread (log of
+// 2026-11-26, [upd-lento] familia/salvos). Each answer is identical to
+// cat_indice_por_imdb: the FIRST index whose id matches by mesmoTitulo — the
+// same id, or one side is the other plus exactly ":<season>:<episode>".
+typedef struct { unsigned h; int k; } IdxSlot;
+static IdxSlot *idxCheio, *idxCorte;   // full id / id minus ":<s>:<e>"
+static unsigned idxCap;
+static unsigned idxHash(const char *s, size_t n) {
+  unsigned h = 2166136261u;
+  for (size_t i = 0; i < n; i++) { h ^= (unsigned char)s[i]; h *= 16777619u; }
+  return h ? h : 1u;
+}
+// Length of `s` without a trailing ":<digits>:<digits>", or strlen(s).
+static size_t idxSemEp(const char *s) {
+  size_t n = strlen(s), j = n, d;
+  d = 0; while (j > 0 && s[j - 1] >= '0' && s[j - 1] <= '9') { j--; d++; }
+  if (!d || j == 0 || s[j - 1] != ':') return n;
+  j--;
+  d = 0; while (j > 0 && s[j - 1] >= '0' && s[j - 1] <= '9') { j--; d++; }
+  if (!d || j == 0 || s[j - 1] != ':') return n;
+  return j - 1;
+}
+static int idxIgual(int k, const char *s, size_t n, int corte) {
+  const CatItem *c = cat_item(k);
+  if (!c) return 0;
+  size_t m = corte ? idxSemEp(c->imdb) : strlen(c->imdb);
+  return m == n && !strncmp(c->imdb, s, n);
+}
+static void idxPor(IdxSlot *t, unsigned h, int k) {
+  unsigned m = idxCap - 1, i = h & m;
+  while (t[i].h) { if (t[i].h == h && t[i].k >= 0) {
+      // Same hash: keep the first index only when it is the same key.
+      const CatItem *a = cat_item(t[i].k), *b = cat_item(k);
+      if (a && b && t == idxCheio && !strcmp(a->imdb, b->imdb)) return;
+      if (a && b && t == idxCorte && idxSemEp(a->imdb) == idxSemEp(b->imdb) &&
+          !strncmp(a->imdb, b->imdb, idxSemEp(a->imdb))) return; }
+    i = (i + 1) & m; }
+  t[i].h = h; t[i].k = k;
+}
+static int idxBusca(IdxSlot *t, const char *s, size_t n, int corte) {
+  unsigned h = idxHash(s, n), m = idxCap - 1, i = h & m;
+  while (t[i].h) {
+    if (t[i].h == h && idxIgual(t[i].k, s, n, corte)) return t[i].k;
+    i = (i + 1) & m;
+  }
+  return -1;
+}
+static void idxMontar(void) {
+  int n = cat_n();
+  unsigned cap = 64;
+  while (cap < (unsigned)n * 2u + 16u) cap <<= 1;
+  if (cap > idxCap) {
+    IdxSlot *a = realloc(idxCheio, sizeof *a * cap), *b = realloc(idxCorte, sizeof *b * cap);
+    if (a) idxCheio = a;
+    if (b) idxCorte = b;
+    if (!a || !b) { idxCap = 0; return; }
+    idxCap = cap;
+  }
+  memset(idxCheio, 0, sizeof *idxCheio * idxCap);
+  memset(idxCorte, 0, sizeof *idxCorte * idxCap);
+  for (int k = 0; k < n; k++) {
+    const CatItem *c = cat_item(k);
+    if (!c || !c->imdb[0]) continue;
+    size_t len = strlen(c->imdb), sem = idxSemEp(c->imdb);
+    idxPor(idxCheio, idxHash(c->imdb, len), k);
+    if (sem < len) idxPor(idxCorte, idxHash(c->imdb, sem), k);
+  }
+}
+// cat_indice_por_imdb(id), answered from the tables idxMontar built.
+static int idxAchar(const char *id) {
+  if (!id || !id[0]) return -1;
+  if (!idxCap) return cat_indice_por_imdb(id);   // no memory: the old scan
+  size_t len = strlen(id), sem = idxSemEp(id);
+  int best = idxBusca(idxCheio, id, len, 0);                    // same id
+  int k = idxBusca(idxCorte, id, len, 1);                       // catalogue = id + ":s:e"
+  if (k >= 0 && (best < 0 || k < best)) best = k;
+  if (sem < len) {                                              // id = catalogue + ":s:e"
+    k = idxBusca(idxCheio, id, sem, 0);
+    if (k >= 0 && (best < 0 || k < best)) best = k;
+  }
+  return best;
+}
+
+int cat_indices_por_imdb(const char *const *ids, int n, int *out) {
+  static pthread_mutex_t idxTrava = PTHREAD_MUTEX_INITIALIZER;
+  int i;
+  if (!ids || !out || n < 1) return 0;
+  pthread_mutex_lock(&idxTrava);   // the tables are shared by every caller
+  idxMontar();
+  for (i = 0; i < n; i++) out[i] = idxAchar(ids[i]);
+  pthread_mutex_unlock(&idxTrava);
+  return n;
+}
+
 int cat_indice_por_imdb_tipo(const char *imdb, const char *tipo) {
   int i, achou = -1;
   if (!imdb || !imdb[0] || !tipo_certo(tipo)) return -1;

@@ -2936,7 +2936,11 @@ static int mipCpuAtivo(void) {
     if (e && !strcmp(e, "cpu")) mipCpu = 1;
     else if (e && !strcmp(e, "gpu")) mipCpu = 0;
     else {
-#ifdef NV_ANDROID
+#if defined(NV_ANDROID) || defined(NV_TPK)
+      // .tpk too (S90C, Mali-G51, 2026-11-26): glGenerateMipmap took 17-20 ms
+      // of a poster upload (upload-stages mip_ms), a whole frame each, landing
+      // mid-scroll. The pyramid is built on the decode thread instead and goes
+      // up in the same per-frame upload slices.
       mipCpu = 1;
 #else
       mipCpu = 0;

@@ -143,12 +143,20 @@ static void quadro(SDL_Window *w, Quadro *q, Uint32 agora) {
   glClear(GL_COLOR_BUFFER_BIT);
   gfx_ambiente(1.0f);
   txt_novo_quadro();
+  // As main.c: the home frame takes the home's glass state.
+  gfx_vidro_fosco_k = telaAtual || naAjustes ? 1.0f : detail_aberto() ? detail_vidro_fosco_k(agora) : home_vidro_fosco_k();
   if (telaAtual) {
     if (telaAtual->sobreHome) home_desenhar(agora);
     telaAtual->desenhar(agora);
   } else if (naAjustes) ajustes_desenhar(agora);
   else { if (!detail_cobre_tela()) home_desenhar(agora); detail_desenhar(agora); }
+  // NV_CROMO: a stand-in for the TV's top chrome glass (clock island), drawn
+  // after the home like app.c does, to measure glass outside home_desenhar.
+  if (getenv("NV_CROMO_ANTIGO")) gfx_vidro_fosco_k = 1.0f;   // test8's bug: chrome outside the smoked state
+  if (getenv("NV_CROMO") && !telaAtual && !naAjustes)
+    gfx_vidro((GfxRect){ 1480.0f, 36.0f, 360.0f, 64.0f }, 0.5f, GFX_VIDRO_BARRA, 0.1f, 0.8f, 1.0f);
   gfx_ambiente_descarregar();
+  gfx_vidro_fosco_k = 1.0f;
   t2 = SDL_GetPerformanceCounter();
   glFinish();
   t3 = SDL_GetPerformanceCounter();
@@ -420,6 +428,24 @@ static void cenario(SDL_Window *w, const char *cen) {
     quadro(w, &qs[i], t); t += 16;
   }
   relatar(cen, "navegando", qs, n);
+  // SCROLLING THE HOME DOWN AND UP (owner, 2026-11-26: "make scrolling up and
+  // down on home page feel smoother"): an arrow every 12 frames, the way
+  // key-repeat walks the rows, down through the rows and back to the top.
+  if (!getenv("NV_SEM_VERTICAL")) {
+    for (i = 0; i < n; i++) {
+      if (i % 12 == 0) tecla(i < n / 2 ? SDLK_DOWN : SDLK_UP);
+      if (getenv("NV_RASTRO") && i == n / 4 + 6) gfx_rastro_grandes = 1;
+      quadro(w, &qs[i], t); t += 16;
+      gfx_rastro_grandes = 0;
+      if (getenv("PERF_BMP") && i == n / 4 + 6) { char b[800]; snprintf(b, sizeof b, "%s-%s-vertical.bmp", getenv("PERF_BMP"), cen); guardar(b); }
+      // NV_CLIPE=<prefix>: every 2nd frame of the way back up to the hero,
+      // for the side-by-side glass clips (owner review, 2026-11-26).
+      if (getenv("NV_CLIPE") && i >= n - 90 && i % 2 == 0) { char b[800]; snprintf(b, sizeof b, "%s-%03d.bmp", getenv("NV_CLIPE"), i); guardar(b); }
+    }
+    relatar(cen, "vertical", qs, n);
+    for (i = 0; i < 120; i++) { quadro(w, NULL, t); t += 16;
+      if (getenv("NV_CLIPE") && i < 40 && i % 2 == 0) { char b[800]; snprintf(b, sizeof b, "%s-%03d.bmp", getenv("NV_CLIPE"), n + i); guardar(b); } }
+  }
   // EXPANSION AT REST (NV_EXPANDE=1, with the expansion setting on): step
   // right onto cards never focused before and rest on each past the delay.
   // Counts the frames the opening card was drawn without art (grey); with
@@ -443,6 +469,10 @@ static void cenario(SDL_Window *w, const char *cen) {
   // Detalhe por cima.
   { HomeItem it;
     if (home_item_focado(&it)) {
+      // NV_PERF_EPS: open the series that has the episodes (catalogue item 0).
+      if (getenv("NV_PERF_EPS") && cat_item(0)) { const CatItem *c0 = cat_item(0);
+        it.indice = 0; it.titulo = c0->titulo; it.genero = c0->genero; it.meta = c0->meta;
+        it.arte = c0->poster[0] ? c0->poster : c0->backdrop; }
       detail_abrir(&it);
       // TRANSITIONS are measured too (the frames right after the key): that is
       // where a screen rasterises its text and asks for its art.
@@ -472,6 +502,24 @@ static void cenario(SDL_Window *w, const char *cen) {
       }
       relatar(cen, "pagina-rola", qs, n);
       if (getenv("PERF_BMP")) { char b[800]; snprintf(b, sizeof b, "%s-%s-pagina-rola.bmp", getenv("PERF_BMP"), cen); guardar(b); }
+      // WALKING THE EPISODE ROW (owner, 2026-11-26: MobLand's episode list is
+      // heavy to move through): NV_EPS_DESCE arrows down to the row (default
+      // 1), then right every 8 frames and back left. NV_CLIPE_EP=<prefix>
+      // saves every 2nd frame for the side-by-side glass clips.
+      if (getenv("NV_PERF_EPS")) {
+        int desce = getenv("NV_EPS_DESCE") ? atoi(getenv("NV_EPS_DESCE")) : 1;
+        { extern void reacao_fechar(void); reacao_fechar(); }   // the 'rate it' card would take the arrows
+        for (i = 0; i < desce; i++) { tecla(SDLK_DOWN); int j; for (j = 0; j < 30; j++) { quadro(w, NULL, t); t += 16; } }
+        for (i = 0; i < 60; i++) { quadro(w, NULL, t); t += 16; }
+        if (getenv("PERF_BMP")) { char b[800]; snprintf(b, sizeof b, "%s-%s-episodios0.bmp", getenv("PERF_BMP"), cen); guardar(b); }
+        for (i = 0; i < n; i++) {
+          if (i % 8 == 0 && i < n - 60) tecla(i < (n - 60) / 2 ? SDLK_RIGHT : SDLK_LEFT);
+          quadro(w, &qs[i], t); t += 16;
+          if (getenv("NV_CLIPE_EP") && ((i >= 40 && i < 120 && i % 2 == 0) || (i >= 236 && i % 2 == 0))) { char b[800]; snprintf(b, sizeof b, "%s-%03d.bmp", getenv("NV_CLIPE_EP"), i); guardar(b); }
+        }
+        relatar(cen, "episodios", qs, n);
+        for (i = 0; i < desce; i++) { tecla(SDLK_UP); int j; for (j = 0; j < 30; j++) { quadro(w, NULL, t); t += 16; } }
+      }
       tecla(SDLK_AC_BACK);
       for (i = 0; i < 60; i++) { quadro(w, NULL, t); t += 16; }
       tecla(SDLK_AC_BACK);

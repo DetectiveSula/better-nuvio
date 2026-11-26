@@ -26,6 +26,10 @@ static const char *landscape = "https://image.tmdb.org/t/p/w1280/full-backdrop.j
 
 const CatItem *cat_item(int i) { return i == 0 ? &probe : NULL; }
 int cat_indice_por_imdb(const char *id) { (void)id; return -1; }
+int cat_indices_por_imdb(const char *const *ids, int n, int *out) {
+  for (int i = 0; i < n; i++) out[i] = cat_indice_por_imdb(ids[i]);
+  return n;
+}
 int cat_indice_por_imdb_tipo(const char *id, const char *tipo) { (void)tipo; return cat_indice_por_imdb(id); }
 static int descCatAcrescentar(const CatItem *c) { probe = *c; return 0; }
 // These asynchronous service paths must not run for a complete IMDb seed.

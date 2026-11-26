@@ -29,7 +29,7 @@ audit_flags=()
 if [ -n "${NV_DINPALCO_AUDIT:-}" ]; then audit_flags+=(-DNV_DINPALCO_AUDIT); fi
 # Nunca executar um binario velho se o compilador falhar. O filtro anterior
 # terminava em `|| true` e escondia inclusive erros de link.
-if ! cc "${sources[@]}" "${audit_flags[@]}" tests/homelayouts_shot.c -Isrc -o "$NUVIO_DADOS/shot" \
+if ! cc "${sources[@]}" ${audit_flags[@]+"${audit_flags[@]}"} tests/homelayouts_shot.c -Isrc -o "$NUVIO_DADOS/shot" \
   -O1 -g ${NV_CFLAGS:-} -I/opt/homebrew/include -I/opt/homebrew/include/SDL2 \
   -L/opt/homebrew/lib -lSDL2 -lSDL2_image -lSDL2_ttf -lz -framework OpenGL \
   -Wall -Wextra -Wno-deprecated-declarations -Wno-macro-redefined \

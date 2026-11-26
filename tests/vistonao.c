@@ -91,6 +91,10 @@ const char *i18n(const char *s) { return s; }
 int cat_n(void) { return 0; }
 const CatItem *cat_item(int i) { (void)i; return NULL; }
 int cat_indice_por_imdb(const char *imdb) { (void)imdb; return -1; }
+int cat_indices_por_imdb(const char *const *ids, int n, int *out) {
+  for (int i = 0; i < n; i++) out[i] = cat_indice_por_imdb(ids[i]);
+  return n;
+}
 void cat_definir_na_lista(int i, int n) { (void)i; (void)n; }
 int cat_acrescentar_lote(const CatItem *v, int q, int *s) { (void)v; (void)q; (void)s; return 0; }
 

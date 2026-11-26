@@ -146,11 +146,16 @@ static int jbForeign(int profile,const char *owner){
 static void jbMarkOwner(int profile,const char *owner){char file[80];snprintf(file,sizeof file,"bn-native-owner-p%d.txt",profile);dados_gravar(file,owner);}
 static int jbCurrentScope(JbContext *c){return c&&sessao_logada()&&c->profile==perfis_ativo()&&!strcmp(c->owner,sessao_usuario())&&nv_perfil_sessao_atual(c->session);}
 static int jbFontApply(BnValue desired){int n;if(!jbDecode(AJ_LEG2_FONTE,desired,&n))return jbFont(&desired)&&!strncmp(desired.text,"font:",5)&&legfontes_reservar_secundaria_id(desired.text+5);return ajFonteAplicar(AJ_LEG2_FONTE,n);}
+/* PER DEVICE, NEVER SYNCED (owner, 26 Nov 2026): Max quality is chosen on each
+ * TV (1080p on a 1080p TV or Fire Stick, Automatic on a 4K TV) with the same
+ * profile everywhere. The binding stays in jbMap (positions are part of the
+ * stored anchors); it is neither applied from the account nor uploaded. */
+static int jbSoDesteAparelho(int op){return op==AJ_QUALIDADE;}
 static int jbApply(const BnValue *values,const unsigned char *known,int cachedFont){
  int old[AJ_N],changed=0,cw=0,language[4]={0};memcpy(old,valor,sizeof old);jbApplying++;
  static const int LINGUAS[4]={AJ_LEG_LINGUA,AJ_LEG_LINGUA2,AJ_AUD_LINGUA,AJ_AUD_LINGUA2};
  for(size_t i=0;i<JB_N;i++){
-  int op=jbMap[i].op,n;if(op==AJ_LEG2_FONTE||!known[i]||!jbDecode(op,values[i],&n)||n==valor[op])continue;
+  int op=jbMap[i].op,n;if(op==AJ_LEG2_FONTE||jbSoDesteAparelho(op)||!known[i]||!jbDecode(op,values[i],&n)||n==valor[op])continue;
   if(jbLoja(op)){if(!edPerfil&&(ajLegendaPrincipal(op)?ajLegendaDefinir(op,n):ajFalhaDefinir(op,n)))changed++;continue;}
   valor[op]=n;changed++;for(int k=0;k<4;k++)if(op==LINGUAS[k])language[k]=1;
   if(op==AJ_CW_OK||op==AJ_CW_PROXIMO||op==AJ_CW_MINIMO||op==AJ_CW_RETIDO_TAMBEM)cw=1;
@@ -203,7 +208,7 @@ void ajustes_better_contexto(void){
  BnValue cached[JB_N];unsigned char cacheKnown[JB_N];const char *allKeys[JB_N];jbKeys(allKeys);
  int cacheReady=bna_view(c->account,allKeys,JB_N,cached,cacheKnown,0);
  if(anchored&&!c->restoreLocal)for(size_t i=0;i<JB_N;i++){
-  if(jbMap[i].op==AJ_LEG2_FONTE&&!owned)continue;
+  if((jbMap[i].op==AJ_LEG2_FONTE&&!owned)||jbSoDesteAparelho(jbMap[i].op))continue;
   int supported;if(jbMap[i].op==AJ_TRAILER_FONTE&&cacheReady&&cacheKnown[i]&&!jbDecode(AJ_TRAILER_FONTE,cached[i],&supported))continue;
   /* A binding new to this TV starts unobserved AT the current value, so an edit
    * to that value would be a no-op: record it as default -> current instead. */
@@ -235,7 +240,9 @@ void ajustes_better_observar(void){
  if(!jbReady||jbApplying||ajBetterFonteTransaction||jbEditing||edPerfil)return;JbContext *c=jbCurrent;if(!jbCurrentScope(c))return;
  BnValue actual[JB_N],changes[JB_N];const char *keys[JB_N];size_t n=0;
  if(!jbRead(actual))return;
- for(size_t i=0;i<JB_N;i++)if(!jbEqual(actual[i],c->observed[i])){keys[n]=jbMap[i].key;changes[n++]=actual[i];}
+ for(size_t i=0;i<JB_N;i++)if(!jbEqual(actual[i],c->observed[i])){
+  if(jbSoDesteAparelho(jbMap[i].op)){c->observed[i]=actual[i];continue;}   /* per device: never uploaded */
+  keys[n]=jbMap[i].key;changes[n++]=actual[i];}
  if(n){
   int nativeSaved=perfilGravarVetor(c->profile,valor);
   if(bna_edit_many(c->account,keys,changes,n)){memcpy(c->observed,actual,sizeof actual);if(nativeSaved)jbAnchor(c->profile,valor,actual,1);

@@ -2800,10 +2800,16 @@ static void home_evento_(const SDL_Event *e) {
       heroPasso(-1); return;
     }
     if (k == SDLK_DOWN) {
-      if (foco.fileira < 0 || foco.fileira >= foco.nFileiras ||
+      // ALWAYS THE FIRST ROW, one step down (owner, 2026-11-26: "sometimes when
+      // opening a profile it goes from hero to streaming services collection").
+      // The hero is only reached from the first row, but foco.fileira follows
+      // its row by key while rows load: the local collections row is first
+      // until the catalogue rows are inserted above it, and down then skipped
+      // them. Coming back to the row it left keeps the column.
+      int primeira = primeiraFileiraNavegavel();
+      if (primeira < 0) return;
+      if (foco.fileira != primeira || foco.fileira >= foco.nFileiras ||
           foco.nColunas[foco.fileira] < 1) {
-        int primeira = primeiraFileiraNavegavel();
-        if (primeira < 0) return;
         foco.fileira = primeira; foco.coluna = 0;
       }
       focoHero = 0; return;
@@ -4320,8 +4326,19 @@ static const char *dinArteDaCor(void) {
 // fileira de colecao esta em foco; a arte sai do cache de destaque, que ja
 // anota a cor dela para o fundo (dinArteDaCor).
 #define DIN_COL_H 560.0f
+// What a focused collection row puts behind the rows. 0 banner (until 26 Nov
+// 2026), 1 colour tint only, 2 plain, as any other row: the owner chose plain
+// from side-by-side shots ("make collection background artwork not show
+// through rows"). The shots still compare all three (NV_COL_FUNDO).
+static int dinColEstilo(void) {
+#ifdef NV_SHOT_HOOKS
+  if (getenv("NV_COL_FUNDO")) return atoi(getenv("NV_COL_FUNDO"));
+#endif
+  return 2;
+}
 static const char *dinColQuer(void) {
   const ColFolder *f;
+  if (dinColEstilo() == 2) return "";
   if (focoHero || foco.fileira < 0 || foco.fileira >= nFileiras) return "";
   if (fileiras[foco.fileira].tipo != FILEIRA_CATALOGOS) return "";
   if (foco.coluna < 0 || foco.coluna >= fileiras[foco.fileira].n) return "";
@@ -4341,7 +4358,7 @@ static void dinArteColecao(float dt) {
     dinColAlfa = reduz ? 1.0f : dinColAlfa + dt * 3.0f;
     if (dinColAlfa > 1.0f) dinColAlfa = 1.0f;
   } else dinColAlfa = 0.0f;
-  if (dinColArte[0] && dinColAlfa > 0.004f) {
+  if (dinColArte[0] && dinColAlfa > 0.004f && dinColEstilo() == 0) {
     GLuint t = tex_obter_hero(dinColArte);
     if (t) {
       GfxRect r = { 0.0f, 0.0f, NV_TELA_W, DIN_COL_H };
@@ -7875,6 +7892,13 @@ static float desenhaTituloFil(int r, float y, const char *rot, int cr, int cg, i
   const int est = desenhar ? ajustes_titulo_fil() : 0;
   float ar, ag, ab;
   tfAcento(&ar, &ag, &ab);
+  // The title is rasterised ONCE in white and coloured by the GPU tint. The
+  // grey -> white focus fade used to bake every in-between colour into a new
+  // texture, one per row per frame while scrolling up and down (174 of the
+  // 238 text rasterisations of the fluidez_perf "vertical" phase), which is
+  // what made the vertical scroll stutter on the TV CPU.
+  const float tr = cr / 255.0f, tg = cg / 255.0f, tb = cb / 255.0f;
+  cr = cg = cb = 255;
   if (est == 1) {   // ILHA
     char nb[16] = "";
     if (f->n > 0) snprintf(nb, sizeof nb, "%d", f->n);
@@ -7891,7 +7915,7 @@ static float desenhaTituloFil(int r, float y, const char *rot, int cr, int cg, i
     gfx_icone((GfxRect){ x0 + 22.0f, y - 2.0f + (ph - isz) * 0.5f, isz, isz }, tfIcone(f),
               0.66f + (ar - 0.66f) * k, 0.68f + (ag - 0.68f) * k, 0.71f + (ab - 0.71f) * k, 1.0f);
     float tx = x0 + 22.0f + isz + 12.0f;
-    txt_desenhar(*tl, tx, y);
+    txt_desenhar_tom(*tl, tx, y, tr, tg, tb, 1.0f);
     if (nb[0]) {
       float dx = tx + tl->w + 9.0f;
       gfx_cor((GfxRect){ dx, y - 2.0f + ph * 0.3f, 1.5f, ph * 0.4f }, 0.0f, 1, 1, 1, 0.20f);
@@ -7910,15 +7934,15 @@ static float desenhaTituloFil(int r, float y, const char *rot, int cr, int cg, i
       const float ky = y - 12.0f, ty = y + 14.0f;
       txt_tracking(TXT_HERO_META, up, (int)(ar * 255), (int)(ag * 255), (int)(ab * 255),
                    x0, ky, 0.78f + 0.22f * k, 3.0f);
-      txt_tracking(TXT_ROW_TITULO, title, cr, cg, cb, x0, ty, 1, trk);
+      txt_tracking_tom(TXT_ROW_TITULO, title, x0, ty, tr, tg, tb, 1.0f, trk);
       tl->w = (int)tw;
       return x0 + tw;
     }
-    txt_desenhar(*tl, x0, y);
+    txt_desenhar_tom(*tl, x0, y, tr, tg, tb, 1.0f);
     return x0 + tl->w;
   }
   *tl = txt_linha_corta(TXT_ROW_TITULO, rot, cr, cg, cb, 255, maxW);
-  if (desenhar) txt_desenhar(*tl, x0, y);
+  if (desenhar) txt_desenhar_tom(*tl, x0, y, tr, tg, tb, 1.0f);
   if (est == 3) {   // ACENTO
     const float bw = 10.0f + 44.0f * k, bh = 10.0f - 3.0f * k;
     const float bx = x0 + tl->w + 16.0f, cy = y + tl->h * 0.52f;
@@ -8774,7 +8798,19 @@ static void home_desenhar_(Uint32 agora) {
 // Nada a gravar (#95): a posicao na home vive so enquanto o app esta aberto.
 void home_encerrar(void) {
 }
+// The rows or the focused row are still sliding (springs moving). Background
+// bookkeeping (account sync, saved-list marking) waits for this to clear on
+// the .tpk so its main-thread stalls do not land mid-scroll (app.c).
+int home_em_movimento(void) {
+  if (fabsf(velY) > 40.0f) return 1;
+  if (!focoHero && foco.fileira >= 0 && foco.fileira < nFileiras && foco.fileira < MAX_FIL &&
+      fabsf(velX[foco.fileira]) > 40.0f) return 1;
+  return 0;
+}
 const char *home_perf_tag(void) {
+  // Vertical scrolling is measured on its own (owner, 2026-11-26: up/down
+  // on the home should feel as smooth as the Apple TV app).
+  if (fabsf(velY) > 60.0f) return "home-vscroll";
   if (!focoHero && foco.fileira >= 0 && foco.fileira < nFileiras) {
     if (fileiras[foco.fileira].tipo == FILEIRA_PALCO) return "home-stage";
     if (fileiras[foco.fileira].tipo == FILEIRA_REDONDA) return "home-round";
@@ -8998,10 +9034,29 @@ void home_abrir_sessao(void) {
 // pixels da tela real (home.h), inclusive durante o desenho de outra camada.
 static float homeUnidade(void) { return gfx_escala_txt(); }
 void home_evento(const SDL_Event *e) { TXT_INI(); home_evento_(e); TXT_FIM(); }
-void home_atualizar(float dt, Uint32 agora) { TXT_INI(); home_atualizar_(dt, agora); TXT_FIM(); }
+// Glass on the home: smoked while the rows slide, frosted again ~0.15 s after
+// they stop (gfx_vidro_fosco_k). Test builds switch it with NV_VIDRO_PARADO.
+static float homeFoscoK = 1.0f;
+static int homeFoscoParado(void) {
+#if defined(NV_TPK)
+  return 1;   // Samsung: approved by the owner on 2026-11-26 (side-by-side clips)
+#elif defined(NV_FLUIDEZ_PERF)
+  return getenv("NV_VIDRO_PARADO") != NULL;
+#else
+  return 0;
+#endif
+}
+void home_atualizar(float dt, Uint32 agora) {
+  TXT_INI(); home_atualizar_(dt, agora); TXT_FIM();
+  if (!homeFoscoParado()) { homeFoscoK = 1.0f; return; }
+  if (home_em_movimento()) homeFoscoK = 0.0f;
+  else { homeFoscoK += dt / 0.15f; if (homeFoscoK > 1.0f) homeFoscoK = 1.0f; }
+}
 // heroArteRect is layer px: the trailer step runs in the same layer (#205).
 void home_trailer_passo(int topo, float dt, Uint32 agora) { TXT_INI(); home_trailer_passo_(topo, dt, agora); TXT_FIM(); }
 void home_desenhar(Uint32 agora) { TXT_INI(); home_desenhar_(agora); TXT_FIM(); }
+// For app.c: the glass state of the home screen this frame (see homeFoscoK).
+float home_vidro_fosco_k(void) { return homeFoscoK; }
 int home_cartao_foco_por_cima(int indice) {
   int r;
   TXT_INI(); r = home_cartao_foco_por_cima_(indice); TXT_FIM();

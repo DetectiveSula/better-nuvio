@@ -114,6 +114,7 @@ char *sync_rpc_copia_ajustes(unsigned long long session, const char *function,
 
 // Chamar uma vez por quadro. Nao bloqueia: so recolhe o resultado do fio e
 // aplica no app (lista de addons, credencial do Trakt, progresso).
+void sync_adiar(int adiar);
 void sync_passo(unsigned agoraMs);
 
 // Dispara um ciclo se ja passou SYNC_INTERVALO_MS desde o ultimo que deu certo.

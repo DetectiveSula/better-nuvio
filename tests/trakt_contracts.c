@@ -36,6 +36,10 @@ char *rede_postar_st(const char *url, int segundos, const char *const *cab,
 }
 
 int cat_indice_por_imdb(const char *imdb) { return !strcmp(imdb, "tt1234567") ? 0 : -1; }
+int cat_indices_por_imdb(const char *const *ids, int n, int *out) {
+  for (int i = 0; i < n; i++) out[i] = cat_indice_por_imdb(ids[i]);
+  return n;
+}
 void cat_definir_na_lista(int indice, int naLista) { (void)indice; (void)naLista; }
 const char *cat_tipo_por_imdb(const char *imdb) { (void)imdb; return "movie"; }
 void cat_historico_definir_id(const char *imdb, const char *tipo, int visto) {

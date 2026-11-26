@@ -16,6 +16,8 @@ void detail_abrir(const HomeItem *item);
 // titulo abre a pagina dele e o painel dela na mesma tecla. Sem pagina aberta
 // nao faz nada; Voltar fecha o painel e deixa a pagina do titulo.
 void detail_mostrar_pessoa(long tmdb, const char *nome, const char *foto);
+float detail_vidro_fosco_k(Uint32 agora);
+int  detail_em_movimento(void);
 int  detail_aberto(void);
 const char *detail_transicao(void);   // "sobe", "desce" ou "-" ([quadro])
 // Ano solto do campo `meta` ("2025 · 1 h 54 min" -> "2025" e "1 h 54 min").

@@ -280,7 +280,7 @@ int main(int argc, char **argv) {
     char nome[100];
     for (int plat = 0; plat < 5; plat++) {
       novcartao_teste_plataforma(plataformas[plat]);
-      for (int idi = 0; idi < (plat == 0 ? 5 : 1); idi++) {
+      for (int idi = 0; idi < (plat == 0 ? 5 : plat == 1 ? 2 : 1); idi++) {   // .tpk also in English
         ajustesDeTeste(idiomas[idi], 0, idi == 1 ? 5 : 2);
         for (int pg = 0; pg < novcartao_paginas() - 1; pg++) {
           snprintf(nome, sizeof nome, "%s-%s-pagina-%d", nomes[plat], idioma_iso(idiomas[idi]), pg + 1);

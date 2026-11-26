@@ -409,15 +409,25 @@ int contalib_aplicar_catalogo(void) {
   if (cat_n() < 1) return 0;
 
   memset(faltam, 0, sizeof faltam);
+  // One pass over the catalogue for all of them (cat_indices_por_imdb): this
+  // reruns whenever the catalogue grows, mid-scroll included.
+  int nIds = nItens < CONTALIB_MAX ? nItens : CONTALIB_MAX;
+  const char **ids = malloc(sizeof *ids * (size_t)nIds);
+  int *ks = malloc(sizeof *ks * (size_t)nIds);
+  if (!ids || !ks) { free(ids); free(ks); return 0; }
+  for (i = 0; i < nIds; i++) ids[i] = itens[i].id;
+  cat_indices_por_imdb(ids, nIds, ks);
   for (i = 0; i < nItens && i < CONTALIB_MAX; i++) {
     int k;
     // TIRADO NESTA TV e ainda nao refletido na conta (contapend.h): a linha
     // remota nao re-marca. Sem isto o titulo voltava no ciclo seguinte.
     if (listaOculta && listaOculta(itens[i].id, itens[i].addedMs)) continue;
-    k = cat_indice_por_imdb(itens[i].id);
+    k = ks[i];
     if (k >= 0) { cat_definir_na_lista(k, 1); marcados++; ultimo = k; }
     else { faltam[i] = 1; nFaltam++; }
   }
+
+  free(ids); free(ks);
 
   if (nFaltam > 0) {
     CatItem *novos = (CatItem *)malloc(sizeof(CatItem) * (size_t)nFaltam);

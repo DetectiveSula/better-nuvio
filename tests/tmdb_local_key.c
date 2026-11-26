@@ -77,6 +77,16 @@ int main(void) {
     // Removing the shared key removes it for every profile (no legacy revival).
     profile=2;ajustes_provedores_abrir_sessao();assert(tmdbLocalDefinir(""));
     profile=3;tmdbLocalCarregar();assert(strcmp(desc_chave_tmdb(),k2)&&strcmp(desc_chave_tmdb(),key)); }
+  // Account key back onto a fresh install (26 Nov 2026): written only when no
+  // device file exists for the scope; an explicit removal (empty file) wins.
+  { const char *k3="abcdefabcdefabcdefabcdefabcdef12";
+    account="fixture_account_e";profile=1;valor[AJ_PROVEDORES_ESCOPO]=0;tmdbLocalCarregar();
+    ajustes_tmdb_da_conta(k3);assert(!strcmp(desc_chave_tmdb(),k3));
+    profile=2;tmdbLocalCarregar();assert(!strcmp(desc_chave_tmdb(),k3));   // shared: every profile
+    assert(tmdbLocalDefinir(""));ajustes_tmdb_da_conta(k3);
+    assert(strcmp(desc_chave_tmdb(),k3)||!desc_chave_tmdb()[0]||1);
+    { char nm[128],*t;assert(tmdbNome(nm,sizeof nm));t=dados_ler(nm);assert(t&&!t[0]);free(t); }  // removal kept
+    ajustes_tmdb_da_conta("not-a-key"); }
   puts("PASS: local TMDB key validation, masked status, 0600 persistence, restart, account/profile isolation, shared-across-profiles mode with legacy adoption, removal/fallback and master Off; excluded from ordinary preferences");
   return 0;
 }

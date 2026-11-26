@@ -98,6 +98,10 @@ int cat_indice_por_imdb(const char *imdb) {
     if (cat[i].imdb[0] && mesmoTitulo(cat[i].imdb, imdb)) return i;
   return -1;
 }
+int cat_indices_por_imdb(const char *const *ids, int n, int *out) {
+  for (int i = 0; i < n; i++) out[i] = cat_indice_por_imdb(ids[i]);
+  return n;
+}
 
 void cat_definir_na_lista(int i, int naLista) {
   if (i >= 0 && i < catN) cat[i].naLista = naLista ? 1 : 0;

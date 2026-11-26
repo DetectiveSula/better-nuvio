@@ -5049,7 +5049,11 @@ static void appMarca(const char *nome) {
 }
 static void appMarcaFim(void) {
   double total = (double)(SDL_GetPerformanceCounter() - appMarcaIni) * 1000.0 / (double)SDL_GetPerformanceFrequency();
+#ifdef NV_LOG_IP
+  if (total < 50.0) return;   // debug builds: the smaller stalls too
+#else
   if (total < 150.0) return;
+#endif
   printf("[upd-lento] %.1f ms:", total);
   for (int i = 0; i < appMarcaN; i++) if (appMarcaMs[i] >= 5.0) printf(" %s=%.1f", appMarcaNome[i], appMarcaMs[i]);
   printf("\n");
@@ -5061,6 +5065,23 @@ static void appMarcaFim(void) {
 #define appMarcaFim() ((void)0)
 #define APP_MARCA(n) ((void)0)
 #endif
+
+// SCROLLING FIRST (.tpk, owner 2026-11-26: home up/down should feel as smooth
+// as the Apple TV app). The S90C log showed account sync (sync_passo up to
+// 174 ms) and the saved-list / friends step (up to 486 ms) landing in the
+// middle of scrolls. While the home rows are sliding they wait; after 1.5 s of
+// continuous motion they run anyway, so holding a key never starves them.
+static int appAdiarTrabalho(Uint32 agora) {
+#ifdef NV_TPK
+  static Uint32 livreEm;
+  if (tela != TELA_HOME || !home_em_movimento()) { livreEm = agora; return 0; }
+  if (agora - livreEm > 1500u) { livreEm = agora; return 0; }
+  return 1;
+#else
+  (void)agora;
+  return 0;
+#endif
+}
 
 void app_atualizar(float dt, Uint32 agora) {
   appMarcaInicio();
@@ -5288,7 +5309,9 @@ void app_atualizar(float dt, Uint32 agora) {
   // Um ciclo por vez, e so quando a conta existe. O passo e barato: sem fio
   // terminado ele nao faz nada.
   APP_MARCA("login_soltar");
+  sync_adiar(appAdiarTrabalho(agora));   // settings sync waits while rows slide
   sync_passo((unsigned)agora);
+  sync_adiar(0);
   agenda_filmes_atualizar();
   // SERVIDOR DA CONTA FORA DO AR (#215): um aviso discreto na ilha, uma vez
   // por queda, e retirado quando ele volta. Sem isto a pessoa via a home sem
@@ -5546,7 +5569,8 @@ void app_atualizar(float dt, Uint32 agora) {
   // settings that gate the row (throttled inside), and "Home opened" asks the
   // next catalogue cycle for a fresh read. No network here.
   APP_MARCA("sync_periodico");
-  familia_passo();
+  if (!appAdiarTrabalho(agora)) familia_passo();
+  {
   { static int naHome;
     int ehHome = tela == TELA_HOME;
     if (ehHome && !naHome) familia_home_aberta();
@@ -5561,6 +5585,7 @@ void app_atualizar(float dt, Uint32 agora) {
   // no fim do ciclo; esta precisa ser por quadro porque a lista local tambem
   // muda por acao do dono, e nao so quando o sync termina).
   salvos_reconciliar();
+  }
 
   // Durante a verificacao nao substituir a lista que os workers consultam.
   // ACRESCENTAR pode (#221): os indices de quem ja estava nao mudam.

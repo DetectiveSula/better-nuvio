@@ -102,6 +102,10 @@ int dados_apagar(const char *n) {
   return 1;
 }
 int cat_indice_por_imdb(const char *imdb) { (void)imdb; return -1; }
+int cat_indices_por_imdb(const char *const *ids, int n, int *out) {
+  for (int i = 0; i < n; i++) out[i] = cat_indice_por_imdb(ids[i]);
+  return n;
+}
 void cat_aplicar_progresso(int i, double p, double d, int t, int e) { (void)i; (void)p; (void)d; (void)t; (void)e; }
 void cat_historico_definir_id(const char *i, const char *t, int v) { (void)i; (void)t; (void)v; }
 unsigned long long cat_historico_geracao(void) { return 1; }

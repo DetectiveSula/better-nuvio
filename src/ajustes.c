@@ -3,6 +3,7 @@
 // cancela. A lista mostra valor e chevron, a ficha explica alcance e padrao.
 // IDs, chaves persistidas e indices de valores continuam os legados.
 #include "ajustes.h"
+#include "credfio.h"
 #include "acentocustom.h"
 #include "settings_expansion_policy.h"
 #include "postplay_preview.h"
@@ -4560,6 +4561,29 @@ static void tmdbLocalCarregar(void) {
   }
   desc_tmdb_local_definir(tmdbLocal);
 }
+// Fixtures that link ajustes.c without credfio.c: no account push.
+__attribute__((weak)) int credfio_iniciar(const char *p, const char *j) { (void)p; (void)j; return 0; }
+// THE KEY TYPED ON THE TV GOES TO THE ACCOUNT TOO (owner, 26 Nov 2026: it
+// should survive an uninstall). Saved as this profile's "tmdb" provider
+// credential, the same record the account's own TMDB key uses, off the frame
+// loop (credfio). A removal is not pushed: the account keeps its key.
+static void tmdbEmpurrar(const char *key) {
+  char json[64];
+  if(!key || !key[0] || !tmdbLocalValida(key)) return;
+  snprintf(json,sizeof json,"{\"api_key\":\"%s\"}",key);
+  credfio_iniciar("tmdb",json);
+  memset(json,0,sizeof json);
+}
+// After a reinstall the device file is gone; the first account pull that
+// brings a TMDB key writes it back so every profile (Shared) has it again.
+// An existing file wins, an empty one included: that is an explicit removal.
+void ajustes_tmdb_da_conta(const char *key) {
+  char name[128],*t;
+  if(!key || !key[0] || !tmdbLocalValida(key) || !tmdbNome(name,sizeof name)) return;
+  if((t=dados_ler(name))) { memset(t,0,strlen(t)); free(t); return; }
+  if(ajustes_provedores_compartilhados() && (t=tmdbLerLegado())) { memset(t,0,strlen(t)); free(t); return; }
+  if(debGravarArquivo(name,key)) { tmdbLocalCarregar(); printf("[ajustes] tmdb: chave da conta restaurada neste aparelho\n"); }
+}
 static int tmdbLocalDefinir(const char *text) {
   char name[128];
   if(!tmdbLocalValida(text)) return 0;
@@ -4567,6 +4591,7 @@ static int tmdbLocalDefinir(const char *text) {
   // Empty is an explicit local removal; the package/account fallback survives.
   if(!debGravarArquivo(name,text ? text : "")) return 0;
   tmdbLocalCarregar();
+  tmdbEmpurrar(text);
   // Do not reuse a completed empty response fetched before a key existed.
   // Invalid-title path clears only the request/results. A full session reset
   // would also drop the current account's MDBList credential override.
@@ -6297,6 +6322,7 @@ static int somenteDesteAparelho(int op) {
     // Fonte do trailer: o que toca depende da TV (YouTube so na Samsung; o
     // IMDb da Samsung depende do servico de recomendacoes), entao a escolha e
     // deste aparelho.
+    case AJ_QUALIDADE:      /* per device (owner, 26 Nov 2026): 1080p on a 1080p TV, Automatic on a 4K one */
     case AJ_TRAILER_FONTE:
     case AJ_HERO_TRAILER_SOM: case AJ_HERO_TRAILER_ESPERA: /* o web nao tem */
     case AJ_COR_LOGO:       /* so existe com os temas dinamicos, que sao locais */
@@ -6580,6 +6606,17 @@ int ajustes_perfil_restaurar(int perfil) {
   if (!tem[AJ_ABAS_ESTILO]) { v[AJ_ABAS_ESTILO] = 0; tem[AJ_ABAS_ESTILO] = 1; }
   if (perfil != perfis_ativo()) tem[AJ_COLECAO_EXIBICAO] = 0;
   else if (!tem[AJ_COLECAO_EXIBICAO]) { v[AJ_COLECAO_EXIBICAO] = 0; tem[AJ_COLECAO_EXIBICAO] = 1; }
+  // MAX QUALITY BECAME PER DEVICE IN 1.0.13 (owner, 26 Nov 2026): every
+  // profile starts once on Automatic on each TV, whatever the account last
+  // synced; from then on each TV keeps its own choice (1080p on a 1080p TV).
+  { char marca[48], *m;
+    snprintf(marca, sizeof marca, "qualidade-1013-p%d.txt", perfil);
+    if ((m = dados_ler(marca))) free(m);
+    else {
+      if (v[AJ_QUALIDADE] != 0) printf("[ajustes] perfil %d: qualidade maxima -> Automatica (troca unica da 1.0.13)\n", perfil);
+      v[AJ_QUALIDADE] = 0; tem[AJ_QUALIDADE] = 1;
+      dados_gravar(marca, "1\n");
+    } }
   char nome[32], *texto;
   nomePerfil(nome, sizeof nome, perfil);
   texto = dados_ler(nome);
@@ -8071,7 +8108,7 @@ static const char *ajudaOpcaoBase(int op) {
     case AJ_FILTRO_REQUIRED_GROUPS: return "Only allow these release groups, separated by commas. Empty allows any group. Matching is case-insensitive and exact.";
     case AJ_POSPLAY_TRAILER: return "Muted trailer previews (Apple TV, then YouTube) in focused post-play cards. Uses a separate software player; never replaces the main video. Android only, unavailable on low-memory devices. Off by default.";
     case AJ_POSPLAY_TRAILER_ESPERA: return "Wait before loading a muted post-play trailer. Focus changes, closing the panel and backgrounding cancel the preview. The poster stays visible on failure.";
-    case AJ_TMDB_CHAVE_LOCAL: return "Enter your 32-character TMDB API key (v3). Kept privately on this device for this account: every profile shares it when Provider setup is Shared, or this profile only when Separate. Never synchronised. Leave blank to remove the local key and use an available account or app key. Requires TMDB to be enabled.";
+    case AJ_TMDB_CHAVE_LOCAL: return "Enter your 32-character TMDB API key (v3). Saved on this device for this account (every profile shares it when Provider setup is Shared, or this profile only when Separate) and to your account, so it comes back after a reinstall. Leave blank to remove the local key and use an available account or app key. Requires TMDB to be enabled.";
     case AJ_MENU_OCULTAR_PILULA: return "Hide the modern or Dynamic sidebar icon pill while navigation is closed. Requires sidebar navigation. Left/Back and the pointer edge still reveal navigation.";
     case AJ_DET_TRAILER_ESPERA: return "Wait before starting the automatic trailer after the detail page settles. Stored in tenths of a second.";
     case AJ_POSPLAY_RECOM: return "Show movie recommendations near the end of playback. Requires available recommendations from enabled TMDB or Trakt services. Episode autoplay is configured separately.";

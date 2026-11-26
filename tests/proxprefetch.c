@@ -40,6 +40,10 @@ int cat_id_stream(int i, int t, int e, char *dst, unsigned tam) {
   snprintf(dst, tam, "%s:%d:%d", base, t, e); return 1;
 }
 int cat_indice_por_imdb(const char *id) { (void)id; return -1; }
+int cat_indices_por_imdb(const char *const *ids, int n, int *out) {
+  for (int i = 0; i < n; i++) out[i] = cat_indice_por_imdb(ids[i]);
+  return n;
+}
 void player_episodio_atual(int *t, int *e) { *t = atualT; *e = atualE; }
 int player_velocidade_efetiva(void) { return velocidade; }
 void player_aprender_creditos(void) {}

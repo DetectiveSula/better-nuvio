@@ -655,6 +655,7 @@ void gfx_ambiente_preparar(void);
 // proprio, escalado pela "Opacidade do vidro"). Chapado (so o scrim) com "Vidro
 // fosco" desligado, efeitos minimos, video por baixo, ou sobre outro vidro.
 enum { GFX_VIDRO_PAINEL = 0, GFX_VIDRO_BARRA = 1 };
+extern float gfx_vidro_fosco_k;   // 1 frosted, 0 smoked (home: smoked while moving)
 void gfx_vidro(GfxRect r, float raio, int tipo, float cinza, float dens, float a);
 // A27 TOP CHROME (avatar chip, top bar, clock island): one material, one tint.
 // gfx_chrome_tinta = scrim alpha from "Opacidade do vidro", >= the floor;

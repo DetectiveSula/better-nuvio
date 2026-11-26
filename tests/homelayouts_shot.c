@@ -360,11 +360,13 @@ int main(int argc, char **argv) {
              getenv("NV_COL_FORMA") ? getenv("NV_COL_FORMA") : "",
              getenv("NV_COL_FORMA") ? "\"," : "");
     snprintf(js, sizeof js,
-      "{\"collections\":[{\"id\":\"cs\",\"title\":\"Streaming\",\"backdropImageUrl\":\"deploy/app/art/07.jpg\",\"folders\":["
+      "{\"collections\":[{\"id\":\"cs\",\"title\":\"%s\",\"backdropImageUrl\":\"deploy/app/art/07.jpg\",\"folders\":["
       "{\"id\":\"a\",\"title\":\"Com hero e capa\",\"heroBackdropUrl\":\"deploy/app/art/03.jpg\",\"coverImageUrl\":\"deploy/app/art/poster/12.jpg\",%s},"
       "{\"id\":\"b\",\"title\":\"So capa\",\"coverImageUrl\":\"deploy/app/art/05.jpg\",%s},"
       "{\"id\":\"c\",\"title\":\"So fundo da colecao\",%s},"
       "{\"id\":\"d\",\"title\":\"Com hero sem capa\",\"heroBackdropUrl\":\"deploy/app/art/09.jpg\",%s}]}]}",
+      // NV_COL_TITULO: another group name ("Streaming" goes to the Dinamica bar).
+      getenv("NV_COL_TITULO") ? getenv("NV_COL_TITULO") : "Streaming",
       fonte, fonte, fonte, fonte);
     // NV_COL_PACOTE=1: o pacote traz as pastas "a" e "b" com arte PROPRIA
     // (caminho absoluto: localiza nao mexe), para a captura de "Arte das

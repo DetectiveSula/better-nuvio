@@ -342,8 +342,15 @@ int salvos_aplicar_catalogo(void) {
   // Catalogo vazio nao tem onde marcar. Sair sem tocar na marca faz a
   // reconciliacao tentar de novo assim que o catalogo existir.
   if (cat_n() < 1) return 0;
+  // One pass over the catalogue for every saved title (cat_indices_por_imdb):
+  // this reruns whenever the catalogue grows, mid-scroll included.
+  const char **ids = malloc(sizeof *ids * (size_t)nItens);
+  int *ks = malloc(sizeof *ks * (size_t)nItens);
+  if (!ids || !ks) { free(ids); free(ks); return 0; }
+  for (i = 0; i < nItens; i++) ids[i] = itens[i].id;
+  cat_indices_por_imdb(ids, nItens, ks);
   for (i = 0; i < nItens; i++) {
-    int k = cat_indice_por_imdb(itens[i].id);
+    int k = ks[i];
     if (k < 0) continue;
     cat_definir_na_lista(k, 1);
     marcados++;
@@ -356,6 +363,7 @@ int salvos_aplicar_catalogo(void) {
   // catalogo com 300 titulos so para marca-los custaria memoria nesta TV sem
   // dar nada em troca. Quem estiver no catalogo fica marcado; quem nao estiver
   // aparece no painel do mesmo jeito.
+  free(ids); free(ks);
   marcaCatN = cat_n();
   marcaIdx = ultimo;
   marcaId[0] = 0;

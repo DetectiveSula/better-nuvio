@@ -62,6 +62,10 @@ const CatItem *cat_item(int idx) { return idx == 0 ? &titulo : NULL; }
 int cat_n_episodios(int idx) { (void)idx; return 0; }
 const CatEp *cat_episodio(int idx, int ep) { (void)idx; (void)ep; return NULL; }
 int cat_indice_por_imdb(const char *id) { return !strcmp(id, titulo.imdb) ? 0 : -1; }
+int cat_indices_por_imdb(const char *const *ids, int n, int *out) {
+  for (int i = 0; i < n; i++) out[i] = cat_indice_por_imdb(ids[i]);
+  return n;
+}
 const AgItem *agenda_registro(const char *id) { (void)id; return NULL; }
 int agenda_dias(const char *d) { (void)d; return 0; }
 int avisos_estreia_pendente(char *id, size_t ti, char *imdb, size_t tm) {

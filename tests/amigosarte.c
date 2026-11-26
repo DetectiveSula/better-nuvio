@@ -15,6 +15,10 @@ int cat_indice_por_imdb(const char *id) {
   for (int i = 0; i < count; i++) if (!strcmp(catalog[i].imdb, id)) return i;
   return -1;
 }
+int cat_indices_por_imdb(const char *const *ids, int n, int *out) {
+  for (int i = 0; i < n; i++) out[i] = cat_indice_por_imdb(ids[i]);
+  return n;
+}
 const CatItem *cat_item(int i) { return i >= 0 && i < count ? &catalog[i] : NULL; }
 int cat_acrescentar_lote(const CatItem *v, int n, int *indices) {
   (void)indices; batches++;

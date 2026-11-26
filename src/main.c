@@ -139,6 +139,9 @@ static void perfTvFrame(Uint32 now, double ms) {
   if (now - checked >= 1000u) {
     char path[1024];
     int enabled = dados_caminho(path, sizeof path, "perf-tv") && access(path, F_OK) == 0;
+#ifdef NV_LOG_IP
+    enabled = 1; // debug builds that send their log to the Mac always measure
+#endif
 #ifdef NV_ANDROID
     char value[PROP_VALUE_MAX];
     enabled |= __system_property_get("debug.nuvio.perf", value) > 0 && !strcmp(value, "1");
@@ -2368,8 +2371,20 @@ int main(int argc, char **argv) {
     t0 = NV_T0();
     txt_novo_quadro();
     ponteiro_quadro(agora);
+    // The whole home frame, chrome included (top bar, clock island), takes
+    // the home's glass state: smoked while the rows slide, frosted at rest.
+    // Only part of it smoked starves the shared backdrop and the rest
+    // re-blurs every frame (S90C test8 log, 2026-11-26: 3 passes a frame).
+    // Details page too (owner, 2026-11-26: episode lists such as MobLand are
+    // heavy to move through): smoked while it slides, frosted ~0.15 s after.
+    if (detail_aberto() && !player_aberto()) {
+      gfx_vidro_fosco_k = detail_vidro_fosco_k(agora);
+    } else
+      gfx_vidro_fosco_k = app_tela_nome() && !strcmp(app_tela_nome(), "home") ? home_vidro_fosco_k() : 1.0f;
     app_desenhar(agora);
-    if (perftv_enabled) snprintf(perfScreen, sizeof perfScreen, "%s", perfTvScreen());
+    gfx_vidro_fosco_k = 1.0f;
+    if (perftv_enabled) snprintf(perfScreen, sizeof perfScreen, "%s%s", perfTvScreen(),
+                                 ajustes_vidro() ? "+glass" : "");
     // A abertura (#213) cobre os primeiros quadros, com a home montando por baixo.
     if (abertura_ativa()) {
       int pend = 0;

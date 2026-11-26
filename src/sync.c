@@ -1708,9 +1708,15 @@ static void ppFim(void) {
 #define PP_MARCA(k) ((void)0)
 #define PP_FIM() ((void)0)
 #endif
+// Fixtures that link sync.c without ajustes.c: nothing to restore.
+__attribute__((weak)) void ajustes_tmdb_da_conta(const char *key) { (void)key; }
+// Set by app.c while the home rows slide (.tpk): the per-frame settings sync
+// and applying a finished cycle wait; the cheap per-frame marking still runs.
+static int syncAdiar;
+void sync_adiar(int adiar) { syncAdiar = adiar; }
 void sync_passo(unsigned agoraMs) {
   PP_INI();
-  if(ajustes_better_passo())ajustesTemLocal=0;
+  if(!syncAdiar&&ajustes_better_passo())ajustesTemLocal=0;
   PP_MARCA(0);
   if (sessao_logada()) desc_sessao_passo();
   PP_MARCA(1);
@@ -1774,7 +1780,7 @@ void sync_passo(unsigned agoraMs) {
   contalib_reconciliar();
   PP_MARCA(5);
   PP_FIM();
-  if (!fioVivo || !PRONTO_LER(fioPronto)) return;
+  if (syncAdiar || !fioVivo || !PRONTO_LER(fioPronto)) return;
   fioVivo = 0;
   __atomic_store_n(&fioPronto, 0, __ATOMIC_RELAXED);
   memset(spMs, 0, sizeof spMs);
@@ -1865,7 +1871,7 @@ void sync_passo(unsigned agoraMs) {
     if (debrid_aplicar_chaves_conta(&debridDoCiclo, sessaoDoCiclo))
       temDebridRem = 0;
   }
-  if (temTmdb)      { desc_tmdb_definir(tmdbKey);   temTmdb = 0; }
+  if (temTmdb)      { desc_tmdb_definir(tmdbKey); ajustes_tmdb_da_conta(tmdbKey); temTmdb = 0; }
   if (temMdb)       { extras_definir_chave(mdbKey); temMdb = 0; }
   spMarcar(SP_CRED);
   // A mesma aplicacao que pode ter ocorrido cedo: as caixas consumidas

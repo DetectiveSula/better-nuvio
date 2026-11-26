@@ -333,6 +333,8 @@ void txt_desenhar_tom(TxtLinha l, float x, float y, float cr, float cg, float cb
 // cabecalho. Passe x = -1 para so medir, sem desenhar.
 float txt_tracking(TxtEstilo estilo, const char *s, int r, int g, int b,
                    float x, float y, float alpha, float tracking);
+float txt_tracking_tom(TxtEstilo estilo, const char *s, float x, float y,
+                       float cr, float cg, float cb, float alpha, float tracking);
 
 // TEXTO VIVO: desenha `s` glifo a glifo, cada caractere uma linha de UMA letra
 // rasterizada em BRANCO e tintada na hora (o GFX_TEXTO pega a cor no uniforme,

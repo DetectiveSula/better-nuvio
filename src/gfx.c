@@ -4019,7 +4019,8 @@ static void vidroFundoFechar(void) {
     fora = !vidroRegContem(fundoReg,fundoNReg,fundoReserva);
   }
   fundoFim = 2;
-  if (foscoBloq || !ajustes_vidro_fosco() || efeitosMinimos) return;
+  // Smoked while moving (gfx_vidro_fosco_k): no glass reads a backdrop.
+  if (foscoBloq || !ajustes_vidro_fosco() || efeitosMinimos || gfx_vidro_fosco_k <= 0.01f) return;
   if (!vidPreparar()) return;
   // No glass last frame (frost just resumed or appeared): its regions are
   // unknown, so blur the whole screen once, before foreground, instead of one
@@ -4189,11 +4190,30 @@ GLuint gfx_vidro_fonte_fixa(GLuint tex) {
   vidroFonteFixa = tex;
   return anterior;
 }
+// FROSTED AT REST, SMOKED WHILE MOVING (owner, 2026-11-26: keep the frost but
+// scroll like the Apple TV app). Re-blurring the backdrop on every frame of a
+// scroll is the glass cost the S90C measured; at 0 the glass is drawn smoked
+// (tinted, no backdrop read), at 1 frosted as always, and in between the two
+// are blended. The home sets it around its own drawing (home.c).
+float gfx_vidro_fosco_k = 1.0f;
+static int vidroForcaFumaca;
 void gfx_vidro(GfxRect r, float raio, int tipo, float cinza, float dens, float a) {
+  if (gfx_vidro_fosco_k < 0.999f && !vidroForcaFumaca) {
+    float k = gfx_vidro_fosco_k < 0.0f ? 0.0f : gfx_vidro_fosco_k;
+    if (k > 0.01f) { float kAnt = gfx_vidro_fosco_k; gfx_vidro_fosco_k = 1.0f;
+                     gfx_vidro(r, raio, tipo, cinza, dens, a * k); gfx_vidro_fosco_k = kAnt; }
+    vidroForcaFumaca = 1;
+    gfx_vidro(r, raio, tipo, cinza, dens, a * (1.0f - k));
+    vidroForcaFumaca = 0;
+    return;
+  }
   GfxRect t = r;
   float d = dens, tela[4];
   int chapado, video, fumaca, i, contorno = ajustes_vidro_contorno();
   if (r.w <= 0.0f || r.h <= 0.0f || a <= 0.001f) return;
+#ifdef NV_FLUIDEZ_PERF
+  if (getenv("NV_VIDRO_RASTRO")) fprintf(stderr, "[rastro-vidro] q=%d tipo=%d %.0f,%.0f %.0fx%.0f a=%.2f\n", gfx_quadro_n, tipo, r.x, r.y, r.w, r.h, a);
+#endif
   if (!vidroPronto()) {
     gfx_cor(r, raio, 0x1a / 255.0f, 0x1c / 255.0f, 0x21 / 255.0f, 0.94f * a);
     gfx_anel(r, raio, 1.0f, 1.0f, 1.0f, 1.0f, 0.22f * a);
@@ -4217,7 +4237,7 @@ void gfx_vidro(GfxRect r, float raio, int tipo, float cinza, float dens, float a
   // (Nuvio Arc): the real glass look is the tint plus the in-shader rim/top
   // highlight, never an art stand-in or a flat opaque box. With quality =
   // Desempenho, or once the governor dropped the tier.
-  fumaca = video || ajustes_vidro_qualidade() == 1 || (vidroDegradou && ajustes_vidro_qualidade() == 0);
+  fumaca = video || vidroForcaFumaca || ajustes_vidro_qualidade() == 1 || (vidroDegradou && ajustes_vidro_qualidade() == 0);
   if (fumaca) chapado = 1;
   if (vidroNVidros < VID_N) memcpy(vidroVidros[vidroNVidros++], tela, sizeof tela);
   memset(&vidPend, 0, sizeof vidPend);

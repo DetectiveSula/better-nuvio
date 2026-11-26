@@ -302,6 +302,8 @@ int  cat_blocos_aposentados(void);
 void cat_dir_gravacao(const char *dir);
 
 int cat_indice_por_imdb(const char *imdb);
+// cat_indice_por_imdb for n ids in one pass over the catalogue (same answers).
+int cat_indices_por_imdb(const char *const *ids, int n, int *out);
 // Copia independente por id base + tipo, sob a trava dos publicadores.
 // Para fios que precisam reaproveitar metadados sem guardar cat_item().
 // Prefere a copia com poster; 0 quando o titulo ainda nao esta no catalogo.

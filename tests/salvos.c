@@ -64,6 +64,10 @@ int cat_indice_por_imdb(const char *imdb) {
   for (i = 0; i < nCat; i++) if (salvos_mesmo_titulo(cat[i].imdb, imdb)) return i;
   return -1;
 }
+int cat_indices_por_imdb(const char *const *ids, int n, int *out) {
+  for (int i = 0; i < n; i++) out[i] = cat_indice_por_imdb(ids[i]);
+  return n;
+}
 void cat_definir_na_lista(int i, int naLista) {
   if (i < 0 || i >= nCat) return;
   unsigned bit = 1u << fonteBib;

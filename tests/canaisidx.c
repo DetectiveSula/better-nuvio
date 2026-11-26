@@ -114,6 +114,24 @@ int main(void) {
             cat_indice_por_imdb("kitsu:99999") == 1);
   }
 
+  // cat_indices_por_imdb (one pass, 2026-11-26) gives EXACTLY the answers of
+  // cat_indice_por_imdb, duplicates and both directions of ":s:e" included.
+  {
+    static CatItem v[12];
+    const char *cat[] = { "tt1:1:2", "tt1", "tt2", "tt1:1:2", "tt3:4:5", "kitsu:12:1:3",
+                          "cs:channel:a", "tt2:9:9", "tt4:1:1:2:2", "x:1:2", "tt5", "tt2" };
+    const char *q[] = { "tt1", "tt1:1:2", "tt1:3:4", "tt2", "tt2:1:1", "tt3", "tt3:4:5",
+                        "tt3:4:6", "kitsu:12", "kitsu:12:1", "kitsu:12:1:3", "cs:channel:a",
+                        "cs", "tt4", "tt4:1:1", "tt4:1:1:2:2", "x", "x:1:2", "tt5:7:7",
+                        "tt6", "", "tt1:1", "tt1:a:2" };
+    int nq = (int)(sizeof q / sizeof *q), out[32], ok = 1;
+    semear(v, 12, cat);
+    cat_indices_por_imdb(q, nq, out);
+    for (int i = 0; i < nq; i++)
+      if (out[i] != cat_indice_por_imdb(q[i])) {
+        printf("    %s: lote=%d um-a-um=%d\n", q[i], out[i], cat_indice_por_imdb(q[i])); ok = 0; }
+    confere("cat_indices_por_imdb da as mesmas respostas de cat_indice_por_imdb", ok);
+  }
   if (falhas) { printf("FALHOU: %d checagem(ns)\n", falhas); return 1; }
   puts("PASS: canais com ids distintos nao colidem em cat_indice_por_imdb; "
        "id de IMDb com temporada:episodio continua casando.");

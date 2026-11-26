@@ -66,6 +66,10 @@ int cat_indice_por_imdb(const char *imdb) {
   if (!strcmp(imdb, "tt7654321")) return 1;
   return -1;
 }
+int cat_indices_por_imdb(const char *const *ids, int n, int *out) {
+  for (int i = 0; i < n; i++) out[i] = cat_indice_por_imdb(ids[i]);
+  return n;
+}
 void cat_aplicar_progresso(int i, double pos, double dur, int t, int e) {
   (void)i; (void)dur; (void)t; (void)e;
   aplicadosNoCatalogo++;

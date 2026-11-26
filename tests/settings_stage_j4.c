@@ -85,7 +85,7 @@ int main(int argc,char **argv){
  BnEngine *e=calloc(1,sizeof *e);assert(e&&bn_init(e,sessao_usuario(),perfis_ativo(),dados_cliente_id(),defs,JB_N));assert(bnc_response(e,envelope,&sent));free(envelope);
  /* Store-backed bindings (stage 2a) read their store, not a direct value[] write:
   * settings_sync_auto covers them (and the Home row count) through their real setters. */
- {size_t esperados=0;for(size_t i=0;i<JB_N;i++){if(jbLoja(jbMap[i].op)||jbMap[i].op==AJ_FIL_LIMITE)continue;esperados++;int found=0;for(size_t j=0;j<sent.count;j++)found|=!strcmp(sent.fields[j].key,jbMap[i].key);assert(found);}
+ {size_t esperados=0;for(size_t i=0;i<JB_N;i++){if(jbLoja(jbMap[i].op)||jbMap[i].op==AJ_FIL_LIMITE||jbSoDesteAparelho(jbMap[i].op))continue;esperados++;   /* Max quality: per device since 1.0.13 */int found=0;for(size_t j=0;j<sent.count;j++)found|=!strcmp(sent.fields[j].key,jbMap[i].key);assert(found);}
   assert(sent.count>=esperados);}
  for(int k=0;k<3;k++)ajustes_better_ciclo(nv_perfil_sessao_ler());assert(betterPushes==1&&!pushes);
  puts("PASS: every binding captured through real Native save, original-format Better payload, no defaults or loops and no Stage I writes");
@@ -94,7 +94,7 @@ int main(int argc,char **argv){
   assert(jbEncode(op,op==AJ_LEG2_ATRASO?-321:original[op],0,&sent.fields[i].value));sent.fields[i].rev+=100;strcpy(sent.fields[i].device,"peer");
  }
  free(betterCloud);betterCloud=NULL;assert(bn_json(e,&sent,&betterCloud));serverSave();ajustes_better_ciclo(nv_perfil_sessao_ler());assert(ajustes_better_passo());
- for(size_t i=0;i<JB_N;i++)assert(valor[jbMap[i].op]==(jbMap[i].op==AJ_LEG2_ATRASO?-321:original[jbMap[i].op]));
+ for(size_t i=0;i<JB_N;i++)if(!jbSoDesteAparelho(jbMap[i].op))assert(valor[jbMap[i].op]==(jbMap[i].op==AJ_LEG2_ATRASO?-321:original[jbMap[i].op]));
  int before=betterPushes;ajustes_better_ciclo(nv_perfil_sessao_ler());assert(betterPushes==before&&!pushes&&j4Cw>0);
  for(int op=0;op<AJ_N;op++){int mapped=0;for(size_t i=0;i<JB_N;i++)mapped|=jbMap[i].op==op;if(!mapped)assert(valor[op]==original[op]);}
  puts("PASS: every remote binding restores Native values and effects, with no echo and no unlisted control changes");

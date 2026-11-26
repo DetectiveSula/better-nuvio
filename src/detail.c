@@ -1997,6 +1997,36 @@ static int carDesenhaFundo(void) {
 }
 
 int detail_aberto(void) { return aberto; }
+// Glass on the details page: smoked while it slides, frosted again ~0.15 s
+// after it stops (gfx_vidro_fosco_k; .tpk, or NV_VIDRO_PARADO in the perf
+// harness). Called once per frame by whoever draws the page.
+int detail_em_movimento(void);
+float detail_vidro_fosco_k(Uint32 agora) {
+  static float k = 1.0f;
+  static Uint32 em;
+#if defined(NV_TPK)
+  const int ligado = 1;
+#elif defined(NV_FLUIDEZ_PERF)
+  const int ligado = getenv("NV_VIDRO_PARADO") != NULL;
+#else
+  const int ligado = 0;
+#endif
+  float dt = em && agora > em ? (agora - em) / 1000.0f : 0.0f;
+  em = agora;
+  if (!ligado) return 1.0f;
+  if (detail_em_movimento()) k = 0.0f;
+  else { k += dt / 0.15f; if (k > 1.0f) k = 1.0f; }
+  return k;
+}
+// The page, a section row (episodes) or the carousel is still sliding. Glass
+// on the .tpk turns smoked while this holds (main.c), as on the home.
+int detail_em_movimento(void) {
+  if (!aberto) return 0;
+  if (fabsf(velY) > 40.0f) return 1;
+  for (int r = 0; r < N_SECOES; r++) if (fabsf(velSec[r]) > 40.0f) return 1;
+  if (fabsf(carVel) > 0.05f || fabsf(colListaVel) > 40.0f) return 1;
+  return 0;
+}
 // [quadro] do main: a pagina rolando para o heroi (sobe) ou para as fileiras.
 const char *detail_transicao(void) {
   if (!aberto || (fabsf(pg - pgAlvo) <= 0.02f && fabsf(velY) < 5.0f)) return "-";

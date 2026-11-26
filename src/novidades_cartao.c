@@ -183,7 +183,7 @@ __attribute__((unused)) static void novArteDesfocada(int numero, GfxRect r, floa
 
 // ======================================================= O CONTEUDO DA VERSAO
 // Para a proxima versao: um src/novidades/<versao>.inc novo, trocado aqui.
-#include "novidades/better112.inc"
+#include "novidades/better113.inc"
 #define CT NOV_ATUAL
 
 static const char *artePorNumero(int n) {

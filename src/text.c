@@ -1840,6 +1840,9 @@ static TxtLinha linhaCache(TxtEstilo estilo, const char *s, int r, int g, int b,
   cache[slot].linha.ph = camada ? cv->h : 0;
   cache[slot].larg = w;
   txt_rasterizadas++;
+#ifdef NV_FLUIDEZ_PERF
+  if (getenv("NV_TXT_RASTRO")) fprintf(stderr, "[rastro-txt] q=%lu despejo=%d %s\n", (unsigned long)quadroTxt, txt_despejos, chave);
+#endif
   txt_ms += (double)(SDL_GetPerformanceCounter() - t0) * 1000.0 / (double)SDL_GetPerformanceFrequency();
   cache[slot].uso = ++relogio;
   cache[slot].quadroUso = quadroTxt;
@@ -2143,6 +2146,21 @@ float txt_tracking(TxtEstilo estilo, const char *s, int r, int g, int b,
     larg = (float)txt_largura(estilo, s);
   } else l = linhaCache(estilo, s, r, g, b, 255, fonteInterface, 0, &tracking, &larg);
   if (x >= 0.0f) txt_desenhar_alpha(l, x, y, alpha);
+  return larg;
+}
+
+// txt_tracking rasterised in white and coloured by the GPU tint: for text
+// whose colour animates, so the fade reuses one cached texture.
+float txt_tracking_tom(TxtEstilo estilo, const char *s, float x, float y,
+                       float cr, float cg, float cb, float alpha, float tracking) {
+  float larg;
+  TxtLinha l;
+  if (!s || !*s) return 0.0f;
+  if (temRtl(s)) {
+    l = txt_linha(estilo, s, 255, 255, 255, 255);
+    larg = (float)txt_largura(estilo, s);
+  } else l = linhaCache(estilo, s, 255, 255, 255, 255, fonteInterface, 0, &tracking, &larg);
+  if (x >= 0.0f) txt_desenhar_tom(l, x, y, cr, cg, cb, alpha);
   return larg;
 }
 
