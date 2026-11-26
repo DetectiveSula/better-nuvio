@@ -527,6 +527,29 @@ static const char *FS_COVER =
   "vec2 cover(vec2 uv){ return coverAsp(uv, uTexAsp); }\n"
   "";
 
+// GLASS DENSITY SOLVE, 5 TAPS OR 1 (.tpk). Every frosted glass pixel read the
+// blurred backdrop five times (centre + four corners) only to decide how much
+// to darken the scrim behind bright art; with the backdrop read and the
+// dither that was 7 texture reads per glass pixel on the S90C's Mali-G51. The
+// .tpk reads the centre only (3 per pixel): the scrim still darkens behind a
+// bright backdrop, it just reacts to the middle of the panel, not its corners.
+// -DNV_VIDRO_DENS_CANTOS=1 restores the five taps.
+#ifndef NV_VIDRO_DENS_CANTOS
+#ifdef NV_TPK
+#define NV_VIDRO_DENS_CANTOS 0
+#else
+#define NV_VIDRO_DENS_CANTOS 1
+#endif
+#endif
+#if NV_VIDRO_DENS_CANTOS
+#define VD_DENS_CANTOS \
+  "      lg = max(lg, vd_lum(texture2D(uTex, uAmostra.xy + uAmostra.zw).rgb));\n" \
+  "      lg = max(lg, vd_lum(texture2D(uTex, uAmostra.xy - uAmostra.zw).rgb));\n" \
+  "      lg = max(lg, vd_lum(texture2D(uTex, uAmostra.xy + vec2(uAmostra.z, -uAmostra.w)).rgb));\n" \
+  "      lg = max(lg, vd_lum(texture2D(uTex, uAmostra.xy - vec2(uAmostra.z, -uAmostra.w)).rgb));\n"
+#else
+#define VD_DENS_CANTOS ""
+#endif
 static const char *FS_CORPO[GFX_NMODOS] = {
   // GFX_CARD — arte inteira com cantos e especular no foco (sem zoom nem corte)
   "uniform float uReflexo;\n"
@@ -1606,10 +1629,7 @@ static const char *FS_CORPO[GFX_NMODOS] = {
   "  if (uV1.w >= 0.5) {\n"
   "    if (uDens.w > 0.5) {\n"
   "      float lg = vd_lum(texture2D(uTex, uAmostra.xy).rgb);\n"
-  "      lg = max(lg, vd_lum(texture2D(uTex, uAmostra.xy + uAmostra.zw).rgb));\n"
-  "      lg = max(lg, vd_lum(texture2D(uTex, uAmostra.xy - uAmostra.zw).rgb));\n"
-  "      lg = max(lg, vd_lum(texture2D(uTex, uAmostra.xy + vec2(uAmostra.z, -uAmostra.w)).rgb));\n"
-  "      lg = max(lg, vd_lum(texture2D(uTex, uAmostra.xy - vec2(uAmostra.z, -uAmostra.w)).rgb));\n"
+  VD_DENS_CANTOS
   "      need = lg > uDens.x ? 1.0 - sqrt(uDens.x / lg) : 0.0;\n"
   "    }\n"
   "    sc = vd_scrim(fy, need);\n"
@@ -3174,7 +3194,9 @@ static void ambAssar(void) {
   vidroEsquecerFonte(ambTex);
 }
 
+void gfx_desfocados_preparar(void);
 void gfx_ambiente_preparar(void) {
+  gfx_desfocados_preparar();   // the start of the frame is also where queued blurred copies are made
   if (nv_ambiente_forca <= 0.003f || efeitosMinimos || snapAtivo || !ambPreparar()) return;
   ambAssar();
 }
@@ -3471,6 +3493,28 @@ void gfx_mascara_opaca(GfxRect r, float raioPx) {
   }
   dinOp[dinNOp++] = a;
   dinOp[dinNOp++] = b;
+}
+
+void gfx_cor_vazada(GfxRect r, float cr, float cg, float cb, float ca, GfxRect furo) {
+  float x0, y0, x1, y1;
+  if (r.w <= 0.0f || r.h <= 0.0f) return;
+  x0 = (furo.x - r.x) / r.w; x1 = (furo.x + furo.w - r.x) / r.w;
+  y0 = (furo.y - r.y) / r.h; y1 = (furo.y + furo.h - r.y) / r.h;
+  if (furo.w <= 0.0f || furo.h <= 0.0f || x0 <= 0.0f || y0 <= 0.0f || x1 >= 1.0f || y1 >= 1.0f ||
+      progs[GFX_COR].sub < 0) {
+    gfx_cor(r, 0.0f, cr, cg, cb, ca);
+    return;
+  }
+  // Pending ambient light goes out first with the whole quad (as in
+  // gfx_sombra_vazada), not inside the first strip.
+  gfx_ambiente_descarregar();
+  { const float f[4][4] = { { 0, 0, 1, y0 }, { 0, y1, 1, 1 }, { 0, y0, x0, y1 }, { x1, y0, 1, y1 } };
+    int k;
+    for (k = 0; k < 4; k++) {
+      memcpy(subAtual, f[k], sizeof subAtual);
+      gfx_cor(r, 0.0f, cr, cg, cb, ca);
+    }
+    subAtual[0] = subAtual[1] = 0.0f; subAtual[2] = subAtual[3] = 1.0f; }
 }
 
 // PAINEL OPACO GRANDE (o miolo solido das ilhas dos Ajustes, sem vidro): o
@@ -5085,6 +5129,9 @@ void gfx_borrao_encerrar(void) {
 
 typedef struct { GLuint src, tex; unsigned long chave, uso; } Desf;
 static Desf desf[NV_DESF_N];
+// Copies waiting for the start of the next frame (gfx_desfocados_preparar).
+static struct { GLuint src; unsigned long chave; } desfFila[NV_DESF_N];
+static int desfFilaN, desfNoInicio;
 static GLuint desfFbo = 0, desfTmp = 0, desfTmp2 = 0, desfMid = 0;
 static int desfFalhou = 0;
 static unsigned long desfRelogio = 0;
@@ -5098,6 +5145,9 @@ static unsigned long desfHash(const char *s) {
 static void desfEsquecerFonte(GLuint tex) {
   for (int i = 0; i < NV_DESF_N; i++)
     if (desf[i].src == tex) { desf[i].src = 0; desf[i].chave = 0; }
+  // A queued copy of a texture that is gone (its name may be reused).
+  for (int i = 0; i < desfFilaN; i++)
+    if (desfFila[i].src == tex) { desfFila[i] = desfFila[--desfFilaN]; i--; }
 }
 
 static GLuint desfNovaTex(int w, int h) {
@@ -5147,8 +5197,42 @@ static void desfPasso(GLuint src, GLuint dst, int w, int h, float ux, float uy) 
   gfx_rect(cheio, src, GFX_BLUR, 0, ux, uy, 0.0f, 0, 0, 0, 1.0f);
 }
 
-GLuint gfx_desfocado(GLuint src, const char *chave) {
-  unsigned long h = desfHash(chave);
+// BLURRED COPIES MADE BEFORE THE FRAME, NOT IN IT (.tpk, S90C 2026-11-24:
+// shows with many unwatched episodes scrolled at 27-39 fps, frames with 128 ms
+// of offscreen work; watched shows at 51-56). Each copy is four passes into
+// small targets; made in the middle of the frame, every switch away from the
+// screen makes a tiled GPU (Mali) write the half-drawn screen out and read it
+// back, and the scratch targets are reused while earlier passes still read
+// them. Here a missing copy is QUEUED (the card shows its plain background
+// for that frame, as when the per-frame budget runs out: never the sharp
+// still) and gfx_desfocados_preparar makes it at the start of the next frame,
+// before anything is drawn to the screen. -DNV_DESF_ADIADO=0 restores it.
+#ifndef NV_DESF_ADIADO
+#ifdef NV_TPK
+#define NV_DESF_ADIADO 1
+#else
+#define NV_DESF_ADIADO 0
+#endif
+#endif
+static void desfEnfileirar(GLuint src, unsigned long h) {
+  for (int i = 0; i < desfFilaN; i++) if (desfFila[i].src == src && desfFila[i].chave == h) return;
+  if (desfFilaN < NV_DESF_N) { desfFila[desfFilaN].src = src; desfFila[desfFilaN].chave = h; desfFilaN++; }
+}
+static GLuint desfObter(GLuint src, unsigned long h);
+GLuint gfx_desfocado(GLuint src, const char *chave) { return desfObter(src, desfHash(chave)); }
+void gfx_desfocados_preparar(void) {
+  int i, k = 0;
+  if (!desfFilaN) return;
+  desfNoInicio = 1;
+  for (i = 0; i < desfFilaN && desfGeradosQuadro < NV_DESF_POR_QUADRO; i++) {
+    if (glIsTexture(desfFila[i].src)) desfObter(desfFila[i].src, desfFila[i].chave);
+    desfFila[i].src = 0;
+  }
+  desfNoInicio = 0;
+  for (int j = 0; j < desfFilaN; j++) if (desfFila[j].src) desfFila[k++] = desfFila[j];
+  desfFilaN = k;
+}
+static GLuint desfObter(GLuint src, unsigned long h) {
   int i, vago = -1;
   if (!src) return 0;
   desfRelogio++;
@@ -5157,6 +5241,9 @@ GLuint gfx_desfocado(GLuint src, const char *chave) {
       desf[i].uso = desfRelogio;
       return desf[i].tex;
     }
+#if NV_DESF_ADIADO
+  if (!desfNoInicio) { desfEnfileirar(src, h); return 0; }
+#endif
   if (desfGeradosQuadro >= NV_DESF_POR_QUADRO) return 0;
   gfx_ambiente_descarregar();   // pendente e da tela, nao deste alvo
   { static int nLog;   // #318: idem, a copia desfocada de um cartaz

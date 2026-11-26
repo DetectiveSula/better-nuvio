@@ -57,13 +57,81 @@ static int ajJsonNext(const char **cursor, const char *end, char *key, size_t ca
   if (!*f) return 0;
   *cursor = *f; return 1;
 }
+// ACCOUNT SETTINGS APPLY, BY PART (.tpk). With the lookup memo on, the S90C
+// (2026-11-24) still spent ~280 ms per sync in the settings step with every
+// field already equal, so the time is elsewhere. One line per apply that took
+// 20 ms or more names the parts that took 1 ms or more. Main thread only.
+#ifdef NV_TPK
+static double ajtT0, ajtUlt;
+static char ajtBuf[384];
+static size_t ajtN;
+static double ajtAgora(void) {
+  struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t);
+  return t.tv_sec * 1000.0 + t.tv_nsec / 1e6;
+}
+static void ajtIni(void) { ajtT0 = ajtUlt = ajtAgora(); ajtN = 0; ajtBuf[0] = 0; }
+static void ajtMarca(const char *nome) {
+  double t = ajtAgora(), d = t - ajtUlt; ajtUlt = t;
+  if (d >= 1.0 && ajtN + 48 < sizeof ajtBuf)
+    ajtN += (size_t)snprintf(ajtBuf + ajtN, sizeof ajtBuf - ajtN, " %s=%.1f", nome, d);
+}
+static void ajtFim(const char *qual) {
+  double total = ajtAgora() - ajtT0;
+  if (total >= 20.0) { printf("[ajustes-tempo] %s %.1f ms:%s\n", qual, total, ajtBuf); fflush(stdout); }
+}
+#define AJT_INI() ajtIni()
+#define AJT_MARCA(n) ajtMarca(n)
+#define AJT_FIM(q) ajtFim(q)
+#else
+#define AJT_INI() ((void)0)
+#define AJT_MARCA(n) ((void)0)
+#define AJT_FIM(q) ((void)0)
+#endif
+
+// LOOKUP MEMO for one account-document application (ajustes_compartilhados_
+// aplicar). Every field is read from the top: "features" -> feature -> key,
+// and each step walks every member before it, so ~75 fields walked the whole
+// document ~150 times. On the Mac bench that was most of the apply (21.5 ->
+// 3.6 ms for a 16 KB-1 MB document); on the S90C (2026-11-24) the ~280 ms per
+// sync stayed, so the TV's cost is elsewhere (see [ajustes-tempo]). While a memo is on, a lookup
+// whose object lies inside that document (immutable for the call) is answered
+// from the first walk. Lookups in other buffers (strndup'd copies that can be
+// freed and reused at the same address) are never cached. Only the thread
+// that turned the memo on uses it: the sync worker reads with the same code
+// for its merges. (Not _Thread_local: the Tizen 4/5 library may have no TLS.)
+#define AJ_MEMO_N 32
+static struct { const char *obj, *end, *v, *f; char key[48]; int ok; } ajMemo[AJ_MEMO_N];
+static const char *ajMemoIni, *ajMemoFim;
+static int ajMemoN;
+static pthread_t ajMemoDono;
+static void ajJsonMemo(const char *doc) {
+  ajMemoIni = NULL; ajMemoN = 0;
+  if (!doc) return;
+  ajMemoDono = pthread_self(); ajMemoFim = doc + strlen(doc); ajMemoIni = doc;
+}
 static int ajJsonGet(const char *obj, const char *end, const char *key,
                      const char **v, const char **f) {
   if (!obj || *obj != '{') return 0;
+  int memo = ajMemoIni && pthread_equal(pthread_self(), ajMemoDono) && obj >= ajMemoIni && end <= ajMemoFim &&
+             strlen(key) < sizeof ajMemo[0].key;
+  if (memo)
+    for (int i = 0; i < ajMemoN && i < AJ_MEMO_N; i++)
+      if (ajMemo[i].obj == obj && ajMemo[i].end == end && !strcmp(ajMemo[i].key, key)) {
+        if (ajMemo[i].ok) { *v = ajMemo[i].v; *f = ajMemo[i].f; }
+        return ajMemo[i].ok;
+      }
   const char *p = obj; size_t cap = (size_t)(end - obj) + 1;
+  int ok = 0;
   char *k = malloc(cap); if (!k) return 0;
-  while (ajJsonNext(&p, end, k, cap, v, f)) if (!strcmp(k, key)) { free(k); return 1; }
-  free(k); return 0;
+  while (ajJsonNext(&p, end, k, cap, v, f)) if (!strcmp(k, key)) { ok = 1; break; }
+  free(k);
+  if (memo && ajMemoN < AJ_MEMO_N) {
+    ajMemo[ajMemoN].obj = obj; ajMemo[ajMemoN].end = end; ajMemo[ajMemoN].ok = ok;
+    if (ok) { ajMemo[ajMemoN].v = *v; ajMemo[ajMemoN].f = *f; }
+    snprintf(ajMemo[ajMemoN].key, sizeof ajMemo[0].key, "%s", key);
+    ajMemoN++;
+  }
+  return ok;
 }
 
 // Web options never live in C snapshots. Keep those potentially huge hex

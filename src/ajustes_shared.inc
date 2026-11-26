@@ -75,6 +75,18 @@ static const char *ajSharedString(const char *p, const char *end) {
   }
   return NULL;
 }
+// Decode one already-scanned key string [k, ke). js_cadeia runs strlen from
+// its argument, which on the full document is the rest of the document: once
+// per key, and again per earlier sibling compared. Decoding a bounded copy keeps
+// the same result (a decoded key over 511 bytes is still refused; each raw
+// escape is at most 6 bytes) at the cost of the key alone.
+static int ajSharedKey(const char *k, const char *ke, char *dst, size_t tam) {
+  char raw[6 * 512 + 4];
+  size_t n = (size_t)(ke - k);
+  if (n >= sizeof raw) return 0;
+  memcpy(raw, k, n); raw[n] = 0;
+  return js_cadeia(raw, dst, tam);
+}
 static const char *ajSharedJson(const char *p, const char *end, int depth) {
   p = ajJsonSpace(p, end);
   if (p == end || depth > 48) return NULL;
@@ -86,8 +98,14 @@ static const char *ajSharedJson(const char *p, const char *end, int depth) {
     // AND re-validate every earlier sibling for each new key, recursively, so
     // the cost snowballed with the document: 41 ms on BlueStacks, 5.3 s on the
     // S90C. Values are validated once; only keys are compared.
+    // 24 Nov 2026, S90C: still 220-1440 ms per sync, because each new key
+    // DECODED every earlier sibling again (N^2 decodes in a wide object). Each
+    // key now keeps a hash of its decoded text in an open-addressing table;
+    // only a key with an equal hash is decoded again.
     const char **seen = NULL;
-    int nSeen = 0, capSeen = 0;
+    unsigned *seenHash = NULL;
+    int *tab = NULL;
+    int nSeen = 0, capSeen = 0, capTab = 0;
     const char *res = NULL;
     ++p;
     p = ajJsonSpace(p, end);
@@ -96,18 +114,40 @@ static const char *ajSharedJson(const char *p, const char *end, int depth) {
       if (object) {
         char key[512], prior[512];
         const char *k = p, *ke = ajSharedString(p, end);
-        if (!ke || !js_cadeia(k, key, sizeof key)) goto fim;
+        if (!ke || !ajSharedKey(k, ke, key, sizeof key)) goto fim;
         // Reject duplicate keys, including equivalent escaped spellings.
-        for (int i = 0; i < nSeen; i++) {
-          if (!js_cadeia(seen[i], prior, sizeof prior)) goto fim;
+        unsigned h = 2166136261u;
+        for (const unsigned char *c = (const unsigned char *)key; *c; c++) h = (h ^ *c) * 16777619u;
+        if (2 * (nSeen + 1) > capTab) {   // keep the table at most half full
+          int nt = capTab ? capTab * 2 : 32;
+          int *t2 = malloc(sizeof *t2 * (size_t)nt);
+          if (!t2) goto fim;
+          for (int i = 0; i < nt; i++) t2[i] = -1;
+          for (int i = 0; i < nSeen; i++) {
+            int b = (int)(seenHash[i] & (unsigned)(nt - 1));
+            while (t2[b] >= 0) b = (b + 1) & (nt - 1);
+            t2[b] = i;
+          }
+          free(tab); tab = t2; capTab = nt;
+        }
+        int slot = (int)(h & (unsigned)(capTab - 1));
+        for (; tab[slot] >= 0; slot = (slot + 1) & (capTab - 1)) {
+          int i = tab[slot];
+          if (seenHash[i] != h) continue;
+          if (!ajSharedKey(seen[i], ajSharedString(seen[i], end), prior, sizeof prior)) goto fim;
           if (!strcmp(key, prior)) { ajSharedDuplicada = 1; goto fim; }
         }
         if (nSeen == capSeen) {
           int nc = capSeen ? capSeen * 2 : 16;
           const char **t = realloc(seen, sizeof *seen * (size_t)nc);
           if (!t) goto fim;
-          seen = t; capSeen = nc;
+          seen = t;
+          unsigned *th = realloc(seenHash, sizeof *seenHash * (size_t)nc);
+          if (!th) goto fim;
+          seenHash = th; capSeen = nc;
         }
+        seenHash[nSeen] = h;
+        tab[slot] = nSeen;
         seen[nSeen++] = k;
         p = ajJsonSpace(ke, end);
         if (p == end || *p++ != ':') goto fim;
@@ -121,6 +161,8 @@ static const char *ajSharedJson(const char *p, const char *end, int depth) {
     }
 fim:
     free(seen);
+    free(seenHash);
+    free(tab);
     return res;
   }
   const char *literals[] = {"true","false","null"};
@@ -410,14 +452,26 @@ static void ajSharedNomes(char *dst,size_t cap,const unsigned char *marca,unsign
     n+=(size_t)snprintf(dst+n,cap-n,"%s%s",n?",":"",ajSharedMap[i].key);
   if (!n) snprintf(dst,cap,"-");
 }
+static int ajSharedAplicar(const char *json);
+// The whole application reads one immutable document: memoize its lookups
+// (ajJsonMemo, ajustes_device.inc) for the duration of the call.
 int ajustes_compartilhados_aplicar(const char *json) {
+  AJT_INI();
+  ajJsonMemo(json);
+  int r = ajSharedAplicar(json);
+  ajJsonMemo(NULL);
+  AJT_FIM("aplicar");
+  return r;
+}
+static int ajSharedAplicar(const char *json) {
   if (edPerfil) { printf("[ajustes-conta] adiado: edicao de outro perfil aberta\n"); return 0; }
   if (!ajustes_compartilhados_validar(json)) {
     printf("[ajustes-conta] documento recusado: %s\n", ajSharedMotivo); return 0;
   }
+  AJT_MARCA("validar");
   enum { F_AUSENTE, F_APLICADO, F_IGUAL, F_LOCAL, F_INVALIDO };
   unsigned char marca[AJ_SHARED_N]; int conta[5]={0};
-  int changed=aj6Apply(json); pthread_mutex_lock(&ajSharedMutex);
+  int changed=aj6Apply(json); AJT_MARCA("oficial"); pthread_mutex_lock(&ajSharedMutex);
   if (!ajSharedCurrent()) {
     pthread_mutex_unlock(&ajSharedMutex);
     printf("[ajustes-conta] ignorado: documento de outra conta/perfil\n"); return 0;
@@ -433,6 +487,7 @@ int ajustes_compartilhados_aplicar(const char *json) {
     if (valor[ajSharedMap[i].op]!=!remote) { valor[ajSharedMap[i].op]=!remote; changed++; marca[i]=F_APLICADO; }
   }
   for (size_t i=0;i<AJ_SHARED_N;i++) conta[marca[i]]++;
+  AJT_MARCA("campos");
   { // follow_addons_order: absent keeps the last known value; malformed is ignored.
     const char *a=json,*b=json+strlen(json),*v,*f; int ok=1;
     const char *path[]={"features","layout_settings","follow_addons_order"};
@@ -442,8 +497,11 @@ int ajustes_compartilhados_aplicar(const char *json) {
       ajSharedFollow=!memcmp(v,"true",4);
   }
   int follow=ajSharedFollow, perfil=ajSharedProfile;
+  AJT_MARCA("follow");
   ajSharedSave(); pthread_mutex_unlock(&ajSharedMutex);
+  AJT_MARCA("salvar-conta");
   fil_definir_seguir_addons(follow==1);
+  AJT_MARCA("seguir-addons");
   { char aplicados[512],locais[512],invalidos[512];
     ajSharedNomes(aplicados,sizeof aplicados,marca,F_APLICADO);
     ajSharedNomes(locais,sizeof locais,marca,F_LOCAL);
@@ -453,9 +511,13 @@ int ajustes_compartilhados_aplicar(const char *json) {
            perfil, (int)AJ_SHARED_N-conta[F_AUSENTE], (int)AJ_SHARED_N, conta[F_APLICADO], aplicados,
            conta[F_IGUAL], conta[F_LOCAL], locais, conta[F_INVALIDO], invalidos, conta[F_AUSENTE],
            follow<0 ? "ausente" : follow ? "true" : "false"); }
+  AJT_MARCA("log");
   ajSharedReadOnly(json);
+  AJT_MARCA("somente-leitura");
   idiomaResolver(1); // Existing automatic language policy; explicit local choice wins.
+  AJT_MARCA("idioma");
   if (changed) { ajSharedApplying=1; gravar(); ajSharedApplying=0; }
+  AJT_MARCA("gravar");
   return changed;
 }
 // Worker thread, holding the existing account/session guard. Fresh pull only.

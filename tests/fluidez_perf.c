@@ -231,6 +231,35 @@ static void povoar(void) {
     assert(addons_definir_lista(&addon, 1));
   }
   cat_definir_tudo(itens, NCAT, fils, NFIL);
+  // NV_PERF_EPS=N: every series gets N episodes (42 per season, local stills),
+  // so the title page has an episode row to scroll (owner, 2026-11-24: "some
+  // shows scroll smoothly, some don't"; Family Guy has 511 in 23 seasons).
+  if (getenv("NV_PERF_EPS")) {
+    int nEps = atoi(getenv("NV_PERF_EPS")), porTemp = getenv("NV_PERF_EPS_TEMP") ? atoi(getenv("NV_PERF_EPS_TEMP")) : 42;
+    CatEp *eps = calloc((size_t)(nEps > 0 ? nEps : 1), sizeof *eps);
+    if (eps && porTemp > 0) for (int k = 0; k < NCAT; k++) {
+      CatItem edit;
+      if (strcmp(itens[k].tipo, "series")) continue;
+      if (k > 0) break;   // the opened title only: the shared store holds ~2400 episodes
+      for (int e = 0; e < nEps; e++) {
+        eps[e].temporada = 1 + e / porTemp; eps[e].episodio = 1 + e % porTemp;
+        snprintf(eps[e].nome, sizeof eps[e].nome, "Episode title number %d", e + 1);
+        snprintf(eps[e].sinopse, sizeof eps[e].sinopse, "A synopsis for episode %d, long enough to wrap to two lines on the card.", e + 1);
+        snprintf(eps[e].duracao, sizeof eps[e].duracao, "%d min", 22 + e % 20);
+        snprintf(eps[e].thumb, sizeof eps[e].thumb, "deploy/app/art/%02d.jpg", (k + e) % 40);
+        snprintf(eps[e].vid, sizeof eps[e].vid, "%s:%d:%d", itens[k].imdb, eps[e].temporada, eps[e].episodio);
+      }
+      cat_definir_episodios(k, eps, nEps);
+      if (cat_copiar_item(k, &edit)) {
+        int nt = (nEps + porTemp - 1) / porTemp;
+        if (nt > CAT_TEMP_MAX) nt = CAT_TEMP_MAX;
+        edit.nTemporadas = nt;
+        for (int tp = 0; tp < nt; tp++) edit.temporadas[tp] = tp + 1;
+        cat_atualizar_item(k, &edit);
+      }
+    }
+    free(eps);
+  }
   // RELACIONADOS com arte: o mesmo hook das capturas (NV_SHOT_HOOKS). Sem ele
   // a secao "Recomendacoes" nao existe no fixture e a TV desenha 8 cards.
   { static const char *rt[8] = { "Relacionado Um", "Relacionado Dois",
@@ -432,6 +461,17 @@ static void cenario(SDL_Window *w, const char *cen) {
       relatar(cen, "pagina", qs, n);
       if (getenv("NV_RASTRO")) { gfx_rastro_grandes = 1; quadro(w, NULL, t); t += 16; gfx_rastro_grandes = 0; }
       if (getenv("PERF_BMP")) { char b[800]; snprintf(b, sizeof b, "%s-%s-pagina.bmp", getenv("PERF_BMP"), cen); guardar(b); }
+      // SCROLLING THE TITLE PAGE (owner, 2026-11-23: "scrolling on details
+      // page" stutters): an arrow every 12 frames down through the page and
+      // back up, the way key-repeat walks episodes, cast and related rows.
+      for (i = 0; i < n; i++) {
+        if (i % 12 == 0) tecla(i < n / 2 ? SDLK_DOWN : SDLK_UP);
+        if (getenv("NV_RASTRO") && i == n / 4 + 6) gfx_rastro_grandes = 1;
+        quadro(w, &qs[i], t); t += 16;
+        gfx_rastro_grandes = 0;
+      }
+      relatar(cen, "pagina-rola", qs, n);
+      if (getenv("PERF_BMP")) { char b[800]; snprintf(b, sizeof b, "%s-%s-pagina-rola.bmp", getenv("PERF_BMP"), cen); guardar(b); }
       tecla(SDLK_AC_BACK);
       for (i = 0; i < 60; i++) { quadro(w, NULL, t); t += 16; }
       tecla(SDLK_AC_BACK);

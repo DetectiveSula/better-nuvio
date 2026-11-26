@@ -86,8 +86,9 @@ int badges_cor_selo(const char *id,float *r,float *g,float *b);
 typedef enum {
   BADGE_NEUTRO = 0, BADGE_APAGADO, BADGE_REALCE, BADGE_REALCE_CHEIO,
   BADGE_SOBRE_REALCE,
-  // Stage E, regular Nuvio's Continue Watching release badges: solid
-  // #1D4ED8 (New Episode) and #B45309 (New Season), primary (white) text.
+  // Stage E release badges (New Episode / New Season): their own taller caps
+  // pill with a dot, blue #2563EB / amber #D97706 (badges.c); measure them
+  // with badge_largura_estilo.
   BADGE_NOVO_EPISODIO, BADGE_NOVA_TEMPORADA
 } BadgeEstilo;
 #define BADGE_H      28.0f
@@ -99,6 +100,9 @@ typedef enum {
 // Largura que badge_desenhar vai ocupar (mesma conta), para ancorar pela
 // direita ou cortar o texto ao lado.
 float badge_largura(const char *texto);
+// The same, for a given style: the release badges (New Episode / New Season)
+// are taller, bold, in caps and carry a dot, so they measure differently.
+float badge_largura_estilo(const char *texto, BadgeEstilo estilo);
 // Desenha o selo com o canto superior esquerdo em (x, y) e devolve a largura.
 float badge_desenhar(float x, float y, const char *texto, BadgeEstilo estilo, float a);
 // Marca do IMDb + nota (centesimos, "8,4" / "8.4" pelo idioma). `escuro` = a

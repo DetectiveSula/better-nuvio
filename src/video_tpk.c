@@ -39,6 +39,7 @@
 #include "cdnlink.h"
 #include "debrid.h"
 #include "mkvfix.h"
+#include "audsync_ff.h"
 #include <SDL2/SDL.h>
 #include <math.h>
 #include <pthread.h>
@@ -533,8 +534,12 @@ static void legendaVigiarSilencio(Uint32 agora) {
   fflush(stdout);
 }
 
+static int audsyncFonte(AudsyncFfFonte *f);
 int  video_iniciar(void) {
   if (!travaLeg) travaLeg = SDL_CreateMutex();
+  // Subtitle sync "by audio": AVPlay never hands PCM to the app, so the audio
+  // is decoded a second time in software (audsync_ff.c; FFmpeg only on 6+).
+  audsyncff_registrar(audsyncFonte);
   // #269: legenda de texto simples do MKV pelo overlay (ver faixas.c).
   mkvass_aceitar_texto(1);
   mkvass_aceitar_imagem(1);
@@ -791,7 +796,18 @@ __attribute__((visibility("default")))
 int video_tpk_aviso_busca(void) { return atomic_exchange(&mfAviso, 0); }
 
 // Abre urlAtual no host. Serve a fonte nova e ao recarregar da reconexao.
+// SLOW VIDEO CALLS (S90C 2026-11-24, a home trailer start held the screen
+// 1143 ms): any step of opening or stopping that takes 30 ms or more.
+static Uint64 vlT0;
+static void vlIni(void) { vlT0 = SDL_GetPerformanceCounter(); }
+static void vlMarca(const char *nome) {
+  Uint64 t = SDL_GetPerformanceCounter();
+  double ms = (double)(t - vlT0) * 1000.0 / (double)SDL_GetPerformanceFrequency();
+  if (ms >= 30.0) { printf("[video-lento] %s %.1f ms\n", nome, ms); fflush(stdout); }
+  vlT0 = t;
+}
 static void abrirSessao(void) {
+  vlIni();
   // video_iniciar() NAO e chamada no .tpk (so video.c, o ramo da LG, a chama;
   // aqui o trailer usa video_iniciar_auto, que nao a chama), entao a flag do
   // texto simples ficava em 0 e toda faixa S_TEXT/UTF8 saia do mkvass como
@@ -819,9 +835,12 @@ static void abrirSessao(void) {
   legEscrito = -1; seekNearWrite = 0; legEsperaSeekEm = 0;
   atomic_store(&legSeekChegou, 0);
   if (!travaLeg) travaLeg = SDL_CreateMutex();
+  vlMarca("abrir: inicio");
   legendaLimpar(1);
+  vlMarca("abrir: legendaLimpar");
   legendaMarcarEnvio(-1);
   if (travaLeg) { SDL_LockMutex(travaLeg); legCueSessao = 0; legAbriuEm = SDL_GetTicks(); SDL_UnlockMutex(travaLeg); }
+  vlMarca("abrir: trava legenda");
   emTrailer = emCartao = 0;
   cartaoSemCover = 0;
   planoW = planoH = 0;
@@ -847,7 +866,8 @@ static void abrirSessao(void) {
         printf("[mkvfix] the local fix is gone: opening the file directly\n");
         fflush(stdout);
       }
-      if (!cdnAbrir()) abrirHost(urlAtual, cabecalhos);
+      if (!cdnAbrir()) { vlMarca("abrir: cdn"); abrirHost(urlAtual, cabecalhos); vlMarca("abrir: host Abrir"); }
+      else vlMarca("abrir: cdn + host");
     }
   }
   // Depois do hAbrir: o host troca de sessao nele, e um aviso da sessao velha
@@ -862,9 +882,11 @@ static int trilhaPelaOrdem(void);
 static int videoConvertivel(void);
 
 int video_tocar(const char *u) {
+  vlIni();
   cdn.arquivo = 0;
   parado = 0; resgateAte = 0;
   if (cv.ativo || cv.sondando) dts_tpk_fechar();
+  vlMarca("tocar: dts");
   memset(&cv, 0, sizeof cv); cv.buscarMs = -1; naoSupPend = 0;
   // As listas do titulo anterior nao passam para o convertido (que as mantem
   // em abrirSessao); no caminho de sempre abrirSessao ja as zerava.
@@ -873,6 +895,7 @@ int video_tocar(const char *u) {
   memset(&mf, 0, sizeof mf); atomic_store(&mfRecusas, 0); atomic_store(&mfAviso, 0);
   hostUrl[0] = hostCab[0] = 0;
   mkvfix_parar();
+  vlMarca("tocar: mkvfix");
   // player.c supplies !ehCanal(): live must not open side connections to
   // IPTV providers, which can evict the playing session at the next HLS window.
   reconPermitida = reconProxima; reconProxima = 0;
@@ -1808,6 +1831,7 @@ void video_bombear(void) {
   }
 }
 void video_parar(void) {
+  vlIni();
   largura = altura = 0; // Stopped stream metadata must not shape the next live open.
   parado = 1; resgateAte = 0;
   cdn.pend = 0; cdn.usado = 0; cdn.arquivo = 0;
@@ -1819,17 +1843,21 @@ void video_parar(void) {
   planoW = planoH = 0;
   temRoi = 0;
   memset(&mf, 0, sizeof mf);
+  vlMarca("parar: dts");
   mkvfix_parar();
   capmkv_zerar();   // fio de capitulos em voo nao alimenta o proximo titulo
+  vlMarca("parar: mkvfix/capmkv");
   audioPend = legPend = -1; comecou = 0; comecouEm = 0; audioComecou = 0; legReescrever = -1;
   legEscrito = -1; seekNearWrite = 0; legEsperaSeekEm = 0;
   atomic_store(&legSeekChegou, 0);
   legendaLimpar(1);
+  vlMarca("parar: legendaLimpar");
   nv_recon_zerar(&recon);
   reconErroPend = 0; reconFaixasPend = 0; reconBuscarMs = -1; reconPausa = -1;
   reconAlvoMs = buscaAlvoMs = -1;
   atomic_store(&playerPreso, -2); // aviso de antes da saida nao reabre o video
   if (ativo && hParar) hParar();
+  vlMarca("parar: host Parar");
   ativo = pronto = tocando = 0;
 }
 void video_pausar(int p) {
@@ -2351,4 +2379,23 @@ void video_velocidade_recusada(void) {
 int  video_velocidade_bloqueada(void) { return 0; }
 void video_forcar_sdr(void) {}
 void video_encerrar(void) { video_parar(); }
+
+// SUBTITLE SYNC BY AUDIO (audsync_ff.h), UI thread, when the tap is armed: the
+// source the player is playing and the selected audio track. Live channels
+// (reconPermitida = 0: no side connections to IPTV providers) and trailers
+// have nothing to listen to. Converting DTS/TrueHD, the track is the file's.
+static int audsyncFonte(AudsyncFfFonte *f) {
+  if (!urlAtual[0] || !reconPermitida || emTrailer || strncmp(urlAtual, "http", 4)) return 0;
+  snprintf(f->url, sizeof f->url, "%s", urlAtual);
+  snprintf(f->cabecalhos, sizeof f->cabecalhos, "%s", cabecalhos);
+  f->pos = video_pos();
+  f->ordinal = -1; f->idioma[0] = 0;
+  if (cv.ativo && cv.track > 0) f->ordinal = ordinalAudio(cv.track);
+  else if (audioAtual >= 0 && audioAtual < nAudio) {
+    const VideoFaixa *a = &faixaAudio[audioAtual];
+    if (a->numero < 0 && a->stream_id > 0) f->ordinal = ordinalAudio(a->stream_id);
+    snprintf(f->idioma, sizeof f->idioma, "%s", a->idioma);
+  }
+  return 1;
+}
 #endif

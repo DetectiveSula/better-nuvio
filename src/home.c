@@ -6086,6 +6086,7 @@ static void desenhaAtalhos(int r, float y) {
   }
 }
 
+#ifdef __EMSCRIPTEN__   // native builds pick from extras_hero_trailers_proprios
 static const char *heroTrailerYoutube(const char *imdb) {
   {
   size_t j, tam;
@@ -6101,6 +6102,7 @@ static const char *heroTrailerYoutube(const char *imdb) {
   return heroTrailerYoutubeId;
   }
 }
+#endif
 
 // O carrossel compartilha o mesmo contrato do pedido de trailer: espera
 // enquanto a fonte ainda pode chegar, segura enquanto o elemento prepara e
@@ -6440,11 +6442,16 @@ static void home_trailer_passo_(int topo, float dt, Uint32 agora) {
     c.youtubeRespondeu = 1;
 #else
     // NATIVE: TMDB's YouTube id, made playable by trailerytb.c.
-    { const char *yt = heroTrailerYoutube(ci->imdb);
-      if (yt) { trailerytb_pedir(yt); c.youtube = trailerytb_url(yt); }
+    // A proper trailer (no spots or promos) at 1080p or better, the next
+    // proper one when the best is smaller (owner, 24/11/2026).
+    { char cand[4][16];
+      const char *ids[4];
+      int n = extras_hero_trailers_proprios(ci->imdb, cand, 4), i, pronto = 1;
+      for (i = 0; i < n; i++) ids[i] = cand[i];
+      c.youtube = n ? trailerytb_primeiro_1080p(ids, n, &pronto) : NULL;
       if (heroTrailerFalhas & (1u << TRF_YOUTUBE)) c.youtube = NULL;
       c.youtubeRespondeu = venceu || (heroTrailerFalhas & (1u << TRF_YOUTUBE)) ||
-        (yt ? trailerytb_respondeu(yt) : extras_hero_trailer_respondeu(ci->imdb)); }
+        (n ? pronto : extras_hero_trailer_respondeu(ci->imdb)); }
 #endif
     // _destaque: igual a trailerfonte_escolher, salvo no .tpk com
     // NV_TRAILER_CONTINUA_DETALHE (IMDb antes da Apple, para o trailer poder
@@ -7726,8 +7733,8 @@ static void pintarCartao(const CartaoFoco *k, float raio) {
             BadgeEstilo est = BADGE_NEUTRO;
             continuar_selo(cItem, 1, (long long)time(NULL) * 1000LL, selo, sizeof selo, &est);
             float pad = NV_CW_PAD * (w / NV_DESTAQUE_W);
-            if (selo[0] && badge_largura(selo) <= w - pad * 2)
-              badge_desenhar(px + w - pad - badge_largura(selo), py + pad, selo, est, 1.0f);
+            if (selo[0] && badge_largura_estilo(selo, est) <= w - pad * 2)
+              badge_desenhar(px + w - pad - badge_largura_estilo(selo, est), py + pad, selo, est, 1.0f);
           }
           if (tipo == FILEIRA_RETORNO)
             continuar_desenhar(cItem, (GfxRect){px, py, w, h}, raio);

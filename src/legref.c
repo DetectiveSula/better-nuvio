@@ -1038,9 +1038,12 @@ static unsigned char *lerHttp(void *u, const char *url, long long ini, long n, l
 }
 
 int legref_disponivel(void) {
-  // Samsung: desligado ate provar em TV. -DNV_LEGREF_TPK liga no .tpk 6+
-  // (canario; o 4/5 fica fora: rede sem TLS por fio, outro carregador).
-#if defined(__EMSCRIPTEN__) || defined(NV_TPK40) || (defined(NV_TPK) && !defined(NV_LEGREF_TPK))
+  // Samsung .tpk 6+: on (11/2026, like NuvioTV's embedded-track AutoSync; the
+  // 2.0.5-legref.1 canary synced on a Q80A and an S95C, see #462). Audio
+  // (audsync_ff.c) stays the fallback when the file has no usable text track.
+  // -DNV_TPK_SEM_LEGREF turns it off again. Tizen 4/5 stays off: no per-thread
+  // TLS in rede, another loader.
+#if defined(__EMSCRIPTEN__) || defined(NV_TPK40) || defined(NV_TPK_SEM_LEGREF)
   return 0;
 #else
   return (rede_pedido_capacidades() & REDE_CAP_JOB) != 0;

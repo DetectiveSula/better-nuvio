@@ -98,7 +98,8 @@ static float buCampoH(void) { return buTecladoNativo() ? 104.0f : 76.0f; }
 static float buMargem(void) { return buTelefone() ? 48.0f : ANC(BU_MARG); }
 static float buX(void)   { return ANC(ajustes_rail_largura_fixa()) + buMargem(); }
 static float buDir(void) { return NV_TELA_W - (buRetratoTelefone() ? buX() : buMargem()); }
-static float buColW(void) { return buUmaColuna() ? buDir() - buX() : fminf(520.0f, ANC(520.0f)); }
+static float buColBase(void);
+static float buColW(void) { return buUmaColuna() ? buDir() - buX() : fminf(buColBase(), ANC(buColBase())); }
 static float buResY(void);
 // A coluna da esquerda desce quando a pilula da Dinamica ocupa o canto. A
 // pilula vem em px REAIS e esta tela mede pela virtual (real / escala de
@@ -115,11 +116,17 @@ static float buTopoBase(void) {
 #define BU_TITULO_H (buTelefone() ? 0.0f : 74.0f)
 static float buTopoEsq(void) { return buTopoBase() + BU_TITULO_H; }
 // TV keys are short rectangles (mock-up); phones keep square 66 keys.
-static float buTeclaH(void) { return buTelefone() ? 66.0f : 50.0f; }
+// TV KEYBOARD SIZE (owner, 21 Nov 2026: "way too small on the TV"). Keys,
+// gaps, corners and labels grow by this factor on TV; phones keep 66.
+#ifndef BU_KB_ESCALA
+#define BU_KB_ESCALA 1.4f   // owner picked 40% bigger, 21 Nov 2026
+#endif
+static float buKbEsc(void) { return buTelefone() ? 1.0f : BU_KB_ESCALA; }
+static float buTeclaH(void) { return buTelefone() ? 66.0f : 50.0f * BU_KB_ESCALA; }
 
 // --- Teclado -----------------------------------------------------------------
-#define BU_TECLA_W     66.0f
-#define BU_TECLA_GAP   10.0f
+#define BU_TECLA_W     (66.0f * buKbEsc())
+#define BU_TECLA_GAP   (10.0f * buKbEsc())
 #define BU_KB_COLS      6
 // FILEIRAS DE TECLAS DE LETRA, no maximo (o layout latino usa 6; o cirilico, 7)
 // mais a de baixo (espaco/apagar/limpar/layout). O numero vivo e kbFil.
@@ -128,11 +135,13 @@ static float buTeclaH(void) { return buTelefone() ? 66.0f : 50.0f; }
 #define BU_KB_W       (BU_KB_COLS * BU_TECLA_W + (BU_KB_COLS - 1) * BU_TECLA_GAP)
 #define BU_KB_X       buX()
 #define BU_KB_Y       (buTopoEsq() + BU_CAMPO_H + BU_ILHA_GAP)   // topo da ilha do teclado
-#define BU_TECLA_RAIO   20.0f
+#define BU_TECLA_RAIO   (20.0f * buKbEsc())
 #define BU_MAX_CONSULTA 48
 
 // --- Coluna da direita --------------------------------------------------------
-#define BU_RES_X       (buUmaColuna() ? buX() : buX() + ANC(520.0f + BU_COL_GAP))
+#define BU_RES_X       (buUmaColuna() ? buX() : buX() + ANC(buColBase() + BU_COL_GAP))
+// The left column is 520 wide, or wider when the TV keyboard needs it.
+static float buColBase(void) { return fmaxf(520.0f, BU_KB_W + 2.0f * BU_KB_PAD); }
 #define BU_RES_Y       buResY()
 #define BU_DIR         buDir()
 #define BU_RES_AREA_H  (NV_TELA_H - 48.0f - BU_RES_Y)
@@ -1941,8 +1950,13 @@ static void desenhaTeclado(void) {
       // The tone eases every frame while focus moves: tint the cached white
       // line at draw time instead of rasterizing one line per tone.
       float tom = (buTelefone() ? anim_mistura(243.0f, (float)ajustes_tinta_foco(), k) : 243.0f) / 255.0f;
-      TxtLinha l = f < kbFil ? txt_linha(buTelefone() ? TXT_G26B : TXT_AJ_SEG, s, 255, 255, 255, 255)
-                             : txt_linha_corta(TXT_AJ_SEG, s, 255, 255, 255, 255, t.w - 8.0f);
+      int fl = buTelefone() ? TXT_G26B : BU_KB_ESCALA >= 1.3f ? TXT_G30B : BU_KB_ESCALA >= 1.15f ? TXT_G26B : TXT_AJ_SEG;
+      int fb = buTelefone() || BU_KB_ESCALA < 1.15f ? TXT_AJ_SEG : TXT_G26B;
+      // A bottom-row word too long for its key ("очистить") steps down a size
+      // before it is cut.
+      if (f == kbFil && fb != TXT_AJ_SEG && txt_linha(fb, s, 255, 255, 255, 255).w > t.w - 12.0f) fb = TXT_AJ_SEG;
+      TxtLinha l = f < kbFil ? txt_linha(fl, s, 255, 255, 255, 255)
+                             : txt_linha_corta(fb, s, 255, 255, 255, 255, t.w - 8.0f);
       txt_desenhar_tom(l, t.x + (t.w - l.w) * 0.5f, t.y + (t.h - l.h) * 0.5f, tom, tom, tom, 1.0f);
     }
   }

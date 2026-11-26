@@ -48,4 +48,9 @@ int  proxyts_redirecionou(void);
 // e nao arquivo progressivo (.mp4/.mkv). Puro, testavel em qualquer alvo.
 int  proxyts_candidata(const char *url, int mp4);
 
+// Text playlists (trailers): `fn` fills the playlist of `id`; proxyts_url_texto
+// writes http://127.0.0.1:P/ytb/<id>.m3u8 (0 = no server on this platform).
+void proxyts_definir_texto(int (*fn)(const char *id, char *dst, size_t n));
+int  proxyts_url_texto(const char *id, char *dst, size_t n);
+
 #endif

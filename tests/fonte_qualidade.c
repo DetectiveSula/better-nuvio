@@ -309,6 +309,31 @@ int main(void) {
     stream_definir_tela(-1, -1);   // desconhecido: DV volta a valer
     assert(stream_pontos(&m[0]) > stream_pontos(&m[1]));
   }
+  // 20/11/2026: on that screen DV without an HDR10 base (purple colours) leaves
+  // the automatic pick even when it would win, unless nothing else plays.
+  { Stream m[2];
+    deb(&m[0], "Torrentio 4k DV Profile 5", 2160, 1, 1);
+    deb(&m[1], "Torrentio 720p", 720, 0, 0);
+    stream_definir_tela(-1, 0); cfg(1, 0, 0);
+    assert(!strcmp(vence(m, 2), "Torrentio 720p"));
+    assert(!strcmp(vence(m, 1), "Torrentio 4k DV Profile 5"));   // the only source still plays
+    deb(&m[0], "Torrentio 4k DV Profile 8 HDR10", 2160, 1, 1);
+    assert(!strcmp(vence(m, 2), "Torrentio 4k DV Profile 8 HDR10"));
+    stream_definir_tela(-1, -1);
+  }
+  // 21/11/2026: on Samsung autoplay never picks, and the list never shows, a
+  // source the TV cannot play while a playable one exists: known uncached, or
+  // DTS/TrueHD as the only audio with no converter (none on the Mac build).
+  { Stream m[3];
+    deb(&m[0], "Torrentio 2160p REMUX DTS-HD MA", 2160, 0, 0);
+    deb(&m[1], "Torrentio 2160p uncached", 2160, 0, 0); m[1].foraCache = 1;
+    deb(&m[2], "Torrentio 1080p DDP5.1", 1080, 0, 0);
+    stream_definir_tela(-1, 0); cfg(1, 0, 0);
+    assert(!strcmp(vence(m, 3), "Torrentio 1080p DDP5.1"));
+    assert(!strcmp(vence(m, 2), "Torrentio 2160p REMUX DTS-HD MA"));  // nothing playable: all stay
+    stream_definir_tela(-1, -1);
+    assert(!strcmp(vence(m, 3), "Torrentio 2160p REMUX DTS-HD MA"));  // other screens unchanged
+  }
   puts("fonte_qualidade: ok");
   return 0;
 }

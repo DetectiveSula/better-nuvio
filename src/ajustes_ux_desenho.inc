@@ -855,7 +855,11 @@ static const char *ajSelo(int op) {
 #if !defined(NV_TPK) && !defined(NV_ANDROID)
   if (op == AJ_DV_MKV) return "Só LG";
 #endif
+#ifdef NV_TPK
+  if (op == AJ_LEG_SYNC_AUDIO) return "Samsung";   // software decode (audsync_ff.c), Tizen 6+
+#else
   if (op == AJ_LEG_SYNC_AUDIO) return "Android";
+#endif
   if (uxAvancada(op)) return "Avançado";
   if (!uxTemPadrao(op)) return NULL;
   return escopoDe(op) == ESC_TV ? "Esta TV" : "Este perfil";

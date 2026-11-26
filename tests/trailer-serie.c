@@ -111,7 +111,9 @@ int main(void) {
   n = extras_teste_trailers_ficha(corpo, 0, "fr-FR", yt, EX_TRAILER_MAX);
   extras_teste_idiomas_video("fr-FR", "ja", url, sizeof url);
   check("Auto requests UI, original, English", !strcmp(url, "fr,ja,en,null"));
-  check("Auto falls back to Japanese before English", n == 3 && !strcmp(yt[0], "japanese01"));
+  // 20/11/2026 (owner: "trailers in a different language"): automatic now
+  // falls back to English before the original language.
+  check("Auto falls back to English before Japanese", n == 3 && !strcmp(yt[0], "english001") && !strcmp(yt[1], "japanese01"));
   extras_teste_trailer_audio("pt");
   n = extras_teste_trailers_ficha(corpo, 1, "en-US", yt, EX_TRAILER_MAX);
   check("Series language wins before publication date", n == 3 && !strcmp(yt[0], "dubbedBR01"));

@@ -327,7 +327,7 @@ static const Item TELA[] = {
       OPC(AJ_LEG_AUTO_COMPLETA),
       OPC(AJ_LEG_MOSTRAR),
       OPC(AJ_LEG_SYNC_AUTO),
-#if (defined(NV_ANDROID))
+#if (defined(NV_ANDROID) || (defined(NV_TPK) && !defined(NV_TPK40)))
       OPC(AJ_LEG_SYNC_AUDIO),
 #endif
     ROT("Main subtitle"),

@@ -17,7 +17,11 @@
   0,                /* painel ao pausar: ligado (o default do web) */
   1,                /* escolher a fonte ao reproduzir: DESLIGADO (V_LIGA: 1 = Desligado) */
   0,                /* fonte automatica: melhor fonte (a regra de sempre) */
+#ifdef NV_TPK
+  3,                /* outra fonte se falhar: ate 3 on Samsung (owner 21 Nov 2026: autoplay must not fail) */
+#else
   2,                /* outra fonte se falhar: ate 2 (eram 7 fixas ate a 1.4.3) */
+#endif
   0,                /* texto das fontes: do Nuvio */
 
   0,                /* posteres deitados: LIGADO (perfil do dono; fabrica: desligado) */
@@ -209,7 +213,11 @@
   2, /* Settings size: 100%, independent of global UI zoom */
   1, /* hide corner logo during trailer: Desligado (V_LIGA: 1 = Desligado) */
   0, /* second subtitle language: Da conta (F04) */
+#if defined(NV_TPK) && !defined(NV_TPK40)
+  0, /* subtitle sync by audio: Ligado on the .tpk 6+ (software decode, audsync_ff.c) */
+#else
   1, /* subtitle sync by audio: Desligado (V_LIGA: 1 = Desligado) (F06) */
+#endif
   0, /* seek cache on disk: Desligado (F07; free disk is unknown until the player opens) */
   1, /* experimental trailer zoom, .tpk only: Desligado (V_LIGA: 1 = Desligado) (#241) */
   0, /* plugins: action (state lives in plugins.c, F09) */
@@ -259,7 +267,7 @@
   0, /* Settings layout (#339): Painel = the card grid and the art beside the list */
   0, /* P2P space limit (#334): Automatico */
   0, /* P2P cache location (#205): Interno */
-  0, /* Source display order (#400): Por qualidade, local */
+  1, /* Source display order (#400): Do addon, as in regular Nuvio (owner 21 Nov 2026), local */
   0, /* Sincronia automática da legenda: Ligado, local */
   0, /* Mostrar no player (#425): Só meus idiomas; sem preferencia, todas */
   0, /* Aviso legal: acao */

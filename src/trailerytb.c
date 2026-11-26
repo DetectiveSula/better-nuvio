@@ -208,6 +208,117 @@ int trailerytb_hls_melhor(const char *m3u8, long *banda) {
   return melhorAlt;
 }
 
+// --- the playlist the TV gets (owner, 20/11/2026) ------------------------------
+// "Very low quality", "the audio kicks in delayed", "a different language" on
+// the Samsung TV. YouTube's master lists 16 variants from 144p up, H.264 and
+// VP9, with the sound as a SEPARATE rendition in two groups (HE-AAC for the
+// small variants, AAC-LC for 360p up), dubbed tracks as more renditions, and
+// auto captions with AUTOSELECT=YES. AVPlay starts on the first, smallest
+// variant and climbs slowly (a 2-minute trailer stays blurry), and the climb
+// changes the audio group, so the sound restarts a few seconds in.
+// What the TV gets instead: ONE H.264 variant (the tallest up to 1080p, then
+// the highest bit rate), the ONE audio rendition of its group (the original
+// track over a dub, then the default) and no captions.
+static const char *attr(const char *ini, const char *fim, const char *nome, char *dst, size_t n) {
+  size_t ln = strlen(nome);
+  const char *p = ini;
+  dst[0] = 0;
+  while ((p = strstr(p, nome)) != NULL && p < fim) {
+    if ((p == ini || p[-1] == ',' || p[-1] == ':') && p[ln] == '=') {
+      const char *v = p + ln + 1, *e;
+      if (*v == '"') { v++; e = memchr(v, '"', (size_t)(fim - v)); }
+      else { e = v; while (e < fim && *e != ',') e++; }
+      if (!e) e = fim;
+      snprintf(dst, n, "%.*s", (int)(e - v), v);
+      return dst;
+    }
+    p += ln;
+  }
+  return NULL;
+}
+
+// The line [ini, fim) without the attribute `nome` (and its comma).
+static void semAttr(const char *ini, const char *fim, const char *nome, char *dst, size_t n) {
+  size_t ln = strlen(nome), k = 0;
+  const char *p = ini;
+  while (p < fim && k + 1 < n) {
+    if (p > ini && p[-1] == ',' && !strncmp(p, nome, ln) && p[ln] == '=') {
+      const char *e = p + ln + 1;
+      if (*e == '"') { e = memchr(e + 1, '"', (size_t)(fim - e - 1)); e = e ? e + 1 : fim; }
+      else while (e < fim && *e != ',') e++;
+      if (k && dst[k - 1] == ',') k--;   // drop the comma before it
+      p = e;
+      continue;
+    }
+    dst[k++] = *p++;
+  }
+  dst[k] = 0;
+}
+
+static const char *fimDaLinha(const char *p) {
+  const char *e = strchr(p, '\n');
+  if (!e) e = p + strlen(p);
+  while (e > p && e[-1] == '\r') e--;
+  return e;
+}
+
+int trailerytb_hls_reduzir(const char *m3u8, char *out, size_t n, int *altura) {
+  const char *p, *vIni = NULL, *vFim = NULL, *uIni = NULL, *uFim = NULL, *aIni = NULL, *aFim = NULL;
+  int melhorAlt = 0, aPontos = -1;
+  long melhorBw = -1;
+  char grupo[64] = "", v[128];
+  size_t k;
+  if (altura) *altura = 0;
+  if (!m3u8 || !out || n < 64 || strncmp(m3u8, "#EXTM3U", 7)) return 0;
+  for (p = m3u8; (p = strstr(p, "#EXT-X-STREAM-INF:")) != NULL; ) {
+    const char *f = fimDaLinha(p), *u = f;
+    int larg = 0, alt = 0;
+    long bw;
+    while (*u == '\r' || *u == '\n' || *u == ' ') u++;
+    if (!*u || *u == '#') { p = f; continue; }
+    if (!attr(p + 18, f, "CODECS", v, sizeof v) || strncmp(v, "avc1", 4)) { p = f; continue; }
+    if (attr(p + 18, f, "RESOLUTION", v, sizeof v)) sscanf(v, "%dx%d", &larg, &alt);
+    bw = attr(p + 18, f, "BANDWIDTH", v, sizeof v) ? atol(v) : 0;
+    if (alt <= 1080 && (alt > melhorAlt || (alt == melhorAlt && bw > melhorBw))) {
+      melhorAlt = alt; melhorBw = bw;
+      vIni = p; vFim = f; uIni = u; uFim = fimDaLinha(u);
+      if (!attr(p + 18, f, "AUDIO", grupo, sizeof grupo)) grupo[0] = 0;
+    }
+    p = f;
+  }
+  if (!vIni) return 0;
+  if (grupo[0]) {
+    for (p = m3u8; (p = strstr(p, "#EXT-X-MEDIA:")) != NULL; ) {
+      const char *f = fimDaLinha(p);
+      int pts;
+      if (!attr(p + 13, f, "TYPE", v, sizeof v) || strcmp(v, "AUDIO") ||
+          !attr(p + 13, f, "GROUP-ID", v, sizeof v) || strcmp(v, grupo)) { p = f; continue; }
+      pts = 1;
+      if (attr(p + 13, f, "DEFAULT", v, sizeof v) && !strcmp(v, "YES")) pts = 2;
+      if (attr(p + 13, f, "NAME", v, sizeof v) && strcasestr(v, "original")) pts = 3;
+      if (pts > aPontos) { aPontos = pts; aIni = p; aFim = f; }
+      p = f;
+    }
+    if (!aIni) return 0;   // a variant without its sound would play mute
+  }
+  k = (size_t)snprintf(out, n, "#EXTM3U\n%s",
+                       strstr(m3u8, "#EXT-X-INDEPENDENT-SEGMENTS") ? "#EXT-X-INDEPENDENT-SEGMENTS\n" : "");
+  if (aIni) {
+    char lin[4096], a2[4096];
+    // The one rendition is the default; nothing else for the player to pick.
+    semAttr(aIni, aFim, "DEFAULT", lin, sizeof lin);
+    semAttr(lin, lin + strlen(lin), "AUTOSELECT", a2, sizeof a2);
+    k += (size_t)snprintf(out + k, k < n ? n - k : 0, "%s,DEFAULT=YES,AUTOSELECT=YES\n", a2);
+  }
+  { char lin[2048], l2[2048];
+    semAttr(vIni, vFim, "SUBTITLES", lin, sizeof lin);
+    semAttr(lin, lin + strlen(lin), "CLOSED-CAPTIONS", l2, sizeof l2);
+    k += (size_t)snprintf(out + k, k < n ? n - k : 0, "%s\n%.*s\n", l2, (int)(uFim - uIni), uIni); }
+  if (k >= n) return 0;
+  if (altura) *altura = melhorAlt;
+  return 1;
+}
+
 long trailerytb_expira(const char *url) {
   const char *p;
   if (!url) return 0;
@@ -221,8 +332,10 @@ long trailerytb_expira(const char *url) {
 typedef struct {
   char id[12];
   char url[4096];
+  char *manif;        // the reduced playlist the local server hands the TV
   long valeAte;       // epoch; result believed until then
   int  emVoo, respondeu;
+  int  larg, alt;     // what the TV gets (0 = unknown), for trailerytb_1080p
 } Entrada;
 static Entrada tab[YTB_MAX];
 static int nTab, proxSlot;
@@ -246,6 +359,7 @@ static Entrada *reservar(const char *id) {
   if (e) return e;
   if (nTab < YTB_MAX) e = &tab[nTab++];
   else { e = &tab[proxSlot]; proxSlot = (proxSlot + 1) % YTB_MAX; }
+  free(e->manif);
   memset(e, 0, sizeof *e);
   snprintf(e->id, sizeof e->id, "%s", id);
   return e;
@@ -357,15 +471,21 @@ static int perguntar(const YtbCliente *c, const char *id, const char *chave,
 }
 
 // The manifest is only trusted once it downloads and lists a variant.
-static int hlsServe(const char *url, int *altura) {
+// `*master` gets the playlist (caller frees) when it serves.
+static int hlsServe(const char *url, int *altura, char **master) {
   static const char *const cab[] = { "User-Agent: " YTB_UA_PADRAO, NULL };
   char *m = NULL;
   long banda;
   int st = pedir(NULL, url, cab, NULL, &m);
   *altura = (st >= 200 && st < 300 && m) ? trailerytb_hls_melhor(m, &banda) : 0;
-  free(m);
+  if (*altura > 0) *master = m;
+  else free(m);
   return *altura > 0;
 }
+
+// The local server's hook (main.c): the url it serves `id`'s playlist at.
+static int (*urlLocal)(const char *id, char *dst, size_t n);
+void trailerytb_definir_local(int (*fn)(const char *id, char *dst, size_t n)) { urlLocal = fn; }
 
 // A progressive url is used once one byte of it downloads (NuvioTV probes the
 // CDN the same way; the alternate CDN hosts are left out here).
@@ -384,7 +504,16 @@ static int progressivoServe(const char *url) {
 enum { EX_NADA = 0, EX_ACHOU = 1, EX_LIMITE = 2, EX_LOGIN = 3 };
 // The clients in order, stopping at the first HLS manifest that plays; the
 // best progressive is the fallback. `dst` gets the url.
-static int extrair(const char *id, int forcarConfig, char *dst, size_t n, const char **como) {
+// RESOLUTION of the first variant (the reduced playlist has one).
+static void resolucaoDe(const char *m3u8, int *larg, int *alt) {
+  const char *p = m3u8 ? strstr(m3u8, "#EXT-X-STREAM-INF:") : NULL;
+  char v[64];
+  if (!p) return;
+  if (attr(p + 18, fimDaLinha(p), "RESOLUTION", v, sizeof v)) sscanf(v, "%dx%d", larg, alt);
+}
+
+static int extrair(const char *id, int forcarConfig, char *dst, size_t n, const char **como,
+                   char **manif, int *larg, int *altura) {
   char chave[96], vis[YTB_VIS_MAX], prog[4096] = "";
   int i, logins = 0, bots = 0, progAlt = 0, respostas = 0;
   if (garantirConfig(forcarConfig, chave, sizeof chave, vis, sizeof vis) == CFG_LIMITE) return EX_LIMITE;
@@ -401,11 +530,26 @@ static int extrair(const char *id, int forcarConfig, char *dst, size_t n, const 
     if (r.status[0] && strcmp(r.status, "OK")) continue;
     respostas++;
     if (r.hls[0]) {
-      int alt = 0;
-      if (hlsServe(r.hls, &alt)) {
+      int alt = 0, altRed = 0;
+      char *master = NULL;
+      if (hlsServe(r.hls, &alt, &master)) {
+        size_t cap = strlen(master) + 64;
+        char *red = urlLocal ? malloc(cap) : NULL;
         snprintf(dst, n, "%s", r.hls);
         *como = CLIENTES[i].chave;
-        printf("[trailer] youtube %s: HLS ate %dp (%s)\n", id, alt, CLIENTES[i].chave);
+        if (red && trailerytb_hls_reduzir(master, red, cap, &altRed) && urlLocal(id, dst, n)) {
+          *manif = red;
+          *altura = altRed; *larg = altRed * 16 / 9;
+          resolucaoDe(red, larg, altura);
+          printf("[trailer] youtube %s: HLS %dp H.264, um audio, servido local (%s)\n",
+                 id, altRed, CLIENTES[i].chave);
+        } else {
+          free(red);
+          snprintf(dst, n, "%s", r.hls);
+          *altura = alt; *larg = alt * 16 / 9;
+          printf("[trailer] youtube %s: HLS ate %dp (%s)\n", id, alt, CLIENTES[i].chave);
+        }
+        free(master);
         return EX_ACHOU;
       }
     }
@@ -417,6 +561,7 @@ static int extrair(const char *id, int forcarConfig, char *dst, size_t n, const 
   if (prog[0] && progressivoServe(prog)) {
     snprintf(dst, n, "%s", prog);
     *como = "progressivo";
+    *altura = progAlt; *larg = progAlt * 16 / 9;
     printf("[trailer] youtube %s: MP4 %dp\n", id, progAlt);
     return EX_ACHOU;
   }
@@ -426,17 +571,17 @@ static int extrair(const char *id, int forcarConfig, char *dst, size_t n, const 
 }
 
 static void *buscar(void *arg) {
-  char id[12], url[4096] = "";
+  char id[12], url[4096] = "", *manif = NULL;
   const char *como = "";
-  int r;
+  int r, larg = 0, alt = 0;
   long vale;
   Entrada *e;
   snprintf(id, sizeof id, "%s", (const char *)arg);
   free(arg);
-  r = extrair(id, 0, url, sizeof url, &como);
+  r = extrair(id, 0, url, sizeof url, &como, &manif, &larg, &alt);
   // Only a stale visitor id is fixed by a fresh watch page; anything else
   // would fail the same way, and every request counts toward YouTube's limit.
-  if (r == EX_LOGIN) r = extrair(id, 1, url, sizeof url, &como);
+  if (r == EX_LOGIN) r = extrair(id, 1, url, sizeof url, &como, &manif, &larg, &alt);
   if (r == EX_ACHOU) sucesso();
   else if (r == EX_LIMITE)
     printf("[trailer] youtube %s: YouTube recusando pedidos, pausa de %ld s\n", id, pausar());
@@ -450,6 +595,11 @@ static void *buscar(void *arg) {
   e->respondeu = 1;
   if (r == EX_ACHOU) snprintf(e->url, sizeof e->url, "%s", url);
   else e->url[0] = 0;
+  e->larg = r == EX_ACHOU ? larg : 0;
+  e->alt = r == EX_ACHOU ? alt : 0;
+  free(e->manif);
+  e->manif = r == EX_ACHOU ? manif : NULL;
+  if (r != EX_ACHOU) free(manif);
   // A pause is not an answer about the video: try again after it.
   e->valeAte = r == EX_LIMITE ? 0 : vale;
   pthread_mutex_unlock(&mtx);
@@ -484,6 +634,36 @@ const char *trailerytb_url(const char *id) {
   return u;
 }
 
+// 1080p OR BETTER (owner, 24/11/2026: "quality minimum 1080p"). YouTube calls
+// a 1920x804 scope trailer 1080p, so the width counts as much as the height.
+int trailerytb_1080p(const char *id) {
+  Entrada *e;
+  int ok = 0;
+  if (!trailerytb_id_valido(id)) return 0;
+  pthread_mutex_lock(&mtx);
+  e = achar(id);
+  if (e && e->respondeu && e->url[0] && agora() < e->valeAte)
+    ok = e->larg >= 1900 || e->alt >= 1060;
+  pthread_mutex_unlock(&mtx);
+  return ok;
+}
+
+// The first of `ids` (best first) that plays at 1080p or better. Asks for
+// them in order and waits on the first unanswered one: never more than one
+// lookup in flight per title, and the better pick is never skipped for being
+// slower. NULL with *pronto 1 = none of them qualifies.
+const char *trailerytb_primeiro_1080p(const char *const *ids, int n, int *pronto) {
+  int i;
+  *pronto = 1;
+  for (i = 0; i < n; i++) {
+    if (!trailerytb_id_valido(ids[i])) continue;
+    trailerytb_pedir(ids[i]);
+    if (!trailerytb_respondeu(ids[i])) { *pronto = 0; return NULL; }
+    if (trailerytb_1080p(ids[i])) return trailerytb_url(ids[i]);
+  }
+  return NULL;
+}
+
 int trailerytb_respondeu(const char *id) {
   Entrada *e;
   int r;
@@ -495,4 +675,19 @@ int trailerytb_respondeu(const char *id) {
   r = e ? e->respondeu && !e->emVoo : 0;
   pthread_mutex_unlock(&mtx);
   return r;
+}
+
+// The local server asks for `id`'s reduced playlist (0 = none or expired).
+int trailerytb_manifesto(const char *id, char *dst, size_t n) {
+  Entrada *e;
+  int ok = 0;
+  if (!trailerytb_id_valido(id) || !dst || !n) return 0;
+  pthread_mutex_lock(&mtx);
+  e = achar(id);
+  if (e && e->manif && agora() < e->valeAte && strlen(e->manif) < n) {
+    snprintf(dst, n, "%s", e->manif);
+    ok = 1;
+  }
+  pthread_mutex_unlock(&mtx);
+  return ok;
 }

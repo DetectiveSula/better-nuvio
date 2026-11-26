@@ -16,6 +16,7 @@ int main(void) {
   char name[128],path[640];struct stat st;
   assert(SDL_Init(SDL_INIT_TIMER)==0);
   dados_iniciar(getenv("NUVIO_DADOS"));ajustes_dir(dados_dir());
+  valor[AJ_PROVEDORES_ESCOPO]=1; // Separate: the per-profile behaviour below
   valor[AJ_TMDB_LIGADO]=0;desc_tmdb_definir(fallback);
   extras_definir_chave("mock-mdblist-credential");assert(extras_mdblist_tem_chave());
   assert(tmdbLocalDefinir(key));assert(!strcmp(desc_chave_tmdb(),key));
@@ -52,6 +53,30 @@ int main(void) {
   assert(stCampo==AJ_TMDB_CHAVE_LOCAL&&teclado_aberto()&&teclado_mascarado());
   assert(!teclado_texto()[0]);
   account="";assert(!tmdbLocalDefinir(key));
-  puts("PASS: local TMDB key validation, masked status, 0600 persistence, restart, account/profile isolation, removal/fallback and master Off; excluded from ordinary preferences");
+  // Shared (21 Nov 2026): a key from profile 1's own file reaches profile 2,
+  // one save serves every profile of the account, never another account.
+  { const char *k2="fedcba9876543210fedcba9876543210";
+    account="fixture_account_c";profile=1;valor[AJ_PROVEDORES_ESCOPO]=1;
+    assert(tmdbLocalDefinir(key));
+    valor[AJ_PROVEDORES_ESCOPO]=0;profile=2;tmdbLocalCarregar();
+    assert(!strcmp(desc_chave_tmdb(),key));          // legacy per-profile key adopted
+    assert(tmdbLocalDefinir(k2));                    // saved once, shared
+    profile=3;tmdbLocalCarregar();assert(!strcmp(desc_chave_tmdb(),k2));
+    profile=1;tmdbLocalCarregar();assert(!strcmp(desc_chave_tmdb(),k2));
+    assert(tmdbNome(name,sizeof name)&&!strcmp(name,"tmdb-key-fixture_account_c.txt"));
+    assert(dados_caminho(path,sizeof path,name)&&!stat(path,&st)&&(st.st_mode&0777)==0600);
+    account="fixture_account_d";tmdbLocalCarregar();assert(strcmp(desc_chave_tmdb(),k2));
+    account="fixture_account_c";
+    // Profile 1 switches to Separate: still has its own (older) key.
+    profile=1;tmdbLocalCarregar();
+    assert(ajustes_definir_provedores_compartilhados(0)&&!strcmp(desc_chave_tmdb(),key));
+    // Profile 4 never had one: Separate starts from the shared key.
+    profile=4;ajustes_provedores_abrir_sessao();assert(!strcmp(desc_chave_tmdb(),k2));
+    assert(ajustes_definir_provedores_compartilhados(0)&&!strcmp(desc_chave_tmdb(),k2));
+    assert(ajustes_definir_provedores_compartilhados(1)&&!strcmp(desc_chave_tmdb(),k2));
+    // Removing the shared key removes it for every profile (no legacy revival).
+    profile=2;ajustes_provedores_abrir_sessao();assert(tmdbLocalDefinir(""));
+    profile=3;tmdbLocalCarregar();assert(strcmp(desc_chave_tmdb(),k2)&&strcmp(desc_chave_tmdb(),key)); }
+  puts("PASS: local TMDB key validation, masked status, 0600 persistence, restart, account/profile isolation, shared-across-profiles mode with legacy adoption, removal/fallback and master Off; excluded from ordinary preferences");
   return 0;
 }

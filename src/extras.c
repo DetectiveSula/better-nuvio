@@ -335,14 +335,14 @@ static char agStatus[32], agDataProx[16], agDataUlt[16], agNomeEp[120];
 // 12/11/2026 — a serie vinha do progresso, fora do catalogo).
 static char agTitulo[160], agPoster[300];
 static int  agTemp, agEp;
-static struct { char yt[16], nome[80], mini[80]; int idiomaPreferido; } trailer[EX_TRAILER_MAX];
+static struct { char yt[16], nome[80], mini[80]; int idiomaPreferido, promo; } trailer[EX_TRAILER_MAX];
 static int  nTrailer;
 // O hero precisa de um trailer antes de a pessoa abrir a pagina de detalhe,
 // mas carregar `extras_pedir` inteiro nesse ponto faria creditos, ficha,
 // relacionados e imagens competirem com a arte. Mantemos uma fila separada
 // que consulta apenas /videos. O fio e unico; pedidos novos substituem a
 // geracao pendente e uma resposta velha e descartada.
-typedef struct { char yt[16]; int idiomaPreferido; } HeroTrailer;
+typedef struct { char yt[16]; int idiomaPreferido, promo; } HeroTrailer;
 static HeroTrailer heroTrailer[EX_TRAILER_MAX];
 static int nHeroTrailer;
 static char heroTrailerPedido[24];
@@ -587,7 +587,17 @@ static int nomeDePromo(const char *nm) {
     "now showing", "at home", "on digital", "blu-ray", "4k uhd", "dvd", "now streaming",
     "streaming now", "available now", "tickets", "clip", "featurette", "behind the scenes",
     "recap", "review", "reaction", "sneak peek", "promo", "countdown", "interview",
-    "don't miss", "dont miss", "b-roll", NULL };
+    "don't miss", "dont miss", "b-roll",
+    // 20/11/2026 (owner, Samsung: "some are not even proper trailers").
+    "first look", "opening scene", "first 10 minutes", "first five minutes", "deleted scene",
+    "extended preview", "fan made", "fanmade", "fan-made", "concept trailer", "parody",
+    "music video", "soundtrack", "lyric video", "making of", "bloopers", "gag reel",
+    "vfx breakdown", "special look", "sizzle",
+    // 24/11/2026 (owner: "proper trailers, not promo vids").
+    "announcement", "announce", "release date", "premiere date", "date reveal", "coming soon",
+    "watch now", "full episode", "explained", "easter egg", "comic-con", "comic con",
+    "nycc", "sdcc", "ccxp", "character trailer", "character spot", "official clip",
+    "season recap", "story so far", NULL };
   char low[80];
   size_t i;
   int k;
@@ -598,19 +608,22 @@ static int nomeDePromo(const char *nm) {
   return 0;
 }
 
-// Proper trailers first (Trailer, then Teaser; promos last). Then language and
-// region. Within one language rank, series prefer the newest publication; then
-// TMDB's "official" flag (the studio's own channel), then the larger video, as
-// NuvioTV ranks them (rankTmdbVideoCandidates); TMDB order last.
+// Promos last. Then language and region (owner, 20/11/2026: a Trailer in
+// another language beat an English Teaser, "trailers in a different
+// language"). Within one language rank, series prefer the newest publication;
+// then TMDB's "official" flag (the studio's own channel, over fan uploads),
+// then Trailer over Teaser, then the larger video, as NuvioTV ranks them
+// (rankTmdbVideoCandidates); TMDB order last.
 // O tipo vai em cada elemento, e nao num global: o fio do hero e o da pagina
 // ordenam ao mesmo tempo.
 static int cmpVideo(const void *pa, const void *pb) {
   const VideoTmdb *a = pa, *b = pb;
   int c;
-  if (a->classe != b->classe) return b->classe - a->classe;
+  if ((a->classe > 0) != (b->classe > 0)) return (b->classe > 0) - (a->classe > 0);
   if (a->peso / 4 != b->peso / 4) return b->peso / 4 - a->peso / 4;
   if (a->serie && (c = strcmp(b->pub, a->pub)) != 0) return c;
   if (a->oficial != b->oficial) return b->oficial - a->oficial;
+  if (a->classe != b->classe) return b->classe - a->classe;
   if (a->tam != b->tam) return b->tam - a->tam;
   if (a->peso != b->peso) return b->peso - a->peso;
   return a->ordem - b->ordem;
@@ -647,10 +660,13 @@ static int parsearVideos(const char *v, int serie, const char *idioma, const cha
       snprintf(o->yt, sizeof o->yt, "%s", key);
       snprintf(o->nome, sizeof o->nome, "%s", nm[0] ? nm : "Trailer");
       js_texto(v, vf, "published_at", o->pub, sizeof o->pub);
-      // peso: 8 idioma-alvo, +4 a regiao (pt-BR sobre pt-PT), +1 Trailer
-      // (desempate da serie).
-      o->peso = (!strcmp(lg, iso) ? 8 + (reg[0] && !strcmp(rg, reg) ? 4 : 0) : ((!PREF_AUDIO()[0] && original && original[0] && !strcmp(lg, original)) ? 4 :
-                        !strcmp(lg, "en") ? 2 : 0)) +
+      // peso: 8 idioma-alvo, +4 a regiao (pt-BR sobre pt-PT); then English
+      // or no language (4), then, in automatic mode, the original language
+      // (2: 20/11/2026, English used to lose to it, "a different language");
+      // +1 Trailer (desempate da serie).
+      o->peso = (!strcmp(lg, iso) ? 8 + (reg[0] && !strcmp(rg, reg) ? 4 : 0) :
+                 (!strcmp(lg, "en") || !lg[0]) ? 4 :
+                 (!PREF_AUDIO()[0] && original && original[0] && !strcmp(lg, original)) ? 2 : 0) +
                 (serie && !strcmp(tipo, "Trailer") ? 1 : 0);
       o->idiomaPreferido = strcmp(iso, "en") && !strcmp(lg, iso);
       // 2 Trailer, 1 Teaser, 0 a spot or promo whatever its type.
@@ -689,6 +705,7 @@ static void publicarTrailers(const VideoTmdb *vt, int nv) {
   int k;
   for (k = 0; k < nv && k < EX_TRAILER_MAX; k++) {
     trailer[k].idiomaPreferido = vt[k].idiomaPreferido;
+    trailer[k].promo = vt[k].classe == 0;
     snprintf(trailer[k].yt,   sizeof trailer[k].yt,   "%s", vt[k].yt);
     snprintf(trailer[k].nome, sizeof trailer[k].nome, "%s", vt[k].nome);
     snprintf(trailer[k].mini, sizeof trailer[k].mini,
@@ -2253,6 +2270,16 @@ int extras_trailer_idioma_preferido(int i) {
 const char *extras_trailer_yt(int i) {
   return (i >= 0 && i < nTrailer) ? trailer[i].yt : "";
 }
+// THE AUTOMATIC PICKS (owner, 24/11/2026: "proper trailers, not promo vids"):
+// the YouTube ids of the page's trailers that are not spots, promos or clips,
+// best first. The Trailers row still lists everything; only what plays by
+// itself (background, hero, the Trailer button) comes from here.
+int extras_trailers_proprios(const char **ids, int max) {
+  int i, n = 0;
+  for (i = 0; i < nTrailer && n < max; i++)
+    if (!trailer[i].promo && trailer[i].yt[0]) ids[n++] = trailer[i].yt;
+  return n;
+}
 const char *extras_trailer_nome(int i) {
   return (i >= 0 && i < nTrailer) ? trailer[i].nome : "";
 }
@@ -2286,6 +2313,7 @@ static int parsearHeroVideos(const char *corpo, int serie, const char *idioma,
   for (i = 0; i < n; i++) {
     snprintf(saida[i].yt, sizeof saida[i].yt, "%s", v[i].yt);
     saida[i].idiomaPreferido = v[i].idiomaPreferido;
+    saida[i].promo = v[i].classe == 0;
   }
   return n;
 }
@@ -2427,6 +2455,23 @@ void extras_hero_trailer_pedir(const char *imdb, int serie, long tmdbId) {
   }
   pthread_cond_signal(&heroTrailerCv);
   pthread_mutex_unlock(&heroTrailerTrava);
+}
+
+// The hero's proper (not promo) YouTube ids for `imdb`, best first, copied
+// into dst[max][16]. 0 until the hero's /videos answer for it is in.
+int extras_hero_trailers_proprios(const char *imdb, char dst[][16], int max) {
+  char id[24];
+  int i, n = 0;
+  normalizarHeroId(imdb, id, sizeof id);
+  if (!id[0] || !dst || max <= 0) return 0;
+  pthread_mutex_lock(&heroTrailerTrava);
+  if (!strcmp(heroTrailerPedido, id) && !heroTrailerVivo &&
+      heroTrailerExecutada == heroTrailerGer && !strcmp(heroTrailerAudio, PREF_AUDIO()))
+    for (i = 0; i < nHeroTrailer && n < max; i++)
+      if (!heroTrailer[i].promo && heroTrailer[i].yt[0])
+        snprintf(dst[n++], 16, "%s", heroTrailer[i].yt);
+  pthread_mutex_unlock(&heroTrailerTrava);
+  return n;
 }
 
 int extras_hero_trailer_obter(const char *imdb, char *dst, unsigned cap) {

@@ -65,8 +65,21 @@
 //   aparelho (MemTotal)   textura  teto   fios rede  heroi
 //   tpk sem MemTotal        96      96       4       1280
 //   tpk  < 1,2 GB           64      96       2       1280
-//   tpk  < 2,5 GB           96     160       4       1280 (1920 com >= 2 GB e GPU nao fraca)
-//   tpk >= 2,5 GB          128     256       4       1920 (1280 com GPU fraca)
+//   tpk  < 2 GB             96     160       4       1280
+//   tpk  < 2,5 GB          160     256       6       1920 (1280 com GPU fraca)
+//   tpk >= 2,5 GB          192     256       6       1920 (1280 com GPU fraca)
+//   (Tizen 4/5, NV_TPK40: the earlier rows, 96/160 below 2.5 GB, 128/256 above, 4 workers)
+//
+// - 2 GB and up (23/11/2026, poster fast-scroll work for the S90C): a home
+//   poster is a 288x432 texture plus mips, ~0.66 MB, so 96 MB held ~120
+//   posters after two heroes — about 13 rows of 9. Twenty rows need ~140 MB.
+//   tests/poster_scroll.sh (warm disk, 20 rows down and back up twice):
+//   96 MB evicted 84 textures and reloaded 13 already-seen posters; 160 MB
+//   evicted 0 and reloaded 0. The LG C9 (2.2 GB) has run 300 MB without
+//   trouble, and the 3 s report still lowers the ceiling when MemAvailable
+//   drops (tex_memoria_livre). Six network workers: poster fetches are
+//   round-trip bound (~60 KB), and the same harness cut the cold first
+//   screen from p50 2.26 s to 1.54 s. The TV log's [tex-stats] line confirms.
 //
 // - textura < 1,2 GB: 64, um degrau acima dos 48 que despejavam ~150 por
 //   janela, e o mesmo numero que o .wgt ja usa na Samsung de 1 GB. NAO e
@@ -153,8 +166,15 @@ int ptv_tex_auto_mb(PtvPlataforma p, long mem) {
   if (p == PTV_TPK) {
     if (!mem) return NV_TEX_ORCAMENTO_MB;
     if (mem < 1200) return 64;
+#ifdef NV_TPK40
+    // Tizen 4/5 (2018-2020 TVs) keeps the earlier 96/128 MB rows.
     if (mem < 2500) return 96;
     return 128;
+#else
+    if (mem < 2000) return 96;
+    if (mem < 2500) return 160;
+    return 192;
+#endif
   }
   if (p == PTV_TIZEN) {
     if (!mem) return NV_TEX_ORCAMENTO_MB;
@@ -173,7 +193,11 @@ int ptv_tex_teto_mb(PtvPlataforma p, long mem) {
   if (p == PTV_TIZEN) return ptv_tex_auto_mb(p, mem);
   if (p == PTV_TPK) {
     if (!mem || mem < 1200) return 96;
+#ifdef NV_TPK40
     if (mem < 2500) return 160;
+#else
+    if (mem < 2000) return 160;
+#endif
     return 256;
   }
   if (!mem) return 160;
@@ -184,7 +208,11 @@ int ptv_tex_teto_mb(PtvPlataforma p, long mem) {
   return 512;
 }
 
+#ifdef NV_TPK40
 int ptv_fios_rede_max(PtvPlataforma p) { return p == PTV_TIZEN ? 2 : 4; }
+#else
+int ptv_fios_rede_max(PtvPlataforma p) { return p == PTV_TIZEN ? 2 : p == PTV_TPK ? 6 : 4; }
+#endif
 
 // Fios que a RAM aceita: a LG abaixo de 1,2 GB fica nos 2 da tabela em
 // QUALQUER perfil — padrao, candidato de Qualidade ou perfil salvo. Antes so
@@ -193,6 +221,8 @@ int ptv_fios_rede_max(PtvPlataforma p) { return p == PTV_TIZEN ? 2 : 4; }
 // pessoas 80cd1a98 e f9f204be) — os 4 corpos em voo que a tabela evita.
 static int fiosTeto(PtvPlataforma p, long mem) {
   if ((p == PTV_LG || p == PTV_ANDROID || p == PTV_TPK) && mem && mem < 1200) return 2;
+  // .tpk: 6 only from 2 GB (see the table above); 4 below and without MemTotal.
+  if (p == PTV_TPK && (!mem || mem < 2000)) return 4;
   return ptv_fios_rede_max(p);
 }
 

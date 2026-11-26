@@ -1,10 +1,12 @@
 // AUDIO SYNC SESSION (F06, 1.8): decoded PCM of the playing audio -> speech
 // segments -> a REFERENCE DOCUMENT for the AutoSync engine (autosync.c).
 //
-// Only a backend that really hands decoded PCM to the app registers here. On
-// 04/10/2026 that is Android (Media3 sink tap, NvPlayer.kt + AudioSyncTap.kt).
-// LG uMS, Samsung AVPlay (.wgt) and the .tpk players do not: capability stays
-// PLATAFORMA and the UI says so (docs/plans/player-1.8/AUDIOSYNC-CAPACIDADE.md).
+// Only a backend that really hands decoded PCM to the app registers here:
+// Android (Media3 sink tap, NvPlayer.kt + AudioSyncTap.kt) and, since 11/2026,
+// the Samsung .tpk 6+ by decoding the source a second time in software
+// (audsync_ff.c: AVPlay itself never exposes PCM). LG uMS, Samsung AVPlay
+// (.wgt) and the Tizen 4/5 .tpk do not: capability stays PLATAFORMA and the UI
+// says so (docs/plans/player-1.8/AUDIOSYNC-CAPACIDADE.md).
 //
 // FLOW (one session at a time, one worker thread, created on first request):
 //   1. audsync_pedir arms the tap. The backend delivers mono 16 kHz int16 with
@@ -43,6 +45,12 @@ void audsync_backend(void (*ligar)(int on));
 void audsync_formato(int fmt);
 // Returns 1 if the chunk was queued (tap armed and room in the ring).
 int  audsync_pcm(const int16_t *mono16k, int n, int64_t ptsUs);
+// Free room in the ring (samples). A backend faster than real time (software
+// decode, audsync_ff.c) waits for room instead of overflowing the ring.
+int  audsync_espaco(void);
+// The backend can deliver no more audio for request `pedido` (source closed,
+// unreadable, ended before the window): fails it with `m` if still listening.
+void audsync_backend_falhou(uint64_t pedido, int m);
 
 typedef enum {
   AUDSYNC_CAP_PLATAFORMA = 0, AUDSYNC_CAP_SEM_AUDIO, AUDSYNC_CAP_PASSTHROUGH, AUDSYNC_CAP_OK

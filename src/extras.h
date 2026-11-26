@@ -224,6 +224,8 @@ const char *extras_trailer_yt(int i);        // id do video ("dQw4w9WgXcQ")
 void extras_trailer_audio_iso(char *dst);  // ISO de 2 letras do audio pedido ao trailer; "" no Original (so o TMDB sabe)
 int extras_trailer_idioma_preferido(int i);  // 1 in the chosen non-English audio, -1 TMDB pending
 const char *extras_trailer_nome(int i);      // "Official Trailer"
+// The trailers that play by themselves: not spots/promos/clips, best first.
+int         extras_trailers_proprios(const char **ids, int max);
 // URL da miniatura. Previsivel a partir do id, sem chamada de API — e o mesmo
 // caminho que o web usa (metaDetailsScreen.js:5728). Passe direto a tex_obter:
 // o cache de texturas baixa e guarda qualquer URL sozinho.
@@ -241,6 +243,7 @@ void        extras_hero_trailer_pedir(const char *imdb, int serie, long tmdbId);
 // ao IMDb pedido. O snapshot sob trava evita que home combine n e ponteiro de
 // duas geracoes durante uma troca A -> B -> A.
 int         extras_hero_trailer_obter(const char *imdb, char *dst, unsigned cap);
+int         extras_hero_trailers_proprios(const char *imdb, char dst[][16], int max);
 int         extras_hero_trailer_idioma_preferido(const char *imdb);  // same, for the hero
 int         extras_hero_trailer_respondeu(const char *imdb);  // the hero's /videos finished
 #ifdef NUVIO_TRAILER_TEST

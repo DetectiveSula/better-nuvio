@@ -465,11 +465,13 @@ int stream_filtro_bloqueou(void) {
 // na folha manual (#284: 75% Android / 60% Samsung / 41% LG falham quando o
 // automatico os escolhe, contra 6/14/9% das fontes com resolucao).
 // Por que a fonte sai do automatico (0 = fica), na ordem em que o teste corre.
+static int tvEscondida(int i);
 enum { MOT_FICA, MOT_EXCLUIDA, MOT_FILTRO, MOT_FORA_CACHE, MOT_CACHE_INDEFINIDO, MOT_INFORMATIVA, MOT_DECODER, MOT_MORTA, MOT_N };
 static int motivoForaDoAuto(int i, const FonteFiltroConfig *filtro) {
   if (automaticaExcluida(i)) return MOT_EXCLUIDA;
   if (i < 0 || i >= n) return MOT_FICA;
   if (!canalFolha && (filtro ? !fontefiltro_permite(filtro, &lista[i].filtro) : !stream_filtro_permite(&lista[i]))) return MOT_FILTRO;
+  if (!canalFolha && tvEscondida(i)) return MOT_FILTRO;
   if (!lista[i].filtro.naoVod && streamForaCache(&lista[i]) && stream_cache_estado(&lista[i])!=1 && stream_cache_estado(&lista[i])!=2) return MOT_CACHE_INDEFINIDO;
   if (!lista[i].filtro.naoVod && streamForaCache(&lista[i])) return MOT_FORA_CACHE;
   if (ehInformativa(&lista[i])) return MOT_INFORMATIVA;
@@ -1108,6 +1110,57 @@ static int perfil5(const Stream *s) {
   return 0;
 }
 
+// DOLBY VISION THIS TV CANNOT SHOW (owner, 20/11/2026, Samsung: "they still
+// play but purple and colours are weird"). On a screen without Dolby Vision
+// (telaDv == 0: the Samsung .tpk/.wgt) a profile 5 file has no HDR10 base and
+// plays with purple and green colours; a DV source that declares no HDR base
+// may be one. They used to sit at the bottom of the list; now they leave the
+// list and the automatic pick, unless the title has nothing else to play.
+// Profile 8 ("DV HDR10") stays: its HDR10 base plays right.
+static int dvSemBase(const Stream *s) {
+  return telaDv == 0 && s->dolbyVision && (perfil5(s) || !perfil8(s));
+}
+/* SAMSUNG: ONLY SOURCES THE TV CAN PLAY (owner, 21 Nov 2026: "autoplay never
+ * fails and every stream in the list works"). On a screen without Dolby Vision
+ * (telaDv == 0: the Samsung builds) a source leaves the list AND autoplay when
+ * it is known not to play here:
+ *   1 Dolby Vision without an HDR10 base (purple/green picture)
+ *   2 not cached on the debrid (the provider said so; unchecked ones stay)
+ *   3 a bare torrent with no debrid to play it (P2P, peers not guaranteed)
+ *   4 DTS/TrueHD as the only audio, with no converter on: no sound
+ * Never empties the list: when every source would go, all stay. */
+static int audioSoDts(const Stream *s);
+/* Weak fallback for units linked without ajustes.c (tests): no converter. */
+__attribute__((weak)) int ajustes_dts_tv_converte(void) { return 0; }
+static int tvNaoToca(const Stream *s) {
+  if (telaDv != 0) return 0;
+  if (dvSemBase(s)) return 1;
+  if (!s->filtro.naoVod && stream_cache_estado(s) == 2) return 2;
+  if (soP2P(s)) return 3;
+  if (audioSoDts(s) && !ajustes_dts_tv_converte()) return 4;
+  return 0;
+}
+static int tvEscondida(int i) {
+  static unsigned rev = ~0u;
+  static int nVisto = -1, haOutra;
+  static Uint32 quando;
+  unsigned r;
+  if (i < 0 || i >= n || telaDv != 0 || !tvNaoToca(&lista[i])) return 0;
+  r = atomic_load(&folhaRevisao);
+  // Cache answers arrive after the list: look again at most twice a second.
+  if (r != rev || n != nVisto || SDL_GetTicks() - quando > 500) {
+    int conta[5] = {0}, antes = haOutra;
+    haOutra = 0;
+    for (int k = 0; k < n; k++) { int m = tvNaoToca(&lista[k]); if (m) conta[m]++; else haOutra = 1; }
+    if (haOutra && (r != rev || !antes)) {
+      printf("[fontes] escondidas (TV nao toca): %d DV sem base HDR10, %d fora do cache, %d so torrent, %d so DTS/TrueHD\n",
+             conta[1], conta[2], conta[3], conta[4]);
+      fflush(stdout);
+    }
+    rev = r; nVisto = n; quando = SDL_GetTicks();
+  }
+  return haOutra;
+}
 /* SAMSUNG: A SOURCE WAITING FOR ITS DEBRID CACHE ANSWER STAYS OUT OF THE SHEET
  * (owner, 25 Nov 2026: "streams sources list flickers randomly every couple of
  * secs"). An uncached answer hides the source (tvNaoToca 2,
@@ -1318,13 +1371,16 @@ static long qualidade(const Stream *s, int modo) {
 // degrau de resolucao (10000) para o 1080p com AC3 passar na frente do 4K mudo,
 // e continua longe das multas de cache/origem (>= 140000): so desempata a fila.
 static long penalAudioTv(const Stream *s) {
+  return audioSoDts(s) ? 20000 : 0;
+}
+#endif
+static int audioSoDts(const Stream *s) {
   uint64_t recusa = badges_bit("a-dts") | badges_bit("a-dtshd") | badges_bit("a-dtshdma") |
                               badges_bit("a-dtsx") | badges_bit("a-truehd") | badges_bit("a-truehd-dv");
   uint64_t toca = badges_bit("a-dd") | badges_bit("a-ddp") | badges_bit("a-dd-dv") |
                             badges_bit("a-atmos") | badges_bit("a-atmos-dv");
-  return (s->badges & recusa) && !(s->badges & toca) ? 20000 : 0;
+  return (s->badges & recusa) && !(s->badges & toca);
 }
-#endif
 
 // AS MULTAS de pontos() (teto, cache, origem, P2P, StreamFit, sem resolucao),
 // em separado: o "MP4 primeiro" da LG (mp4PrimeiroNaFaixa) so reordena fontes
@@ -3598,6 +3654,7 @@ static const char *fraseVazioChips(void) {
 }
 static int passaFiltro(int i) {
   if (filtro < 0) return 0;
+  if (!canalFolha && tvEscondida(i)) return 0;
   if (!canalFolha && tvAguardaCache(i)) return 0;
   if (!passaChips(i)) return 0;
   if (filtro && !doProvedor(&lista[i], filtro)) return 0;

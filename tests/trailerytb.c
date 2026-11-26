@@ -79,7 +79,42 @@ int main(void) {
     assert(trailerytb_hls_melhor("#EXTM3U\n", &bw) == 0 && bw == 0);
     assert(trailerytb_hls_melhor(NULL, &bw) == 0); }
 
-  puts("PASS: trailerytb parsing (ids, watch config, player responses, HLS variants, expiry)");
+  // The playlist the TV gets: one H.264 variant up to 1080p, its group's
+  // original audio (not the first dub), no captions (20/11/2026).
+  { char o[4096];
+    int alt;
+    const char *m =
+      "#EXTM3U\n#EXT-X-INDEPENDENT-SEGMENTS\n"
+      "#EXT-X-MEDIA:URI=\"https://a/ar.m3u8\",TYPE=AUDIO,GROUP-ID=\"234\",LANGUAGE=\"ar\",NAME=\"Arabic - dubbed\",DEFAULT=NO,AUTOSELECT=YES\n"
+      "#EXT-X-MEDIA:URI=\"https://a/en.m3u8\",TYPE=AUDIO,GROUP-ID=\"234\",LANGUAGE=\"en-US\",NAME=\"English - original\",DEFAULT=YES,AUTOSELECT=YES\n"
+      "#EXT-X-MEDIA:URI=\"https://a/he.m3u8\",TYPE=AUDIO,GROUP-ID=\"233\",NAME=\"Default\",DEFAULT=YES,AUTOSELECT=YES\n"
+      "#EXT-X-MEDIA:URI=\"https://a/vtt.m3u8\",TYPE=SUBTITLES,GROUP-ID=\"vtt\",LANGUAGE=\"en\",NAME=\"English\",DEFAULT=NO,AUTOSELECT=YES\n"
+      "#EXT-X-STREAM-INF:BANDWIDTH=135417,CODECS=\"avc1.4D400C,mp4a.40.5\",RESOLUTION=256x144,AUDIO=\"233\",SUBTITLES=\"vtt\"\n"
+      "https://v/144.m3u8\n"
+      "#EXT-X-STREAM-INF:BANDWIDTH=3295980,CODECS=\"avc1.640028,mp4a.40.2\",RESOLUTION=1920x1080,AUDIO=\"234\",SUBTITLES=\"vtt\"\n"
+      "https://v/1080.m3u8\n"
+      "#EXT-X-STREAM-INF:BANDWIDTH=3847963,CODECS=\"vp09.00.40.08,mp4a.40.2\",RESOLUTION=1920x1080,AUDIO=\"234\"\n"
+      "https://v/1080vp9.m3u8\n"
+      "#EXT-X-STREAM-INF:BANDWIDTH=9000000,CODECS=\"avc1.640033,mp4a.40.2\",RESOLUTION=3840x2160,AUDIO=\"234\"\n"
+      "https://v/2160.m3u8\n";
+    assert(trailerytb_hls_reduzir(m, o, sizeof o, &alt) == 1 && alt == 1080);
+    assert(strstr(o, "https://v/1080.m3u8") && !strstr(o, "144.m3u8") && !strstr(o, "vp9") && !strstr(o, "2160"));
+    assert(strstr(o, "https://a/en.m3u8") && !strstr(o, "ar.m3u8") && !strstr(o, "he.m3u8"));
+    assert(!strstr(o, "SUBTITLES") && !strstr(o, "vtt"));
+    assert(strstr(o, "DEFAULT=YES,AUTOSELECT=YES\n") && strstr(o, "#EXT-X-INDEPENDENT-SEGMENTS"));
+    assert(!strstr(o, "DEFAULT=NO"));
+    // Without its audio rendition, or without H.264, the master stays as is.
+    assert(trailerytb_hls_reduzir("#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1,CODECS=\"avc1.6\",RESOLUTION=1x720,AUDIO=\"9\"\nhttps://v/x\n",
+                                  o, sizeof o, &alt) == 0);
+    assert(trailerytb_hls_reduzir("#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1,CODECS=\"vp09.0\",RESOLUTION=1x720\nhttps://v/x\n",
+                                  o, sizeof o, &alt) == 0);
+    // Muxed variant (no AUDIO group): kept alone.
+    assert(trailerytb_hls_reduzir("#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1,CODECS=\"avc1.6,mp4a.40.2\",RESOLUTION=1x720\nhttps://v/m\n",
+                                  o, sizeof o, &alt) == 1 && alt == 720 && strstr(o, "https://v/m\n"));
+    assert(trailerytb_hls_reduzir(m, o, 64, &alt) == 0);   // too small: refuse, never cut
+    assert(trailerytb_hls_reduzir(NULL, o, sizeof o, &alt) == 0); }
+
+  puts("PASS: trailerytb parsing (ids, watch config, player responses, HLS variants, reduced playlist, expiry)");
 
   { const char *vivo = getenv("NUVIO_YT_VIVO");
     if (vivo && *vivo) {

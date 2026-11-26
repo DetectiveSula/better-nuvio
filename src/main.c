@@ -43,6 +43,12 @@
 #include <signal.h>
 #endif
 #include <unistd.h>   // dup2 (o stderr no mesmo descritor do log)
+#ifdef NV_TPK
+#include <errno.h>
+#include <fcntl.h>
+#include <pthread.h>
+#include <stdint.h>
+#endif
 #include "gfx.h"
 #include "fundo.h"
 #include "gpunivel.h"
@@ -219,6 +225,8 @@ static void aoSinalTerminar(int sig) {
 #include "plex.h"
 #include "esmaecer.h"
 #include "descanso.h"
+#include "proxyts.h"
+#include "trailerytb.h"
 
 // RSS DO PROCESSO, em MB, lido de /proc/self/statm. E o numero que responde
 // "da para subir o orcamento de texturas?" — o teto de 96 MB foi escolhido
@@ -926,6 +934,51 @@ static EM_BOOL cicloWgt(int tipo, const EmscriptenVisibilityChangeEvent *e, void
 }
 #endif
 
+#ifdef NV_TPK
+// THE LOG IS WRITTEN BY ITS OWN THREAD (.tpk, S90C 2026-11-24). stdout went
+// straight to a file on the TV's flash, line-buffered: every printf was a
+// write() to it, under stdout's lock. When the flash stalled (2.7 s while a
+// title's ficha was being saved) every thread that logged waited, the screen
+// thread first: it logs every few frames. Now stdout/stderr are a pipe (1 MB
+// where the kernel allows) and this thread copies it to the same file, so the
+// log page and "Send log" read what they always read. Only the copy waits on
+// the flash. What is still in the pipe when the process is killed is lost.
+static int logArquivoFd = -1;
+static void *logEscritor(void *arg) {
+  int in = (int)(intptr_t)arg;
+  char buf[16384];
+  for (;;) {
+    ssize_t n = read(in, buf, sizeof buf);
+    if (n < 0 && errno == EINTR) continue;
+    if (n <= 0) break;
+    for (char *p = buf; n > 0; ) {
+      ssize_t w = write(logArquivoFd, p, (size_t)n);
+      if (w < 0) { if (errno == EINTR) continue; break; }
+      p += w; n -= w;
+    }
+  }
+  return NULL;
+}
+static void logAssincrono(void) {
+  int fds[2];
+  pthread_t t;
+  fflush(stdout); fflush(stderr);
+  logArquivoFd = dup(fileno(stdout));
+  if (logArquivoFd < 0) return;
+  if (pipe(fds) != 0) { close(logArquivoFd); logArquivoFd = -1; return; }
+#ifdef F_SETPIPE_SZ
+  (void)fcntl(fds[1], F_SETPIPE_SZ, 1 << 20);
+#endif
+  if (pthread_create(&t, NULL, logEscritor, (void *)(intptr_t)fds[0]) != 0) {
+    close(fds[0]); close(fds[1]); close(logArquivoFd); logArquivoFd = -1; return;
+  }
+  pthread_detach(t);
+  dup2(fds[1], fileno(stdout));
+  dup2(fds[1], fileno(stderr));
+  close(fds[1]);
+}
+#endif
+
 int main(int argc, char **argv) {
   // NUMERO COM PONTO, SEMPRE. O host .NET do .tpk poe o processo no locale do
   // idioma da TV, e em alemao/portugues/russo o printf("%.2f") sai "0,50" e o
@@ -987,7 +1040,12 @@ int main(int argc, char **argv) {
 #if !defined(NV_TPK) && !defined(NV_ANDROID)
       setenv("NUVIO_LOG_ANTERIOR", anterior, 1);
 #endif
-      if (freopen(log, "w", stdout)) { fflush(stderr); dup2(fileno(stdout), fileno(stderr)); }
+      if (freopen(log, "w", stdout)) {
+        fflush(stderr); dup2(fileno(stdout), fileno(stderr));
+#ifdef NV_TPK
+        logAssincrono();
+#endif
+      }
     }
   }
   setvbuf(stdout, NULL, _IOLBF, 0);
@@ -1649,6 +1707,12 @@ int main(int argc, char **argv) {
   // A marca da abertura (#213), ANTES do primeiro quadro: ele ja nasce com ela,
   // no lugar em que o splash do sistema a deixou.
   logoapp_iniciar(dirArte);
+  // YouTube trailers play from a reduced playlist on the local server (one
+  // H.264 variant, one audio track): trailerytb.h. No server = YouTube's own.
+  if (proxyts_disponivel()) {
+    proxyts_definir_texto(trailerytb_manifesto);
+    trailerytb_definir_local(proxyts_url_texto);
+  }
   abertura_iniciar(dirArte);
   ajustes_texturas_dir(dirArte);   // materiais CC0 do tema Textura (recorte fraco)
 #ifdef __EMSCRIPTEN__

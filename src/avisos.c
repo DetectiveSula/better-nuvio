@@ -49,6 +49,25 @@
 #ifndef NV_REC_URL
 #define NV_REC_URL ""
 #endif
+// DEBUG ONLY: -DNV_LOG_IP=0xC0A800F2 -DNV_LOG_PORTA=8787 (numbers, so they
+// survive the build's quoting) sends "Send log" and the crash log to
+// http://<ip>:<port> instead of NV_REC_URL, to read a retail TV's log on a
+// computer on the same network. Nothing else follows it; never in a release.
+#ifdef NV_LOG_IP
+#ifndef NV_LOG_PORTA
+#define NV_LOG_PORTA 8787
+#endif
+static const char *avLogUrl(void) {
+  static char u[64];
+  if (!u[0]) snprintf(u, sizeof u, "http://%u.%u.%u.%u:%u", (unsigned)(NV_LOG_IP >> 24) & 255u,
+                      (unsigned)(NV_LOG_IP >> 16) & 255u, (unsigned)(NV_LOG_IP >> 8) & 255u,
+                      (unsigned)NV_LOG_IP & 255u, (unsigned)NV_LOG_PORTA);
+  return u;
+}
+#define AV_LOG_URL avLogUrl()
+#else
+#define AV_LOG_URL NV_REC_URL
+#endif
 
 // O canal do dono: um arquivo no proprio repositorio. Sem servidor novo e sem
 // segredo: qualquer um pode ler, e e essa a intencao de um aviso.
@@ -412,7 +431,7 @@ int avisos_enviar_diagnostico(const char *execucao_id, const char *relatorio,
   int status = 0, ok = 0;
   size_t n;
   if (registro_id && tam_registro_id) registro_id[0] = 0;
-  if (!execucao_id || !*execucao_id || !relatorio || !NV_REC_URL[0]) return 0;
+  if (!execucao_id || !*execucao_id || !relatorio || !AV_LOG_URL[0]) return 0;
   if (!idHead(cab, aut, sizeof aut, via, sizeof via, chave, sizeof chave)) return 0;
   n = strlen(relatorio);
   esc = malloc(n * 2 + 8);
@@ -440,7 +459,7 @@ int avisos_enviar_diagnostico(const char *execucao_id, const char *relatorio,
            "webos",
 #endif
            execucao_id, esc);
-  snprintf(url, sizeof url, "%s/v1/registro", NV_REC_URL);
+  snprintf(url, sizeof url, "%s/v1/registro", AV_LOG_URL);
   resp = rede_postar_st(url, 30, cab, corpo, &status);
   if (status >= 200 && status < 300 && resp &&
       extrairRegistroId(resp, registro_id, tam_registro_id)) ok = 1;
@@ -584,7 +603,7 @@ static void *enviarRegistro(void *u) {
   free(texto);
   { char url[300];
     Uint32 t0 = SDL_GetTicks();
-    snprintf(url, sizeof url, "%s/v1/registro", NV_REC_URL);
+    snprintf(url, sizeof url, "%s/v1/registro", AV_LOG_URL);
     resp = rede_postar_repetindo(url, 30, cab, corpo, &status, 3);
     if (automatico && status >= 200 && status < 300) ultimoHashAuto = hAuto;
     if (!automatico) {
@@ -908,7 +927,7 @@ static void cartaoFechar(void) {
 
 static void enviarAgora(void) {
   if (envioEstado == 1) return;
-  if (!NV_REC_URL[0]) { envioEstado = 3; return; }
+  if (!AV_LOG_URL[0]) { envioEstado = 3; return; }
   envioEstado = 1;
   if (pthread_create(&fioEnvio, NULL, enviarRegistro, NULL) == 0) pthread_detach(fioEnvio);
   else envioEstado = 3;
@@ -1666,7 +1685,7 @@ int avisos_lista_ok(int linha) {
     case AV_AGENDA: snprintf(pediuAbrir, sizeof pediuAbrir, "%s", a.alvo); return 1;
     case AV_CRASH:
       if (envioEstado == 0 || envioEstado == 3) {
-        if (!NV_REC_URL[0]) { envioEstado = 3; return 0; }
+        if (!AV_LOG_URL[0]) { envioEstado = 3; return 0; }
         envioEstado = 1;
         if (pthread_create(&fioEnvio, NULL, enviarRegistro, NULL) == 0) pthread_detach(fioEnvio);
         else envioEstado = 3;
@@ -1883,7 +1902,7 @@ void avisos_enviar_registro_atual(void) {
   if (envioEstado == 1) return;
   envQuando = time(NULL);
   envCodigo[0] = 0; envHttp = 0;
-  if (!NV_REC_URL[0]) { envMotivo = AVISOS_ENVIO_INDISPONIVEL; envioEstado = 3; return; }
+  if (!AV_LOG_URL[0]) { envMotivo = AVISOS_ENVIO_INDISPONIVEL; envioEstado = 3; return; }
   // Sem internet (redesaude.h) nem tenta: diz o porque e espera a rede voltar.
   if (rede_saude_offline()) {
     envMotivo = AVISOS_ENVIO_OFFLINE; envPendenteRede = 1; envioEstado = 3;
@@ -1922,7 +1941,7 @@ void avisos_enviar_registro_atual(void) {
 int avisos_envio_info(AvisosEnvio *o) {
   char *s;
   memset(o, 0, sizeof *o);
-  o->disponivel = NV_REC_URL[0] != 0;
+  o->disponivel = AV_LOG_URL[0] != 0;
   pthread_mutex_lock(&trava);
   o->estado = envioEstado; o->motivo = envMotivo; o->http = envHttp;
   o->bytes = envBytes; o->linhas = envLinhas; o->quando = envQuando;

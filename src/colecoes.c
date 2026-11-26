@@ -1161,9 +1161,33 @@ static int definirJson(const char *json) {
   free(solto);
   return nConta;
 }
+// THE SAME DOCUMENT AGAIN (S90C, 24/11/2026): every sync cycle re-sent the
+// account's collections unchanged ("changed=0") and the rebuild above cost
+// ~105 ms of frozen screen on the TV (29 folders, 395 sources, 250 KB; ~9 ms
+// on a Mac, tests/sync_aplicar_perf.c). Byte-identical to the last applied
+// document AND the folders exactly as that application left them (same count
+// and signature, bases resolved the same way) = the rebuild would produce the
+// same folders: skipped. Anything that touched them since (profile switch,
+// package reload, addon prune, account-art toggle) changes the signature.
+static unsigned long long ultimoAssin;
+static int ultimoCount = -1, ultimoNConta;
 int col_definir_json(const char *json) {
   pthread_mutex_lock(&colTrava);
+  if (json && ultimoJson && contaAplicada && ultimoComConta && !semConta &&
+      count == ultimoCount && !strcmp(json, ultimoJson)) {
+    for (int i = 0; i < count; i++) resolverBases(&PASTA(i));
+    if (assinatura() == ultimoAssin) {
+      int n = ultimoNConta;
+      printf("[collections] account snapshot unchanged: %d folders, revision=%u (not rebuilt)\n",
+             n, revisao);
+      pthread_mutex_unlock(&colTrava);
+      return n;
+    }
+  }
   int n = definirJson(json);
+  if (n > 0 && contaAplicada && ultimoComConta && !semConta) {
+    ultimoAssin = assinatura(); ultimoCount = count; ultimoNConta = n;
+  } else ultimoCount = -1;
   pthread_mutex_unlock(&colTrava);
   return n;
 }

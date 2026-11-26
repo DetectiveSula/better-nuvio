@@ -22,6 +22,8 @@ int  proxyts_disponivel(void) { return 0; }
 int  proxyts_url(const char *f, char *s, size_t n) { (void)f; (void)s; (void)n; return 0; }
 void proxyts_parar(void) {}
 int  proxyts_e_url(const char *u) { (void)u; return 0; }
+void proxyts_definir_texto(int (*fn)(const char *, char *, size_t)) { (void)fn; }
+int  proxyts_url_texto(const char *i, char *d, size_t n) { (void)i; (void)d; (void)n; return 0; }
 const char *proxyts_resolver(const char *url, char *buf, size_t n) {
   (void)buf; (void)n;
   return url && !strncmp(url, PROXYTS_PREFIXO, 8) ? url + 8 : url;
@@ -578,6 +580,48 @@ static void pxServirFluxo(PxConexao *c) {
   free(b);
 }
 
+// PLAYLISTS SERVED AS TEXT (20/11/2026): GET /ytb/<id>.m3u8 answers with the
+// reduced YouTube trailer playlist (trailerytb.c via main.c's hook), so the
+// TV's player sees one variant and one audio track. Not a session: trailers
+// and live TV can be up at the same time.
+static int pxSubir(void);
+static int (*textoDe)(const char *id, char *dst, size_t n);
+void proxyts_definir_texto(int (*fn)(const char *id, char *dst, size_t n)) { textoDe = fn; }
+
+static int pxServirTexto(int s, const char *req) {
+  char id[16], cab[256], *corpo;
+  size_t k = 0;
+  const char *p = req + 9;   // "GET /ytb/"
+  while (k + 1 < sizeof id && ((*p >= 'A' && *p <= 'Z') || (*p >= 'a' && *p <= 'z') ||
+                                (*p >= '0' && *p <= '9') || *p == '_' || *p == '-')) id[k++] = *p++;
+  id[k] = 0;
+  corpo = malloc(32768);
+  if (!corpo || !textoDe || strncmp(p, ".m3u8", 5) || !textoDe(id, corpo, 32768)) {
+    static const char nao[] = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+    pxEnviar(s, nao, sizeof nao - 1);
+    free(corpo);
+    return 1;
+  }
+  snprintf(cab, sizeof cab, "HTTP/1.1 200 OK\r\nContent-Type: application/vnd.apple.mpegurl\r\n"
+           "Content-Length: %zu\r\nCache-Control: no-cache\r\nConnection: close\r\n\r\n", strlen(corpo));
+  if (strncmp(req, "HEAD ", 5)) { pxEnviar(s, cab, strlen(cab)); pxEnviar(s, corpo, strlen(corpo)); }
+  else pxEnviar(s, cab, strlen(cab));
+  printf("[proxy-ts] playlist do trailer %s servida\n", id);
+  fflush(stdout);
+  free(corpo);
+  return 1;
+}
+
+int proxyts_url_texto(const char *id, char *dst, size_t n) {
+  int ok;
+  if (!id || !dst || n < 48) return 0;
+  pthread_mutex_lock(&trava);
+  ok = pxSubir();
+  pthread_mutex_unlock(&trava);
+  if (ok) snprintf(dst, n, "http://127.0.0.1:%d/ytb/%s.m3u8", porta, id);
+  return ok;
+}
+
 static void *pxAtender(void *u) {
   PxConexao *c = u;
   char req[4096], cab[512], cabs[512];
@@ -592,6 +636,7 @@ static void *pxAtender(void *u) {
     if (strstr(req, "\r\n\r\n") || strstr(req, "\n\n")) break;
   }
   req[tot > 0 ? tot : 0] = 0;
+  if (!strncmp(req, "GET /ytb/", 9)) { pxServirTexto(c->s, req); close(c->s); free(c); return NULL; }
   q = strstr(req, "?s=");
   if (q) s = (unsigned)strtoul(q + 3, NULL, 10);
   pthread_mutex_lock(&trava);

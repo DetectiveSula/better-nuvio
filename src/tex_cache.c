@@ -1,4 +1,13 @@
 #include "tex_cache.h"
+// Samsung native (.tpk) cache policy. tests/poster_scroll.c turns it on with
+// NV_TEX_HARNESS_TPK so the Mac harness measures the same code the TV runs.
+#if defined(NV_TPK) || defined(NV_TEX_HARNESS_TPK)
+#define NV_TEX_POLITICA_TPK 1
+#ifndef __EMSCRIPTEN__
+#define NV_TEX_FUNDO 1   // background disk fetch of cancelled posters (below)
+static void fundoEsperar(const char *dst);
+#endif
+#endif
 #include "marco.h"
 #include "gif.h"
 #include <dirent.h>
@@ -201,6 +210,10 @@ typedef struct {
   // mais. Ver tex_obter_passageira e a nota em despejar().
   int passageiro;
   int lookahead; // pedido especulativo limitado; nao expira antes do decode
+#ifdef NV_TEX_POLITICA_TPK
+  Uint32 metPedidoEm;  // [tex-stats]: first request of this slot, 0 once ready
+  int metRede;         // [tex-stats]: this load went to the network
+#endif
   int fileiraDistancia;
   unsigned long fileiraQuadro;
   // OS BYTES BAIXADOS, no lugar do arquivo de cache (20/09/2026, #72). No
@@ -245,6 +258,11 @@ static int limiteDaVariante(const Item *it) {
 // principal (ver Item.bruto e a nota de ADD_FIOS em addons.c).
 #ifdef __EMSCRIPTEN__
 #define NV_TEX_FIOS_REDE 2
+#elif defined(NV_TEX_POLITICA_TPK) && !defined(NV_TPK40)
+// .tpk 6+: up to 6 (the Tizen 4/5 .so, NV_TPK40, keeps 4). A poster fetch is ~60 KB and almost all of its 0.3-1.5 s is
+// round trip, not bandwidth, so cold-start throughput scales with workers.
+// How many are ACTIVE comes from perfiltv.c (2 below 1.2 GB of RAM).
+#define NV_TEX_FIOS_REDE 6
 #else
 #define NV_TEX_FIOS_REDE 4
 #endif
@@ -488,11 +506,38 @@ static SDL_cond *condLivre;
 // mesmo e perderia a ordem de chegada dos demais, que e o que faz a fileira
 // aparecer da esquerda para a direita em vez de embaralhada.
 static int quente(const Item *it);
+#ifdef NV_TEX_POLITICA_TPK
+// FAIXA DE CARTAZ NO DECODE (.tpk). Measured on the S90C (Tizen 9, Mali-G51,
+// 2026-11-23): a hero backdrop from a 3840x2160 source takes ~1000 ms to read
+// and reduce, and the focused hero plus its two warmed neighbours outrank
+// posters in tirarFila. With both decode threads on heroes, posters already
+// on disk waited 500-800 ms in this queue (fila-decode wait=754) and showed
+// up empty after a fast scroll. At most fiosDecode-1 hero decodes run at
+// once, so one thread always stays free for posters; a hero still takes
+// either thread when the other one is not busy with a hero.
+static int ehHero(const Item *it);
+static int decGrandesAtivos, fiosDecodeCriados = 2, filaPulaGrandes;
+static int decGrandesCheio(void) {
+  int lim = fiosDecodeCriados > 1 ? fiosDecodeCriados - 1 : 1;
+  return decGrandesAtivos >= lim;
+}
+// Something in the decode queue that this thread may take now.
+static int decTemElegivel(void) {
+  if (decIni == decFim) return 0;
+  if (!decGrandesCheio()) return 1;
+  for (int p = decIni; p != decFim; p = (p + 1) % MAX_FILA)
+    if (!ehHero(&itens[filaDec[p]])) return 1;
+  return 0;
+}
+#endif
 static int tirarFila(int *f, int *ini, int fim) {
   int p = *ini, achou = -1, idx, nivel = -1;
   // NIVEL 2 = LOGO DE TITULO, 1 = tela cheia, 0 = o resto. O primeiro de maior
   // nivel vence; empate fica na ordem de chegada.
   while (p != fim) {
+#ifdef NV_TEX_POLITICA_TPK
+    if (filaPulaGrandes && ehHero(&itens[f[p]])) { p = (p + 1) % MAX_FILA; continue; }
+#endif
     int prioridade = quente(&itens[f[p]]) * 3 + itens[f[p]].urgente;
     if (prioridade > nivel) { achou = p; nivel = prioridade; }
     p = (p + 1) % MAX_FILA;
@@ -672,6 +717,96 @@ static int pressaoPlayLigada;
 // la o piso e fixo por MemTotal (tex_pressao_play_pct).
 static volatile int pressaoPlayMin = 100;
 
+#ifdef NV_TEX_POLITICA_TPK
+// [tex-stats] (.tpk): one log line every 5 s while artwork is moving, so a TV
+// log shows what the cache did instead of guesses:
+//   poster-hit   on-screen poster requests answered with a texture
+//   load         first request -> texture ready, split by network / disk
+//   reloads      a poster evicted earlier and requested again (re-decode)
+//   restarts     a request cancelled while queued and requested again
+//   bg           cancelled poster fetches finished to disk in the background
+//   frame        interval between frames (main thread), slow = over 33 ms
+// All counters are main-thread or under mtx; the window resets per line.
+#define MET_AMOSTRAS 512
+#define MET_ANEL 256
+static struct {
+  Uint32 inicio;
+  long pedidos, acertos, pedidosCartaz, acertosCartaz;
+  int nRede, nDisco; Uint32 msRede[MET_AMOSTRAS], msDisco[MET_AMOSTRAS];
+  int recargas, reinicios, baixados, decodes, envios, despejos, despejosQuentes;
+  int nQuadro; float msQuadro[1024]; int quadrosLentos; Uint32 ultQuadro;
+  unsigned long despejados[MET_ANEL]; int despIdx;
+  unsigned long cancelados[MET_ANEL]; int cancIdx;
+  long fundoGuardados, fundoBaixados, fundoJaTinha;
+  long totalPedidosCartaz, totalAcertosCartaz;
+} met;
+static int metPedidoLookahead;
+static void metAnelPor(unsigned long *anel, int *idx, unsigned long h) {
+  anel[*idx] = h; *idx = (*idx + 1) % MET_ANEL;
+}
+static int metAnelTirar(unsigned long *anel, unsigned long h) {
+  for (int k = 0; k < MET_ANEL; k++) if (anel[k] == h) { anel[k] = 0; return 1; }
+  return 0;
+}
+static void metAmostra(Uint32 *v, int *n, Uint32 ms) { if (*n < MET_AMOSTRAS) v[(*n)++] = ms; }
+static int metCmpU(const void *a, const void *b) {
+  Uint32 x = *(const Uint32 *)a, y = *(const Uint32 *)b; return x < y ? -1 : x > y;
+}
+static int metCmpF(const void *a, const void *b) {
+  float x = *(const float *)a, y = *(const float *)b; return x < y ? -1 : x > y;
+}
+static Uint32 metPct(Uint32 *v, int n, int p) {
+  if (!n) return 0; qsort(v, (size_t)n, sizeof *v, metCmpU); return v[(n - 1) * p / 100];
+}
+// Called from tex_novo_quadro with mtx held.
+static void metQuadro(void) {
+  Uint32 agora = SDL_GetTicks();
+  if (met.ultQuadro && met.nQuadro < 1024) {
+    float dt = (float)(agora - met.ultQuadro);
+    met.msQuadro[met.nQuadro++] = dt;
+    if (dt > 33.0f) met.quadrosLentos++;
+  }
+  met.ultQuadro = agora;
+  if (!met.inicio) met.inicio = agora;
+  if (agora - met.inicio < 5000u) return;
+  if (met.pedidosCartaz || met.nRede || met.nDisco || met.envios) {
+    float p50 = 0, p95 = 0, mx = 0;
+    if (met.nQuadro) {
+      qsort(met.msQuadro, (size_t)met.nQuadro, sizeof(float), metCmpF);
+      p50 = met.msQuadro[(met.nQuadro - 1) / 2];
+      p95 = met.msQuadro[(met.nQuadro - 1) * 95 / 100];
+      mx = met.msQuadro[met.nQuadro - 1];
+    }
+    int nTex = 0;
+    for (int i = 0; i < nMax; i++) if (itens[i].tex) nTex++;
+    met.totalPedidosCartaz += met.pedidosCartaz; met.totalAcertosCartaz += met.acertosCartaz;
+    printf("[tex-stats] %.1fs poster-hit=%.1f%% (%ld/%ld) session=%.1f%% all-hit=%.1f%% "
+           "load-net n=%d p50=%u p90=%u ms load-disk n=%d p50=%u p90=%u ms "
+           "reloads=%d restarts=%d bg=%ld/%ld dl=%d decodes=%d uploads=%d evict=%d hot=%d "
+           "tex=%d %.1f/%ldMB frame p50=%.1f p95=%.1f max=%.0f ms slow=%d/%d\n",
+           (agora - met.inicio) / 1000.0,
+           met.pedidosCartaz ? 100.0 * met.acertosCartaz / met.pedidosCartaz : 100.0,
+           met.acertosCartaz, met.pedidosCartaz,
+           met.totalPedidosCartaz ? 100.0 * met.totalAcertosCartaz / met.totalPedidosCartaz : 100.0,
+           met.pedidos ? 100.0 * met.acertos / met.pedidos : 100.0,
+           met.nRede, metPct(met.msRede, met.nRede, 50), metPct(met.msRede, met.nRede, 90),
+           met.nDisco, metPct(met.msDisco, met.nDisco, 50), metPct(met.msDisco, met.nDisco, 90),
+           met.recargas, met.reinicios, met.fundoBaixados, met.fundoGuardados,
+           met.baixados, met.decodes, met.envios, met.despejos, met.despejosQuentes,
+           nTex, bytesUsados / 1048576.0, orcamento / 1048576L,
+           p50, p95, mx, met.quadrosLentos, met.nQuadro);
+    fflush(stdout);
+  }
+  met.inicio = agora;
+  met.pedidos = met.acertos = met.pedidosCartaz = met.acertosCartaz = 0;
+  met.nRede = met.nDisco = 0;
+  met.recargas = met.reinicios = met.baixados = met.decodes = met.envios = 0;
+  met.despejos = met.despejosQuentes = 0;
+  met.nQuadro = met.quadrosLentos = 0;
+  met.fundoGuardados = met.fundoBaixados = 0;
+}
+#endif
+
 void tex_novo_quadro(void) {
   tex_n_busca = 0;
   tex_ms_busca = 0.0;
@@ -680,6 +815,9 @@ void tex_novo_quadro(void) {
   SDL_LockMutex(mtx);
   quadroAtual++;
   amostrar();
+#ifdef NV_TEX_POLITICA_TPK
+  metQuadro();
+#endif
   // Um decode concluido mas nunca mais desenhado nao deve ocupar memoria nem
   // bloquear a arte que entrou na tela. Pedidos PENDENTES sao cancelados pelo
   // consumidor da fila, para que o indice do slot nao seja reutilizado antes
@@ -889,6 +1027,10 @@ sai:
   if (!frio) return -1;
   tex_despejos++; tex_despejos_total++;
   if (!frio) { tex_despejos_quentes++; tex_despejos_quentes_total++; }
+#ifdef NV_TEX_POLITICA_TPK
+  met.despejos++;
+  if (itens[melhor].card) metAnelPor(met.despejados, &met.despIdx, itens[melhor].hash);
+#endif
   if (itens[melhor].tex) { gfx_tex_esquecer(itens[melhor].tex); glDeleteTextures(1, &itens[melhor].tex); }
   bytesUsados -= bytesTextura(&itens[melhor]);
   if (bytesUsados < 0) bytesUsados = 0;
@@ -1065,12 +1207,23 @@ void tex_memoria_livre(long livreMb) {
   // Stay in each band until available memory clears its recovery margin.
   if (pressaoLivrePct == 25 && livreMb < duro + folga) pct = 25;
   else if (pressaoLivrePct < 100 && pct == 100 && livreMb < baixo + folga) pct = 50;
+  int faixa = pct;
+#ifdef NV_TEX_POLITICA_TPK
+  // .tpk, MIDDLE band only, home only: 75% instead of 50%. S90C log
+  // (2026-11-23, MemTotal 1774): MemAvailable sat at 290-300 MB for the whole
+  // session with the app at ~130 MB RSS, dipped once to 242, and the 50% cap
+  // never recovered (needs 324). Halving 96 -> 48 MB gave MemAvailable back
+  // only ~16 MB (the Mali driver keeps freed pages in its pool) and turned
+  // every fast scroll into disk reloads. The hard band (25%) and the
+  // playback floor (pressaoPlayMin, from the band) are unchanged.
+  if (pct == 50 && !pressaoPlayLigada) pct = 75;
+#endif
   if (pct != pressaoLivrePct) {
     pressaoLivrePct = pct;
     printf("[tex] MemAvailable=%ld MB: texture cap at %d%%\n", livreMb, pct);
     fflush(stdout);
   }
-  pressaoPlayMin = pct == 25 ? 20 : pct == 50 ? (orcMemTotal >= 3500 ? 35 : 20) : 100;
+  pressaoPlayMin = faixa == 25 ? 20 : faixa == 50 ? (orcMemTotal >= 3500 ? 35 : 20) : 100;
   if (pressaoPlayLigada && pressaoPlayMin < pressaoPlay) pressaoPlay = pressaoPlayMin;
 }
 void tex_aliviar(void) {
@@ -2275,6 +2428,9 @@ static int baixarParaItem(int idx, const char *url, char *dst, size_t tam, int *
       SDL_UnlockMutex(mtx); }
     nomeDeCache(url, dst, tam);
     if (foiRede) *foiRede = 0;
+#ifdef NV_TEX_FUNDO
+    fundoEsperar(dst);
+#endif
     if (acertoDisco(dst, trace)) return 1;
     if (!gravacaoPendente(dst, &corpo, &n)) {
       if (foiRede) *foiRede = 1;
@@ -2323,6 +2479,82 @@ static int baixarParaItem(int idx, const char *url, char *dst, size_t tam, int *
   return garantirLocal(url, dst, tam, foiRede, trace);
 }
 
+#ifdef NV_TEX_FUNDO
+// SCROLLED-PAST POSTERS STILL REACH THE DISK (.tpk).
+//
+// A poster that leaves the screen while its fetch is still QUEUED is cancelled
+// (pedidoObsoleto) so the workers serve what is on screen. That stays. What
+// changed: the cancelled URL is remembered here, and a worker that finds the
+// demand queue EMPTY fetches it to the disk cache only — no slot, no decode,
+// no texture. Scrolling back then costs a disk decode (~50 ms) instead of a
+// fresh 0.3-1.5 s download. tests/poster_scroll.sh (cold cache, together
+// with the 6 workers and the rest-time lookahead): the first return pass went
+// from 21% to 40% of visible poster-frames textured, the second from 46% to 72%.
+//
+// Bounds: newest first (the rows nearest to where the person stopped), at most
+// NV_TEX_FUNDO_MAX URLs (older ones are dropped), at most NV_TEX_FUNDO_FIOS
+// workers at a time, never under memory pressure, and only when nothing on
+// screen is waiting for the network.
+#define NV_TEX_FUNDO_MAX 48
+#define NV_TEX_FUNDO_FIOS 2
+static char fundoUrl[NV_TEX_FUNDO_MAX][NV_TEX_URL_MAX];
+static int fundoN, fundoAtivos;
+static char fundoEmVoo[NV_TEX_FIOS_REDE][600];   // disk name being fetched per worker
+// Under mtx. Only plain, first-time poster requests qualify.
+static void fundoGuardar(int idx) {
+  const Item *it = &itens[idx];
+  char certo[NV_TEX_URL_MAX];
+  const char *u = it->caminho;
+  if (!it->card || it->urgente || it->localDireto || it->tex || it->passageiro ||
+      !it->caminho[0] || !dirCache[0]) return;
+  if (arte_tamanho_url(it->caminho, limiteDaVariante(it), certo, sizeof certo)) u = certo;
+  for (int k = 0; k < fundoN; k++) if (!strcmp(fundoUrl[k], u)) return;
+  if (fundoN == NV_TEX_FUNDO_MAX) {
+    memmove(fundoUrl[0], fundoUrl[1], sizeof fundoUrl[0] * (NV_TEX_FUNDO_MAX - 1));
+    fundoN--;
+  }
+  snprintf(fundoUrl[fundoN++], NV_TEX_URL_MAX, "%s", u);
+  met.fundoGuardados++;
+}
+static int fundoPode(int meu) {
+  return fundoN && fundoAtivos < NV_TEX_FUNDO_FIOS && meu < fiosRedeAtivos &&
+         filaIni == filaFim && !pressaoAtiva() && pressaoPlay == 100;
+}
+// Without mtx. Downloads `url` into the disk cache unless it is already there.
+static void fundoBaixar(int meu, const char *url) {
+  char dst[600]; unsigned char *b = NULL; long n = 0;
+  nomeDeCache(url, dst, sizeof dst);
+  if (cachearte_nativo_indice_tem(dst) || access(dst, R_OK) == 0 ||
+      gravacaoPendente(dst, &b, &n)) {
+    free(b);
+    SDL_LockMutex(mtx); met.fundoJaTinha++; SDL_UnlockMutex(mtx);
+    return;
+  }
+  SDL_LockMutex(mtx); snprintf(fundoEmVoo[meu], sizeof fundoEmVoo[meu], "%s", dst); SDL_UnlockMutex(mtx);
+  b = (unsigned char *)baixarImagem(url, &n, NULL);
+  if (b && n > 512 &&
+      ((b[0] == 0xFF && b[1] == 0xD8) || (b[0] == 0x89 && b[1] == 0x50) ||
+       (n >= 12 && !memcmp(b, "RIFF", 4) && !memcmp(b + 8, "WEBP", 4)))) {
+    enfileirarGravacao(dst, b, n);
+    SDL_LockMutex(mtx); met.fundoBaixados++; SDL_UnlockMutex(mtx);
+  }
+  free(b);
+  SDL_LockMutex(mtx); fundoEmVoo[meu][0] = 0; SDL_UnlockMutex(mtx);
+}
+// Without mtx: a demand fetch for a file a background worker is downloading
+// waits for it (bounded) instead of downloading the same poster twice.
+static void fundoEsperar(const char *dst) {
+  for (int t = 0; t < 150; t++) {
+    int ocupado = 0;
+    SDL_LockMutex(mtx);
+    for (int k = 0; k < NV_TEX_FIOS_REDE; k++) if (!strcmp(fundoEmVoo[k], dst)) ocupado = 1;
+    SDL_UnlockMutex(mtx);
+    if (!ocupado) return;
+    SDL_Delay(20);
+  }
+}
+#endif
+
 // FIO DE REDE: tira da fila, garante o arquivo no cache de disco e passa para a
 // decodificacao. Nao toca em pixel nenhum, entao pode rodar em prioridade
 // normal e em varios — o que ele faz e ESPERAR.
@@ -2334,11 +2566,33 @@ static int threadRede(void *arg) {
     Uint32 filaEm = 0, filaWait = 0;
     int urgente = 0;
     SDL_LockMutex(mtx);
+#ifdef NV_TEX_FUNDO
+    while (rodando && (filaIni == filaFim || meu >= fiosRedeAtivos) && !fundoPode(meu))
+      SDL_CondWaitTimeout(cond, mtx, 250);
+    if (rodando && filaIni == filaFim && fundoPode(meu)) {
+      char u[NV_TEX_URL_MAX];
+      snprintf(u, sizeof u, "%s", fundoUrl[--fundoN]);
+      fundoAtivos++;
+      SDL_UnlockMutex(mtx);
+      fundoBaixar(meu, u);
+      SDL_LockMutex(mtx); fundoAtivos--; SDL_UnlockMutex(mtx);
+      continue;
+    }
+#else
     while (rodando && (filaIni == filaFim || meu >= fiosRedeAtivos)) SDL_CondWait(cond, mtx);
+#endif
     if (!rodando) { SDL_UnlockMutex(mtx); return 0; }
     idx = tirarFila(fila, &filaIni, filaFim);
     if (itens[idx].naFilaDec || itens[idx].estado != PENDENTE || pedidoObsoleto(&itens[idx])) {
-      if (!itens[idx].naFilaDec && itens[idx].estado == PENDENTE) desistir(idx);
+      if (!itens[idx].naFilaDec && itens[idx].estado == PENDENTE) {
+#ifdef NV_TEX_POLITICA_TPK
+        if (itens[idx].card && !itens[idx].tex) metAnelPor(met.cancelados, &met.cancIdx, itens[idx].hash);
+#endif
+#ifdef NV_TEX_FUNDO
+        fundoGuardar(idx);
+#endif
+        desistir(idx);
+      }
       SDL_UnlockMutex(mtx);
       continue;
     }
@@ -2359,17 +2613,27 @@ static int threadRede(void *arg) {
     // Caminho local devolve na hora; so URL sai para a rede.
     SDL_LockMutex(mtx);
     if (itens[idx].estado != PENDENTE || pedidoObsoleto(&itens[idx])) {
-      if (itens[idx].estado == PENDENTE) desistir(idx);
+      if (itens[idx].estado == PENDENTE) {
+#ifdef NV_TEX_POLITICA_TPK
+        if (itens[idx].card && !itens[idx].tex) metAnelPor(met.cancelados, &met.cancIdx, itens[idx].hash);
+#endif
+#ifdef NV_TEX_FUNDO
+        fundoGuardar(idx);
+#endif
+        desistir(idx);
+      }
       SDL_UnlockMutex(mtx);
       continue;
     }
     SDL_UnlockMutex(mtx);
 
+    int metFoiRede = 0;
     { Uint32 redeEm = SDL_GetTicks();
       int foiRede = 0;
       TexFetchTrace trace = {0, 0, 0, 0, 0};
       int baixou = baixarParaItem(idx, caminho, local, sizeof local, &foiRede, &trace);
       Uint32 redeMs = SDL_GetTicks() - redeEm;
+      metFoiRede = foiRede && baixou > 0;
       if (urgente == 2) logoOrigem(caminho, foiRede ? "rede" : "disco", redeMs);
       if (!baixou || urgente == 2 || redeMs >= NV_TEX_TRACE_MS)
         printf("[tex-trace] fetch hash=%08lx phase=%s total_ms=%u net_ms=%u resolve_ms=%u cache_ms=%u persist_ms=%u image_requests=%u ok=%d urgente=%d\n",
@@ -2424,11 +2688,17 @@ static int threadRede(void *arg) {
       }
       SDL_UnlockMutex(mtx); }
     SDL_LockMutex(mtx);
+#ifdef NV_TEX_POLITICA_TPK
+    if (metFoiRede) met.baixados++;
+#endif
     if (itens[idx].estado != PENDENTE || pedidoObsoleto(&itens[idx])) {
       if (itens[idx].estado == PENDENTE) desistir(idx);
       SDL_UnlockMutex(mtx);
       continue;
     }
+#ifdef NV_TEX_POLITICA_TPK
+    if (metFoiRede) itens[idx].metRede = 1;
+#endif
     paraDecode(idx);
     SDL_UnlockMutex(mtx);
   }
@@ -2831,10 +3101,19 @@ static int threadDecode(void *arg) {
   SDL_SetThreadPriority(SDL_THREAD_PRIORITY_NORMAL);
   for (;;) {
     SDL_LockMutex(mtx);
+#ifdef NV_TEX_POLITICA_TPK
+    while (rodando && (!decTemElegivel() || !decodeCabe()))
+      SDL_CondWaitTimeout(condDec, mtx, 20);
+    if (!rodando) { SDL_UnlockMutex(mtx); return 0; }
+    filaPulaGrandes = decGrandesCheio();
+    int idx = tirarFila(filaDec, &decIni, decFim);
+    filaPulaGrandes = 0;
+#else
     while (rodando && (decIni == decFim || !decodeCabe()))
       SDL_CondWaitTimeout(condDec, mtx, 20);
     if (!rodando) { SDL_UnlockMutex(mtx); return 0; }
     int idx = tirarFila(filaDec, &decIni, decFim);
+#endif
     // O marcador cobre tambem o decode em andamento. Limpa-lo aqui abre uma
     // janela em que o desenho ve PENDENTE e enfileira o mesmo item outra vez,
     // enquanto este fio ainda esta lendo/reduzindo os pixels.
@@ -2847,6 +3126,12 @@ static int threadDecode(void *arg) {
     }
     long reserva = (long)cachePerfil().reservaDecodeMb * 1048576;
     decodeReservado += reserva;
+#ifdef NV_TEX_POLITICA_TPK
+    // Taken under the mutex: a promotion during the decode must not change
+    // which lane this decode is released from.
+    int faixaGrande = ehHero(&itens[idx]);
+    if (faixaGrande) decGrandesAtivos++;
+#endif
     char caminho[NV_TEX_URL_MAX];
     int limite, card;
     Uint32 filaEm = 0, filaWait = 0;
@@ -3168,6 +3453,9 @@ static int threadDecode(void *arg) {
     int falhou = 0;
     SDL_LockMutex(mtx);
     decodeReservado -= reserva;
+#ifdef NV_TEX_POLITICA_TPK
+    if (faixaGrande) { decGrandesAtivos--; SDL_CondBroadcast(condDec); }
+#endif
     // O SLOT AINDA E DESTE PEDIDO? (23/09/2026, cards com a arte de OUTRO
     // titulo.) O decode roda sem a trava; se o slot foi despejado e
     // reaproveitado por outro caminho nesse meio tempo, ele esta PENDENTE de
@@ -3222,6 +3510,9 @@ static int threadDecode(void *arg) {
       if (conv) {
         itens[idx].estado = DECODIFICADO;
         itens[idx].filaUploadEm = SDL_GetTicks();
+#ifdef NV_TEX_POLITICA_TPK
+        met.decodes++;
+#endif
         // O QUE SAIU, e nao o que foi pedido: e este par que a promocao le.
         itens[idx].tetoUsado = limite;
         itens[idx].fonteW = srcW;
@@ -3703,6 +3994,9 @@ int tex_iniciar(int max_itens) {
   // com `pend>0`. Quatro fios competiriam com o desenho mesmo em prioridade
   // baixa.
   { int k;
+#ifdef NV_TEX_POLITICA_TPK
+    fiosDecodeCriados = fiosDecode;
+#endif
     for (k = 0; k < fiosDecode; k++)
       thrs[k] = SDL_CreateThread(threadDecode, "nv-decode", NULL);
     // QUATRO fios de REDE, e eles NAO sao como os de decode: nao tocam pixel,
@@ -4075,6 +4369,14 @@ static GLuint tex_obter_limite(const char *caminho, int limite, int urgente,
       itens[novo].urgente = urgente;
       itens[novo].passageiro = passageiro || pedidoFora == 3 ? 1 : 0;
       itens[novo].localDireto = caminhoLocal(caminho);
+#ifdef NV_TEX_POLITICA_TPK
+      itens[novo].metPedidoEm = SDL_GetTicks() | 1u;
+      itens[novo].metRede = 0;
+      if (itens[novo].card && !metPedidoLookahead) {
+        if (metAnelTirar(met.despejados, h)) met.recargas++;
+        if (metAnelTirar(met.cancelados, h)) met.reinicios++;
+      }
+#endif
       if (itens[novo].localDireto) {
         // Fila cheia nao transforma caminho local em espera de rede nem trava
         // a UI; o estado PENDENTE sera reenfileirado no proximo pedido.
@@ -4096,6 +4398,13 @@ static GLuint tex_obter_limite(const char *caminho, int limite, int urgente,
     }
   }
   if (!saida) tex_n_falta++;
+#ifdef NV_TEX_POLITICA_TPK
+  if (!pedidoFora && !metPedidoLookahead && !pedidoArquivo) {
+    int cartaz = limite < NV_TEX_MIP_LARG && !urgente;
+    met.pedidos++; if (saida) met.acertos++;
+    if (cartaz) { met.pedidosCartaz++; if (saida) met.acertosCartaz++; }
+  }
+#endif
   SDL_UnlockMutex(mtx);
   return saida;
 }
@@ -4202,16 +4511,37 @@ int tex_lookahead_pedir(const char *caminho, float largura) {
   // so nao saturar os slots nem a memoria; a arte pedida sera demanda a
   // seguir, e ja entra com a largura certa.
   int limite=nMax/3-2;if(limite>8)limite=8;
+#ifdef NV_TEX_POLITICA_TPK
+  // .tpk AT REST: up to NV_TEX_ADIANTE_REPOUSO speculative requests in flight
+  // while nothing on screen waits (no hot item pending). The shared rule
+  // below waited for EVERY queue to drain, so on a cold disk the rows next to
+  // the focus were fetched one poster per round trip (~0.65 s each, ~12 s for
+  // two rows). Visible requests still win: tirarFila serves hot items first
+  // and a hot request stops further speculation on the next frame.
+#define NV_TEX_ADIANTE_REPOUSO 4
+  int quentesEmVoo = 0;
+  for (int j = 0; j < nMax; j++)
+    if ((itens[j].estado == PENDENTE || itens[j].estado == DECODIFICADO) &&
+        quente(&itens[j]) && !itens[j].lookahead) quentesEmVoo++;
+  int repouso = !quentesEmVoo && adiante < NV_TEX_ADIANTE_REPOUSO;
+#else
+  int repouso = !emVoo() && filaIni == filaFim && decIni == decFim;
+#endif
   int pode = i < 0 && livre > 0 && adiante < 12 &&
              !pressaoAtiva() && bytesUsados-coldBytes < orcamento * 3 / 4 &&
-             (gradeMovendo ? emVoo() < limite
-                           : (!emVoo() && filaIni == filaFim && decIni == decFim));
+             (gradeMovendo ? emVoo() < limite : repouso);
   SDL_UnlockMutex(mtx);
   if (!pode) return 0;
   // O pedido e ESPECULATIVO por definicao: nao vale a marca `pedidoFora` que o
   // desenho deixou no ultimo cartao — senao a propria pre-busca seria recusada.
   int foraAntes = pedidoFora; pedidoFora = 0;
+#ifdef NV_TEX_POLITICA_TPK
+  metPedidoLookahead = 1;
+#endif
   (void)tex_obter_larg(caminho, largura);
+#ifdef NV_TEX_POLITICA_TPK
+  metPedidoLookahead = 0;
+#endif
   pedidoFora = foraAntes;
   SDL_LockMutex(mtx);
   i = acharIndice(caminho, hashCaminho(caminho));
@@ -4642,6 +4972,15 @@ static int publicarEnvio(int alvo, GLuint t, SDL_Surface *sup, Uint32 uploadEm,
   itens[alvo].estado = PRONTO;
   itens[alvo].urgente = 0;
   itens[alvo].falhas = 0;
+#ifdef NV_TEX_POLITICA_TPK
+  met.envios++;
+  if (itens[alvo].metPedidoEm && itens[alvo].card) {
+    Uint32 ms = SDL_GetTicks() - itens[alvo].metPedidoEm;
+    if (itens[alvo].metRede) metAmostra(met.msRede, &met.nRede, ms);
+    else metAmostra(met.msDisco, &met.nDisco, ms);
+  }
+  itens[alvo].metPedidoEm = 0;
+#endif
   bytesUsados += bytesTextura(&itens[alvo]);
   podar();
   SDL_UnlockMutex(mtx);

@@ -183,7 +183,8 @@ static int aj6Apply(const char *json){
   if(s->hold)continue;s->desired=s->observed=remote;
   if(valor[aj6Map[i].op]!=remote){valor[aj6Map[i].op]=remote;aj6Effects(aj6Map[i].op);changed++;applied[i]=1;}
  }
- if(aj6Current()){aj6Save(aj6Owner,aj6Profile,aj6State);printf("[ajustes-oficial] perfil %d: %d/%d campo(s) recebidos\n",aj6Profile,received,(int)AJ6_N);aj6Log("aplicados",applied,aj6Profile);aj6Log("invalidos (mantidos)",invalid,aj6Profile);aj6LogWaiting();}
+ AJT_MARCA("oficial-campos");
+ if(aj6Current()){aj6Save(aj6Owner,aj6Profile,aj6State);AJT_MARCA("oficial-salvar");printf("[ajustes-oficial] perfil %d: %d/%d campo(s) recebidos\n",aj6Profile,received,(int)AJ6_N);aj6Log("aplicados",applied,aj6Profile);aj6Log("invalidos (mantidos)",invalid,aj6Profile);aj6LogWaiting();}
  pthread_mutex_unlock(&aj6Lock);return changed;
 }
 static int aj6Pending(void){int n=0;pthread_mutex_lock(&aj6Lock);if(aj6Current()&&aj6Allowed())for(size_t i=0;i<AJ6_N;i++)n+=aj6State[i].pending;pthread_mutex_unlock(&aj6Lock);return n;}

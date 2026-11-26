@@ -32,8 +32,19 @@ const char *trailerytb_url(const char *id);
 // YouTube is refusing requests right now (the caller moves on to the next
 // source instead of waiting).
 int         trailerytb_respondeu(const char *id);
+// 1 when `id` resolved to a stream of 1080p or better (width >= 1900 or
+// height >= 1060). trailerytb_primeiro_1080p: the first such of `ids`, asking
+// in order; *pronto 0 = still waiting on one.
+int         trailerytb_1080p(const char *id);
+const char *trailerytb_primeiro_1080p(const char *const *ids, int n, int *pronto);
 // 1 while YouTube is rate limiting and lookups are paused.
 int         trailerytb_bloqueado(void);
+// THE PLAYLIST THE TV GETS (20/11/2026): with a local server (main.c wires
+// proxyts), an HLS trailer plays from a reduced copy of YouTube's master: one
+// H.264 variant, its one audio rendition, no captions (trailerytb_hls_reduzir).
+// `fn` writes the local url for `id`; trailerytb_manifesto is what it serves.
+void trailerytb_definir_local(int (*fn)(const char *id, char *dst, size_t n));
+int  trailerytb_manifesto(const char *id, char *dst, size_t n);
 
 // --- pure parts (no network), for the tests ---------------------------------
 // 1 when `s` is an 11-character YouTube id ([A-Za-z0-9_-]).
@@ -54,6 +65,11 @@ void trailerytb_ler_resposta(const char *json, TytbResposta *r);
 // Best variant of an HLS master playlist: returns its height (0 = no variant)
 // and its bandwidth in *banda.
 int  trailerytb_hls_melhor(const char *m3u8, long *banda);
+// The master reduced to the tallest H.264 variant up to 1080p (then the highest
+// bit rate) and the one audio rendition of its group (the original track over
+// a dub, then the default), captions dropped. 1 = `out` holds it, *altura its
+// height; 0 = no H.264 variant, or its sound is missing (keep the master).
+int  trailerytb_hls_reduzir(const char *m3u8, char *out, size_t n, int *altura);
 // Seconds-since-epoch expiry written in a googlevideo / manifest url, 0 = none.
 long trailerytb_expira(const char *url);
 

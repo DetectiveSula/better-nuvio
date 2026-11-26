@@ -48,16 +48,21 @@ static void tabela(void) {
   // .tpk nativo (PTV_TPK): tabela propria, e a LG/Tizen acima nao mudaram.
   assert(ptv_tex_auto_mb(PTV_TPK, 0) == 96);
   assert(ptv_tex_auto_mb(PTV_TPK, 1108) == 64);   // registro 8825, Tizen 5.0
-  assert(ptv_tex_auto_mb(PTV_TPK, 2048) == 96);
-  assert(ptv_tex_auto_mb(PTV_TPK, 3072) == 128);
+  // 2 GB and up: 160/192 MB (poster fast-scroll work, tests/poster_scroll.sh).
+  assert(ptv_tex_auto_mb(PTV_TPK, 1500) == 96);
+  assert(ptv_tex_auto_mb(PTV_TPK, 2048) == 160);
+  assert(ptv_tex_auto_mb(PTV_TPK, 3072) == 192);
+  assert(ptv_tex_teto_mb(PTV_TPK, 2048) == 256);
   assert(ptv_tex_teto_mb(PTV_TPK, 1108) == 96);
   assert(ptv_tex_teto_mb(PTV_TPK, 3072) == 256);
-  assert(ptv_fios_rede_max(PTV_TPK) == 4);
+  assert(ptv_fios_rede_max(PTV_TPK) == 6);
   ptv_definir_gpu_fraca(0);
   ptv_padrao(PTV_TPK, 1108, &p);
   assert(p.texMb == 64 && p.fiosRede == 2 && p.heroiLarg == 1280);
+  ptv_padrao(PTV_TPK, 1500, &p);
+  assert(p.texMb == 96 && p.fiosRede == 4 && p.heroiLarg == 1280);
   ptv_padrao(PTV_TPK, 2048, &p);
-  assert(p.texMb == 96 && p.fiosRede == 4 && p.heroiLarg == 1920);
+  assert(p.texMb == 160 && p.fiosRede == 6 && p.heroiLarg == 1920);
   ptv_definir_gpu_fraca(1);
   ptv_padrao(PTV_TPK, 2048, &p);
   assert(p.heroiLarg == 1280);

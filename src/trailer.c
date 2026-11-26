@@ -500,6 +500,24 @@ static GfxRect naTela(GfxRect r) {
 
 static int bloqueadoMusica;
 void trailer_bloquear_musica(int sim) { bloqueadoMusica = sim; }
+// SLOW TRAILER CALLS (.tpk, S90C 2026-11-24: one home trailer start held the
+// screen 1143 ms). Every call into the video layer from here that takes 30 ms
+// or more gets a line naming it.
+#ifdef NV_TPK
+static Uint64 tlT0;
+static void tlIni(void) { tlT0 = SDL_GetPerformanceCounter(); }
+static void tlMarca(const char *nome) {
+  Uint64 t = SDL_GetPerformanceCounter();
+  double ms = (double)(t - tlT0) * 1000.0 / (double)SDL_GetPerformanceFrequency();
+  if (ms >= 30.0) { printf("[trailer-lento] %s %.1f ms\n", nome, ms); fflush(stdout); }
+  tlT0 = t;
+}
+#define TL_INI() tlIni()
+#define TL(n) tlMarca(n)
+#else
+#define TL_INI() ((void)0)
+#define TL(n) ((void)0)
+#endif
 void trailer_abrir(const char *fonte, GfxRect r, int som, int modoCheia) {
   int nova;
   if (bloqueadoMusica) return;
@@ -533,8 +551,10 @@ void trailer_abrir(const char *fonte, GfxRect r, int som, int modoCheia) {
   }
   if (!trailer_js_abrir(fonte, r.x, r.y, r.w, r.h, som, ajustes_trailer_zoom(), NV_REC_URL)) return;
 #else
+  TL_INI();
   if (nova) {
     if (!falso && !video_tocar(fonte)) return;
+    TL("abrir: video_tocar");
 #ifdef NV_TPK
     video_tpk_trailer_marcar(1);
 #endif
@@ -549,7 +569,9 @@ void trailer_abrir(const char *fonte, GfxRect r, int som, int modoCheia) {
     volumeTocandoEnviado = 0;
 #endif
   } else if (comSom != som) volumePendente = 1;
+  TL_INI();
   video_janela((int)r.x, (int)r.y, (int)r.w, (int)r.h);
+  TL("abrir: video_janela");
   if (!nova) recortePendente = 1;
 #endif
   if (nova) {
@@ -561,7 +583,9 @@ void trailer_abrir(const char *fonte, GfxRect r, int som, int modoCheia) {
   }
   rect = r; aberto = 1; cheia = modoCheia; comSom = som;
 #ifndef __EMSCRIPTEN__
+  TL_INI();
   nativoAplicar();
+  TL("abrir: nativoAplicar");
 #endif
 }
 
@@ -589,7 +613,9 @@ void trailer_fechar(void) {
 #ifdef __EMSCRIPTEN__
   trailer_js_fechar();
 #else
+  TL_INI();
   video_parar();
+  TL("fechar: video_parar");
 #endif
   aberto = 0; cheia = 0; fonteAtual[0] = 0;
 #ifndef __EMSCRIPTEN__

@@ -22,6 +22,7 @@
 #include "addons.h"
 #include "streams.h"
 #include "ajustes.h"
+#include "dados.h"
 #include "fonteauto.h"
 #include "gfx.h"
 #include "text.h"
@@ -99,8 +100,13 @@ static void ajustes(const char *dir, int primeira) {
   snprintf(cam, sizeof cam, "%s/ajustes.txt", dir);
   f = fopen(cam, "w"); assert(f);
   // fonteAutoLocal 0 = Melhor fonte; qualidade Automatica; espera 5 s.
-  fprintf(f, "idioma 0\nselected_theme 2\nfonteAutoLocal %d\nfontePrazoLocal 1\n", primeira);
+  // The rows below assume the "Por qualidade" sheet (row 0 = best for this TV):
+  // keep it, and skip the one-time 1.0.13 switch to addon order.
+  fprintf(f, "idioma 0\nselected_theme 2\nfonteAutoLocal %d\nfontePrazoLocal 1\nfonteOrdemLocal 0\n", primeira);
   fclose(f);
+  snprintf(cam, sizeof cam, "%s/fontes-1013.txt", dir);
+  f = fopen(cam, "w"); assert(f); fputs("1\n", f); fclose(f);
+  if (strcmp(dados_dir(), dir)) dados_iniciar(dir);   // the switch reads its marker here
   ajustes_dir(dir);
 }
 

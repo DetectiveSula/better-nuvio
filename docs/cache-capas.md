@@ -18,7 +18,7 @@ Our constraints differ: native GLES textures share physical RAM with decoder sur
 
 `src/perfiltv.c` is the single executable budget source (`ptv_tex_auto_mb`, `ptv_tex_teto_mb`, `ptv_padrao`, `ptv_cache`). No duplicate per-platform budget in the cache. Existing user-selected texture ceilings remain bounded by that source. Android values reuse parallel job `e23561f55`; do not reintroduce 64 MiB TCL default.
 
-<!-- perfiltv-sha256: a5a280b25252ca9fa1ed6e8be06b12b8db10ce4cb611567a2e56ede86de5155e -->
+<!-- perfiltv-sha256: e7ca8cb4b8ba40889eb39575bca11d6be97c64f38ef82b407d508056169a8b14 -->
 
 One table, all platforms and RAM classes. `GPU auto/max`, `CPU`, `disk`, `body` are MiB; hero width is pixels. CPU includes active reservations and completed decoded surfaces, not a second long-lived image cache. Each active decode reserves `reservaDecodeMb` (48 MiB, table column); at most two workers, admission also obeys CPU byte cap. Upload allowance is **5 ms / 1 MiB strip** on all classes; compressed body cap **8 MiB/request**. Network columns show active worker ceilings.
 
@@ -34,14 +34,14 @@ One table, all platforms and RAM classes. `GPU auto/max`, `CPU`, `disk`, `body` 
 | Tizen wgt | 4096 | 128/128 | 96 | 48 | 2 | 1280 | 2 | 48 |
 | Tizen tpk | 650 | 64/96 | 64 | 48 | 1 | 1280 | 2 | 512 |
 | Tizen tpk | 1500 | 96/160 | 96 | 48 | 2 | 1280 | 4 | 512 |
-| Tizen tpk | 2400 | 96/160 | 96 | 48 | 2 | 1920 | 4 | 512 |
-| Tizen tpk | 4096 | 128/256 | 96 | 48 | 2 | 1920 | 4 | 512 |
+| Tizen tpk | 2400 | 160/256 | 96 | 48 | 2 | 1920 | 6 | 512 |
+| Tizen tpk | 4096 | 192/256 | 96 | 48 | 2 | 1920 | 6 | 512 |
 | Android TV | 650 | 32/32 | 64 | 48 | 1 | 1280 | 2 | 64 |
 | Android TV | 1500 | 96/96 | 64 | 48 | 2 | 1920 | 4 | 64 |
 | Android TV | 2400 | 160/160 | 80 | 48 | 2 | 1920 | 4 | 64 |
 | Android TV | 4096 | 256/256 | 96 | 48 | 2 | 1920 | 4 | 64 |
 
-Thresholds between examples remain authoritative in code: webOS <1200/<3000, wgt <=1024/<4096, tpk <1200/<2500; Android <1500/<2000/<3000/<4000. Unknown RAM uses conservative existing GPU defaults and N=1/CPU=64. Tpk weak GPU limits hero to 1280; Utgard to 960. Wgt can select 1920 at >=2000 MB with High quality. Low-RAM LG values retain measured OOM headroom; TCL 160 MiB restores rows without relaxing trim. Native disk maximum is reduced to 15% of free+cached storage, minimum 32 MiB; below 300 MiB free use 32 MiB, preserve 128 MiB free-space reserve. Disk is compressed data, not resident RAM; GPU+CPU is not total process RSS.
+Thresholds between examples remain authoritative in code: webOS <1200/<3000, wgt <=1024/<4096, tpk <1200/<2000/<2500 (2026-11 S90C work: 160/192 MiB and six network workers from 2 GB on Tizen 6+; the Tizen 4/5 `.so` keeps the earlier rows; measured with `tests/poster_scroll.sh`); Android <1500/<2000/<3000/<4000. Unknown RAM uses conservative existing GPU defaults and N=1/CPU=64. Tpk weak GPU limits hero to 1280; Utgard to 960. Wgt can select 1920 at >=2000 MB with High quality. Low-RAM LG values retain measured OOM headroom; TCL 160 MiB restores rows without relaxing trim. Native disk maximum is reduced to 15% of free+cached storage, minimum 32 MiB; below 300 MiB free use 32 MiB, preserve 128 MiB free-space reserve. Disk is compressed data, not resident RAM; GPU+CPU is not total process RSS.
 
 Tiers:
 

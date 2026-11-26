@@ -108,7 +108,7 @@ void continuar_desenhar(const CatItem *ci, GfxRect r, float raio) {
   continuar_selo(ci, ajustes_cw_estilo() != 0, (long long)time(NULL) * 1000LL,
                  selo, sizeof selo, &estilo);
   if (selo[0]) {
-    float bw = badge_largura(selo);
+    float bw = badge_largura_estilo(selo, estilo);
     if (bw <= largura)
       badge_desenhar(r.x + r.w - pad - bw, r.y + pad, selo, estilo, 1.0f);
   }

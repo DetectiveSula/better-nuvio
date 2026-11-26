@@ -5,6 +5,7 @@
 #include "tex_cache.h"
 #include "ajustes.h"
 #include "idioma.h"
+#include "idiomacod.h"
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
@@ -396,7 +397,44 @@ float badge_largura(const char *texto) {
   TxtLinha l = txt_linha(TXT_CAPTION2, texto, 0, 0, 0, 255);
   return (float)l.w + BADGE_PADX * 2.0f;
 }
+// RELEASE BADGES (owner, 25 Nov 2026, option A "in caps"): New Episode / New
+// Season read from the sofa as a bolder pill than the meta badges: 34 px tall,
+// 21/700 in CAPS (idioma_maiusc_em, so accents and Cyrillic stay right), a
+// white dot before the text and a soft shadow so the pill holds on bright art.
+// Blue #2563EB / amber #D97706. The pill grows from the same top edge as
+// BADGE_H, so callers keep their `y`.
+#define BADGE_REL_H    34.0f
+#define BADGE_REL_PADL 14.0f
+#define BADGE_REL_DOT   8.0f
+#define BADGE_REL_DGAP  9.0f
+#define BADGE_REL_PADR 16.0f
+static int badgeLancamento(BadgeEstilo e) { return e == BADGE_NOVO_EPISODIO || e == BADGE_NOVA_TEMPORADA; }
+static TxtLinha badgeLancamentoLinha(const char *texto) {
+  char caps[128];
+  idioma_maiusc_em(ajustes_idioma(), caps, sizeof caps, texto);
+  return txt_linha(TXT_G21B, caps, 255, 255, 255, 255);
+}
+float badge_largura_estilo(const char *texto, BadgeEstilo estilo) {
+  if (!badgeLancamento(estilo)) return badge_largura(texto);
+  return BADGE_REL_PADL + BADGE_REL_DOT + BADGE_REL_DGAP
+       + (float)badgeLancamentoLinha(texto).w + BADGE_REL_PADR;
+}
+static float badgeLancamentoDesenhar(float x, float y, const char *texto, BadgeEstilo estilo, float a) {
+  TxtLinha l = badgeLancamentoLinha(texto);
+  GfxRect p = { x, y, BADGE_REL_PADL + BADGE_REL_DOT + BADGE_REL_DGAP + (float)l.w + BADGE_REL_PADR, BADGE_REL_H };
+  float fr = 0x25 / 255.0f, fg = 0x63 / 255.0f, fb = 0xEB / 255.0f;
+  if (estilo == BADGE_NOVA_TEMPORADA) { fr = 0xD9 / 255.0f; fg = 0x77 / 255.0f; fb = 0x06 / 255.0f; }
+  gfx_rect((GfxRect){ p.x - 8.0f, p.y - 4.0f, p.w + 16.0f, p.h + 16.0f }, 0, GFX_SOMBRA, 1.0f, 0, 0, 0.5f,
+           0, 0, 0, 0.55f * a);
+  gfx_cor(p, 0.5f, fr, fg, fb, a);
+  gfx_cor((GfxRect){ p.x + BADGE_REL_PADL, p.y + (BADGE_REL_H - BADGE_REL_DOT) * 0.5f, BADGE_REL_DOT, BADGE_REL_DOT },
+          0.5f, 1, 1, 1, a);
+  txt_desenhar_alpha(l, p.x + BADGE_REL_PADL + BADGE_REL_DOT + BADGE_REL_DGAP,
+                     p.y + (BADGE_REL_H - (float)l.h) * 0.5f, a);
+  return p.w;
+}
 float badge_desenhar(float x, float y, const char *texto, BadgeEstilo estilo, float a) {
+  if (badgeLancamento(estilo)) return badgeLancamentoDesenhar(x, y, texto, estilo, a);
   float fr = 0.10f, fg = 0.11f, fb = 0.13f, fa = 0.85f;
   int c = 235;
   TxtLinha l;
@@ -412,10 +450,6 @@ float badge_desenhar(float x, float y, const char *texto, BadgeEstilo estilo, fl
     case BADGE_SOBRE_REALCE: {
       float t = ajustes_acento_tinta(NULL, NULL, NULL);
       fr = fg = fb = t; fa = 0.12f; c = ajustes_tinta_foco2(); break; }
-    case BADGE_NOVO_EPISODIO:
-      fr = 0x1D / 255.0f; fg = 0x4E / 255.0f; fb = 0xD8 / 255.0f; fa = 1.0f; c = 255; break;
-    case BADGE_NOVA_TEMPORADA:
-      fr = 0xB4 / 255.0f; fg = 0x53 / 255.0f; fb = 0x09 / 255.0f; fa = 1.0f; c = 255; break;
     default: break;
   }
   l = txt_linha(TXT_CAPTION2, texto, c, c, c, 255);

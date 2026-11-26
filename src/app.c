@@ -5031,7 +5031,39 @@ static void recuperarErroFonte(void) {
   }
 }
 
+
+// SLOW UPDATE, BY PART (.tpk). The S90C log (2026-11-23) showed one frame with
+// upd=1089 ms as a detail-page trailer became visible (1 in 8 starts) and
+// nothing said which part of app_atualizar held it. When a whole update takes
+// over 150 ms, one line names the parts that took over 5 ms. Never per frame.
+#ifdef NV_TPK
+static Uint64 appMarcaT0, appMarcaIni;
+static double appMarcaMs[32];
+static const char *appMarcaNome[32];
+static int appMarcaN;
+static void appMarcaInicio(void) { appMarcaIni = appMarcaT0 = SDL_GetPerformanceCounter(); appMarcaN = 0; }
+static void appMarca(const char *nome) {
+  Uint64 t = SDL_GetPerformanceCounter();
+  if (appMarcaN < 32) { appMarcaNome[appMarcaN] = nome; appMarcaMs[appMarcaN++] = (double)(t - appMarcaT0) * 1000.0 / (double)SDL_GetPerformanceFrequency(); }
+  appMarcaT0 = t;
+}
+static void appMarcaFim(void) {
+  double total = (double)(SDL_GetPerformanceCounter() - appMarcaIni) * 1000.0 / (double)SDL_GetPerformanceFrequency();
+  if (total < 150.0) return;
+  printf("[upd-lento] %.1f ms:", total);
+  for (int i = 0; i < appMarcaN; i++) if (appMarcaMs[i] >= 5.0) printf(" %s=%.1f", appMarcaNome[i], appMarcaMs[i]);
+  printf("\n");
+  fflush(stdout);
+}
+#define APP_MARCA(n) appMarca(n)
+#else
+#define appMarcaInicio() ((void)0)
+#define appMarcaFim() ((void)0)
+#define APP_MARCA(n) ((void)0)
+#endif
+
 void app_atualizar(float dt, Uint32 agora) {
+  appMarcaInicio();
   // Revoking debug upload permission must not wait for a profile or network job.
   // Activation and snapshots still use the authenticated profile-gated dispatcher.
   if (deeplink_desarmar_pendente()) {
@@ -5098,6 +5130,7 @@ void app_atualizar(float dt, Uint32 agora) {
   col_arte_conta(ajustes_col_arte_conta());
   // O backend precisa progredir mesmo no login, perfis e transicoes que
   // retornam cedo: seek pendente no Tizen e prazo de recuo DV no webOS.
+  APP_MARCA("topo");
   video_bombear();
   // Dolby Vision in MKV handed playback back to the TV player (HDR10).
   { int dvr = video_dv_recuo_consumir();
@@ -5110,6 +5143,7 @@ void app_atualizar(float dt, Uint32 agora) {
       if (player_aberto()) player_toast(t, 6000u);
       else ilha_avisar("dv-mkv", ILHA_INFO, NULL, t, 6000u, 0);
     } }
+  APP_MARCA("video_bombear");
   player_validar_retido(agora);
   if (tela == TELA_LOGIN) {
     login_atualizar(dt, agora);
@@ -5172,6 +5206,7 @@ void app_atualizar(float dt, Uint32 agora) {
   // de perfil (a indentacao enganava), entao o poll so rodava ali — em Ajustes,
   // onde o vinculo e feito, "Aguardando a autorizacao" nunca saia do lugar
   // mesmo com a pessoa ja tendo autorizado no celular.
+  APP_MARCA("sessao/login");
   traktauth_passo((unsigned)agora);
   discord_passo((unsigned)agora);
   // PERSONAL SERVERS (servidores.h: Jellyfin, Emby, Plex): the modules fetches on its own workers; the
@@ -5181,6 +5216,7 @@ void app_atualizar(float dt, Uint32 agora) {
   simklauth_passo((unsigned)agora);
   if (!player_aberto()) simkl_scrobble_retentar();
 
+  APP_MARCA("contas");
   if (tela == TELA_ESCOLHA_PERFIL) {
     sync_passo((unsigned)agora);
     // A HOME CONTINUA SE MONTANDO POR TRAS DA PERGUNTA.
@@ -5246,10 +5282,12 @@ void app_atualizar(float dt, Uint32 agora) {
 
   // O fundo das listras (login e escolha de perfil) sai da memoria quando a
   // pessoa passa das duas telas. Sem textura carregada, e um teste e nada mais.
+  APP_MARCA("telas");
   login_soltar();
 
   // Um ciclo por vez, e so quando a conta existe. O passo e barato: sem fio
   // terminado ele nao faz nada.
+  APP_MARCA("login_soltar");
   sync_passo((unsigned)agora);
   agenda_filmes_atualizar();
   // SERVIDOR DA CONTA FORA DO AR (#215): um aviso discreto na ilha, uma vez
@@ -5280,6 +5318,7 @@ void app_atualizar(float dt, Uint32 agora) {
   // (ou a primeira depois de um "sair"), quando quem descobre que existem dois
   // perfis e o sync, segundos depois. Sem ela o app assumiria o perfil 1 para
   // sempre nessa primeira sessao.
+  APP_MARCA("sync_passo");
   if (tela == TELA_HOME && !player_aberto() && !detail_aberto() &&
       perfis_precisa_escolher()) {
     player_descartar_retido();
@@ -5469,6 +5508,7 @@ void app_atualizar(float dt, Uint32 agora) {
     int aberto = player_aberto();
     if (playerAntes && !aberto) sync_pedir_atualizacao((unsigned)agora, "player fechado");
     playerAntes = aberto; }
+  APP_MARCA("home");
   if (!player_aberto()) sync_periodico((unsigned)agora);
 #endif
   // "CONTINUAR ASSISTINDO" ENVELHECE (issue #66, "it's not updating"). A
@@ -5505,6 +5545,7 @@ void app_atualizar(float dt, Uint32 agora) {
   // STAGE H — FAMILY WATCHING (familia.h): snapshot of the profiles and of the
   // settings that gate the row (throttled inside), and "Home opened" asks the
   // next catalogue cycle for a fresh read. No network here.
+  APP_MARCA("sync_periodico");
   familia_passo();
   { static int naHome;
     int ehHome = tela == TELA_HOME;
@@ -5523,6 +5564,7 @@ void app_atualizar(float dt, Uint32 agora) {
 
   // Durante a verificacao nao substituir a lista que os workers consultam.
   // ACRESCENTAR pode (#221): os indices de quem ja estava nao mudam.
+  APP_MARCA("familia/salvos");
   addons_drenar();
   if (aguardandoFonte != 2) addons_estado();
   // A marca "Sua escolha anterior" na folha que abriu antes de o addon da
@@ -5639,6 +5681,7 @@ void app_atualizar(float dt, Uint32 agora) {
     j7arme_passo(); }
   // Da pagina do titulo, um titulo escolhido no painel de Salvos/avisos TROCA a
   // pagina (a de baixo fecha seca). So esse pedido: os demais seguem de fora.
+  APP_MARCA("addons/ilha");
   if (detail_aberto() && !player_aberto()) {
     const char *alvo = spainel_pediu_abrir();
     if (alvo && alvo[0]) {
@@ -5698,6 +5741,7 @@ void app_atualizar(float dt, Uint32 agora) {
       socialDoPerfil = 1;
     } }
   // "ABRIR A AGENDA COMPLETA" da aba Agenda do painel Social.
+  APP_MARCA("detalhe/trailer");
   if (spainel_pediu_agenda()) {
     if (spainel_aberto()) spainel_fechar();
     trocarTela(TELA_AGENDA); menu_definir_destino(MENU_AGENDA);
@@ -6923,6 +6967,7 @@ void app_atualizar(float dt, Uint32 agora) {
     if (aguardandoFonte != 2 && player_pediu_proximo(&t,&e) && player_aberto())
       abrirProximoEpisodio(t,e,0);
   }
+  APP_MARCA("player/canais");
   episodios_atualizar(dt);
   // O player devolve 1 para a coluna de audio e 2 para a de legenda.
   { int q = player_pediu_faixas();
@@ -7029,13 +7074,16 @@ void app_atualizar(float dt, Uint32 agora) {
     }
   }
 #endif
+  APP_MARCA("episodios/faixas");
   player_atualizar(dt, agora);
+  APP_MARCA("player_atualizar");
   // A barra por cima da pagina: o trailer do fundo fica mudo enquanto ela
   // esta aberta (detail_sob_menu). O pedido de barra da pagina e lido em
   // app_evento, no mesmo evento da ESQUERDA, e abre por cima dela.
   detail_sob_menu(detail_aberto() && menu_aberto());
   detail_atualizar(dt, agora);
   menu_atualizar(dt, agora);
+  APP_MARCA("detail/menu");
   // PÓS-REPRODUÇÃO. O proximo episodio reabre a busca de fonte com o id novo;
   // o titulo relacionado sai do player e abre o detalhe, que e onde o dono
   // escolhe se quer mesmo assistir.
@@ -7068,6 +7116,7 @@ void app_atualizar(float dt, Uint32 agora) {
   guia_atualizar(dt, agora);
   if (player_aberto()) epg_passo();
   ctx_atualizar(dt, agora);
+  APP_MARCA("vertudo/guia/ctx");
   // Titulo escolhido na grade: abre o detalhe, como se tivesse vindo da home.
   { int idx = vertudo_pediu_abrir();
     if (idx >= 0) {
@@ -7098,18 +7147,22 @@ void app_atualizar(float dt, Uint32 agora) {
     default:              home_painel_aberto(spainel_aberto());
                           home_atualizar(dt, agora);       break;
   }
+  APP_MARCA("tela");
   // TRAILER NO DESTAQUE: so com a home na frente de tudo. A lista e a mesma
   // ordem de app_evento — o que come tecla antes da home tambem esta na
   // frente dela na tela.
   { const char *porque = homeTrailerBloqueio();
     home_trailer_topo_motivo(porque);
     home_trailer_passo(porque == NULL, dt, agora); }
+  APP_MARCA("home_trailer");
   trailer_atualizar(agora);
+  APP_MARCA("trailer_atualizar");
   perfil_atualizar(dt, agora);
   spainel_atualizar(dt, agora);
   recomenda_atualizar(dt, agora);
   recenviar_atualizar(dt, agora);
   pessoas_atualizar(dt, agora);
+  APP_MARCA("perfil..pessoas");
   sintro_atualizar(dt, agora);
   novidades_atualizar(dt, agora);
   novidades11_atualizar(dt, agora);
@@ -7129,6 +7182,7 @@ void app_atualizar(float dt, Uint32 agora) {
   novidades201_atualizar(dt, agora);
   novidades202_atualizar(dt, agora);
   novcartao_atualizar(dt, agora);
+  APP_MARCA("novidades");
   dicascontrole_home_livre(app_home_recebe_teclas(), dt);
   dicascontrole_atualizar(dt, agora);
   telemetria_atualizar(dt, agora);
@@ -7150,10 +7204,13 @@ void app_atualizar(float dt, Uint32 agora) {
       tocarCanal(&it);
     }
   }
+  APP_MARCA("telas-extra");
   pipintro_atualizar(dt, agora);
   if(tela==TELA_SOCIAL) amigoperfil_atualizar(dt, agora);
   if(tela==TELA_ADDONS) addonsui_atualizar(dt, agora);
   if(tela==TELA_PLUGINS) pluginsui_atualizar(dt, agora);
+  APP_MARCA("fim");
+  appMarcaFim();
 }
 
 // O corpo do desenho de TELA. Saiu de app_desenhar para uma funcao propria por

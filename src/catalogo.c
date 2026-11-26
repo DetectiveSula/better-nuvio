@@ -1881,6 +1881,22 @@ int cat_n_episodios(int indiceItem) {
   return q;
 }
 
+// The season of each of the title's episodes, under ONE lock (detail.c reads
+// these every frame: per-episode cat_episodio calls were one lock each, tens
+// of thousands per frame on a 500-episode series). Returns the count written.
+int cat_temporadas_dos_episodios(int indiceItem, int *temporadas, int max) {
+  int m = cat_n(), n = 0;
+  if (m < 1 || !temporadas || max <= 0) return 0;
+  indiceItem = ((indiceItem % m) + m) % m;
+  pthread_mutex_lock(&epTrava);
+  if (epQtd && epIni && indiceItem < nFaixas) {
+    int q = epQtd[indiceItem], b = epIni[indiceItem];
+    for (int i = 0; i < q && i < max && b + i < CAT_EP_MAX; i++) temporadas[n++] = eps[b + i].temporada;
+  }
+  pthread_mutex_unlock(&epTrava);
+  return n;
+}
+
 const CatEp *cat_episodio(int indiceItem, int i) {
   int m = cat_n();
   const CatEp *e = NULL;

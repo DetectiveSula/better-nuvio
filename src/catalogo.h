@@ -584,6 +584,7 @@ double        cat_relogio_ms(void);
 // quadro; quem deriva uma lista do catalogo reconstroi so quando ela muda.
 unsigned      cat_revisao_itens(void);
 int           cat_n_episodios(int indiceItem);
+int           cat_temporadas_dos_episodios(int indiceItem, int *temporadas, int max);
 const CatEp  *cat_episodio(int indiceItem, int i);   // indice circular; NULL se o catalogo esta vazio
 // O id que se pede aos addons de FONTE para o episodio (t,e) do item. Serie do
 // IMDb: "tt:T:E" (o id do video so vale se tambem for "tt"); serie de outro

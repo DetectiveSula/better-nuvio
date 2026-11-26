@@ -10,7 +10,9 @@ TMPDIR="${TMPDIR%/}"
 #                   container, from the source tree tpk.sh already downloaded and checked on the
 #                   host (NUVIO_DTS_SRC; the container has no curl). Adds what the Samsung loopback
 #                   converter needs: TrueHD/MLP
-#                   decoders, mpegts/matroska/mp4 muxers, mlp/ac3 parsers, truehd_core.
+#                   decoders, mpegts/matroska/mp4 muxers, mlp/ac3 parsers, truehd_core,
+#                   and the common stream audio decoders (AAC, AC3/E-AC3, Opus, FLAC,
+#                   MP3, Vorbis) for subtitle AutoSync "by audio" (src/audsync_tpk.c).
 set -eu
 VERSION=7.1.5
 SHA256=de668509caf9e35e3cd162473441fdb29538c6d96ed080292b3cf9e6fc5d558f
@@ -26,7 +28,7 @@ mkdir -p "$BUILD" "$PREFIX"
 if [ "$TARGET" = tpk ]; then
   SRC=${NUVIO_DTS_SRC:?tools/tpk.sh passes the extracted ffmpeg-$VERSION source}
   CC=${CC:-gcc}
-  DECODERS=$DECODERS,truehd,mlp
+  DECODERS=$DECODERS,truehd,mlp,aac,ac3,eac3,opus,flac,mp3float,vorbis
   MUXERS=mpegts,matroska,mp4
   PARSERS=$PARSERS,mlp,ac3
   BSFS=$BSFS,truehd_core

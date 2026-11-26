@@ -5029,7 +5029,37 @@ void player_atualizar(float dt, Uint32 agora) {
       } }
     // A legenda interpola na velocidade MEDIDA (relogio.h).
     relogio_taxa(&relLeg, velMed.efetiva / 100.0);
-    relogio_amostra(&relLeg, video_pos(), monoSeg(), tocando && !scrubbing);
+    // AFTER A SKIP (owner, 20/11/2026: "subtitles go out of sync when
+    // forwarding"). The Samsung host writes the TARGET as the position the
+    // moment its fast seek is accepted, before the picture moves (and the
+    // fast seek lands on a key frame, not the target). That first number is
+    // the highest offset the clock has seen, and the clock keeps the highest
+    // of its last 12 samples (relogio.h), so the lines ran early until it
+    // aged out. Now the clock starts again only once the position MOVES after
+    // the seek; meanwhile the lines follow the player's own number.
+    { static int segura, emVooAntes;
+      static double desde = -1.0, segurouEm;
+      double vp = video_pos(), m = monoSeg();
+#ifdef NV_TPK
+      int emVoo = video_busca_em_voo();
+#else
+      int emVoo = 0;   // only the Samsung host writes the target as the position
+#endif
+      if (emVoo || (emVooAntes && !emVoo)) {
+        if (!segura) segurouEm = m;
+        segura = 1; desde = -1.0; relogio_zerar(&relLeg);
+      } else if (segura) {
+        if (!tocando || scrubbing || m - segurouEm > 8.0) segura = 0;
+        else if (desde < 0.0) desde = vp;
+        else if (fabs(vp - desde) >= 0.3) {
+          segura = 0;
+          printf("[relogio] legenda volta a interpolar %.0f ms depois do seek (posicao %.2f s)\n",
+                 (m - segurouEm) * 1000.0, vp);
+          fflush(stdout);
+        }
+      }
+      emVooAntes = emVoo;
+      if (!segura) relogio_amostra(&relLeg, vp, m, tocando && !scrubbing); }
     // A cada 10 s: o numero cru do pipeline e o do relogio da legenda, no
     // mesmo instante. A diferenca e o que a interpolacao acrescenta (0..~250).
     { static double ultRel;

@@ -538,8 +538,18 @@ static const char *trailerFonte(int k, int *qual, int cheia) {
 #else
   // NATIVE: TMDB's YouTube id becomes a playable HLS/MP4 through trailerytb.c
   // (ported from NuvioTV, 19/11/2026). Waits for TMDB, then for the lookup.
-  { const char *yt = NULL;
-    if (k >= 0 && k < extras_n_trailers() && extras_trailer_yt(k)[0]) yt = extras_trailer_yt(k);
+  if (k <= 0) {
+    // AUTOMATIC (background, Trailer button): a proper trailer, not a spot or
+    // promo, at 1080p or better (owner, 24/11/2026). The next proper one is
+    // tried when the best is smaller; none qualifies = no YouTube trailer.
+    const char *ids[4];
+    int n = extras_trailers_proprios(ids, 4), pronto = 1;
+    c.youtube = n ? trailerytb_primeiro_1080p(ids, n, &pronto) : NULL;
+    c.youtubeRespondeu = !extras_carregando() && pronto;
+  } else {
+    // A trailer picked in the Trailers row plays as it is.
+    const char *yt = NULL;
+    if (k < extras_n_trailers() && extras_trailer_yt(k)[0]) yt = extras_trailer_yt(k);
     else if (extras_n_trailers() > 0 && extras_trailer_yt(0)[0]) yt = extras_trailer_yt(0);
     if (yt) { trailerytb_pedir(yt); c.youtube = trailerytb_url(yt); }
     c.youtubeRespondeu = !extras_carregando() && (!yt || trailerytb_respondeu(yt)); }
@@ -920,16 +930,36 @@ static const char *cabecalhoDe(int r) {
 //
 // COLUNA E RELATIVA, cat_episodio() e ABSOLUTO. Todo mundo que le a fileira
 // passa por epAbsoluto(); quem conta, por epVisiveis().
+// THE SEASON OF EVERY EPISODE, ONCE PER FRAME (owner, 24/11/2026: "some shows
+// scroll smoothly, some don't"). epVisiveis/epAbsoluto/epsDaTemporada each
+// walked the whole list through cat_episodio, one catalogue lock per episode,
+// and are called per card and per season tab: ~20 000 locks a frame on Family
+// Guy (511 episodes, 23 seasons), ~100 on a 10-episode show. The seasons are
+// copied under one lock and reused until the title, its episode count or the
+// millisecond tick changes (a new frame); the counting is then plain ints.
+#define DET_EPS_MAX 4096   /* >= catalogo.c CAT_EP_MAX */
+static int epTemps[DET_EPS_MAX], epTempsN = -1, epTempsIdx = -1;
+static Uint32 epTempsEm;
+static int epTemporadas(void) {
+  int n = cat_n_episodios(idx);
+  Uint32 agora = SDL_GetTicks();
+  if (epTempsN < 0 || epTempsIdx != idx || epTempsN != n || epTempsEm != agora) {
+    epTempsN = cat_temporadas_dos_episodios(idx, epTemps, DET_EPS_MAX);
+    if (epTempsN != n) epTempsN = -1;   // changed under us: no cache this time
+    epTempsIdx = idx; epTempsEm = agora;
+    if (epTempsN < 0) return cat_temporadas_dos_episodios(idx, epTemps, DET_EPS_MAX);
+  }
+  return epTempsN;
+}
 static int epAbsoluto(int c) {
   int alvo = temporadaEm(temporada), n = cat_n_episodios(idx), i, j = 0;
   if (c < 0) return -1;
   // Sem lista de temporadas nao ha filtro possivel: a fileira e a lista crua.
   { const CatItem *ci = cat_item(idx);
     if (!ci || ci->nTemporadas < 1) return c < n ? c : -1; }
-  for (i = 0; i < n; i++) {
-    const CatEp *e = cat_episodio(idx, i);
-    if (e && e->temporada == alvo && j++ == c) return i;
-  }
+  n = epTemporadas();
+  for (i = 0; i < n; i++)
+    if (epTemps[i] == alvo && j++ == c) return i;
   return -1;
 }
 
@@ -950,10 +980,8 @@ static int epVisiveis(void) {
   if (n < 1) return 0;
   { const CatItem *ci = cat_item(idx);
     if (!ci || ci->nTemporadas < 1) return n; }
-  for (i = 0; i < n; i++) {
-    const CatEp *e = cat_episodio(idx, i);
-    if (e && e->temporada == alvo) q++;
-  }
+  n = epTemporadas();
+  for (i = 0; i < n; i++) if (epTemps[i] == alvo) q++;
   return q;
 }
 
@@ -5457,11 +5485,8 @@ static void rotuloTemporada(int c, char *dst, size_t n) {
 }
 // Episodios da temporada na posicao `c` (a contagem do segmentado).
 static int epsDaTemporada(int c) {
-  int alvo = temporadaEm(c), n = cat_n_episodios(idx), i, q = 0;
-  for (i = 0; i < n; i++) {
-    const CatEp *e = cat_episodio(idx, i);
-    if (e && e->temporada == alvo) q++;
-  }
+  int alvo = temporadaEm(c), n = epTemporadas(), i, q = 0;
+  for (i = 0; i < n; i++) if (epTemps[i] == alvo) q++;
   return q;
 }
 // Item do SEGMENTADO (.sg do mockup): 19/600 com 20 de cada lado e a
@@ -5546,9 +5571,10 @@ static void contarTemporada(int *total, int *vistos, int *futuros, int *sabe) {
   // nos contou. O mesmo motivo pelo qual o card nao desenha um selo de "nao
   // assistido" enquanto o Trakt nao responde.
   *sabe = ci && ci->imdb[0] && vistoep_conhecido(ci->imdb);
+  n = epTemporadas();
   for (i = 0; i < n; i++) {
-    const CatEp *e = cat_episodio(idx, i);
-    if (!e || e->temporada != alvo) continue;
+    const CatEp *e;
+    if (epTemps[i] != alvo || !(e = cat_episodio(idx, i))) continue;
     (*total)++;
     // Nao exibido GANHA de visto: um episodio que ainda vai ao ar nao pode
     // entrar na conta do que voce assistiu, mesmo que o mapa diga que sim (o
@@ -8073,12 +8099,39 @@ static void carFundo(void) {
   // volta): e quando ela fica opaca que a home deixa de ser desenhada, e home +
   // folha misturada + cartoes no mesmo quadro passava de 40 ms na C9 (medido,
   // 01/10). O video da Apple faz o mesmo: a home some em dois quadros.
-  gfx_cor(tela, 0.0f,
-          CAR_FOLHA_R + (NV_COR_FUNDO_R - CAR_FOLHA_R) * expandida,
-          CAR_FOLHA_G + (NV_COR_FUNDO_G - CAR_FOLHA_G) * expandida,
-          CAR_FOLHA_B + (NV_COR_FUNDO_B - CAR_FOLHA_B) * expandida, carFolha());
   passo = h.w + CAR_VAO;
   a = anim_clamp(s * 3.0f, 0.0f, 1.0f);
+  { GfxRect furo = { 0, 0, 0, 0 };
+#if defined(NV_TPK) || defined(NV_FOLHA_VAZADA)
+    // THE SHEET UNDER THE TITLE CARD (.tpk, S90C Mali-G51): in the settled
+    // carousel the card covers ~82% of the screen, fully opaque inside its
+    // corners, and the sheet under it was a full screen of fill every frame.
+    // Only then is the sheet drawn around the card (inset by the corner radius
+    // + 2 px of edge AA): the same pixels. Opening, closing, expanding, a
+    // trailer on the card, art not loaded yet: the whole sheet, as before.
+    // -DNV_FOLHA_VAZADA turns it on in host builds (tests/carrossel_shot.sh:
+    // 48 screens, settled card frames pixel-identical, 2026-11-24).
+    if (expandida <= 0.0f && a >= 1.0f && gfx_opacidade_grupo >= 1.0f && carAplicado >= 0 &&
+        carAplicado < carN && !(trailerFade > 0.005f && trailer_aberto() && !trailer_cheia())) {
+      const char *arteCar = arteDe(carIdx[carAplicado]);
+      if (arteCar && tex_obter_hero(arteCar)) {
+        float mg = raio + 2.0f;
+        GfxRect rc = { h.x + ((float)carAplicado - carOff) * passo, h.y, h.w, h.h };
+        if (rc.x >= 0.0f && rc.x + rc.w <= NV_TELA_W)
+          furo = (GfxRect){ rc.x + mg, rc.y + mg, rc.w - 2.0f * mg, rc.h - 2.0f * mg };
+      }
+    }
+#endif
+    if (furo.w > 0.0f)
+      gfx_cor_vazada(tela,
+          CAR_FOLHA_R + (NV_COR_FUNDO_R - CAR_FOLHA_R) * expandida,
+          CAR_FOLHA_G + (NV_COR_FUNDO_G - CAR_FOLHA_G) * expandida,
+          CAR_FOLHA_B + (NV_COR_FUNDO_B - CAR_FOLHA_B) * expandida, carFolha(), furo);
+    else
+      gfx_cor(tela, 0.0f,
+          CAR_FOLHA_R + (NV_COR_FUNDO_R - CAR_FOLHA_R) * expandida,
+          CAR_FOLHA_G + (NV_COR_FUNDO_G - CAR_FOLHA_G) * expandida,
+          CAR_FOLHA_B + (NV_COR_FUNDO_B - CAR_FOLHA_B) * expandida, carFolha()); }
   // A folha cinza vira a base da pagina enquanto o cartao cresce. Assim o
   // GFX_JANELA encontra os mesmos pixels sob a arte ao chegar ao detalhe;
   // a pagina assentada continua usando uma unica passada de arte.

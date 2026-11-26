@@ -2475,6 +2475,22 @@ static void performanceAutoMigrar(void) {
   performanceAutoVersao = 1;
   gravar(); // Values and migration version share the atomic settings write.
 }
+// Subtitle sync by audio on the .tpk 6+ (audsync_ff.c): the row was hidden
+// there and every install already saved "legendaSyncAudioLocal 1" (off), so the
+// new default (on) would never reach them. Turned on ONCE per device; an "off"
+// chosen afterwards sticks (marker file audsync-tpk-1.txt).
+static void audsyncTpkMigrar(void) {
+#if defined(NV_TPK) && !defined(NV_TPK40)
+  char *m = dados_ler("audsync-tpk-1.txt");
+  if (!m) {
+    valor[AJ_LEG_SYNC_AUDIO] = 0;
+    dados_gravar("audsync-tpk-1.txt", "1\n");
+    gravar();
+    printf("[ajustes] subtitle sync by audio: on (one-time .tpk migration)\n");
+  }
+  free(m);
+#endif
+}
 // Account metadata/credentials live in the native registry, never the sync blob.
 static void ajIptvEspelhar(void) {
   IptvConta c;
@@ -3942,6 +3958,10 @@ int ajustes_cw_retido_tambem(void)    { return lig(AJ_CW_RETIDO_TAMBEM); }
 int ajustes_ps_continuar(void)        { return lig(AJ_PS_CONTINUAR); }
 int ajustes_dts_ac3(void)             { return valor[AJ_DTS_AC3] == 1; }
 // .tpk: HLS (o TS continuo e so a troca automatica de video_tpk.c) ou desligado.
+// The TV will hear a DTS/TrueHD-only source: converter in this build and on.
+int ajustes_dts_tv_converte(void) {
+  return dtsConversaoExiste() && ajustes_dts_tpk_modo() != DTSTPK_DESLIGADO;
+}
 int ajustes_dts_tpk_modo(void) {
 #ifdef NV_TPK
   return valor[AJ_DTS_AC3] == 0 ? DTSTPK_DESLIGADO : DTSTPK_HLS;
@@ -4492,10 +4512,48 @@ static int tmdbLocalValida(const char *key) {
   if(strlen(key)!=32) return 0;
   return strspn(key,"0123456789abcdefABCDEF")==32;
 }
+/* TMDB KEY FOLLOWS "PROVIDER ACCOUNTS" (owner, 21 Nov 2026): Shared (the
+ * default) keeps one key for every profile of this account on this device,
+ * tmdb-key-<account>.txt; Separate keeps tmdb-key-<account>-p<N>.txt. Never
+ * device-wide across accounts, unlike the debrid file. */
+static int tmdbNomeConta(char *dst, unsigned n) {
+  const char *u = sessao_usuario();
+  char perfil[128];
+  int k;
+  // Same account-name check as debNomePerfil.
+  if (!debNomePerfil(perfil, sizeof perfil, "tmdb-key")) return 0;
+  k = snprintf(dst, n, "tmdb-key-%s.txt", u);
+  return k >= 0 && (unsigned)k < n;
+}
+static int tmdbNome(char *dst, unsigned n) {
+  return ajustes_provedores_compartilhados() ? tmdbNomeConta(dst, n)
+                                             : debNomePerfil(dst, n, "tmdb-key");
+}
+// Before 21 Nov 2026 every key was per profile. With Shared and no shared file
+// yet, adopt this profile's key, else the first other profile's: one key typed
+// on profile 1 then reaches profile 2 with no retyping.
+static char *tmdbLerLegado(void) {
+  char name[128], *text;
+  const char *u = sessao_usuario();
+  int p, atual = perfis_ativo();
+  if (!debNomePerfil(name, sizeof name, "tmdb-key")) return NULL;
+  if ((text = dados_ler(name)) && text[0]) return text;
+  free(text);
+  for (p = 1; p <= CONTA_PERFIL_MAX; p++) {
+    if (p == atual) continue;
+    snprintf(name, sizeof name, "tmdb-key-%s-p%d.txt", u, p);
+    if ((text = dados_ler(name)) && text[0]) return text;
+    free(text);
+  }
+  return NULL;
+}
 static void tmdbLocalCarregar(void) {
   char name[128],*text=NULL;
   memset(tmdbLocal,0,sizeof tmdbLocal);
-  if(debNomePerfil(name,sizeof name,"tmdb-key")) text=dados_ler(name);
+  if(tmdbNome(name,sizeof name)) {
+    text=dados_ler(name);
+    if(!text && ajustes_provedores_compartilhados()) text=tmdbLerLegado();
+  }
   if(text) {
     if(tmdbLocalValida(text)) snprintf(tmdbLocal,sizeof tmdbLocal,"%s",text);
     memset(text,0,strlen(text));free(text);
@@ -4505,7 +4563,7 @@ static void tmdbLocalCarregar(void) {
 static int tmdbLocalDefinir(const char *text) {
   char name[128];
   if(!tmdbLocalValida(text)) return 0;
-  if(!debNomePerfil(name,sizeof name,"tmdb-key")) return 0;
+  if(!tmdbNome(name,sizeof name)) return 0;
   // Empty is an explicit local removal; the package/account fallback survives.
   if(!debGravarArquivo(name,text ? text : "")) return 0;
   tmdbLocalCarregar();
@@ -4593,10 +4651,17 @@ int ajustes_definir_provedores_compartilhados(int compartilhados) {
     }
     if (!debNomePerfil(privado, sizeof privado, "fontefalha") ||
         !fontefalha_preparar_privado(privado)) return 0;
+    // The shared TMDB key is copied on the first Separate choice too.
+    if (tmdbLocal[0] && debNomePerfil(privado, sizeof privado, "tmdb-key")) {
+      t = dados_ler(privado);
+      if (t) { memset(t, 0, strlen(t)); free(t); }
+      else if (!debGravarArquivo(privado, tmdbLocal)) return 0;
+    }
   }
   if (!dados_gravar(escopo, novo ? "1\n" : "0\n")) return 0;
   valor[AJ_PROVEDORES_ESCOPO] = novo;
   debCarregar();
+  tmdbLocalCarregar();
   if (ajustes_provedores_arquivo(privado, sizeof privado, "fontefalha")) fontefalha_arquivo(privado);
   ajFalhaEspelhar();
   ajSombra[AJ_PROVEDORES_ESCOPO] = novo;
@@ -4985,6 +5050,7 @@ void ajustes_dir(const char *dir) {
     // Nunca gravou nada: o idioma nasce automatico (o padrao de valor[]).
     valor[AJ_IDIOMA] = 0;
     performanceAutoMigrar();
+    audsyncTpkMigrar();
 #ifdef NV_TEX_MB_FIXO
     memoriaMigrar();
     if (valor[AJ_TEX_MB] > 0) tex_definir_orcamento_mb(ajustes_tex_mb());
@@ -5307,6 +5373,21 @@ void ajustes_dir(const char *dir) {
       dados_gravar("profundidade-205.txt", "1\n");
       gravar();
     } }
+  // ONE-TIME SWITCH (owner, 21 Nov 2026): the source list shows each addon's
+  // own order, as regular Nuvio does (autoplay's choice is unchanged), and on
+  // Samsung autoplay tries up to 3 other sources. A TV still on the old
+  // defaults moves once; a different choice is kept.
+  { char *m = dados_ler("fontes-1013.txt");
+    if (m) free(m);
+    else {
+      if (valor[AJ_FONTE_ORDEM_ADDON] == 0) valor[AJ_FONTE_ORDEM_ADDON] = 1;
+#ifdef NV_TPK
+      if (valor[AJ_FONTE_REPOR] == 2) valor[AJ_FONTE_REPOR] = 3;
+#endif
+      printf("[ajustes] fontes: ordem do addon, outra fonte se falhar %d (troca unica da 1.0.13)\n", valor[AJ_FONTE_REPOR]);
+      dados_gravar("fontes-1013.txt", "1\n");
+      gravar();
+    } }
   // MIGRACAO UNICA (2.0.6, dono 19/10/2026): "Ampliar interface" de fabrica
   // virou App (4K) em vez de TV. Quem nunca tocou nesta opcao recebe o novo
   // padrao uma so vez; quem ja tinha gravado sua escolha (explicitamente TV)
@@ -5353,6 +5434,7 @@ void ajustes_dir(const char *dir) {
   // Owner: reset even saved manual performance choices once per device.
   // Run after legacy migrations so they cannot replace Automatic.
   performanceAutoMigrar();
+  audsyncTpkMigrar();
   // O limite mora em fileiras.c; esta linha e so o espelho dele. Ler daqui em
   // vez de gravar evita a divergencia: o arquivo de ajustes nao guarda o
   // numero, entao nao ha como os dois discordarem.
@@ -6984,7 +7066,12 @@ static int foraDestaPlataforma(int op) {
   if (op == AJ_DV7) return 1;
 #endif
 #ifndef NV_ANDROID
-  if (op == AJ_FONTE_PRECARREGAR || op == AJ_LEG_SYNC_AUDIO || op == AJ_TUNNELING) return 1;
+  if (op == AJ_FONTE_PRECARREGAR || op == AJ_TUNNELING) return 1;
+#endif
+  // Subtitle sync by audio: Android (Media3 PCM tap) and the .tpk 6+ (software
+  // decode, audsync_ff.c). Tizen 4/5 has no FFmpeg.
+#if !defined(NV_ANDROID) && !(defined(NV_TPK) && !defined(NV_TPK40))
+  if (op == AJ_LEG_SYNC_AUDIO) return 1;
 #endif
 #if defined(NV_ANDROID) && !defined(NV_P2P_MOTOR)
   if (op == AJ_P2P_LIMITE || op == AJ_P2P_DESTINO) return 1;
@@ -7984,7 +8071,7 @@ static const char *ajudaOpcaoBase(int op) {
     case AJ_FILTRO_REQUIRED_GROUPS: return "Only allow these release groups, separated by commas. Empty allows any group. Matching is case-insensitive and exact.";
     case AJ_POSPLAY_TRAILER: return "Muted IMDb trailer previews in focused post-play cards. Uses a separate software player; never replaces the main video. Android only, unavailable on low-memory devices. Off by default.";
     case AJ_POSPLAY_TRAILER_ESPERA: return "Wait before loading a muted post-play trailer. Focus changes, closing the panel and backgrounding cancel the preview. The poster stays visible on failure.";
-    case AJ_TMDB_CHAVE_LOCAL: return "Enter your 32-character TMDB API key (v3). Kept privately on this device for the selected account and profile; never synchronised. Leave blank to remove the local key and use an available account or app key. Requires TMDB to be enabled.";
+    case AJ_TMDB_CHAVE_LOCAL: return "Enter your 32-character TMDB API key (v3). Kept privately on this device for this account: every profile shares it when Provider setup is Shared, or this profile only when Separate. Never synchronised. Leave blank to remove the local key and use an available account or app key. Requires TMDB to be enabled.";
     case AJ_MENU_OCULTAR_PILULA: return "Hide the modern or Dynamic sidebar icon pill while navigation is closed. Requires sidebar navigation. Left/Back and the pointer edge still reveal navigation.";
     case AJ_DET_TRAILER_ESPERA: return "Wait before starting the automatic trailer after the detail page settles. Stored in tenths of a second.";
     case AJ_POSPLAY_RECOM: return "Show movie recommendations near the end of playback. Requires available recommendations from enabled TMDB or Trakt services. Episode autoplay is configured separately.";

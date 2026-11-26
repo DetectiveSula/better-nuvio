@@ -1622,6 +1622,26 @@ static void spRelatar(void) {
 
 // No fio principal: consome cada corpo uma vez, antes ou no fim do ciclo.
 // Nenhum destes corpos participa de um push; o restante conserva fioPronto.
+#ifdef NV_TPK
+// S90C 2026-11-24: the structure step still took ~100 ms with the collections
+// rebuild skipped. One line when it takes 50 ms or more, by part.
+static double esT0, esUlt, esMs[6];
+static void esMarca(int k) { double t = syncRelogioMs(); esMs[k] += t - esUlt; esUlt = t; }
+#define ES_INI() do { esT0 = esUlt = syncRelogioMs(); memset(esMs, 0, sizeof esMs); } while (0)
+#define ES(k) esMarca(k)
+static void esFim(void) {
+  static const char *const N[6] = { "ordem_ler", "ordem_gravar", "ocultar", "colecoes", "sincronizar", "remontar" };
+  double tot = syncRelogioMs() - esT0;
+  if (tot < 50.0) return;
+  printf("[sync] estrutura %.1f ms:", tot);
+  for (int k = 0; k < 6; k++) if (esMs[k] >= 1.0) printf(" %s=%.1f", N[k], esMs[k]);
+  printf("\n"); fflush(stdout);
+}
+#else
+#define ES_INI() ((void)0)
+#define ES(k) ((void)0)
+#define esFim() ((void)0)
+#endif
 static int aplicarEstruturaDaConta(int medir) {
   int mudou = 0;
   int atualizarColecoes = temColBlob || temCatHomeBlob;
@@ -1629,10 +1649,14 @@ static int aplicarEstruturaDaConta(int medir) {
   // e o baseline de jank desta TV nao tem essa folga; duas remontagens no mesmo
   // quadro (addons e ordem) custariam o dobro por nada.
   if (temCatHomeBlob && catHomeBlob) {
-    if (catHomePerfil==perfis_home_config() && catordem_ler(catHomeBlob)) {
+    int lido = catHomePerfil==perfis_home_config() && catordem_ler(catHomeBlob);
+    ES(0);
+    if (lido) {
       catordem_cache_gravar(perfis_home_config(), sessao_usuario(), catHomeBlob);
+      ES(1);
       if (catordem_tem_ocultar_nao_lancados())
         ajustes_definir_ocultar_nao_lancados(catordem_ocultar_nao_lancados());
+      ES(2);
       // `hide_catalog_underline` e lido e NAO aplicado: nao ha sublinhado de
       // catalogo desenhado neste app. Ler ja evita confundir "a conta nao
       // mandou" com "a conta mandou false" quando a fileira ganhar rotulo.
@@ -1645,23 +1669,51 @@ static int aplicarEstruturaDaConta(int medir) {
   if (medir) spMarcar(SP_ORDEM);
   if (temColBlob && colBlob) {
     unsigned antes = col_revisao();
+    ES(5);
     colfileiras_receber(colBlob);
+    ES(3);
     if (antes != col_revisao()) mudou = 1;
     free(colBlob); colBlob = NULL; temColBlob = 0;
   }
   if (medir) spMarcar(SP_COLECOES);
   // Publish account additions, removals and visibility while Settings is open;
   // relying on the next Home draw left the editor on an older snapshot (#233).
+  ES(5);
   if (atualizarColecoes) colfileiras_sincronizar();
+  ES(4);
   if (atualizarColecoes && addonsPerfilCiclo>0 && addonsPerfilCiclo!=perfis_ativo_addons())
     pedidoComFioVivo=1; // existing retry mechanism: re-read the newly authoritative addon scope
   if (medir) spMarcar(SP_SINCRONIZAR);
   return mudou;
 }
 
+#ifdef NV_TPK
+// S90C 2026-11-24: one 2.3 s sync_passo with no "[sync] aplicado" line, so the
+// early part (before the cycle's results) held it. One line when over 100 ms.
+static double ppT0, ppUlt, ppMs[6];
+static void ppMarca(int i) { double t = syncRelogioMs(); ppMs[i] += t - ppUlt; ppUlt = t; }
+static void ppFim(void) {
+  static const char *const N[6] = { "better", "sessao", "progresso", "addons", "estrutura", "reconciliar" };
+  double tot = syncRelogioMs() - ppT0;
+  if (tot < 100.0) return;
+  printf("[sync] passo %.1f ms:", tot);
+  for (int k = 0; k < 6; k++) if (ppMs[k] >= 1.0) printf(" %s=%.1f", N[k], ppMs[k]);
+  printf("\n"); fflush(stdout);
+}
+#define PP_INI() do { ppT0 = ppUlt = syncRelogioMs(); memset(ppMs, 0, sizeof ppMs); } while (0)
+#define PP_MARCA(k) ppMarca(k)
+#define PP_FIM() ppFim()
+#else
+#define PP_INI() ((void)0)
+#define PP_MARCA(k) ((void)0)
+#define PP_FIM() ((void)0)
+#endif
 void sync_passo(unsigned agoraMs) {
+  PP_INI();
   if(ajustes_better_passo())ajustesTemLocal=0;
+  PP_MARCA(0);
   if (sessao_logada()) desc_sessao_passo();
+  PP_MARCA(1);
   // Consome apenas uma resposta da conta/perfil que a pediu. A rede segue no
   // mesmo fio de sempre; uma colecao lenta nao segura o progresso recebido.
   if (PRONTO_LER(progressoCedo)) {
@@ -1676,6 +1728,7 @@ void sync_passo(unsigned agoraMs) {
   // ANTES DA PORTEIRA de `fioPronto`: ver o comentario em rodar(). O resto do
   // ciclo continua sendo aplicado de uma vez, no fim — addons e progresso
   // saem na frente para a descoberta e o retorno ao que estava sendo visto.
+  PP_MARCA(2);
   if (PRONTO_LER(addonsCedo)) {
     __atomic_store_n(&addonsCedo, 0, __ATOMIC_RELAXED);
     if (temAddonsRem && perfilDoCicloAtual()) {
@@ -1693,11 +1746,14 @@ void sync_passo(unsigned agoraMs) {
       temAddonsRem = 0;
     }
   }
+  PP_MARCA(3);
   if (PRONTO_LER(estruturaCedo)) {
     __atomic_store_n(&estruturaCedo, 0, __ATOMIC_RELAXED);
     if (nv_perfil_sessao_travar(sessaoDoCiclo)) {
       if (perfilDoCicloAtual()) {
-        if (aplicarEstruturaDaConta(0)) desc_remontar_fileiras();
+        ES_INI();
+        if (aplicarEstruturaDaConta(0)) { ES(5); desc_remontar_fileiras(); ES(5); }
+        esFim();
         PRONTO_PUBLICAR(estruturaSessaoAplicada, sessaoDoCiclo);
         PRONTO_PUBLICAR(estruturaPerfilAplicado, perfilDoCiclo);
         PRONTO_PUBLICAR(estruturaAplicada, 1);
@@ -1714,7 +1770,10 @@ void sync_passo(unsigned agoraMs) {
   //
   // Custo no caso comum: uma comparacao de inteiro (cat_n) e um strcmp de 16
   // bytes. Nada e refeito enquanto o catalogo for o mesmo.
+  PP_MARCA(4);
   contalib_reconciliar();
+  PP_MARCA(5);
+  PP_FIM();
   if (!fioVivo || !PRONTO_LER(fioPronto)) return;
   fioVivo = 0;
   __atomic_store_n(&fioPronto, 0, __ATOMIC_RELAXED);
@@ -1900,9 +1959,19 @@ void sync_passo(unsigned agoraMs) {
   else if (soFileiras) desc_remontar_fileiras();
   spMarcar(SP_REMONTAR); }
   int blobAplicado = 0, ajustesMudaram = 0;
+#ifdef NV_TPK
+  // S90C 2026-11-24: ajustes=280 ms with every field equal. Split it.
+  double ajT0 = syncRelogioMs(), ajObs = 0, ajApl = 0, ajDet = 0;
+#endif
   if (temAjustesBlob && ajustesBlob && !ajustes_edicao_perfil()) {
     ajustes_compartilhados_observar();
+#ifdef NV_TPK
+    ajObs = syncRelogioMs() - ajT0;
+#endif
     ajustesMudaram = ajustes_compartilhados_aplicar(ajustesBlob);
+#ifdef NV_TPK
+    ajApl = syncRelogioMs() - ajT0 - ajObs;
+#endif
     blobAplicado = 1;
     // O BLOB NAO E LIBERADO AQUI (mudou em #85): ele e a base da costura que
     // sobe no proximo ciclo. Quem o libera e o pull seguinte, que o substitui,
@@ -1912,6 +1981,9 @@ void sync_passo(unsigned agoraMs) {
     __atomic_store_n(&ajustesRestaurando, 0, __ATOMIC_RELEASE);
     ajustesTemLocal = 0; // Rebaseline imported changes; never flag them as local edits.
     ajustesDetectarMudancas();
+#ifdef NV_TPK
+    ajDet = syncRelogioMs() - ajT0 - ajObs - ajApl;
+#endif
   }
   // #187: uma linha por blob novo (aplicado ou protegido) dizendo qual idioma
   // a TV pede ao TMDB e o que a conta guarda. A geracao muda a cada blob.
@@ -1926,6 +1998,14 @@ void sync_passo(unsigned agoraMs) {
       if (!blobAplicado && ajustesBlobPerfil == perfis_ativo())
         ajustes_idiomas_da_conta(ajustesBlob);
     } }
+#ifdef NV_TPK
+  { double ajTot = syncRelogioMs() - ajT0;
+    if (ajTot >= 20.0) {
+      printf("[sync] ajustes %.1f ms: observar=%.1f aplicar=%.1f detectar=%.1f idioma=%.1f\n",
+             ajTot, ajObs, ajApl, ajDet, ajTot - ajObs - ajApl - ajDet);
+      fflush(stdout);
+    } }
+#endif
   spMarcar(SP_AJUSTES);
   // Progresso da conta: progresso.c decide linha a linha (pendente local vence,
   // senao o mais novo), guarda ate o que nao tem titulo no catalogo ainda, e

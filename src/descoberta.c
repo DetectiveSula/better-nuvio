@@ -6400,8 +6400,11 @@ static char *metaDiscoLer(const char *chave) {
 }
 static void metaDiscoGravar(const char *chave, const char *corpo) {
   char nome[700], tmp[720];
+  static unsigned seq;
   if (!corpo || strlen(corpo) > 256 * 1024 || !metaDiscoNome(chave, nome, sizeof nome)) return;
-  snprintf(tmp, sizeof tmp, "%s.tmp", nome);
+  // Its own temporary per write: two threads saving the same key no longer
+  // share one ".tmp" now that the write is outside metaTrava.
+  snprintf(tmp, sizeof tmp, "%s.%u.tmp", nome, __atomic_add_fetch(&seq, 1, __ATOMIC_RELAXED));
   META_FS_TRAVAR();
   FILE *f = fopen(tmp, "wb");
   if (!f) { META_FS_LIBERAR(); return; }
@@ -6427,8 +6430,12 @@ static char *metaCacheObter(const char *id) {
       break;
     }
   const char *fonte = r ? "memoria" : "disco";
-  if (!r) r = metaDiscoLer(chave);
   pthread_mutex_unlock(&metaTrava);
+  // THE DISK OUTSIDE metaTrava (S90C, 24/11/2026): one write of a title's
+  // ficha took 2.7 s on the TV's flash, and the screen, asking this cache for
+  // the page it was opening, waited on the lock the whole time. The file is
+  // replaced by rename, so a read never sees half of one.
+  if (!r) r = metaDiscoLer(chave);
   if (r) {
     snprintf(msg, sizeof msg, "meta: origem chave=%s fonte=%s", id, fonte);
     marco(msg);
@@ -6452,8 +6459,8 @@ static void metaCacheGuardar(const char *id, const char *corpo) {
   metaCache[vaga].uso = ++metaRelogio;
   metaCache[vaga].quando = time(NULL);
   snprintf(metaCache[vaga].id, sizeof metaCache[vaga].id, "%s", chave);
-  metaDiscoGravar(chave, corpo);
   pthread_mutex_unlock(&metaTrava);
+  metaDiscoGravar(chave, corpo);   // outside the lock: see metaCacheObter
   char msg[220];
   snprintf(msg, sizeof msg, "meta: recebida chave=%s fonte=rede", id);
   marco(msg);

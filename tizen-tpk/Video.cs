@@ -335,10 +335,29 @@ namespace NuvioTpk
             });
         }
 
+        // tpk-host.log IS WRITTEN BY ITS OWN THREAD (S90C, 24/11/2026). Log runs
+        // on whatever thread calls it, including the app's while it opens or
+        // stops a video, and File.AppendAllText waited on the TV's flash (a
+        // 2.7 s stall froze the screen). The line goes to the app's log at once
+        // (LogNativo, itself a pipe now); the file copy is queued, and dropped
+        // if 2000 lines are already waiting.
+        readonly BlockingCollection<string> logFila = new BlockingCollection<string>(new ConcurrentQueue<string>(), 2000);
+        int logEscritor;
         public void Log(string s)
         {
             try { NvVid.LogNativo(s); } catch { }
-            try { File.AppendAllText(logArq, DateTime.Now.ToString("HH:mm:ss ") + s + "\n"); } catch { }
+            try {
+                logFila.TryAdd(DateTime.Now.ToString("HH:mm:ss ") + s + "\n");
+                if (Interlocked.Exchange(ref logEscritor, 1) == 0) {
+                    var t = new Thread(() => {
+                        foreach (var linha in logFila.GetConsumingEnumerable()) {
+                            try { File.AppendAllText(logArq, linha); } catch { }
+                        }
+                    });
+                    t.IsBackground = true; t.Name = "tpk-host-log";
+                    t.Start();
+                }
+            } catch { }
         }
 
         void Principal(Action a)

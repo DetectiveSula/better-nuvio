@@ -1,6 +1,6 @@
 [
   "TMDB API key on this device",
-  "Enter your 32-character TMDB API key (v3). Kept privately on this device for the selected account and profile; never synchronised. Leave blank to remove the local key and use an available account or app key. Requires TMDB to be enabled.",
+  "Enter your 32-character TMDB API key (v3). Kept privately on this device for this account: every profile shares it when Provider setup is Shared, or this profile only when Separate. Never synchronised. Leave blank to remove the local key and use an available account or app key. Requires TMDB to be enabled.",
   "Are you still watching?",
   "Automatically load full subtitles",
   "Automatically select full subtitles using the saved preference or app language. Explicit None and title choices are respected. Off restores the existing forced-subtitle policy.",

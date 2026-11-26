@@ -448,6 +448,9 @@ void gfx_borrao_encerrar(void);
 // render indisponivel). Nesse caso NAO desenhe a arte nitida no lugar — o
 // ajuste existe para esconder o spoiler; pinte o fundo do card.
 GLuint gfx_desfocado(GLuint src, const char *chave);
+// Make the blurred copies queued last frame (.tpk): call at the start of a frame,
+// before anything is drawn to the screen.
+void gfx_desfocados_preparar(void);
 // Um pixel da copia desfocada (u da esquerda, v de cima). So diagnostico.
 int gfx_desfocado_px(GLuint tex, float u, float v, unsigned char rgb[3]);
 int  gfx_snap_ok(void);        // 1 quando o FBO do snapshot existe
@@ -781,6 +784,11 @@ void gfx_setor(float cx, float cy, float r0, float r1, float ini, float frac,
 // Painel opaco grande de cor com canto arredondado: clear tesourado no miolo,
 // faixa de borda pelo shader (mesmo pixel de gfx_cor; bem mais barato na GPU).
 void gfx_cor_painel(GfxRect r, float raio, float cr, float cg, float cb, float ca);
+// gfx_cor(r, 0, ...) without the part under `furo` (layout rect strictly
+// inside r): the same pixels everywhere else, in up to four uSub strips of r.
+// Only for a furo that something opaque covers right after (the Dynamic
+// carousel's title card over its page sheet). Falls back to gfx_cor.
+void gfx_cor_vazada(GfxRect r, float cr, float cg, float cb, float ca, GfxRect furo);
 // Anel de foco POR FORA de uma peca: `folga` px de vao e `esp` px de traco,
 // concentrico com ela (o raio em pixels cresce folga + esp). `raio` e o da
 // PECA. E o jeito de desenhar anel em volta de botao, cartao ou celula.

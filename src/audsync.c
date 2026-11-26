@@ -109,6 +109,14 @@ int audsync_pcm(const int16_t *a, int n, int64_t pts) {
   return 1;
 }
 
+int audsync_espaco(void) { return audsync_teste_livre(); }
+
+void audsync_backend_falhou(uint64_t pedido, int m) {
+  pthread_mutex_lock(&M);
+  if (pedido == S.pedido && S.st.fase == AUDSYNC_OUVINDO) falhar((AudSyncMotivo)m);
+  pthread_mutex_unlock(&M);
+}
+
 void audsync_teste_travar(int t) {
   pthread_mutex_lock(&M); travadoTeste = t; pthread_cond_broadcast(&C); pthread_mutex_unlock(&M);
 }
